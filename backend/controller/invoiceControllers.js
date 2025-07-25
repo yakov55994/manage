@@ -2,6 +2,7 @@ import invoiceService from '../services/invoiceService.js';
 import mongoose from 'mongoose';
 import cloudinary from 'cloudinary'
 import Invoice from '../models/Invoice.js';
+import Supplier from '../models/Supplier.js'
 
 const invoiceControllers = {
 
