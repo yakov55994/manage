@@ -97,38 +97,89 @@ const InvoicesPage = () => {
     return 0;
   });
 
-const exportToExcel = () => {
-  const invoicesWithHeaders = sortedInvoices.map((invoice) => ({
-    "מספר חשבונית": invoice.invoiceNumber,
-    "שם המזמין": invoice.invitingName,
-    "שם הפרוייקט": invoice.projectName,
-    "תאריך יצירה": formatDate(invoice.createdAt),
-    "סכום": formatNumber(invoice.sum),
-    "סטטוס": invoice.status,
-    "פירוט": invoice.detail,
-    "שולם": invoice.paid === "כן" ? "כן" : "לא",
-    "תאריך תשלום": invoice.paid === "כן" ? formatDate(invoice.paymentDate) : "לא שולם",
+  console.log("First invoice:", allInvoices);
+
+const exportToExcelWithSuppliers = () => {
+  console.log('🔍 First invoice supplier data:', sortedInvoices[0]?.supplier);
+  
+  const invoicesWithSupplier = sortedInvoices.filter(invoice => 
+    invoice.supplier && typeof invoice.supplier === 'object'
+  );
+  
+  const totalInvoices = sortedInvoices.length;
+  const supplierInvoices = invoicesWithSupplier.length;
+  
+  console.log(`📊 סטטיסטיקה: ${supplierInvoices}/${totalInvoices} חשבוניות יש להן ספק`);
+  
+  const invoicesWithHeaders = sortedInvoices.map((invoice) => {
+    const baseData = {
+      "מספר חשבונית": invoice.invoiceNumber,
+      "שם המזמין": invoice.invitingName,
+      "שם הפרוייקט": invoice.projectName,
+      "תאריך יצירה": formatDate(invoice.createdAt),
+      "סכום": formatNumber(invoice.sum),
+      "סטטוס": invoice.status,
+      "פירוט": invoice.detail,
+      "שולם": invoice.paid === "כן" ? "כן" : "לא",
+      "תאריך תשלום": invoice.paid === "כן" ? formatDate(invoice.paymentDate) : "לא שולם"
+    };
     
-    // ✅ פרטי ספק
-    "שם ספק": invoice.supplier?.name || invoice.invitingName || 'לא זמין',
-    "טלפון ספק": invoice.supplier?.phone || 'לא זמין',
-    "אימייל ספק": invoice.supplier?.email || 'לא זמין',
-    "כתובת ספק": invoice.supplier?.address || 'לא זמין',
-    "מס עסקים ספק": invoice.supplier?.business_tax || 'לא זמין',
-    
-    // ✅ פרטי בנק
-    "שם הבנק": invoice.supplier?.bankDetails?.bankName || 'לא זמין',
-    "מספר סניף": invoice.supplier?.bankDetails?.branchNumber || 'לא זמין',
-    "מספר חשבון": invoice.supplier?.bankDetails?.accountNumber || 'לא זמין'
-  }));
+    // ✅ עכשיו זה אמור לעבוד אם השרת עושה populate נכון
+    if (invoice.supplier && typeof invoice.supplier === 'object') {
+      return {
+        ...baseData,
+        // "יש ספק": "כן",
+        "שם ספק": invoice.supplier.name || 'לא זמין',
+        "טלפון ספק": invoice.supplier.phone || 'לא זמין',
+        // "אימייל ספק": invoice.supplier.email || 'לא זמין',
+        // "כתובת ספק": invoice.supplier.address || 'לא זמין',
+        // "מס עסקים ספק": invoice.supplier.business_tax || 'לא זמין',
+        "שם הבנק": invoice.supplier.bankDetails?.bankName || 'לא זמין',
+        "מספר סניף": invoice.supplier.bankDetails?.branchNumber || 'לא זמין',
+        "מספר חשבון": invoice.supplier.bankDetails?.accountNumber || 'לא זמין'
+      };
+    } else {
+      // ✅ עבור חשבוניות ישנות בלי ספק
+      return {
+        ...baseData,
+        // "יש ספק": "לא",
+        "שם ספק": 'אין ספק מוגדר',
+        "טלפון ספק": 'אין ספק מוגדר',
+        // "אימייל ספק": 'אין ספק מוגדר',
+        // "כתובת ספק": 'אין ספק מוגדר',
+        // "מס עסקים ספק": 'אין ספק מוגדר',
+        "שם הבנק": 'אין ספק מוגדר',
+        "מספר סניף": 'אין ספק מוגדר',
+        "מספר חשבון": 'אין ספק מוגדר'
+      };
+    }
+  });
 
   const worksheet = XLSX.utils.json_to_sheet(invoicesWithHeaders);
   const workbook = XLSX.utils.book_new();
   XLSX.utils.book_append_sheet(workbook, worksheet, "חשבוניות");
 
   const wbout = XLSX.write(workbook, { bookType: "xlsx", type: "array" });
-  saveAs(new Blob([wbout], { type: "application/octet-stream" }), "חשבוניות_עם_פרטי_ספקים.xlsx");
+  saveAs(
+    new Blob([wbout], { type: "application/octet-stream" }), 
+    `חשבוניות_${supplierInvoices}_מתוך_${totalInvoices}_עם_ספקים.xlsx`
+  );
+  
+  toast.success(
+    `הקובץ יוצא בהצלחה! ${supplierInvoices} מתוך ${totalInvoices} חשבוניות כוללות פרטי ספק`, 
+    {
+      className: "sonner-toast success rtl",
+      duration: 4000
+    }
+  );
 };
+
+// 🔍 בדיקה בקליינט - הוסף את זה זמנית לתחילת הקומפוננט:
+useEffect(() => {
+  console.log('🔍 All invoices from server:', allInvoices);
+  console.log('🔍 First invoice supplier:', allInvoices[0]?.supplier);
+}, [allInvoices]);
+
 
   useEffect(() => {
     const fetchInvoices = async () => {
@@ -320,7 +371,7 @@ const exportToExcel = () => {
               </div>
 
               <button
-                onClick={exportToExcel}
+                onClick={exportToExcelWithSuppliers}
                 className="flex items-center gap-2 bg-slate-800 text-white px-6 py-2.5 rounded-lg hover:bg-slate-700 transition-colors duration-200 font-medium"
               >
                 <DownloadCloud size={20} />

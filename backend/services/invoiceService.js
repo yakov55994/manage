@@ -64,14 +64,23 @@ const invoiceService = {
 getAllInvoices: async () => {
   try {
     const invoices = await Invoice.find()
-      .populate('supplierId') // ✅ הוסף את זה
+      .populate(
+        {
+          path:
+         'supplierId',
+          select: 'name phone bankDetails' // ✅ רק השדות שאתה צריך
+      }
+      ) // ✅ זה נכון
       .sort({ createdAt: -1 });
 
-    // שינוי שם השדה לנוחות בקליינט
-    const invoicesWithSupplier = invoices.map(invoice => ({
-      ...invoice.toObject(),
-      supplier: invoice.supplierId // ✅ שינוי שם השדה
-    }));
+    const invoicesWithSupplier = invoices.map(invoice => {
+      const invoiceObj = invoice.toObject();
+      return {
+        ...invoiceObj,
+        // ✅ תיקון המיפוי
+        supplier: invoiceObj.supplierId || null  // אם supplierId קיים ומפופלט, השתמש בו
+      };
+    });
 
     return invoicesWithSupplier;
   } catch (error) {
@@ -79,6 +88,7 @@ getAllInvoices: async () => {
     throw new Error('שגיאה בשליפת חשבוניות מבסיס הנתונים');
   }
 },
+
   getInvoiceById: async (id) => {
     try {
       const invoice = await Invoice.findById(id).populate("files");

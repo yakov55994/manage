@@ -68,30 +68,33 @@ const validateInvoice = (invoice) => {
   return true;
 };
 
-  const addInvoice = () => {
-    if (!selectedProject) {
-      toast.error("יש לבחור פרוייקט קודם", {
-        className: "sonner-toast error rtl",
-      });
-      return;
-    }
-    setInvoices([
-      ...invoices,
-      {
-        projectName: selectedProject?.name || "",
-        invoiceNumber: "",
-        detail: "",
-        sum: "",
-        status: "לא הוגש",
-        paid: "לא",
-        invitingName: "",
-        files: [],
-        paymentDate: "",
-        // Contact_person: "",
-        supplierId: ""
-      },
-    ]);
-  };
+const addInvoice = () => {
+  if (!selectedProject) {
+    toast.error("יש לבחור פרוייקט קודם", {
+      className: "sonner-toast error rtl",
+    });
+    return;
+  }
+  setInvoices([
+    ...invoices,
+    {
+      projectName: selectedProject?.name || "",
+      invoiceNumber: "",
+      detail: "",
+      sum: "",
+      status: "לא הוגש",
+      paid: "לא",
+      invitingName: "",
+      files: [],
+      paymentDate: "",
+      supplierId: "" // ✅ הוסף את זה!
+    },
+  ]);
+};
+
+// 🔍 לבדיקה - הוסף console.log בתחילת handleSubmit:
+console.log('🔍 All invoices before submit:', invoices);
+console.log('🔍 First invoice supplierId:', invoices[0]?.supplierId);
 
   const removeInvoice = (index) => {
     setInvoiceIndexToDelete(index);
@@ -222,38 +225,36 @@ const handleSubmit = async (e) => {
   // בדיקה בסיסית שכל החשבוניות מלאות
   for (let i = 0; i < invoices.length; i++) {
     const invoice = invoices[i];
-    if (!invoice.invoiceNumber || !invoice.invitingName) {
-      toast.error(`חשבונית מספר ${i + 1}: יש למלא מספר חשבונית ושם ספק`, {
+    if (!invoice.invoiceNumber || !invoice.invitingName || !invoice.supplierId) {
+      toast.error(`חשבונית מספר ${i + 1}: יש למלא מספר חשבונית, ספק וה-ID של הספק`, {
         className: "sonner-toast error rtl",
       });
       return;
     }
   }
 
-  // ✅ תיקון: צריך לחכות לתוצאה של הפונקציה האסינכרונית
   const isValid = await validateUniqueInvoiceNumbers();
   console.log('🔍 Validation result:', isValid);
   
   if (!isValid) {
     console.log('❌ Validation failed - stopping submission');
-    setIsLoading(false); // ✅ נוודא שה-loading מתבטל
-    return; // עוצרים את התהליך אם יש כפילות
+    setIsLoading(false);
+    return;
   }
 
   console.log('✅ Validation passed - proceeding with submission');
   
-  setIsLoading(true); // ✅ רק אחרי שכל הבדיקות עברו
+  setIsLoading(true);
   
   try {
     const invoiceData = await Promise.all(
       invoices.map(async (invoice) => {
-        // העלאת קבצים לקלאודינרי עכשיו בלבד!
+        // העלאת קבצים
         let uploadedFiles = [];
 
         if (invoice.files && invoice.files.length > 0) {
           for (const fileData of invoice.files) {
             if (fileData.isLocal) {
-              // העלה לקלאודינרי עכשיו
               try {
                 const formData = new FormData();
                 formData.append("file", fileData.file);
@@ -283,6 +284,7 @@ const handleSubmit = async (e) => {
           }
         }
 
+        // ✅ התיקון החשוב - הוסף את ה-supplierId!
         return {
           invoiceNumber: invoice.invoiceNumber,
           projectName: selectedProject.name,
@@ -293,17 +295,14 @@ const handleSubmit = async (e) => {
           detail: invoice.detail,
           paid: invoice.paid,
           files: uploadedFiles,
-          paymentDate:
-            invoice.paid === "כן"
-              ? formatHebrewDate(invoice.paymentDate)
-              : null,
+          paymentDate: invoice.paid === "כן" ? formatHebrewDate(invoice.paymentDate) : null,
           createdAt: new Date().toISOString(),
-          // Contact_person: invoice.Contact_person
+          supplierId: invoice.supplierId // ✅ זה הקו החשוב שחסר!
         };
       })
     );
 
-    console.log("Prepared invoice data with uploaded files:", invoiceData);
+    console.log("Prepared invoice data with supplier IDs:", invoiceData);
 
     const response = await api.post(
       "/invoices",
@@ -318,13 +317,11 @@ const handleSubmit = async (e) => {
   } catch (err) {
     console.error("שגיאה במהלך יצירת החשבונית/יות:", err);
     
-    // ✅ בדיקה אם השגיאה קשורה לכפילות - אם כן, לא מציגים הודעה נוספת
     if (err.response?.status === 409 || err.response?.data?.message?.includes('כבר קיימת חשבונית')) {
-  console.log('🔍 Duplicate error already handled by validation');
-  return;
-}
+      console.log('🔍 Duplicate error already handled by validation');
+      return;
+    }
 
-    // הודעת שגיאה מפורטת יותר לשגיאות אחרות
     if (err.response?.data?.message) {
       toast.error(`שגיאה: ${err.response.data.message}`, {
         className: "sonner-toast error rtl",
@@ -484,20 +481,20 @@ const handleSubmit = async (e) => {
   onChange={(supplier) => {
     console.log('🔍 Raw supplier data:', supplier);
     
-    // עדכון ישיר של המערך
     const newInvoices = [...invoices];
     newInvoices[index] = {
       ...newInvoices[index],
       invitingName: supplier?.name || supplier?.supplierName || '',
-      supplierId: supplier?._id || supplier?.id || ''
+      supplierId: supplier?._id || supplier?.id || '' // ✅ וודא שזה נשמר!
     };
     setInvoices(newInvoices);
     
-    console.log('🔍 Direct update - new invoice:', newInvoices[index]);
+    console.log('🔍 After update - invoice with supplier:', newInvoices[index]);
   }}
   placeholder="בחר ספק מהרשימה..."
   required={true}
 />
+
  {/* כפתור ליצירת ספק חדש */}
    <div className="flex justify-center mt-3">
     <button
