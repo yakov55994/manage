@@ -17,28 +17,43 @@ dotenv.config();
 const app = express();
 
 // ✅ רשימת הדומיינים המותרים
+// החלף את החלק הזה בקוד שלך:
+
 const allowedOrigins = [
   'http://localhost:5173',
   'https://management-server-owna.onrender.com',
-  'https://manage-app.pages.dev'
+  'https://manage-app.pages.dev'  // ← וודא שזה בדיוק ככה!
 ];
 
-// ✅ הגדרת CORS עם בדיקה גמישה יותר
 const corsOptions = {
   origin: function (origin, callback) {
-    console.log('🔎 Origin received:', origin); // לוג לאבחון
-    if (!origin || allowedOrigins.some(allowed => origin.startsWith(allowed.replace(/\/$/, '')))) {
+    console.log('🔎 Origin received:', origin);
+    console.log('📋 Allowed origins:', allowedOrigins); // הוסף את זה!
+    
+    // אפשר בקשות ללא origin
+    if (!origin) {
+      console.log('✅ No origin - allowing');
+      return callback(null, true);
+    }
+    
+    // בדיקה מדויקת
+    const isAllowed = allowedOrigins.includes(origin);
+    console.log('🔍 Is allowed:', isAllowed); // הוסף את זה!
+    
+    if (isAllowed) {
+      console.log('✅ Origin allowed:', origin);
       callback(null, true);
     } else {
       console.log('❌ Blocked Origin:', origin);
+      console.log('📋 Available origins:', allowedOrigins); // עוד לוג
       callback(new Error('Not allowed by CORS'));
     }
   },
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-  allowedHeaders: ['Origin', 'X-Requested-With', 'Content-Type', 'Accept', 'Authorization']
+  allowedHeaders: ['Origin', 'X-Requested-With', 'Content-Type', 'Accept', 'Authorization'],
+  optionsSuccessStatus: 200
 };
-
 // ✅ Middleware חשובים לפי סדר
 app.use(cors(corsOptions));
 
