@@ -20,7 +20,7 @@ const app = express();
 const allowedOrigins = [
   'http://localhost:5173',
   'https://management-server-owna.onrender.com',
-  'https://management-main.pages.dev'
+  'https://manage-app.pages.dev'
 ];
 
 // ✅ הגדרת CORS עם בדיקה גמישה יותר
