@@ -8,7 +8,7 @@ const orderService = {
       for (let orderData of ordersData) {
         // בדיקת שדות ריקים (האם כל שדה נדרש מולא)
         if (!orderData.orderNumber || !orderData.invitingName || !orderData.detail || !orderData.projectName
-          || !orderData.sum || !orderData.status || !orderData.Contact_person ) {
+          || !orderData.sum || !orderData.status || !orderData.Contact_person || ! orderData.createdAt ) {
           console.error(`הזמנה חסרה שדות חובה: ${JSON.stringify(orderData)}`);
           throw new Error(`יש למלא את כל השדות להזמנה.`);
         }
@@ -91,27 +91,40 @@ throw new Error(`הזמנה עם מספר ${orderData.orderNumber} עבור הל
 
   // חיפוש – לדוגמה, ניתן להרחיב חיפוש לפי פרמטרים עתידיים
   search: async (query) => {
-    try {
-      if (!query && query !== '0') { // אם query ריק או undefined, נזרוק שגיאה
-        throw new Error('מילת חיפוש לא נמצאה');
-      }
-
-      // אם query הוא בדיוק '0', נבצע חיפוש גם לפי המספר 0
-      const regexQuery = query === '0' ? '0' : query; // אם query הוא '0', נשאיר אותו כ-0, אחרת ניצור regex
-
-      const orders = await Order.find({
-        $or: [
-          { orderNumber: { $regex: regexQuery, $options: 'i' } },
-          { projectName: { $regex: regexQuery, $options: 'i' } }
-        ]
-      });
-
-      return orders; // מחזיר את התוצאה
-    } catch (error) {
-      console.error("❌ שגיאה במהלך החיפוש:", error.message);
-      throw new Error("שגיאה בזמן החיפוש");
+  try {
+    if (!query && query !== '0') {
+      throw new Error('מילת חיפוש לא נמצאה');
     }
-  },
+
+    // ✅ בנה את מערך התנאים בצורה ברורה
+    const searchConditions = [
+      // חיפוש בשדות טקסט
+      { projectName: { $regex: query, $options: 'i' } },
+      { invitingName: { $regex: query, $options: 'i' } },
+      { detail: { $regex: query, $options: 'i' } }
+    ];
+
+    // ✅ אם query הוא מספר, הוסף תנאי מספרים
+    if (!isNaN(query)) {
+      searchConditions.push({ orderNumber: parseInt(query) });
+      searchConditions.push({ sum: parseFloat(query) });
+    }
+
+    console.log('🔍 Search conditions:', searchConditions); // דיבוג
+
+    const orders = await Order.find({
+      $or: searchConditions
+    });
+
+    console.log('✅ Found orders:', orders.length); // דיבוג
+
+    return orders;
+    
+  } catch (error) {
+    console.error("❌ שגיאה במהלך החיפוש:", error.message);
+    throw new Error("שגיאה בזמן החיפוש");
+  }
+},
   // קבלת הזמנה לפי ה-ID
   getOrderById: async (id) => {
     const order = await Order.findById(id);

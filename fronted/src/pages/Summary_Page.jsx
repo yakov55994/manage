@@ -11,6 +11,7 @@ const SummaryPage = () => {
   const [projects, setProjects] = useState([]);
   const [orders, setOrders] = useState([]);
   const [invoices, setInvoices] = useState([]);
+  const [suppliers, setSuppliers] = useState([]); // ✅ הוסף state לספקים
   const [loading, setLoading] = useState(true);
   const [statusFilter, setStatusFilter] = useState('');
   const [sortOrder, setSortOrder] = useState('desc');
@@ -21,15 +22,24 @@ const SummaryPage = () => {
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const [projectResponse, orderResponse, invoiceResponse] = await Promise.all([
+        // ✅ הוסף קריאה לספקים
+        const [projectResponse, orderResponse, invoiceResponse, suppliersResponse] = await Promise.all([
           api.get('/projects'),
           api.get('/orders'),
-          api.get('/invoices')
+          api.get('/invoices'),
+          api.get('/suppliers/getAllSuppliers') // ✅ קריאה לספקים
         ]);
         
         setProjects(projectResponse.data);
         setOrders(orderResponse.data);
         setInvoices(invoiceResponse.data);
+        
+        // ✅ טיפול בתגובת הספקים
+        if (suppliersResponse.data && suppliersResponse.data.success && Array.isArray(suppliersResponse.data.data)) {
+          setSuppliers(suppliersResponse.data.data);
+        } else {
+          setSuppliers([]);
+        }
       } catch (error) {
         console.error("Error fetching data:", error);
         toast.error("שגיאה בטעינת הנתונים. נסה שנית מאוחר יותר.", {
@@ -62,6 +72,8 @@ const SummaryPage = () => {
   const sortedProjects = sortData(projects, sortBy === 'budget' ? 'budget' : 'name', sortOrder);
   const sortedOrders = sortData(orders.filter(o => !statusFilter || o.status === statusFilter), sortBy === 'budget' ? 'sum' : 'projectName', sortOrder);
   const sortedInvoices = sortData(invoices.filter(i => !statusFilter || i.status === statusFilter), sortBy === 'budget' ? 'sum' : 'projectName', sortOrder);
+  // ✅ הוסף מיון לספקים
+  const sortedSuppliers = sortData(suppliers, sortBy === 'budget' ? 'business_tax' : 'name', sortOrder);
 
   const exportToExcel = () => {
     const wb = XLSX.utils.book_new();
@@ -99,6 +111,19 @@ const SummaryPage = () => {
       "פירוט": i.detail
     })), "חשבוניות");
     
+    // ✅ הוסף גיליון ספקים
+    createSheet(sortedSuppliers.map(s => ({
+      "שם הספק": s.name,
+      "מספר עוסק": s.business_tax,
+      "כתובת": s.address,
+      "טלפון": s.phone,
+      "אימייל": s.email,
+      "שם הבנק": s.bankDetails?.bankName || '',
+      "מספר סניף": s.bankDetails?.branchNumber || '',
+      "מספר חשבון": s.bankDetails?.accountNumber || '',
+      "תאריך יצירה": formatDate(s.createdAt)
+    })), "ספקים");
+    
     saveAs(new Blob([XLSX.write(wb, { bookType: "xlsx", type: "array" })], { type: "application/octet-stream" }), "סיכום כללי.xlsx");
   };
 
@@ -112,6 +137,11 @@ const SummaryPage = () => {
 
   const moveToOrderDetails = (order) => {
     navigate(`/orders/${order._id}`);
+  };
+
+  // ✅ הוסף פונקציה לספקים
+  const moveToSupplierDetails = (supplier) => {
+    navigate(`/supplier/${supplier._id}`);
   };
 
   if (loading) {
@@ -130,7 +160,6 @@ const SummaryPage = () => {
       </span>
     );
   };
-  
 
   return (
     <div className="min-h-screen bg-gradient-to-b py-8">
@@ -144,6 +173,26 @@ const SummaryPage = () => {
           </div>
 
           <div className="p-6">
+            {/* ✅ הוסף נתונים סטטיסטיים */}
+            <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-8">
+              <div className="bg-blue-100 p-4 rounded-lg text-center">
+                <h3 className="text-lg font-bold text-blue-800">פרויקטים</h3>
+                <p className="text-2xl font-bold text-blue-600">{projects.length}</p>
+              </div>
+              <div className="bg-green-100 p-4 rounded-lg text-center">
+                <h3 className="text-lg font-bold text-green-800">הזמנות</h3>
+                <p className="text-2xl font-bold text-green-600">{orders.length}</p>
+              </div>
+              <div className="bg-yellow-100 p-4 rounded-lg text-center">
+                <h3 className="text-lg font-bold text-yellow-800">חשבוניות</h3>
+                <p className="text-2xl font-bold text-yellow-600">{invoices.length}</p>
+              </div>
+              <div className="bg-purple-100 p-4 rounded-lg text-center">
+                <h3 className="text-lg font-bold text-purple-800">ספקים</h3>
+                <p className="text-2xl font-bold text-purple-600">{suppliers.length}</p>
+              </div>
+            </div>
+
             <div className="flex flex-col sm:flex-row justify-between items-center gap-4 mb-8">
               <div className="flex flex-wrap items-end gap-4">
                 <select
@@ -159,8 +208,8 @@ const SummaryPage = () => {
                   onChange={(e) => setSortBy(e.target.value)}
                   className="bg-white border border-slate-200 rounded-lg px-4 py-2 text-sm font-medium hover:border-slate-300 focus:outline-none focus:ring-2 focus:ring-slate-500"
                 >
-                  <option value="name" className="font-bold">מיין לפי שם פרויקט</option>
-                  <option value="budget" className="font-bold">מיין לפי תקציב</option>
+                  <option value="name" className="font-bold">מיין לפי שם</option>
+                  <option value="budget" className="font-bold">מיין לפי תקציב/סכום</option>
                 </select>
                 <select
                   onChange={(e) => setSortOrder(e.target.value)}
@@ -177,7 +226,7 @@ const SummaryPage = () => {
                 className="flex items-center gap-2 bg-slate-800 text-white px-6 py-2.5 rounded-lg hover:bg-slate-700 transition-colors duration-200 font-medium"
               >
                 <DownloadCloud size={20} />
-                <span>ייצוא לאקסל</span>
+                <span>ייצוא הכל לאקסל</span>
               </button>
             </div>
 
@@ -204,8 +253,8 @@ const SummaryPage = () => {
                           className="cursor-pointer text-lg border-t border-slate-200 hover:bg-slate-200 transition-colors duration-150 bg-slate-50"
                         >
                           <td className="px-6 py-4 font-bold">{project.name}</td>
-                          <td className="px-6 py-4 font-bold">{project.budget ? formatCurrency(project.budget)  : <p className="text-green-800"> אין עדיין תקציב</p>}</td>
-                          <td className="px-6 py-4 font-bold">{project.remainingBudget ? formatCurrency(project.remainingBudget) : <p className="text-green-800"> אין עדיין תקציב</p>}</td>
+                          <td className="px-6 py-4 font-bold">{project.budget ? formatCurrency(project.budget) : <span className="text-green-800">אין עדיין תקציב</span>}</td>
+                          <td className="px-6 py-4 font-bold">{project.remainingBudget ? formatCurrency(project.remainingBudget) : <span className="text-green-800">אין עדיין תקציב</span>}</td>
                           <td className="px-6 py-4 font-bold">{project.invitingName}</td>
                           <td className="px-6 py-4 font-bold">{formatDate(project.createdAt)}</td>
                         </tr>
@@ -231,9 +280,7 @@ const SummaryPage = () => {
                       <th className="px-6 py-4 text-right">פרויקט</th>
                       <th className="px-6 py-4 text-right">סכום</th>
                       <th className="px-6 py-4 text-right">שם המזמין</th>
-                      {/* <th className="px-6 py-4 text-right">תאריך</th> */}
                       <th className="px-6 py-4 text-right">סטטוס</th>
-                      {/* <th className="px-6 py-4 text-right">פירוט</th> */}
                     </tr>
                   </thead>
                   <tbody>
@@ -246,16 +293,14 @@ const SummaryPage = () => {
                         >
                           <td className="px-6 py-4 font-bold">{order.orderNumber}</td>
                           <td className="px-6 py-4 font-bold">{order.projectName}</td>
-                          <td className="px-6 py-4 font-bold">{formatCurrency(order.sum)} </td>
+                          <td className="px-6 py-4 font-bold">{formatCurrency(order.sum)}</td>
                           <td className="px-6 py-4 font-bold">{order.invitingName}</td>
-                          {/* <td className="px-6 py-4 font-bold">{formatDate(order.createdAt)}</td> */}
                           <td className="px-6 py-4 font-bold">{order.status}</td>
-                          {/* <td className="px-6 py-4 font-bold">{order.detail}</td> */}
                         </tr>
                       ))
                     ) : (
                       <tr>
-                        <td colSpan="7" className="text-center font-bold text-xl text-red-500 py-4">לא נמצאו הזמנות</td>
+                        <td colSpan="5" className="text-center font-bold text-xl text-red-500 py-4">לא נמצאו הזמנות</td>
                       </tr>
                     )}
                   </tbody>
@@ -274,8 +319,6 @@ const SummaryPage = () => {
                       <th className="px-6 py-4 text-right">פרויקט</th>
                       <th className="px-6 py-4 text-right">סכום</th>
                       <th className="px-6 py-4 text-right">שם המזמין</th>
-                      {/* <th className="px-6 py-4 text-right">פירוט</th> */}
-                      {/* <th className="px-6 py-4 text-right">תאריך</th> */}
                       <th className="px-6 py-4 text-right">סטטוס</th>
                     </tr>
                   </thead>
@@ -289,16 +332,55 @@ const SummaryPage = () => {
                         >
                           <td className="px-6 py-4 font-bold text-center">{invoice.invoiceNumber}</td>
                           <td className="px-6 py-4 font-bold">{invoice.projectName}</td>
-                          <td className="px-6 py-4 font-bold">{formatCurrency(invoice.sum)} </td>
+                          <td className="px-6 py-4 font-bold">{formatCurrency(invoice.sum)}</td>
                           <td className="px-6 py-4 font-bold">{invoice.invitingName}</td>
-                          {/* <td className="px-6 py-4 font-bold">{invoice.detail}</td> */}
-                          {/* <td className="px-6 py-4 font-bold">{formatDate(invoice.createdAt)}</td> */}
                           <td className="px-6 py-4 font-bold text-center">{invoice.status}</td>
                         </tr>
                       ))
                     ) : (
                       <tr>
-                        <td colSpan="7" className="text-center font-bold text-xl text-red-500 py-4">לא נמצאו חשבוניות</td>
+                        <td colSpan="5" className="text-center font-bold text-xl text-red-500 py-4">לא נמצאו חשבוניות</td>
+                      </tr>
+                    )}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+
+            {/* ✅ Suppliers Table - הוסף טבלת ספקים */}
+            <div className="mb-8">
+              <h2 className="text-2xl font-bold text-slate-800 mb-4 text-center">ספקים</h2>
+              <div className="overflow-x-auto rounded-lg border border-slate-200">
+                <table className="w-full">
+                  <thead>
+                    <tr className="bg-slate-300 text-slate-800 text-xl">
+                      <th className="px-6 py-4 text-right">שם הספק</th>
+                      <th className="px-6 py-4 text-right">מספר עוסק</th>
+                      <th className="px-6 py-4 text-right">טלפון</th>
+                      <th className="px-6 py-4 text-right">אימייל</th>
+                      <th className="px-6 py-4 text-right">שם בנק</th>
+                      <th className="px-6 py-4 text-right">תאריך יצירה</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {sortedSuppliers.length > 0 ? (
+                      sortedSuppliers.map((supplier) => (
+                        <tr
+                          key={supplier._id}
+                          onClick={() => moveToSupplierDetails(supplier)}
+                          className="cursor-pointer text-lg border-t border-slate-200 hover:bg-slate-200 transition-colors duration-150 bg-slate-50"
+                        >
+                          <td className="px-6 py-4 font-bold">{supplier.name}</td>
+                          <td className="px-6 py-4 font-bold">{formatNumber(supplier.business_tax)}</td>
+                          <td className="px-6 py-4 font-bold">{supplier.phone}</td>
+                          <td className="px-6 py-4 font-bold">{supplier.email || 'לא זמין'}</td>
+                          <td className="px-6 py-4 font-bold">{supplier.bankDetails?.bankName || 'לא זמין'}</td>
+                          <td className="px-6 py-4 font-bold">{formatDate(supplier.createdAt)}</td>
+                        </tr>
+                      ))
+                    ) : (
+                      <tr>
+                        <td colSpan="6" className="text-center font-bold text-xl text-red-500 py-4">לא נמצאו ספקים</td>
                       </tr>
                     )}
                   </tbody>

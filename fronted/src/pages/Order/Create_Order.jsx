@@ -52,7 +52,8 @@ const CreateOrder = () => {
         status: 'לא הוגש',
         invitingName: '',
         file: null,
-        Contact_person: ""
+        Contact_person: "",
+        createdAt: "",
       }
     ]);
   };
@@ -102,46 +103,106 @@ const CreateOrder = () => {
     setOrders(newOrders);
   };
   const validateOrder = (order) => {
-    const requiredFields = ['orderNumber', 'detail', 'sum', 'status', 'invitingName', 'Contact_person'];
+    const requiredFields = ['orderNumber', 'detail', 'sum', 'status', 'invitingName', 'Contact_person', 'createdAt'];
     return requiredFields.every(field => !!order[field]);
   };
 
-  const validateSubmission = () => {
-    if (!selectedProject) {
-      toast.info('יש לבחור פרויקט תחילה', {
-        className: "sonner-toast info rtl"
+ // החלף את הפונקציה validateSubmission בקוד הזה:
+
+const validateSubmission = () => {
+  if (!selectedProject) {
+    toast.error('יש לבחור פרויקט תחילה', {
+      className: "sonner-toast error rtl"
+    });
+    return false;
+  }
+
+  if (orders.length === 0) {
+    toast.error('יש להוסיף לפחות הזמנה אחת', {
+      className: "sonner-toast error rtl"
+    });
+    return false;
+  }
+
+  // בדיקה מפורטת עבור כל הזמנה
+  for (let i = 0; i < orders.length; i++) {
+    const order = orders[i];
+    const orderNumber = i + 1; // מספר ההזמנה בממשק
+
+    // בדיקת מספר הזמנה
+    if (!order.orderNumber) {
+      toast.error(`הזמנה מספר ${orderNumber}: חסר מספר הזמנה`, {
+        className: "sonner-toast error rtl",
       });
       return false;
     }
 
-    if (orders.length === 0) {
-      toast.info('יש להוסיף לפחות הזמנה אחת', {
-        className: "sonner-toast info rtl"
+    // בדיקת שם מזמין
+    if (!order.invitingName || order.invitingName.trim() === '') {
+      toast.error(`הזמנה מספר ${orderNumber}: חסר שם המזמין`, {
+        className: "sonner-toast error rtl",
       });
       return false;
     }
 
-    if (!orders.every(validateOrder)) {
-      toast.info('יש למלא את כל השדות בכל ההזמנות', {
-        className: "sonner-toast error rtl"
+    // בדיקת סכום
+    if (!order.sum || order.sum <= 0) {
+      toast.error(`הזמנה מספר ${orderNumber}: חסר סכום או שהסכום לא תקין`, {
+        className: "sonner-toast error rtl",
       });
       return false;
     }
 
-    // בדיקת שמות כפולים
-    const invitingNames = orders.map(order => order.invitingName);
-    const duplicates = invitingNames.filter((name, index) =>
-      invitingNames.indexOf(name) !== index
-    );
-    if (duplicates.length > 0) {
-      toast.error(`שם מזמין "${duplicates[0]}" מופיע יותר מפעם אחת`, {
-        className: "sonner-toast error rtl"
+    // בדיקת פירוט
+    if (!order.detail || order.detail.trim() === '') {
+      toast.error(`הזמנה מספר ${orderNumber}: חסר פירוט ההזמנה`, {
+        className: "sonner-toast error rtl",
       });
       return false;
     }
 
-    return true;
-  };
+    // בדיקת איש קשר
+    if (!order.Contact_person || order.Contact_person.trim() === '') {
+      toast.error(`הזמנה מספר ${orderNumber}: חסר איש קשר`, {
+        className: "sonner-toast error rtl",
+      });
+      return false;
+    }
+
+    
+
+    // בדיקת סטטוס
+    if (!order.status) {
+      toast.error(`הזמנה מספר ${orderNumber}: חסר סטטוס ההזמנה`, {
+        className: "sonner-toast error rtl",
+      });
+      return false;
+    }
+
+     if (!order.createdAt) {
+      toast.error(`הזמנה מספר ${orderNumber}: חסר תאריך יצירת ההזמנה`, {
+        className: "sonner-toast error rtl",
+      });
+      return false;
+    }
+  
+  }
+
+  // בדיקת שמות מזמינים כפולים - רק אחרי שכל ההזמנות תקינות
+  const invitingNames = orders.map(order => order.invitingName.trim());
+  const duplicates = invitingNames.filter((name, index) =>
+    invitingNames.indexOf(name) !== index
+  );
+  
+  if (duplicates.length > 0) {
+    toast.error(`שם מזמין "${duplicates[0]}" מופיע יותר מפעם אחת`, {
+      className: "sonner-toast error rtl"
+    });
+    return false;
+  }
+
+  return true;
+};
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -171,7 +232,8 @@ const CreateOrder = () => {
             folder: file.folder
           }))
           : [],
-          Contact_person: order.Contact_person
+          Contact_person: order.Contact_person,
+          createdAt: order.createdAt
       }));
 
       // יצירת ההזמנה
@@ -336,6 +398,20 @@ const CreateOrder = () => {
                 required
               />
             </div>
+
+            <div className="space-y-2">
+  <label className="block text-slate-700 font-semibold">
+    תאריך יצירת ההזמנה:
+  </label>
+  <input
+    type="date"
+    value={order.createdAt}
+    onChange={(e) => handleOrderChange(index, "createdAt", e.target.value)}
+    className="w-full p-3 border-2 border-slate-200 rounded-lg focus:ring-2 focus:ring-slate-500 transition-all"
+    required
+    onFocus={(e) => e.target.showPicker()}
+  />
+</div>
 
   <div className="space-y-2">
           <label className="block text-slate-700 font-semibold">

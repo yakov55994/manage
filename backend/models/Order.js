@@ -5,7 +5,7 @@ const orderSchema = new mongoose.Schema({
     projectName: { type: String, required: true },
     projectId: { type: mongoose.Schema.Types.ObjectId, ref: "Project", required: true }, // שיוך לפרויקט
     sum: { type: Number, required: true },
-    createdAt: { type: Date, default: Date.now },
+    createdAt: { type: String, required: true },
     status: { type: String, enum: ['הוגש', 'לא הוגש', 'בעיבוד'], required: true },
     invitingName: { type: String, required: true },
     detail: { type: String, required: true },

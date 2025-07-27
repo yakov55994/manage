@@ -298,6 +298,7 @@ updateInvoice: async (req, res) => {
       paymentDate,
       paid,
       files: newFiles,
+      createdAt
     } = req.body;
 
     const invoice = await Invoice.findById(id);
@@ -310,6 +311,7 @@ updateInvoice: async (req, res) => {
     invoice.invitingName = invitingName;
     invoice.detail = detail;
     invoice.paid = paid; // ✅ שמור כפי שמגיע ("כן"/"לא")
+    invoice.createdAt = createdAt
     
     // תאריך תשלום רק אם שולם
     if (paid === "כן" && paymentDate && paymentDate !== "אין תאריך לתשלום") {

@@ -55,6 +55,7 @@ const validateInvoice = (invoice) => {
     "paid",
     "invitingName", // ✅ שם הספק מהרשימה
     "supplierId",
+     "createdAt",
     // "Contact_person"
   ];
   
@@ -223,15 +224,82 @@ const handleSubmit = async (e) => {
   console.log('🔍 Starting validation...');
   
   // בדיקה בסיסית שכל החשבוניות מלאות
-  for (let i = 0; i < invoices.length; i++) {
-    const invoice = invoices[i];
-    if (!invoice.invoiceNumber || !invoice.invitingName || !invoice.supplierId) {
-      toast.error(`חשבונית מספר ${i + 1}: יש למלא מספר חשבונית, ספק וה-ID של הספק`, {
-        className: "sonner-toast error rtl",
-      });
-      return;
-    }
+ for (let i = 0; i < invoices.length; i++) {
+  const invoice = invoices[i];
+  const invoiceNumber = i + 1; // מספר החשבונית בממשק
+
+  // בדיקת מספר חשבונית
+  if (!invoice.invoiceNumber) {
+    toast.error(`חשבונית מספר ${invoiceNumber}: חסר מספר חשבונית`, {
+      className: "sonner-toast error rtl",
+    });
+    return;
   }
+
+  // בדיקת שם ספק
+  if (!invoice.invitingName) {
+    toast.error(`חשבונית מספר ${invoiceNumber}: חסר שם ספק`, {
+      className: "sonner-toast error rtl",
+    });
+    return;
+  }
+
+  // בדיקת ID ספק
+  if (!invoice.supplierId) {
+    toast.error(`חשבונית מספר ${invoiceNumber}: חסר זיהוי ספק (בחר ספק מהרשימה)`, {
+      className: "sonner-toast error rtl",
+    });
+    return;
+  }
+
+  // בדיקת תאריך יצירה
+  if (!invoice.createdAt) {
+    toast.error(`חשבונית מספר ${invoiceNumber}: חסר תאריך יצירת החשבונית`, {
+      className: "sonner-toast error rtl",
+    });
+    return;
+  }
+
+  // בדיקת סכום
+  if (!invoice.sum || invoice.sum <= 0) {
+    toast.error(`חשבונית מספר ${invoiceNumber}: חסר סכום או שהסכום לא תקין`, {
+      className: "sonner-toast error rtl",
+    });
+    return;
+  }
+
+  // בדיקת פירוט
+  // if (!invoice.detail || invoice.detail.trim() === '') {
+  //   toast.error(`חשבונית מספר ${invoiceNumber}: חסר פירוט החשבונית`, {
+  //     className: "sonner-toast error rtl",
+  //   });
+  //   return;
+  // }
+
+  // בדיקת סטטוס
+  if (!invoice.status) {
+    toast.error(`חשבונית מספר ${invoiceNumber}: חסר סטטוס החשבונית`, {
+      className: "sonner-toast error rtl",
+    });
+    return;
+  }
+
+  // בדיקת סטטוס תשלום
+  if (!invoice.paid) {
+    toast.error(`חשבונית מספר ${invoiceNumber}: לא צוין אם החשבונית שולמה`, {
+      className: "sonner-toast error rtl",
+    });
+    return;
+  }
+
+  // בדיקה מיוחדת: אם החשבונית שולמה, חייב להיות תאריך תשלום
+  if (invoice.paid === "כן" && (!invoice.paymentDate || invoice.paymentDate === "")) {
+    toast.error(`חשבונית מספר ${invoiceNumber}: חשבונית מסומנת כשולמה אך חסר תאריך תשלום`, {
+      className: "sonner-toast error rtl",
+    });
+    return;
+  }
+}
 
   const isValid = await validateUniqueInvoiceNumbers();
   console.log('🔍 Validation result:', isValid);
@@ -296,7 +364,7 @@ const handleSubmit = async (e) => {
           paid: invoice.paid,
           files: uploadedFiles,
           paymentDate: invoice.paid === "כן" ? formatHebrewDate(invoice.paymentDate) : null,
-          createdAt: new Date().toISOString(),
+          createdAt: invoice.createdAt,
           supplierId: invoice.supplierId // ✅ זה הקו החשוב שחסר!
         };
       })
@@ -574,7 +642,22 @@ const handleSubmit = async (e) => {
                   handleInvoiceChange(index, "detail", e.target.value)
                 }
                 className="w-full p-3 border-2 border-slate-200 rounded-lg focus:ring-2 focus:ring-slate-500 transition-all h-24"
+              />
+            </div>
+
+              <div className="space-y-2">
+              <label className="block text-slate-700 font-semibold">
+                תאריך יצירת החשבונית:
+              </label>
+              <input
+                type="date"
+                value={invoice.createdAt}
+                onChange={(e) =>
+                  handleInvoiceChange(index, "createdAt", e.target.value)
+                }
+                className="w-full p-3 border-2 border-slate-200 rounded-lg focus:ring-2 focus:ring-slate-500 transition-all"
                 required
+                onFocus={(e) => e.target.showPicker()}
               />
             </div>
 

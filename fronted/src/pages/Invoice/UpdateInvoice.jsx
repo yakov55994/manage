@@ -14,6 +14,7 @@
     const [sum, setSum] = useState("");
     const [paymentDate, setPaymentDate] = useState("");
     const [paid, setPaid] = useState(""); // "לא" או "כן"
+    const [createdAt, setCreatedAt] = useState(""); // ✅ הוסף state עבור תאריך יצירה
     const [files, setFiles] = useState([]); // הוספת state עבור קבצים
     const [loading, setLoading] = useState(false);
     const { id } = useParams(); // Retrieve the invoice ID from the URL
@@ -47,6 +48,32 @@
           setInvitingName(invoiceData.invitingName);
           setPaymentDate(invoiceData?.paymentDate || "אין תאריך לתשלום");
           setPaid(invoiceData.paid); // Set paid status
+
+      
+      if (invoiceData.createdAt) {
+        console.log("Original createdAt:", invoiceData.createdAt);
+        
+        // אם התאריך שמור כ-Date או string, המר ל-string בפורמט YYYY-MM-DD
+        let formattedDate;
+        
+        if (typeof invoiceData.createdAt === 'string' && invoiceData.createdAt.includes('-')) {
+          // אם זה כבר בפורמט YYYY-MM-DD
+          formattedDate = invoiceData.createdAt.split('T')[0];
+        } else {
+          // אם זה Date object או timestamp
+          const date = new Date(invoiceData.createdAt);
+          formattedDate = date.toISOString().split('T')[0];
+        }
+        
+        console.log("Formatted createdAt:", formattedDate);
+        setCreatedAt(formattedDate);
+      } else {
+        console.log("No createdAt found in invoice data");
+        // אם אין תאריך, קבע תאריך של היום כברירת מחדל
+        const today = new Date().toISOString().split('T')[0];
+        setCreatedAt(today);
+      }
+
 
           // טעינת קבצים - וודא שכל הקבצים נטענים
           if (invoiceData.files && invoiceData.files.length > 0) {
@@ -401,17 +428,18 @@ if (!invitingName) {
   return;
 }
 
-if (!detail) {
-  toast.error("חסרים פרטים");
-  setLoading(false);
-  return;
-}
 
 if (!paid) {
   toast.error("לא צוין אם החשבונית שולמה");
   setLoading(false);
   return;
 }
+
+if (!createdAt) {
+    toast.error("יש לבחור תאריך יצירת החשבונית", { className: "sonner-toast error rtl" });
+    setLoading(false);
+    return;
+  }
 
       // בדיקה מיוחדת לתאריך תשלום
       if (paid === "כן" && (!paymentDate || paymentDate === "אין תאריך לתשלום")) {
@@ -496,6 +524,7 @@ if (!paid) {
           invitingName,
           paid,
           files: processedFiles, // הקבצים המעובדים
+          createdAt
         };
 
         // הוספת תאריך תשלום רק אם החשבונית שולמה ויש תאריך תקף
@@ -609,6 +638,20 @@ if (!paid) {
                   />
                 </div>
 
+   <div className="flex flex-col">
+                <label className="font-bold text-xl text-black">
+                  תאריך חשבונית :
+                </label>
+                <input
+                  type="date"
+                  value={createdAt}
+                  onChange={(e) => setCreatedAt(e.target.value)}
+                  className="bg-slate-300 border p-3 rounded-lg text-sm w-44 mt-2"
+                  onFocus={(e) => e.target.showPicker()}
+                  required
+                />
+              </div>
+
                 <div className="flex flex-col">
                   <label className="font-bold text-xl text-black">
                     האם שולם?
@@ -629,7 +672,7 @@ if (!paid) {
 
                 <div className="flex flex-col">
   <label className="font-bold text-xl text-black mb-5">
-    תאריך לתשלום :
+    תאריך התשלום :
   </label>
   {paid === "כן" ? (
     <>
@@ -644,7 +687,7 @@ if (!paid) {
       <div className="flex flex-col">
         {(!paymentDate || paymentDate === "אין תאריך לתשלום") && (
           <h1 className="text-lg mb-3 text-red-600">
-            " יש לבחור תאריך תשלום "
+            " יש לבחור את תאריך התשלום "
           </h1>
         )}
         <input

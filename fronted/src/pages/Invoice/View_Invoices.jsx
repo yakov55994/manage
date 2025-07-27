@@ -4,25 +4,58 @@ import api from "../../api/api";
 import * as XLSX from "xlsx";
 import { saveAs } from "file-saver";
 import { Link, useNavigate } from "react-router-dom";
-import { DownloadCloud, Edit2, Trash2, Filter } from "lucide-react"; // הוספת אייקון פילטר
+import { DownloadCloud, Edit2, Trash2, Filter, FileSpreadsheet, X } from "lucide-react";
 import { toast } from "sonner";
-
 
 const InvoicesPage = () => {
   const [invoices, setInvoices] = useState([]);
-  const [allInvoices, setAllInvoices] = useState([]); // מאחסן את כל החשבוניות לפני הסינון
+  const [allInvoices, setAllInvoices] = useState([]);
   const [loading, setLoading] = useState(true);
   const [sortBy, setSortBy] = useState("sum");
   const [sortOrder, setSortOrder] = useState("asc");
   const [showModal, setShowModal] = useState(false);
+  const [showReportModal, setShowReportModal] = useState(false);
   const [invoiceToDelete, setInvoiceToDelete] = useState(null);
-  const [showSuccessAlert, setShowSuccessAlert] = useState(false);
-  const [projectName, setProjectName] = useState('');
-  const [invoiceNumber, setInvoiceNumber] = useState('');
   
-  // פילטרים חדשים
-  const [paymentFilter, setPaymentFilter] = useState("all"); // all, paid, unpaid
-  const [statusFilter, setStatusFilter] = useState("all"); // all, submitted, inProgress, notSubmitted
+  // פילטרים בסיסיים
+  const [paymentFilter, setPaymentFilter] = useState("all");
+  const [statusFilter, setStatusFilter] = useState("all");
+
+  // פילטרים מתקדמים למחולל דוחות
+  const [advancedFilters, setAdvancedFilters] = useState({
+    dateFrom: "",
+    dateTo: "",
+    paymentDateFrom: "",
+    paymentDateTo: "",
+    amountMin: "",
+    amountMax: "",
+    projectName: "",
+    supplierName: "",
+    invoiceNumberFrom: "",
+    invoiceNumberTo: "",
+    hasSupplier: "all", // all, yes, no
+    paymentStatus: "all", // all, paid, unpaid
+    submissionStatus: "all", // all, submitted, inProgress, notSubmitted
+  });
+
+  // עמודות לייצוא
+  const [exportColumns, setExportColumns] = useState({
+    invoiceNumber: true,
+    projectName: true,
+    supplierName: true,
+    invitingName: true,
+    sum: true,
+    status: true,
+    paid: true,
+    createdAt: true,
+    paymentDate: false,
+    detail: false,
+    supplierPhone: false,
+    supplierEmail: false,
+    supplierBankName: false,
+    supplierBranchNumber: false,
+    supplierAccountNumber: false
+  });
 
   const navigate = useNavigate();
 
@@ -35,11 +68,149 @@ const InvoicesPage = () => {
     });
   };
 
-  // פונקציה לסינון החשבוניות לפי המסננים
+  // רשימת עמודות זמינות
+  const availableColumns = [
+    { key: 'invoiceNumber', label: 'מספר חשבונית', selected: exportColumns.invoiceNumber },
+    { key: 'projectName', label: 'שם פרויקט', selected: exportColumns.projectName },
+    { key: 'supplierName', label: 'שם ספק', selected: exportColumns.supplierName },
+    { key: 'invitingName', label: 'שם מזמין', selected: exportColumns.invitingName },
+    { key: 'sum', label: 'סכום', selected: exportColumns.sum },
+    { key: 'status', label: 'סטטוס הגשה', selected: exportColumns.status },
+    { key: 'paid', label: 'סטטוס תשלום', selected: exportColumns.paid },
+    { key: 'createdAt', label: 'תאריך יצירה', selected: exportColumns.createdAt },
+    { key: 'paymentDate', label: 'תאריך תשלום', selected: exportColumns.paymentDate },
+    { key: 'detail', label: 'פירוט', selected: exportColumns.detail },
+    { key: 'supplierPhone', label: 'טלפון ספק', selected: exportColumns.supplierPhone },
+    { key: 'supplierEmail', label: 'אימייל ספק', selected: exportColumns.supplierEmail },
+    { key: 'supplierBankName', label: 'שם בנק ספק', selected: exportColumns.supplierBankName },
+    { key: 'supplierBranchNumber', label: 'מספר סניף ספק', selected: exportColumns.supplierBranchNumber },
+    { key: 'supplierAccountNumber', label: 'מספר חשבון ספק', selected: exportColumns.supplierAccountNumber }
+  ];
+
+  // פילטור חשבוניות עם פילטרים מתקדמים
+  const getFilteredInvoices = () => {
+    let filtered = [...allInvoices];
+
+    // פילטרים בסיסיים
+    if (paymentFilter !== "all") {
+      const isPaid = paymentFilter === "paid";
+      filtered = filtered.filter(invoice => 
+        (isPaid && invoice.paid === "כן") || (!isPaid && invoice.paid !== "כן")
+      );
+    }
+
+    if (statusFilter !== "all") {
+      if (statusFilter === "submitted") {
+        filtered = filtered.filter(invoice => invoice.status === "הוגש");
+      } else if (statusFilter === "inProgress") {
+        filtered = filtered.filter(invoice => invoice.status === "בעיבוד");
+      } else if (statusFilter === "notSubmitted") {
+        filtered = filtered.filter(invoice => invoice.status === "לא הוגש");
+      }
+    }
+
+    // פילטרים מתקדמים (רק עבור מחולל הדוחות)
+    if (showReportModal) {
+      // תאריכי יצירה
+      if (advancedFilters.dateFrom) {
+        filtered = filtered.filter(invoice => 
+          new Date(invoice.createdAt) >= new Date(advancedFilters.dateFrom)
+        );
+      }
+      if (advancedFilters.dateTo) {
+        filtered = filtered.filter(invoice => 
+          new Date(invoice.createdAt) <= new Date(advancedFilters.dateTo)
+        );
+      }
+
+      // תאריכי תשלום
+      if (advancedFilters.paymentDateFrom) {
+        filtered = filtered.filter(invoice => 
+          invoice.paymentDate && new Date(invoice.paymentDate) >= new Date(advancedFilters.paymentDateFrom)
+        );
+      }
+      if (advancedFilters.paymentDateTo) {
+        filtered = filtered.filter(invoice => 
+          invoice.paymentDate && new Date(invoice.paymentDate) <= new Date(advancedFilters.paymentDateTo)
+        );
+      }
+
+      // טווח סכומים
+      if (advancedFilters.amountMin) {
+        filtered = filtered.filter(invoice => 
+          invoice.sum >= parseInt(advancedFilters.amountMin)
+        );
+      }
+      if (advancedFilters.amountMax) {
+        filtered = filtered.filter(invoice => 
+          invoice.sum <= parseInt(advancedFilters.amountMax)
+        );
+      }
+
+      // שם פרויקט
+      if (advancedFilters.projectName) {
+        filtered = filtered.filter(invoice => 
+          invoice.projectName?.toLowerCase().includes(advancedFilters.projectName.toLowerCase())
+        );
+      }
+
+      // שם ספק
+      if (advancedFilters.supplierName) {
+        filtered = filtered.filter(invoice => 
+          invoice.supplier?.name?.toLowerCase().includes(advancedFilters.supplierName.toLowerCase()) ||
+          invoice.invitingName?.toLowerCase().includes(advancedFilters.supplierName.toLowerCase())
+        );
+      }
+
+      // טווח מספרי חשבוניות
+      if (advancedFilters.invoiceNumberFrom) {
+        filtered = filtered.filter(invoice => 
+          parseInt(invoice.invoiceNumber) >= parseInt(advancedFilters.invoiceNumberFrom)
+        );
+      }
+      if (advancedFilters.invoiceNumberTo) {
+        filtered = filtered.filter(invoice => 
+          parseInt(invoice.invoiceNumber) <= parseInt(advancedFilters.invoiceNumberTo)
+        );
+      }
+
+      // קיום ספק
+      if (advancedFilters.hasSupplier === "yes") {
+        filtered = filtered.filter(invoice => 
+          invoice.supplier && typeof invoice.supplier === 'object'
+        );
+      } else if (advancedFilters.hasSupplier === "no") {
+        filtered = filtered.filter(invoice => 
+          !invoice.supplier || typeof invoice.supplier !== 'object'
+        );
+      }
+
+      // סטטוס תשלום מתקדם
+      if (advancedFilters.paymentStatus === "paid") {
+        filtered = filtered.filter(invoice => invoice.paid === "כן");
+      } else if (advancedFilters.paymentStatus === "unpaid") {
+        filtered = filtered.filter(invoice => invoice.paid !== "כן");
+      }
+
+      // סטטוס הגשה מתקדם
+      if (advancedFilters.submissionStatus === "submitted") {
+        filtered = filtered.filter(invoice => invoice.status === "הוגש");
+      } else if (advancedFilters.submissionStatus === "inProgress") {
+        filtered = filtered.filter(invoice => invoice.status === "בעיבוד");
+      } else if (advancedFilters.submissionStatus === "notSubmitted") {
+        filtered = filtered.filter(invoice => invoice.status === "לא הוגש");
+      }
+    }
+
+    return filtered;
+  };
+
+  const filteredInvoices = getFilteredInvoices();
+
+  // פונקציה לסינון החשבוניות לפי המסננים הבסיסיים
   const applyFilters = () => {
     let filteredResults = [...allInvoices];
     
-    // סינון לפי סטטוס תשלום
     if (paymentFilter !== "all") {
       const isPaid = paymentFilter === "paid";
       filteredResults = filteredResults.filter(invoice => 
@@ -47,7 +218,6 @@ const InvoicesPage = () => {
       );
     }
     
-    // סינון לפי סטטוס הגשה
     if (statusFilter !== "all") {
       if (statusFilter === "submitted") {
         filteredResults = filteredResults.filter(invoice => invoice.status === "הוגש");
@@ -66,6 +236,24 @@ const InvoicesPage = () => {
     setPaymentFilter("all");
     setStatusFilter("all");
     setInvoices(allInvoices);
+  };
+
+  const clearAdvancedFilters = () => {
+    setAdvancedFilters({
+      dateFrom: "",
+      dateTo: "",
+      paymentDateFrom: "",
+      paymentDateTo: "",
+      amountMin: "",
+      amountMax: "",
+      projectName: "",
+      supplierName: "",
+      invoiceNumberFrom: "",
+      invoiceNumberTo: "",
+      hasSupplier: "all",
+      paymentStatus: "all",
+      submissionStatus: "all",
+    });
   };
 
   // הפעלת סינון בעת שינוי באחד המסננים
@@ -97,96 +285,199 @@ const InvoicesPage = () => {
     return 0;
   });
 
-  console.log("First invoice:", allInvoices);
-
-const exportToExcelWithSuppliers = () => {
-  console.log('🔍 First invoice supplier data:', sortedInvoices[0]?.supplier);
-  
-  const invoicesWithSupplier = sortedInvoices.filter(invoice => 
-    invoice.supplier && typeof invoice.supplier === 'object'
-  );
-  
-  const totalInvoices = sortedInvoices.length;
-  const supplierInvoices = invoicesWithSupplier.length;
-  
-  console.log(`📊 סטטיסטיקה: ${supplierInvoices}/${totalInvoices} חשבוניות יש להן ספק`);
-  
-  const invoicesWithHeaders = sortedInvoices.map((invoice) => {
-    const baseData = {
-      "מספר חשבונית": invoice.invoiceNumber,
-      "שם המזמין": invoice.invitingName,
-      "שם הפרוייקט": invoice.projectName,
-      "תאריך יצירה": formatDate(invoice.createdAt),
-      "סכום": formatNumber(invoice.sum),
-      "סטטוס": invoice.status,
-      "פירוט": invoice.detail,
-      "שולם": invoice.paid === "כן" ? "כן" : "לא",
-      "תאריך תשלום": invoice.paid === "כן" ? formatDate(invoice.paymentDate) : "לא שולם"
-    };
+  // ייצוא מותאם אישית
+  const exportCustomReport = () => {
+    const dataToExport = filteredInvoices;
     
-    // ✅ עכשיו זה אמור לעבוד אם השרת עושה populate נכון
-    if (invoice.supplier && typeof invoice.supplier === 'object') {
-      return {
-        ...baseData,
-        // "יש ספק": "כן",
-        "שם ספק": invoice.supplier.name || 'לא זמין',
-        "טלפון ספק": invoice.supplier.phone || 'לא זמין',
-        // "אימייל ספק": invoice.supplier.email || 'לא זמין',
-        // "כתובת ספק": invoice.supplier.address || 'לא זמין',
-        // "מס עסקים ספק": invoice.supplier.business_tax || 'לא זמין',
-        "שם הבנק": invoice.supplier.bankDetails?.bankName || 'לא זמין',
-        "מספר סניף": invoice.supplier.bankDetails?.branchNumber || 'לא זמין',
-        "מספר חשבון": invoice.supplier.bankDetails?.accountNumber || 'לא זמין'
-      };
-    } else {
-      // ✅ עבור חשבוניות ישנות בלי ספק
-      return {
-        ...baseData,
-        // "יש ספק": "לא",
-        "שם ספק": 'אין ספק מוגדר',
-        "טלפון ספק": 'אין ספק מוגדר',
-        // "אימייל ספק": 'אין ספק מוגדר',
-        // "כתובת ספק": 'אין ספק מוגדר',
-        // "מס עסקים ספק": 'אין ספק מוגדר',
-        "שם הבנק": 'אין ספק מוגדר',
-        "מספר סניף": 'אין ספק מוגדר',
-        "מספר חשבון": 'אין ספק מוגדר'
-      };
+    if (!dataToExport || dataToExport.length === 0) {
+      toast.error("אין נתונים לייצוא", { className: "sonner-toast error rtl" });
+      return;
     }
-  });
 
-  const worksheet = XLSX.utils.json_to_sheet(invoicesWithHeaders);
-  const workbook = XLSX.utils.book_new();
-  XLSX.utils.book_append_sheet(workbook, worksheet, "חשבוניות");
+    const columnMapping = {
+      invoiceNumber: "מספר חשבונית",
+      projectName: "שם פרויקט",
+      supplierName: "שם ספק",
+      invitingName: "שם מזמין",
+      sum: "סכום",
+      status: "סטטוס הגשה",
+      paid: "סטטוס תשלום",
+      createdAt: "תאריך יצירה",
+      paymentDate: "תאריך תשלום",
+      detail: "פירוט",
+      supplierPhone: "טלפון ספק",
+      supplierEmail: "אימייל ספק",
+      supplierBankName: "שם בנק ספק",
+      supplierBranchNumber: "מספר סניף ספק",
+      supplierAccountNumber: "מספר חשבון ספק"
+    };
 
-  const wbout = XLSX.write(workbook, { bookType: "xlsx", type: "array" });
-  saveAs(
-    new Blob([wbout], { type: "application/octet-stream" }), 
-    `חשבוניות_${supplierInvoices}_מתוך_${totalInvoices}_עם_ספקים.xlsx`
-  );
-  
-  toast.success(
-    `הקובץ יוצא בהצלחה! ${supplierInvoices} מתוך ${totalInvoices} חשבוניות כוללות פרטי ספק`, 
-    {
-      className: "sonner-toast success rtl",
-      duration: 4000
+    const selectedColumns = Object.keys(exportColumns).filter(key => exportColumns[key]);
+    
+    if (selectedColumns.length === 0) {
+      toast.error("יש לבחור לפחות עמודה אחת לייצוא", { className: "sonner-toast error rtl" });
+      return;
     }
-  );
-};
 
-// 🔍 בדיקה בקליינט - הוסף את זה זמנית לתחילת הקומפוננט:
-useEffect(() => {
-  console.log('🔍 All invoices from server:', allInvoices);
-  console.log('🔍 First invoice supplier:', allInvoices[0]?.supplier);
-}, [allInvoices]);
+    const invoicesData = dataToExport.map((invoice) => {
+      const row = {};
+      
+      selectedColumns.forEach(col => {
+        switch(col) {
+          case 'invoiceNumber':
+            row[columnMapping.invoiceNumber] = invoice.invoiceNumber || '';
+            break;
+          case 'projectName':
+            row[columnMapping.projectName] = invoice.projectName || '';
+            break;
+          case 'supplierName':
+            row[columnMapping.supplierName] = invoice.supplier?.name || invoice.invitingName || 'אין ספק מוגדר';
+            break;
+          case 'invitingName':
+            row[columnMapping.invitingName] = invoice.invitingName || '';
+            break;
+          case 'sum':
+            row[columnMapping.sum] = invoice.sum || 0;
+            break;
+          case 'status':
+            row[columnMapping.status] = invoice.status || '';
+            break;
+          case 'paid':
+            row[columnMapping.paid] = invoice.paid === "כן" ? "שולם" : "לא שולם";
+            break;
+          case 'createdAt':
+            row[columnMapping.createdAt] = formatDate(invoice.createdAt);
+            break;
+          case 'paymentDate':
+            row[columnMapping.paymentDate] = invoice.paid === "כן" && invoice.paymentDate ? formatDate(invoice.paymentDate) : "לא שולם";
+            break;
+          case 'detail':
+            row[columnMapping.detail] = invoice.detail || '';
+            break;
+          case 'supplierPhone':
+            row[columnMapping.supplierPhone] = invoice.supplier?.phone || 'לא זמין';
+            break;
+          case 'supplierEmail':
+            row[columnMapping.supplierEmail] = invoice.supplier?.email || 'לא זמין';
+            break;
+          case 'supplierBankName':
+            row[columnMapping.supplierBankName] = invoice.supplier?.bankDetails?.bankName || 'לא זמין';
+            break;
+          case 'supplierBranchNumber':
+            row[columnMapping.supplierBranchNumber] = invoice.supplier?.bankDetails?.branchNumber || 'לא זמין';
+            break;
+          case 'supplierAccountNumber':
+            row[columnMapping.supplierAccountNumber] = invoice.supplier?.bankDetails?.accountNumber || 'לא זמין';
+            break;
+        }
+      });
+      
+      return row;
+    });
 
+    const worksheet = XLSX.utils.json_to_sheet(invoicesData);
+    const workbook = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(workbook, worksheet, "דוח חשבוניות");
+
+    const fileName = `דוח_חשבוניות_${new Date().toLocaleDateString('he-IL').replace(/\//g, '-')}.xlsx`;
+    const wbout = XLSX.write(workbook, { bookType: "xlsx", type: "array" });
+    saveAs(new Blob([wbout], { type: "application/octet-stream" }), fileName);
+    
+    setShowReportModal(false);
+    toast.success(`הדוח יוצא בהצלחה עם ${invoicesData.length} חשבוניות`, { className: "sonner-toast success rtl" });
+  };
+
+  const toggleColumn = (columnKey) => {
+    setExportColumns(prev => ({
+      ...prev,
+      [columnKey]: !prev[columnKey]
+    }));
+  };
+
+  const selectAllColumns = () => {
+    const newState = {};
+    Object.keys(exportColumns).forEach(key => {
+      newState[key] = true;
+    });
+    setExportColumns(newState);
+  };
+
+  const deselectAllColumns = () => {
+    const newState = {};
+    Object.keys(exportColumns).forEach(key => {
+      newState[key] = false;
+    });
+    setExportColumns(newState);
+  };
+
+  // ייצוא פשוט (הקיים)
+  const exportToExcelWithSuppliers = () => {
+    const invoicesWithSupplier = sortedInvoices.filter(invoice => 
+      invoice.supplier && typeof invoice.supplier === 'object'
+    );
+    
+    const totalInvoices = sortedInvoices.length;
+    const supplierInvoices = invoicesWithSupplier.length;
+    
+    const invoicesWithHeaders = sortedInvoices.map((invoice) => {
+      const baseData = {
+        "מספר חשבונית": invoice.invoiceNumber,
+        "שם המזמין": invoice.invitingName,
+        "שם הפרוייקט": invoice.projectName,
+        "תאריך יצירה": formatDate(invoice.createdAt),
+        "סכום": formatNumber(invoice.sum),
+        "סטטוס": invoice.status,
+        "פירוט": invoice.detail,
+        "שולם": invoice.paid === "כן" ? "כן" : "לא",
+        "תאריך תשלום": invoice.paid === "כן" ? formatDate(invoice.paymentDate) : "לא שולם"
+      };
+      
+      if (invoice.supplier && typeof invoice.supplier === 'object') {
+        return {
+          ...baseData,
+          "שם ספק": invoice.supplier.name || 'לא זמין',
+          "טלפון ספק": invoice.supplier.phone || 'לא זמין',
+          "שם הבנק": invoice.supplier.bankDetails?.bankName || 'לא זמין',
+          "מספר סניף": invoice.supplier.bankDetails?.branchNumber || 'לא זמין',
+          "מספר חשבון": invoice.supplier.bankDetails?.accountNumber || 'לא זמין'
+        };
+      } else {
+        return {
+          ...baseData,
+          "שם ספק": 'אין ספק מוגדר',
+          "טלפון ספק": 'אין ספק מוגדר',
+          "שם הבנק": 'אין ספק מוגדר',
+          "מספר סניף": 'אין ספק מוגדר',
+          "מספר חשבון": 'אין ספק מוגדר'
+        };
+      }
+    });
+
+    const worksheet = XLSX.utils.json_to_sheet(invoicesWithHeaders);
+    const workbook = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(workbook, worksheet, "חשבוניות");
+
+    const wbout = XLSX.write(workbook, { bookType: "xlsx", type: "array" });
+    saveAs(
+      new Blob([wbout], { type: "application/octet-stream" }), 
+      `חשבוניות_${supplierInvoices}_מתוך_${totalInvoices}_עם_ספקים.xlsx`
+    );
+    
+    toast.success(
+      `הקובץ יוצא בהצלחה! ${supplierInvoices} מתוך ${totalInvoices} חשבוניות כוללות פרטי ספק`, 
+      {
+        className: "sonner-toast success rtl",
+        duration: 4000
+      }
+    );
+  };
 
   useEffect(() => {
     const fetchInvoices = async () => {
       try {
         const response = await api.get('/invoices');
-        setAllInvoices(response.data); // שמירת כל החשבוניות
-        setInvoices(response.data); // הצגת כל החשבוניות בתחילה
+        setAllInvoices(response.data);
+        setInvoices(response.data);
       } catch (error) {
         console.error("Error fetching invoices:", error);
         toast.error("שגיאה בטעינת הנתונים. נסה שנית מאוחר יותר.", {
@@ -210,11 +501,9 @@ useEffect(() => {
           },
         });
         
-        // עדכון שתי הרשימות - כל החשבוניות והחשבוניות המסוננות
         const updatedInvoices = allInvoices.filter((invoice) => invoice._id !== invoiceToDelete._id);
         setAllInvoices(updatedInvoices);
         setInvoices(updatedInvoices.filter(invoice => {
-          // החלת הסינון הנוכחי על הרשימה המעודכנת
           let matchesPaymentFilter = paymentFilter === "all" || 
             (paymentFilter === "paid" && invoice.paid === "כן") || 
             (paymentFilter === "unpaid" && invoice.paid !== "כן");
@@ -232,7 +521,6 @@ useEffect(() => {
           className: "sonner-toast success rtl"
         });
 
-        // Reset invoiceToDelete after successful deletion
         setInvoiceToDelete(null);
       }
     } catch (error) {
@@ -243,7 +531,6 @@ useEffect(() => {
     }
   };
 
-  // בקטע זה, אתה מציב את החשבונית למחיקה לפני שאתה פותח את המודל:
   const handleConfirmDelete = (invoice) => {
     setInvoiceToDelete(invoice);
     setShowModal(true);
@@ -272,7 +559,6 @@ useEffect(() => {
       
       await api.put(`/invoices/${invoice._id}/status`, { paid: updatedInvoice.paid });
   
-      // עדכון הסטייט כדי שהשינוי יופיע ישירות בטבלה
       setInvoices((prevInvoices) =>
         prevInvoices.map((inv) => (inv._id === invoice._id ? updatedInvoice : inv))
       );
@@ -315,7 +601,7 @@ useEffect(() => {
                   >
                     <option value="sum" className="font-bold">סכום</option>
                     <option value="createdAt" className="font-bold">תאריך יצירה</option>
-                    <option value="invoiceNumber" className="font-bold">מספר הזמנה</option>
+                    <option value="invoiceNumber" className="font-bold">מספר חשבונית</option>
                     <option value="projectName" className="font-bold">שם פרוייקט</option>
                   </select>
                   <select
@@ -330,12 +616,11 @@ useEffect(() => {
                 
                 {/* אזור הסינון */}
                 <div className="flex flex-wrap items-end gap-4">
-                <div className="flex items-center">
+                  <div className="flex items-center">
                     <Filter size={18} className="text-slate-600 mr-2" />
                     <label className="mr-1 text-lg font-bold">סינון:</label>
                   </div>
                   
-                  {/* סינון לפי סטטוס תשלום */}
                   <select
                     onChange={(e) => setPaymentFilter(e.target.value)}
                     value={paymentFilter}
@@ -346,7 +631,6 @@ useEffect(() => {
                     <option value="unpaid" className="font-bold">לא שולמו</option>
                   </select>
                   
-                  {/* סינון לפי סטטוס הגשה */}
                   <select
                     onChange={(e) => setStatusFilter(e.target.value)}
                     value={statusFilter}
@@ -358,7 +642,6 @@ useEffect(() => {
                     <option value="notSubmitted" className="font-bold">לא הוגשו</option>
                   </select>
                   
-                  {/* כפתור איפוס סינון */}
                   {(paymentFilter !== "all" || statusFilter !== "all") && (
                     <button
                       onClick={resetFilters}
@@ -370,13 +653,28 @@ useEffect(() => {
                 </div>
               </div>
 
-              <button
-                onClick={exportToExcelWithSuppliers}
-                className="flex items-center gap-2 bg-slate-800 text-white px-6 py-2.5 rounded-lg hover:bg-slate-700 transition-colors duration-200 font-medium"
-              >
-                <DownloadCloud size={20} />
-                <span>ייצוא לאקסל</span>
-              </button>
+              <div className="flex gap-4">
+                <button
+                  onClick={() => setShowReportModal(true)}
+                  className="flex items-center gap-2 bg-blue-600 text-white px-6 py-2.5 rounded-lg hover:bg-blue-500 transition-colors duration-200 font-medium"
+                >
+                  <FileSpreadsheet size={20} />
+                  <span>מחולל דוחות</span>
+                </button>
+
+                <button
+                  onClick={exportToExcelWithSuppliers}
+                  className="flex items-center gap-2 bg-slate-800 text-white px-6 py-2.5 rounded-lg hover:bg-slate-700 transition-colors duration-200 font-medium"
+                >
+                  <DownloadCloud size={20} />
+                  <span>ייצוא מהיר</span>
+                </button>
+              </div>
+            </div>
+
+            {/* הצגת תוצאות */}
+            <div className="mb-4 text-sm text-slate-600">
+              מציג {sortedInvoices.length} חשבוניות מתוך {allInvoices.length}
             </div>
 
             {loading ? (
@@ -398,93 +696,83 @@ useEffect(() => {
                     </tr>
                   </thead>
                   <tbody>
-  {sortedInvoices.map((invoice) => (
-    <tr
-      key={invoice._id}
-      className="cursor-pointer text-l border-t border-slate-200 hover:bg-slate-200 transition-colors duration-150 bg-slate-50"
-      onClick={(e) => {
-        if (!e.target.closest('label')) { // אם לא נלחץ על ה-checkbox
-          handleView(invoice._id);
-        }
-      }}    
-    >
-     
-
-      <td className="px-6 py-4 font-medium">{invoice.invoiceNumber}</td>
-      <td className="px-6 py-4 font-medium">{formatNumber(invoice.sum)} ₪</td>
-      <td className="px-6 py-4 font-medium">{invoice.status}</td>
-      <td className="px-6 py-4 font-medium">{invoice.projectName}</td>
-      <td className="px-6 py-4 font-medium">
-        {invoice.paid === "כן" ? (
-          <p className="bg-green-300 font-bold text-center p-1 rounded-md">שולם</p>
-        ) : (
-          <p className="bg-red-300 font-bold text-center p-1 rounded-md">לא שולם</p>
-        )}
-      </td>
-       {/* עמודת סימון */}
-       <td className="px-6 py-4 text-center">
-       <td className="px-6 py-4 text-center">
-       <td className="px-6 py-4 text-center">
-  <label className="relative inline-block cursor-pointer">
-    <input
-      type="checkbox"
-      checked={invoice.paid === "כן"}
-      onChange={(e) => {
-        e.stopPropagation(); // מונע את פעולת ה-click על השורה
-        togglePaymentStatus(invoice);
-      }}
-      className="absolute opacity-0 cursor-pointer"
-    />
-    <span
-      className={`w-7 h-7 inline-block border-2 rounded-full transition-all duration-300 
-        ${invoice.paid === "כן" ? 'bg-green-500 border-green-500' : 'bg-gray-200 border-gray-400'}
-        flex items-center justify-center relative`}
-    >
-      {invoice.paid === "כן" && (
-        <svg
-          xmlns="http://www.w3.org/2000/svg"
-          viewBox="0 0 24 24"
-          fill="none"
-          stroke="white"
-          strokeWidth="2"
-          className="w-6 h-6"
-        >
-          <path d="M20 6L9 17l-5-5" />
-        </svg>
-      )}
-    </span>
-  </label>
-</td>
-
-</td>
-
-</td>
-      <td className="px-6 py-4 font-medium">
-        <div className="flex justify-center gap-2">
-          <button
-            onClick={(e) => {
-              e.stopPropagation();
-              handleEdit(invoice._id);
-            }}
-            className="p-2 text-slate-600 hover:text-slate-900 hover:bg-slate-100 rounded-full transition-colors duration-150"
-          >
-            <Edit2 size={25} />
-          </button>
-          <button
-            onClick={(e) => {
-              e.stopPropagation();
-              handleConfirmDelete(invoice);
-            }}
-            className="p-2 text-red-600 hover:text-red-700 hover:bg-red-100 rounded-full transition-colors duration-150"
-          >
-            <Trash2 size={25} />
-          </button>
-        </div>
-      </td>
-    </tr>
-  ))}
-</tbody>
-
+                    {sortedInvoices.map((invoice) => (
+                      <tr
+                        key={invoice._id}
+                        className="cursor-pointer text-l border-t border-slate-200 hover:bg-slate-200 transition-colors duration-150 bg-slate-50"
+                        onClick={(e) => {
+                          if (!e.target.closest('label')) {
+                            handleView(invoice._id);
+                          }
+                        }}    
+                      >
+                        <td className="px-6 py-4 font-medium">{invoice.invoiceNumber}</td>
+                        <td className="px-6 py-4 font-medium">{formatNumber(invoice.sum)} ₪</td>
+                        <td className="px-6 py-4 font-medium">{invoice.status}</td>
+                        <td className="px-6 py-4 font-medium">{invoice.projectName}</td>
+                        <td className="px-6 py-4 font-medium">
+                          {invoice.paid === "כן" ? (
+                            <p className="bg-green-300 font-bold text-center p-1 rounded-md">שולם</p>
+                          ) : (
+                            <p className="bg-red-300 font-bold text-center p-1 rounded-md">לא שולם</p>
+                          )}
+                        </td>
+                        <td className="px-6 py-4 text-center">
+                          <label className="relative inline-block cursor-pointer">
+                            <input
+                              type="checkbox"
+                              checked={invoice.paid === "כן"}
+                              onChange={(e) => {
+                                e.stopPropagation();
+                                togglePaymentStatus(invoice);
+                              }}
+                              className="absolute opacity-0 cursor-pointer"
+                            />
+                            <span
+                              className={`w-7 h-7 inline-block border-2 rounded-full transition-all duration-300 
+                                ${invoice.paid === "כן" ? 'bg-green-500 border-green-500' : 'bg-gray-200 border-gray-400'}
+                                flex items-center justify-center relative`}
+                            >
+                              {invoice.paid === "כן" && (
+                                <svg
+                                  xmlns="http://www.w3.org/2000/svg"
+                                  viewBox="0 0 24 24"
+                                  fill="none"
+                                  stroke="white"
+                                  strokeWidth="2"
+                                  className="w-6 h-6"
+                                >
+                                  <path d="M20 6L9 17l-5-5" />
+                                </svg>
+                              )}
+                            </span>
+                          </label>
+                        </td>
+                        <td className="px-6 py-4 font-medium">
+                          <div className="flex justify-center gap-2">
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleEdit(invoice._id);
+                              }}
+                              className="p-2 text-slate-600 hover:text-slate-900 hover:bg-slate-100 rounded-full transition-colors duration-150"
+                            >
+                              <Edit2 size={25} />
+                            </button>
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleConfirmDelete(invoice);
+                              }}
+                              className="p-2 text-red-600 hover:text-red-700 hover:bg-red-100 rounded-full transition-colors duration-150"
+                            >
+                              <Trash2 size={25} />
+                            </button>
+                          </div>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
                 </table>
               </div>
             ) : (
@@ -497,6 +785,236 @@ useEffect(() => {
           </div>
         </div>
 
+        {/* מודל מחולל דוחות */}
+        {showReportModal && (
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+            <div className="bg-white rounded-lg shadow-xl p-6 max-w-4xl w-full mx-4 max-h-[90vh] overflow-y-auto">
+              <div className="flex justify-between items-center mb-6">
+                <h3 className="text-2xl font-bold">מחולל דוחות חשבוניות</h3>
+                <button
+                  onClick={() => setShowReportModal(false)}
+                  className="text-gray-500 hover:text-gray-700"
+                >
+                  <X size={24} />
+                </button>
+              </div>
+
+              {/* פילטרים מתקדמים */}
+              <div className="mb-6">
+                <h4 className="text-lg font-bold mb-4 flex items-center gap-2">
+                  <Filter size={20} />
+                  פילטרים מתקדמים
+                </h4>
+                
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                  <div>
+                    <label className="block text-sm font-medium mb-1">תאריך יצירה מ:</label>
+                    <input
+                      type="date"
+                      value={advancedFilters.dateFrom}
+                      onChange={(e) => setAdvancedFilters(prev => ({...prev, dateFrom: e.target.value}))}
+                      className="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm"
+                    />
+                  </div>
+                  
+                  <div>
+                    <label className="block text-sm font-medium mb-1">תאריך יצירה עד:</label>
+                    <input
+                      type="date"
+                      value={advancedFilters.dateTo}
+                      onChange={(e) => setAdvancedFilters(prev => ({...prev, dateTo: e.target.value}))}
+                      className="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium mb-1">תאריך תשלום מ:</label>
+                    <input
+                      type="date"
+                      value={advancedFilters.paymentDateFrom}
+                      onChange={(e) => setAdvancedFilters(prev => ({...prev, paymentDateFrom: e.target.value}))}
+                      className="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium mb-1">תאריך תשלום עד:</label>
+                    <input
+                      type="date"
+                      value={advancedFilters.paymentDateTo}
+                      onChange={(e) => setAdvancedFilters(prev => ({...prev, paymentDateTo: e.target.value}))}
+                      className="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium mb-1">סכום מינימלי:</label>
+                    <input
+                      type="number"
+                      value={advancedFilters.amountMin}
+                      onChange={(e) => setAdvancedFilters(prev => ({...prev, amountMin: e.target.value}))}
+                      className="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm"
+                      placeholder="₪"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium mb-1">סכום מקסימלי:</label>
+                    <input
+                      type="number"
+                      value={advancedFilters.amountMax}
+                      onChange={(e) => setAdvancedFilters(prev => ({...prev, amountMax: e.target.value}))}
+                      className="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm"
+                      placeholder="₪"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium mb-1">שם פרויקט:</label>
+                    <input
+                      type="text"
+                      value={advancedFilters.projectName}
+                      onChange={(e) => setAdvancedFilters(prev => ({...prev, projectName: e.target.value}))}
+                      className="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm"
+                      placeholder="חיפוש חלקי..."
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium mb-1">שם ספק:</label>
+                    <input
+                      type="text"
+                      value={advancedFilters.supplierName}
+                      onChange={(e) => setAdvancedFilters(prev => ({...prev, supplierName: e.target.value}))}
+                      className="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm"
+                      placeholder="חיפוש חלקי..."
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium mb-1">מספר חשבונית מ:</label>
+                    <input
+                      type="number"
+                      value={advancedFilters.invoiceNumberFrom}
+                      onChange={(e) => setAdvancedFilters(prev => ({...prev, invoiceNumberFrom: e.target.value}))}
+                      className="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium mb-1">מספר חשבונית עד:</label>
+                    <input
+                      type="number"
+                      value={advancedFilters.invoiceNumberTo}
+                      onChange={(e) => setAdvancedFilters(prev => ({...prev, invoiceNumberTo: e.target.value}))}
+                      className="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium mb-1">יש ספק:</label>
+                    <select
+                      value={advancedFilters.hasSupplier}
+                      onChange={(e) => setAdvancedFilters(prev => ({...prev, hasSupplier: e.target.value}))}
+                      className="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm"
+                    >
+                      <option value="all">הכל</option>
+                      <option value="yes">יש ספק</option>
+                      <option value="no">אין ספק</option>
+                    </select>
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium mb-1">סטטוס תשלום:</label>
+                    <select
+                      value={advancedFilters.paymentStatus}
+                      onChange={(e) => setAdvancedFilters(prev => ({...prev, paymentStatus: e.target.value}))}
+                      className="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm"
+                    >
+                      <option value="all">הכל</option>
+                      <option value="paid">שולם</option>
+                      <option value="unpaid">לא שולם</option>
+                    </select>
+                  </div>
+                </div>
+                
+                <div className="flex items-center gap-4 mt-4">
+                  <button
+                    onClick={clearAdvancedFilters}
+                    className="flex items-center gap-2 bg-gray-500 text-white px-4 py-2 rounded-lg hover:bg-gray-600 transition-colors text-sm"
+                  >
+                    <X size={16} />
+                    נקה פילטרים
+                  </button>
+                </div>
+              </div>
+
+              {/* בחירת עמודות */}
+              <div className="mb-6">
+                <h4 className="text-lg font-bold mb-4">בחר עמודות לייצוא:</h4>
+                
+                <div className="flex gap-2 mb-4">
+                  <button
+                    onClick={selectAllColumns}
+                    className="px-4 py-2 bg-green-500 text-white rounded-lg hover:bg-green-600 transition-colors text-sm"
+                  >
+                    בחר הכל
+                  </button>
+                  <button
+                    onClick={deselectAllColumns}
+                    className="px-4 py-2 bg-red-500 text-white rounded-lg hover:bg-red-600 transition-colors text-sm"
+                  >
+                    בטל הכל
+                  </button>
+                </div>
+
+                <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+                  {availableColumns.map(column => (
+                    <label key={column.key} className="flex items-center gap-2 cursor-pointer">
+                      <input
+                        type="checkbox"
+                        checked={exportColumns[column.key]}
+                        onChange={() => toggleColumn(column.key)}
+                        className="w-4 h-4 text-blue-600"
+                      />
+                      <span className="text-sm">{column.label}</span>
+                    </label>
+                  ))}
+                </div>
+              </div>
+
+              {/* סיכום הדוח */}
+              <div className="mb-6 p-4 bg-blue-50 rounded-lg">
+                <h4 className="font-bold mb-2">סיכום הדוח:</h4>
+                <p className="text-sm">
+                  <strong>מספר חשבוניות:</strong> {filteredInvoices.length} <br/>
+                  <strong>עמודות נבחרות:</strong> {Object.values(exportColumns).filter(v => v).length} <br/>
+                  <strong>סכום כולל:</strong> {filteredInvoices.reduce((sum, inv) => sum + (inv.sum || 0), 0).toLocaleString('he-IL')} ₪ <br/>
+                  <strong>חשבוניות שולמו:</strong> {filteredInvoices.filter(inv => inv.paid === "כן").length} <br/>
+                  <strong>חשבוניות עם ספק:</strong> {filteredInvoices.filter(inv => inv.supplier && typeof inv.supplier === 'object').length}
+                </p>
+              </div>
+
+              <div className="flex justify-end gap-4">
+                <button
+                  onClick={() => setShowReportModal(false)}
+                  className="px-6 py-2 text-gray-600 bg-gray-100 rounded-lg hover:bg-gray-200 transition-colors"
+                >
+                  ביטול
+                </button>
+                <button
+                  onClick={exportCustomReport}
+                  className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors flex items-center gap-2"
+                >
+                  <DownloadCloud size={20} />
+                  ייצא דוח
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* מודל מחיקה */}
         {showModal && (
           <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center">
             <div className="bg-white rounded-lg shadow-xl p-6 max-w-sm w-full mx-4">

@@ -8,7 +8,7 @@ const invoiceSchema = new mongoose.Schema({
   createdAt: { type: String, required: true },
   status: { type: String, enum: ['הוגש', 'לא הוגש', 'בעיבוד'], required: true },
   invitingName: { type: String, required: true },
-  detail: { type: String, required: true },
+  detail: { type: String },
   remainingBudget: { type: Number },
   // Contact_person: {type: String, require: true},
 paid: {

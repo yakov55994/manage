@@ -283,7 +283,7 @@ const InvoiceDetailsPage = () => {
             </div>
 
             <div className="border-l-2 border-amber-600 pl-4">
-              <b className="text-xl block">תאריך יצירת חשבונית:</b>
+              <b className="text-xl block">תאריך חשבונית:</b>
               <span className="text-l">
                 {formatHebrewDate(invoice.createdAt)}
               </span>
@@ -291,7 +291,7 @@ const InvoiceDetailsPage = () => {
          
           <div className="border-l-2 border-amber-600 pl-4">
               <b className="text-xl block">פירוט:</b>
-              <span className="text-l">{invoice.detail}</span>
+              <span className="text-l">{invoice.detail || "לא הוכנס פירוט"}</span>
             </div>
            
          
@@ -306,7 +306,7 @@ const InvoiceDetailsPage = () => {
             </div>
             
             <div className="border-l-2 border-amber-600 pl-4">
-              <b className="text-xl block">תאריך תשלום:</b>
+              <b className="text-xl block">תאריך התשלום:</b>
               <span className="text-l">
                 {invoice.paymentDate
                   ? formatHebrewDate(invoice.paymentDate)
