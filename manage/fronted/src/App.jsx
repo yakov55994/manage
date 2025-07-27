@@ -98,7 +98,7 @@ const AppContent = () => {
 </div>
 
 
-
+<h1>בדיקה</h1>
           <Routes>
             <Route path="*" element={<Home />} />
             <Route path="/home" element={<Home />} />
