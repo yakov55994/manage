@@ -1,0 +1,83 @@
+/* כללי סטיילינג לטוסט */
+.sonner-toast {
+    background-color: #34d399; /* צבע רקע ירוק */
+    color: white;
+    font-size: 16px;
+    font-weight: 600;
+    padding: 12px 16px;
+    border-radius: 8px;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    display: inline-block;
+    width: auto;
+    max-width: 320px;
+    word-break: keep-all;
+    white-space: normal;
+}
+.sonner-toast.rtl {
+    direction: rtl; /* הצגת הטקסט מימין לשמאל */
+}
+
+
+/* אייקונים בכל הטוסטים */
+/* הוספת מרווח בין האייקון לטקסט */
+.sonner-toast svg,
+.sonner-toast i,
+.sonner-toast img,
+.sonner-toast .sonner-toast-icon {
+    margin-right: -4px !important; /* מרווח בין האייקון לטקסט */
+    vertical-align: middle; /* שומר על יישור האייקון והטקסט */
+}
+
+
+/* הגדרת טקסט בכל הטוסטים */
+.sonner-toast-message,
+.sonner-toast-title,
+.sonner-toast-description,
+.sonner-toast .text {
+    font-size: 18px !important;
+}
+
+/* התאמת טוסט עם טעינת תמונה או אייקון */
+.sonner-toast-content {
+    padding-left: 15px !important;
+}
+
+/* שינוי זמן התצוגה של הטוסט */
+.sonner-toast.show {
+    animation: fade-in 0.5s ease-in-out 0s 1, fade-out 3s ease-in-out 3s forwards;
+}
+
+@keyframes fade-in {
+    from {
+        opacity: 0;
+    }
+    to {
+        opacity: 1;
+    }
+}
+
+.sonner-toast.success {
+    background-color: #34d399; /* ירוק */
+    font-size: 14px;
+}
+
+.sonner-toast.error {
+    background-color: #f87171; /* אדום */
+    font-size: 14px;
+
+}
+
+.sonner-toast.info {
+    background-color: darkturquoise; /* טורקיז */
+    font-size: 14px;
+
+}
+
+@keyframes fade-out {
+    from {
+        opacity: 1;
+    }
+    to {
+        opacity: 0;
+    }
+}
