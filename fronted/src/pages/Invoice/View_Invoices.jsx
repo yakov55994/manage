@@ -686,6 +686,7 @@ const InvoicesPage = () => {
                 <table className="w-full">
                   <thead>
                     <tr className="bg-slate-300 text-slate-800 text-l">
+                      <th className="px-6 py-4 text-right">שם הספק</th>
                       <th className="px-6 py-4 text-right">מספר חשבונית</th>
                       <th className="px-6 py-4 text-right">סכום</th>
                       <th className="px-6 py-4 text-right">סטטוס</th>
@@ -706,6 +707,7 @@ const InvoicesPage = () => {
                           }
                         }}    
                       >
+                        <td className="px-6 py-4 font-medium">{invoice.supplier.name}</td>
                         <td className="px-6 py-4 font-medium">{invoice.invoiceNumber}</td>
                         <td className="px-6 py-4 font-medium">{formatNumber(invoice.sum)} ₪</td>
                         <td className="px-6 py-4 font-medium">{invoice.status}</td>

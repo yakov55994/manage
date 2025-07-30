@@ -70,6 +70,7 @@ export const supplierController = {
     // מחיקת ספק
     async deleteSupplier(req, res) {
         try {
+            console.log(req.params);
             await supplierService.deleteSupplier(req.params.id);
             res.status(200).json({
                 success: true,

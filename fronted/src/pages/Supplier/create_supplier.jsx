@@ -17,6 +17,7 @@ const CreateSupplier = () => {
       bankName: "",
       branchNumber: "",
       accountNumber: "",
+      bankObj: null, // עזר לUI בלבד
     },
   });
   const [banks, setBanks] = useState([]);
@@ -24,7 +25,7 @@ const CreateSupplier = () => {
   const navigate = useNavigate();
 
   useEffect(() => {
-    setBanks(banksData); // מגדיר את הבנקים ישירות
+    setBanks(banksData);
   }, []);
 
   const handleInputChange = (field, value) => {
@@ -44,38 +45,8 @@ const CreateSupplier = () => {
     }));
   };
 
-  // כשמשתמש בוחר בנק, נעדכן גם את סניף מתוך הבחירה
-  const handleBankSelect = (bankName) => {
-    const selectedBank = banks.find((bank) => bank.name === bankName);
-    if (selectedBank) {
-      setSupplier((prev) => ({
-        ...prev,
-        bankDetails: {
-          ...prev.bankDetails,
-          bankName: selectedBank.name,
-          branchNumber: selectedBank.branchNumber, // קח את הסניף מתוך הבנק שנבחר
-        },
-      }));
-    } else {
-      // ניקוי אם בוטל הבחירה
-      setSupplier((prev) => ({
-        ...prev,
-        bankDetails: {
-          ...prev.bankDetails,
-          bankName: "",
-          branchNumber: "",
-        },
-      }));
-    }
-  };
-
   const validateForm = () => {
-    const requiredFields = [
-      "name",
-      "business_tax",
-      "phone",
-    ];
-    const requiredBankFields = ["bankName", "branchNumber", "accountNumber"];
+    const requiredFields = ["name", "business_tax", "phone"];
 
     for (let field of requiredFields) {
       if (!supplier[field]) {
@@ -85,22 +56,29 @@ const CreateSupplier = () => {
         return false;
       }
     }
-    for (let field of requiredBankFields) {
-      if (!supplier.bankDetails[field]) {
-        toast.error(`יש למלא את השדה: ${getBankFieldName(field)}`, {
+
+    // בדיקת תקינות אימייל רק אם הוכנס אימייל
+    if (supplier.email && supplier.email.trim() !== "") {
+      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+      if (!emailRegex.test(supplier.email)) {
+        toast.error("אימייל לא תקין", { className: "sonner-toast error rtl" });
+        return false;
+      }
+    }
+
+    // בדיקה שאם יש פרטי בנק חלקיים - דורש הכל
+    const { bankName, branchNumber, accountNumber } = supplier.bankDetails;
+    const hasBankInfo = bankName || branchNumber || accountNumber;
+    
+    if (hasBankInfo) {
+      if (!bankName || !branchNumber || !accountNumber) {
+        toast.error("אם מזינים פרטי בנק, יש למלא את כל השדות", {
           className: "sonner-toast error rtl",
         });
         return false;
       }
     }
-   // בדיקת תקינות אימייל רק אם הוכנס אימייל
-if (supplier.email && supplier.email.trim() !== "") {
-  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-  if (!emailRegex.test(supplier.email)) {
-    toast.error("אימייל לא תקין", { className: "sonner-toast error rtl" });
-    return false;
-  }
-}
+
     return true;
   };
 
@@ -113,37 +91,46 @@ if (supplier.email && supplier.email.trim() !== "") {
       email: "אימייל",
     }[field] || field);
 
-  const getBankFieldName = (field) =>
-    ({
-      bankName: "שם הבנק",
-      branchNumber: "מספר סניף",
-      accountNumber: "מספר חשבון",
-    }[field] || field);
-
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (!validateForm()) return;
 
     setIsLoading(true);
     try {
-      await api.post("/suppliers/createSupplier", supplier);
+      // נקה את הנתונים לפני השליחה
+      const supplierData = {
+        name: supplier.name.trim(),
+        business_tax: supplier.business_tax.trim(),
+        phone: supplier.phone.trim(),
+        address: supplier.address?.trim() || undefined,
+        email: supplier.email?.trim() || undefined,
+      };
+
+      // הוסף פרטי בנק רק אם הם מלאים
+      const { bankName, branchNumber, accountNumber } = supplier.bankDetails;
+      if (bankName && branchNumber && accountNumber) {
+        supplierData.bankDetails = {
+          bankName: bankName.trim(),
+          branchNumber: branchNumber.trim(),
+          accountNumber: accountNumber.trim(),
+        };
+      }
+
+      console.log("Sending data:", supplierData); // לדיבוג
+
+      await api.post("/suppliers/createSupplier", supplierData);
       toast.success("הספק נוצר בהצלחה!", {
         className: "sonner-toast success rtl",
       });
       navigate("/suppliers");
     } catch (err) {
+      console.error("Error details:", err.response?.data); // לדיבוג
       const errorMessage = err.response?.data?.message || "שגיאה ביצירת הספק";
       toast.error(errorMessage, { className: "sonner-toast error rtl" });
     } finally {
       setIsLoading(false);
     }
   };
-  const branchOptions =
-  supplier.bankDetails.bankObj?.branches?.map((branch) => ({
-    value: branch.branchCode,
-    label: `${branch.branchCode} - ${branch.city} - ${branch.address}`,
-  })) || [];
-
 
   return (
     <div className="mt-10 bg-gray-300 p-8 rounded-lg shadow-xl w-full max-w-5xl mx-auto">
@@ -164,7 +151,7 @@ if (supplier.email && supplier.email.trim() !== "") {
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             <div className="space-y-2">
               <label className="block text-slate-700 font-semibold">
-                שם הספק:
+                שם הספק <span className="text-red-500">*</span>
               </label>
               <input
                 type="text"
@@ -172,29 +159,27 @@ if (supplier.email && supplier.email.trim() !== "") {
                 onChange={(e) => handleInputChange("name", e.target.value)}
                 className="w-full p-3 border-2 border-slate-200 rounded-lg focus:ring-2 focus:ring-slate-500 transition-all"
                 placeholder="הזן שם הספק"
-                required
               />
             </div>
 
             <div className="space-y-2">
               <label className="block text-slate-700 font-semibold">
-                מספר עוסק:
+                מספר עוסק <span className="text-red-500">*</span>
               </label>
               <input
-                type="number"
+                type="text"
                 value={supplier.business_tax}
                 onChange={(e) =>
                   handleInputChange("business_tax", e.target.value)
                 }
                 className="w-full p-3 border-2 border-slate-200 rounded-lg focus:ring-2 focus:ring-slate-500 transition-all"
                 placeholder="הזן מספר עוסק"
-                required
               />
             </div>
 
             <div className="space-y-2">
               <label className="block text-slate-700 font-semibold">
-                טלפון:
+                טלפון <span className="text-red-500">*</span>
               </label>
               <input
                 type="tel"
@@ -202,13 +187,12 @@ if (supplier.email && supplier.email.trim() !== "") {
                 onChange={(e) => handleInputChange("phone", e.target.value)}
                 className="w-full p-3 border-2 border-slate-200 rounded-lg focus:ring-2 focus:ring-slate-500 transition-all"
                 placeholder="הזן מספר טלפון"
-                required
               />
             </div>
 
             <div className="space-y-2">
               <label className="block text-slate-700 font-semibold">
-                אימייל:
+                אימייל
               </label>
               <input
                 type="email"
@@ -221,7 +205,7 @@ if (supplier.email && supplier.email.trim() !== "") {
 
             <div className="space-y-2 md:col-span-2">
               <label className="block text-slate-700 font-semibold">
-                כתובת:
+                כתובת
               </label>
               <input
                 type="text"
@@ -234,64 +218,70 @@ if (supplier.email && supplier.email.trim() !== "") {
           </div>
         </div>
 
-        {/* פרטי בנק - כאן יש לנו דרופדאון לבחירת הבנק */}
-        <label className="block text-slate-700 font-semibold">בנק:</label>
+        {/* פרטי בנק - אופציונלי */}
+        <div className="bg-white p-6 rounded-xl shadow-xl">
+          <h2 className="text-2xl font-bold text-slate-700 mb-6 border-b-2 border-slate-200 pb-2">
+            פרטי בנק (אופציונלי)
+          </h2>
+          
+          <div className="space-y-4">
+            <div className="space-y-2">
+              <label className="block text-slate-700 font-semibold">בנק:</label>
+              <BankSelector
+                banks={banks}
+                selectedBank={supplier.bankDetails.bankObj}
+                onChange={(selectedBank) => {
+                  handleBankDetailsChange("bankName", selectedBank?.bankName || "");
+                  handleBankDetailsChange("bankObj", selectedBank);
+                  handleBankDetailsChange("branchNumber", ""); // אפס סניף אם שונה הבנק
+                }}
+                placeholder="בחר בנק"
+              />
+            </div>
 
-        <BankSelector
-          banks={banks}
-          selectedBank={supplier.bankDetails.bankObj}
-          onChange={(selectedBank) => {
-            handleBankDetailsChange("bankName", selectedBank?.bankName || "");
-            handleBankDetailsChange("bankObj", selectedBank);
-            handleBankDetailsChange("branchNumber", ""); // אפס סניף אם שונה הבנק
-          }}
-          placeholder="בחר בנק"
-        />
+            {/* דרופדאון לסניפים */}
+            {supplier.bankDetails.bankObj &&
+              supplier.bankDetails.bankObj.branches?.length > 0 && (
+                <div className="space-y-2">
+                  <label className="block text-slate-700 font-semibold">
+                    בחר סניף:
+                  </label>
+                  <select
+                    value={supplier.bankDetails.branchNumber}
+                    onChange={(e) =>
+                      handleBankDetailsChange("branchNumber", e.target.value)
+                    }
+                    className="w-full p-3 border-2 border-slate-200 rounded-lg focus:ring-2 focus:ring-slate-500 transition-all"
+                  >
+                    <option value="">-- בחר סניף --</option>
+                    {supplier.bankDetails.bankObj.branches.map((branch) => (
+                      <option key={branch.branchCode} value={branch.branchCode}>
+                        {branch.branchCode} - {branch.city} - {branch.address}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              )}
 
-        {/* דרופדאון לסניפים */}
-        {supplier.bankDetails.bankObj &&
-          supplier.bankDetails.bankObj.branches?.length > 0 && (
-            <div className="space-y-2 mt-4">
-              <label className="block text-slate-700 font-semibold">
-                בחר סניף:
-              </label>
-              <select
-                value={supplier.bankDetails.branchNumber}
-                onChange={(e) =>
-                  handleBankDetailsChange("branchNumber", e.target.value)
-                }
-                className="w-full p-3 border-2 border-slate-200 rounded-lg"
-              >
-                <option value="">-- בחר סניף --</option>
-                {supplier.bankDetails.bankObj.branches.map((branch) => (
-                  <option key={branch.branchCode} value={branch.branchCode}>
-                    {branch.branchCode} - {branch.city} - {branch.address}
-                  </option>
-                ))}
-              </select>
-              <div className="space-y-2 md:col-span-2">
+            {/* מספר חשבון */}
+            {supplier.bankDetails.bankName && (
+              <div className="space-y-2">
                 <label className="block text-slate-700 font-semibold">
                   מספר חשבון:
                 </label>
                 <input
-                  type="number"
+                  type="text"
                   value={supplier.bankDetails.accountNumber}
                   onChange={(e) =>
-                    setSupplier((prev) => ({
-                      ...prev,
-                      bankDetails: {
-                        ...prev.bankDetails,
-                        accountNumber: e.target.value,
-                      },
-                    }))
+                    handleBankDetailsChange("accountNumber", e.target.value)
                   }
                   className="w-full p-3 border-2 border-slate-200 rounded-lg focus:ring-2 focus:ring-slate-500 transition-all"
-                  placeholder="הזן כתובת מלאה"
-                  required
+                  placeholder="הזן מספר חשבון"
                 />
-              </div>{" "}
-            </div>
-          )}
+              </div>
+            )}
+          </div>
+        </div>
 
         {/* כפתורים */}
         <div className="flex justify-center gap-4 pt-6">
@@ -305,7 +295,7 @@ if (supplier.email && supplier.email.trim() !== "") {
 
           <button
             type="button"
-            onClick={() => navigate("/supplier")}
+            onClick={() => navigate("/suppliers")}
             className="px-8 py-3 bg-gray-500 text-white font-semibold rounded-xl hover:bg-gray-400 transition-colors shadow-lg hover:shadow-xl"
           >
             ביטול
