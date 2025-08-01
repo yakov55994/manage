@@ -1,9 +1,9 @@
 import Notes from '../models/Notes.js'; // מייבא את המודל של Notes
 
 const notesService = {
-    createNote: async (text) => {
+    createNote: async (text, userName) => {
         try {
-            const newNote = new Notes({ text });
+            const newNote = new Notes({ text, userName });
             await newNote.save();
             return newNote;
         } catch (error) {
