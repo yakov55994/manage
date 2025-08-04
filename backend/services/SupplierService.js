@@ -11,6 +11,38 @@ export const supplierService = {
         }
     },
 
+    
+ async search (query) {
+  try {
+    // בדיקה שהשאילתה לא ריקה
+    if (!query || query.trim() === '') {
+      return { suppliers: [] };
+    }
+
+    const searchQuery = query.trim();
+
+    // חיפוש גמיש בכל השדות
+    let suppliers = await Supplier.find({
+      $or: [
+        { name: { $regex: searchQuery, $options: 'i' } }, // חיפוש גמיש בשם
+        { companyName: { $regex: searchQuery, $options: 'i' } }, // אם יש שדה companyName
+        { business_tax: { $regex: searchQuery, $options: 'i' } }, // חיפוש בח.פ/ע.מ
+        { taxId: { $regex: searchQuery, $options: 'i' } }, // אם יש שדה taxId חלופי
+        { phone: { $regex: searchQuery, $options: 'i' } }, // חיפוש בטלפון
+        { email: { $regex: searchQuery, $options: 'i' } }, // חיפוש באימייל
+        { address: { $regex: searchQuery, $options: 'i' } } // חיפוש בכתובת
+      ]
+    }).limit(50); // הגבלת תוצאות למניעת עומס
+
+    console.log(`חיפוש ספקים עבור: "${searchQuery}" - נמצאו ${suppliers.length} תוצאות`);
+    
+    return { suppliers };
+  } catch (error) {
+    console.error('שגיאה במהלך החיפוש בספקים:', error.message);
+    console.error('Stack trace:', error.stack);
+    throw new Error('שגיאה בזמן החיפוש בספקים');
+  }
+},
     // קבלת כל הספקים
     async getAllSuppliers() {
         try {

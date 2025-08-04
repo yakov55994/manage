@@ -69,7 +69,7 @@ app.use(express.urlencoded({ extended: true }));
 
 // ✅ אימות משתמש
 app.post('/api/authenticate', (req, res) => {
-  console.log('🔐 Authentication attempt with body:', req.body); // לוג לאבחון
+  // console.log('🔐 Authentication attempt with body:', req.body); // לוג לאבחון
   const { code } = req.body;
 
   if (code === process.env.SECRET_CODE) {
@@ -81,10 +81,10 @@ app.post('/api/authenticate', (req, res) => {
       maxAge: 12 * 60 * 60 * 1000,
       path: '/'
     });
-    console.log('✅ Authentication successful, token set');
+    // console.log('✅ Authentication successful, token set');
     return res.json({ message: 'Authenticated', token });
   } else {
-    console.log('❌ Authentication failed: Invalid code');
+    // console.log('❌ Authentication failed: Invalid code');
     return res.status(401).send('סיסמה שגויה, אנא נסה שנית');
   }
 });
@@ -96,12 +96,12 @@ app.post('/api/logout', (req, res) => {
     sameSite: process.env.NODE_ENV === 'production' ? 'None' : 'Lax',
     path: '/'
   });
-  console.log('✅ Logged out successfully');
+  // console.log('✅ Logged out successfully');
   res.json({ message: 'Logged out successfully' });
 });
 
 app.get('/api/auth-status', authenticate, (req, res) => {
-  console.log('🔍 Auth status checked for user:', req.user); // לוג לאבחון
+  // console.log('🔍 Auth status checked for user:', req.user); // לוג לאבחון
   res.json({ authenticated: true, user: req.user });
 });
 

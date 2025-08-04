@@ -2,22 +2,22 @@ import { useState, useEffect } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import api from '../../api/api.jsx';
 import { useNavigate } from 'react-router-dom';
-import { Search, Package, FileText, ShoppingCart } from 'lucide-react';
+import { Search, Package, FileText, ShoppingCart, Truck } from 'lucide-react';
 import { ClipLoader } from 'react-spinners';
 import { toast } from 'sonner';
 
 const SearchResults = () => {
     const [searchParams] = useSearchParams();
-    const [results, setResults] = useState({ projects: [], invoices: [], orders: [] });
+    const [results, setResults] = useState({ projects: [], invoices: [], orders: [], suppliers: [] });
     const [loading, setLoading] = useState(true);
-    const [errors, setErrors] = useState({ projects: false, invoices: false, orders: false });
+    const [errors, setErrors] = useState({ projects: false, invoices: false, orders: false, suppliers: false });
     const query = searchParams.get('query');
     const navigate = useNavigate();
 
     useEffect(() => {
         if (query) {
             setLoading(true);
-            setErrors({ projects: false, invoices: false, orders: false });
+            setErrors({ projects: false, invoices: false, orders: false, suppliers: false });
             
             // ביצוע חיפושים נפרדים עם טיפול בשגיאות לכל אחד
             const searchProjects = api.get(`/projects/search?query=${encodeURIComponent(query)}`)
@@ -43,14 +43,23 @@ const SearchResults = () => {
                     setErrors(prev => ({ ...prev, orders: true }));
                     return [];
                 });
+            
+            const searchSuppliers = api.get(`/suppliers/search?query=${encodeURIComponent(query)}`)
+                .then(response => response.data.suppliers || response.data || [])
+                .catch(error => {
+                    console.error('Error fetching suppliers:', error);
+                    setErrors(prev => ({ ...prev, suppliers: true }));
+                    return [];
+                });
 
             // המתנה לכל החיפושים
-            Promise.allSettled([searchProjects, searchInvoices, searchOrders])
-                .then(([projectsResult, invoicesResult, ordersResult]) => {
+            Promise.allSettled([searchProjects, searchInvoices, searchOrders, searchSuppliers])
+                .then(([projectsResult, invoicesResult, ordersResult, suppliersResult]) => {
                     setResults({
                         projects: projectsResult.status === 'fulfilled' ? projectsResult.value : [],
                         invoices: invoicesResult.status === 'fulfilled' ? invoicesResult.value : [],
-                        orders: ordersResult.status === 'fulfilled' ? ordersResult.value : []
+                        orders: ordersResult.status === 'fulfilled' ? ordersResult.value : [],
+                        suppliers: suppliersResult.status === 'fulfilled' ? suppliersResult.value : []
                     });
                 })
                 .finally(() => {
@@ -90,6 +99,8 @@ const SearchResults = () => {
                     return 'from-purple-500 to-pink-500';
                 case 'order':
                     return 'from-amber-500 to-orange-500';
+                case 'supplier':
+                    return 'from-green-500 to-emerald-500';
                 default:
                     return 'from-gray-500 to-slate-500';
             }
@@ -103,6 +114,8 @@ const SearchResults = () => {
                     return <FileText className="w-6 h-6" />;
                 case 'order':
                     return <ShoppingCart className="w-6 h-6" />;
+                case 'supplier':
+                    return <Truck className="w-6 h-6" />;
                 default:
                     return null;
             }
@@ -116,7 +129,9 @@ const SearchResults = () => {
                 <div className="flex items-center justify-between mb-4">
                     {getIcon()}
                     <div className="bg-white/20 rounded-full px-3 py-1 text-sm font-medium">
-                        {type === 'project' ? 'פרוייקט' : type === 'invoice' ? 'חשבונית' : 'הזמנה'}
+                        {type === 'project' ? 'פרוייקט' : 
+                         type === 'invoice' ? 'חשבונית' : 
+                         type === 'order' ? 'הזמנה' : 'ספק'}
                     </div>
                 </div>
                 
@@ -177,6 +192,27 @@ const SearchResults = () => {
                             )}
                         </>
                     )}
+                    {type === 'supplier' && (
+                        <>
+                                {console.log(item)}
+
+                            <h3 className="text-xl font-bold truncate">{item.name || item.companyName || 'ספק'}</h3>
+                            <p className="text-white/90">
+                                ח.פ/ע.מ: {item.business_tax || item.taxId || 'לא זמין'}
+                            </p>
+                            <p className="text-white/80 text-sm">
+                                טלפון: {item.phone || 'לא זמין'}
+                            </p>
+                            <p className="text-white/80 text-sm truncate">
+                                כתובת: {item.address || 'לא זמין'}
+                            </p>
+                            {item.email && (
+                                <p className="text-white/70 text-sm truncate">
+                                    אימייל: {item.email}
+                                </p>
+                            )}
+                        </>
+                    )}
                 </div>
             </div>
         );
@@ -185,17 +221,27 @@ const SearchResults = () => {
     const ErrorMessage = ({ type, error }) => {
         if (!error) return null;
         
+        const getTypeLabel = () => {
+            switch (type) {
+                case 'projects': return 'פרויקטים';
+                case 'invoices': return 'חשבוניות';
+                case 'orders': return 'הזמנות';
+                case 'suppliers': return 'ספקים';
+                default: return '';
+            }
+        };
+        
         return (
             <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded-lg mb-4">
                 <p className="text-sm">
-                    ⚠️ שגיאה בחיפוש {type === 'projects' ? 'פרויקטים' : type === 'invoices' ? 'חשבוניות' : 'הזמנות'}
+                    ⚠️ שגיאה בחיפוש {getTypeLabel()}
                 </p>
             </div>
         );
     };
 
     const renderResults = () => {
-        const { projects, invoices, orders } = results;
+        const { projects, invoices, orders, suppliers } = results;
 
         if (loading) {
             return (
@@ -206,8 +252,8 @@ const SearchResults = () => {
             );
         }
 
-        const totalResults = projects.length + invoices.length + orders.length;
-        const hasErrors = errors.projects || errors.invoices || errors.orders;
+        const totalResults = projects.length + invoices.length + orders.length + suppliers.length;
+        const hasErrors = errors.projects || errors.invoices || errors.orders || errors.suppliers;
 
         if (totalResults === 0 && !hasErrors) {
             return (
@@ -225,12 +271,13 @@ const SearchResults = () => {
                 <ErrorMessage type="projects" error={errors.projects} />
                 <ErrorMessage type="invoices" error={errors.invoices} />
                 <ErrorMessage type="orders" error={errors.orders} />
+                <ErrorMessage type="suppliers" error={errors.suppliers} />
 
                 {/* סיכום תוצאות */}
                 {totalResults > 0 && (
                     <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-6">
                         <p className="text-blue-800 font-medium">
-                            נמצאו {totalResults} תוצאות: {projects.length} פרויקטים, {invoices.length} חשבוניות, {orders.length} הזמנות
+                            נמצאו {totalResults} תוצאות: {projects.length} פרויקטים, {invoices.length} חשבוניות, {orders.length} הזמנות, {suppliers.length} ספקים
                         </p>
                     </div>
                 )}
@@ -288,7 +335,28 @@ const SearchResults = () => {
                                     key={order._id}
                                     item={order}
                                     type="order"
-                                    onClick={() => navigate(`/orders/${order._id}`)} // תיקון: orders במקום order
+                                    onClick={() => navigate(`/orders/${order._id}`)}
+                                />
+                            ))}
+                        </div>
+                    </section>
+                )}
+
+                {/* תוצאות ספקים */}
+                {suppliers.length > 0 && (
+                    <section className="animate-fadeIn">
+                        <h2 className="text-2xl font-bold mb-6 flex items-center gap-2">
+                            <Truck className="w-6 h-6 text-green-500" />
+                            <span>ספקים ({suppliers.length})</span>
+                        </h2>
+                        <div className="flex flex-wrap gap-4 justify-start">
+                            {suppliers.map(supplier => (
+
+                                <ResultCard
+                                    key={supplier._id}
+                                    item={supplier}
+                                    type="supplier"
+                                    onClick={() => navigate(`/supplier/${supplier._id}`)}
                                 />
                             ))}
                         </div>
