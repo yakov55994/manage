@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import Select from 'react-select';
 
 const BankAccountForm = () => {
   const [banks, setBanks] = useState([]);
@@ -15,6 +16,16 @@ const BankAccountForm = () => {
 
   const selectedBank = banks.find((b) => b.bankCode === selectedBankCode);
   const branches = selectedBank ? selectedBank.branches : [];
+
+  // תיקון ה-options לסניפים
+  const branchOptions = branches.map(branch => ({
+    value: branch.branchCode,
+    label: `${branch.branchCode} - ${branch.city} - ${branch.address}`,
+    // הוסף את הנתונים ישירות ב-option
+    city: branch.city,
+    address: branch.address,
+    branchCode: branch.branchCode
+  }));
 
   const handleSubmit = (e) => {
     e.preventDefault();
@@ -54,18 +65,30 @@ const BankAccountForm = () => {
       {branches.length > 0 && (
         <div>
           <label className="block">בחר סניף:</label>
-          <select
-            value={selectedBranchCode}
-            onChange={(e) => setSelectedBranchCode(e.target.value)}
-            className="border p-2 w-full text-lg font-bold"
-          >
-            <option value="" style={{}}>-- בחר סניף --</option>
-            {branches.map((branch) => (
-              <option key={branch.branchCode} value={branch.branchCode}>
-                {branch.branchCode} - {branch.city} - {branch.address}
-              </option>
-            ))}
-          </select>
+          <Select
+            options={branchOptions}
+            value={branchOptions.find(opt => opt.value === selectedBranchCode) || null}
+            onChange={(selected) => setSelectedBranchCode(selected?.value || "")}
+            placeholder="-- בחר סניף או הקלד לחיפוש --"
+            isClearable
+            isSearchable={true}
+            // תיקון ה-filterOption
+            filterOption={(option, inputValue) => {
+              if (!inputValue) return true;
+              const searchTerm = inputValue.toLowerCase();
+              return (
+                option.data.city.toLowerCase().includes(searchTerm) ||
+                option.data.address.toLowerCase().includes(searchTerm) ||
+                option.data.branchCode.toLowerCase().includes(searchTerm)
+              );
+            }}
+            styles={{
+              control: (provided) => ({ ...provided, minHeight: 40, padding: '2px' }),
+            }}
+            noOptionsMessage={({ inputValue }) => 
+              inputValue ? `לא נמצאו סניפים עבור "${inputValue}"` : 'לא נמצאו סניפים'
+            }
+          />
         </div>
       )}
 

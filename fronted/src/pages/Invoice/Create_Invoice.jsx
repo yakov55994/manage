@@ -13,9 +13,8 @@ const CreateInvoice = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [invoiceIndexToDelete, setInvoiceIndexToDelete] = useState(null);
   const [showModal, setShowModal] = useState(false);
-  const [selectedSupplierId, setSelectedSupplierId] = useState('');
+  const [selectedSupplierId, setSelectedSupplierId] = useState("");
   // const [Contact_person, setContact_Person] = useState('')
-  
 
   const navigate = useNavigate();
 
@@ -44,58 +43,58 @@ const CreateInvoice = () => {
     setSelectedProject(selected || null);
   };
 
-const validateInvoice = (invoice) => {
-  console.log('🔍 Validating invoice:', invoice);
-  
-  const requiredFields = [
-    "invoiceNumber",
-    "detail", 
-    "sum",
-    "status",
-    "paid",
-    "invitingName", // ✅ שם הספק מהרשימה
-    "supplierId",
-     "createdAt",
-    // "Contact_person"
-  ];
-  
-  const missingFields = requiredFields.filter(field => !invoice[field]);
-  
-  if (missingFields.length > 0) {
-    console.log('❌ Missing fields:', missingFields);
-    return false;
-  }
-  
-  return true;
-};
+  const validateInvoice = (invoice) => {
+    console.log("🔍 Validating invoice:", invoice);
 
-const addInvoice = () => {
-  if (!selectedProject) {
-    toast.error("יש לבחור פרוייקט קודם", {
-      className: "sonner-toast error rtl",
-    });
-    return;
-  }
-  setInvoices([
-    ...invoices,
-    {
-      projectName: selectedProject?.name || "",
-      invoiceNumber: "",
-      detail: "",
-      sum: "",
-      status: "לא הוגש",
-      paid: "לא",
-      invitingName: "",
-      files: [],
-      paymentDate: "",
-      supplierId: "" // ✅ הוסף את זה!
-    },
-  ]);
-};
+    const requiredFields = [
+      "invoiceNumber",
+      "detail",
+      "sum",
+      "status",
+      "paid",
+      "invitingName", // ✅ שם הספק מהרשימה
+      "supplierId",
+      "createdAt",
+      // "Contact_person"
+    ];
 
-// 🔍 לבדיקה - הוסף console.log בתחילת handleSubmit:
-console.log('🔍 All invoices before submit:', invoices);
-console.log('🔍 First invoice supplierId:', invoices[0]?.supplierId);
+    const missingFields = requiredFields.filter((field) => !invoice[field]);
+
+    if (missingFields.length > 0) {
+      console.log("❌ Missing fields:", missingFields);
+      return false;
+    }
+
+    return true;
+  };
+
+  const addInvoice = () => {
+    if (!selectedProject) {
+      toast.error("יש לבחור פרוייקט קודם", {
+        className: "sonner-toast error rtl",
+      });
+      return;
+    }
+    setInvoices([
+      ...invoices,
+      {
+        projectName: selectedProject?.name || "",
+        invoiceNumber: "",
+        detail: "",
+        sum: "",
+        status: "לא הוגש",
+        paid: "לא",
+        invitingName: "",
+        files: [],
+        paymentDate: "",
+        supplierId: "", // ✅ הוסף את זה!
+      },
+    ]);
+  };
+
+  // 🔍 לבדיקה - הוסף console.log בתחילת handleSubmit:
+  console.log("🔍 All invoices before submit:", invoices);
+  console.log("🔍 First invoice supplierId:", invoices[0]?.supplierId);
 
   const removeInvoice = (index) => {
     setInvoiceIndexToDelete(index);
@@ -165,244 +164,267 @@ console.log('🔍 First invoice supplierId:', invoices[0]?.supplierId);
     });
   }
 
-const validateUniqueInvoiceNumbers = async () => {
-  try {
-    // בדיקה מול הדטהבייס לכל חשבונית
-    for (const invoice of invoices) {
-      console.log('🔍 Checking invoice:', invoice.invoiceNumber, 'for supplier:', invoice.invitingName);
-      
-      // ✅ בדיקה שהנתונים קיימים לפני השליחה
-      if (!invoice.invoiceNumber || !invoice.invitingName) {
-        console.log('❌ Missing invoice data');
-        continue; // דלג על חשבונית לא מלאה
-      }
-      
-      // ✅ בדיקה לפי שם ספק ומספר חשבונית (לא ID)
-      const response = await api.get(`/invoices/check-duplicate`, {
-        params: {
-          supplierName: invoice.invitingName, // ✅ שם הספק
-          invoiceNumber: invoice.invoiceNumber  // ✅ מספר החשבונית
-          // לא שולחים supplierId כי זה גורם לשגיאה
+  const validateUniqueInvoiceNumbers = async () => {
+    try {
+      // בדיקה מול הדטהבייס לכל חשבונית
+      for (const invoice of invoices) {
+        console.log(
+          "🔍 Checking invoice:",
+          invoice.invoiceNumber,
+          "for supplier:",
+          invoice.invitingName
+        );
+
+        // ✅ בדיקה שהנתונים קיימים לפני השליחה
+        if (!invoice.invoiceNumber || !invoice.invitingName) {
+          console.log("❌ Missing invoice data");
+          continue; // דלג על חשבונית לא מלאה
         }
-      });
-      
-      console.log('🔍 Server response:', response.data);
-      
-      // ✅ אם יש כפילות לאותו ספק
-      if (response.data.exists) {
-        toast.error(`לספק "${invoice.invitingName}" כבר קיימת חשבונית עם מספר "${invoice.invoiceNumber}"`, {
+
+        // ✅ בדיקה לפי שם ספק ומספר חשבונית (לא ID)
+        const response = await api.get(`/invoices/check-duplicate`, {
+          params: {
+            supplierName: invoice.invitingName, // ✅ שם הספק
+            invoiceNumber: invoice.invoiceNumber, // ✅ מספר החשבונית
+            // לא שולחים supplierId כי זה גורם לשגיאה
+          },
+        });
+
+        console.log("🔍 Server response:", response.data);
+
+        // ✅ אם יש כפילות לאותו ספק
+        if (response.data.exists) {
+          toast.error(
+            `לספק "${invoice.invitingName}" כבר קיימת חשבונית עם מספר "${invoice.invoiceNumber}"`,
+            {
+              className: "sonner-toast error rtl",
+            }
+          );
+          return false;
+        }
+      }
+      return true;
+    } catch (err) {
+      console.error("Error checking duplicate invoices:", err);
+      console.error("Error details:", err.response?.data);
+
+      // ✅ הצגת השגיאה המדויקת מהשרת
+      if (err.response?.data?.message) {
+        toast.error(`שגיאה בבדיקה: ${err.response.data.message}`, {
           className: "sonner-toast error rtl",
         });
-        return false;
+      } else {
+        toast.error("שגיאה בבדיקת כפילות חשבוניות - בדוק את החיבור לשרת", {
+          className: "sonner-toast error rtl",
+        });
+      }
+      return false;
+    }
+  };
+
+  // תיקון בפונקציית handleSubmit:
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+
+    console.log("🔍 Starting validation...");
+
+    // בדיקה בסיסית שכל החשבוניות מלאות
+    for (let i = 0; i < invoices.length; i++) {
+      const invoice = invoices[i];
+      const invoiceNumber = i + 1; // מספר החשבונית בממשק
+
+      // בדיקת מספר חשבונית
+      if (!invoice.invoiceNumber) {
+        toast.error(`חשבונית מספר ${invoiceNumber}: חסר מספר חשבונית`, {
+          className: "sonner-toast error rtl",
+        });
+        return;
+      }
+
+      // בדיקת שם ספק
+      if (!invoice.invitingName) {
+        toast.error(`חשבונית מספר ${invoiceNumber}: חסר שם ספק`, {
+          className: "sonner-toast error rtl",
+        });
+        return;
+      }
+
+      // בדיקת ID ספק
+      if (!invoice.supplierId) {
+        toast.error(
+          `חשבונית מספר ${invoiceNumber}: חסר זיהוי ספק (בחר ספק מהרשימה)`,
+          {
+            className: "sonner-toast error rtl",
+          }
+        );
+        return;
+      }
+
+      // בדיקת תאריך יצירה
+      if (!invoice.createdAt) {
+        toast.error(`חשבונית מספר ${invoiceNumber}: חסר תאריך יצירת החשבונית`, {
+          className: "sonner-toast error rtl",
+        });
+        return;
+      }
+
+      // בדיקת סכום
+      if (!invoice.sum || invoice.sum <= 0) {
+        toast.error(
+          `חשבונית מספר ${invoiceNumber}: חסר סכום או שהסכום לא תקין`,
+          {
+            className: "sonner-toast error rtl",
+          }
+        );
+        return;
+      }
+
+      // בדיקת פירוט
+      // if (!invoice.detail || invoice.detail.trim() === '') {
+      //   toast.error(`חשבונית מספר ${invoiceNumber}: חסר פירוט החשבונית`, {
+      //     className: "sonner-toast error rtl",
+      //   });
+      //   return;
+      // }
+
+      // בדיקת סטטוס
+      if (!invoice.status) {
+        toast.error(`חשבונית מספר ${invoiceNumber}: חסר סטטוס החשבונית`, {
+          className: "sonner-toast error rtl",
+        });
+        return;
+      }
+
+      // בדיקת סטטוס תשלום
+      if (!invoice.paid) {
+        toast.error(
+          `חשבונית מספר ${invoiceNumber}: לא צוין אם החשבונית שולמה`,
+          {
+            className: "sonner-toast error rtl",
+          }
+        );
+        return;
+      }
+
+      // בדיקה מיוחדת: אם החשבונית שולמה, חייב להיות תאריך תשלום
+      if (
+        invoice.paid === "כן" &&
+        (!invoice.paymentDate || invoice.paymentDate === "")
+      ) {
+        toast.error(
+          `חשבונית מספר ${invoiceNumber}: חשבונית מסומנת כשולמה אך חסר תאריך תשלום`,
+          {
+            className: "sonner-toast error rtl",
+          }
+        );
+        return;
       }
     }
-    return true;
-  } catch (err) {
-    console.error('Error checking duplicate invoices:', err);
-    console.error('Error details:', err.response?.data);
-    
-    // ✅ הצגת השגיאה המדויקת מהשרת
-    if (err.response?.data?.message) {
-      toast.error(`שגיאה בבדיקה: ${err.response.data.message}`, {
-        className: "sonner-toast error rtl",
-      });
-    } else {
-      toast.error("שגיאה בבדיקת כפילות חשבוניות - בדוק את החיבור לשרת", {
-        className: "sonner-toast error rtl",
-      });
-    }
-    return false;
-  }
-};
 
-
-
-// תיקון בפונקציית handleSubmit:
-const handleSubmit = async (e) => {
-  e.preventDefault();
-
-  console.log('🔍 Starting validation...');
-  
-  // בדיקה בסיסית שכל החשבוניות מלאות
- for (let i = 0; i < invoices.length; i++) {
-  const invoice = invoices[i];
-  const invoiceNumber = i + 1; // מספר החשבונית בממשק
-
-  // בדיקת מספר חשבונית
-  if (!invoice.invoiceNumber) {
-    toast.error(`חשבונית מספר ${invoiceNumber}: חסר מספר חשבונית`, {
-      className: "sonner-toast error rtl",
-    });
-    return;
-  }
-
-  // בדיקת שם ספק
-  if (!invoice.invitingName) {
-    toast.error(`חשבונית מספר ${invoiceNumber}: חסר שם ספק`, {
-      className: "sonner-toast error rtl",
-    });
-    return;
-  }
-
-  // בדיקת ID ספק
-  if (!invoice.supplierId) {
-    toast.error(`חשבונית מספר ${invoiceNumber}: חסר זיהוי ספק (בחר ספק מהרשימה)`, {
-      className: "sonner-toast error rtl",
-    });
-    return;
-  }
-
-  // בדיקת תאריך יצירה
-  if (!invoice.createdAt) {
-    toast.error(`חשבונית מספר ${invoiceNumber}: חסר תאריך יצירת החשבונית`, {
-      className: "sonner-toast error rtl",
-    });
-    return;
-  }
-
-  // בדיקת סכום
-  if (!invoice.sum || invoice.sum <= 0) {
-    toast.error(`חשבונית מספר ${invoiceNumber}: חסר סכום או שהסכום לא תקין`, {
-      className: "sonner-toast error rtl",
-    });
-    return;
-  }
-
-  // בדיקת פירוט
-  // if (!invoice.detail || invoice.detail.trim() === '') {
-  //   toast.error(`חשבונית מספר ${invoiceNumber}: חסר פירוט החשבונית`, {
-  //     className: "sonner-toast error rtl",
-  //   });
-  //   return;
-  // }
-
-  // בדיקת סטטוס
-  if (!invoice.status) {
-    toast.error(`חשבונית מספר ${invoiceNumber}: חסר סטטוס החשבונית`, {
-      className: "sonner-toast error rtl",
-    });
-    return;
-  }
-
-  // בדיקת סטטוס תשלום
-  if (!invoice.paid) {
-    toast.error(`חשבונית מספר ${invoiceNumber}: לא צוין אם החשבונית שולמה`, {
-      className: "sonner-toast error rtl",
-    });
-    return;
-  }
-
-  // בדיקה מיוחדת: אם החשבונית שולמה, חייב להיות תאריך תשלום
-  if (invoice.paid === "כן" && (!invoice.paymentDate || invoice.paymentDate === "")) {
-    toast.error(`חשבונית מספר ${invoiceNumber}: חשבונית מסומנת כשולמה אך חסר תאריך תשלום`, {
-      className: "sonner-toast error rtl",
-    });
-    return;
-  }
-}
-
-  const isValid = await validateUniqueInvoiceNumbers();
-  console.log('🔍 Validation result:', isValid);
-  
-  if (!isValid) {
-    console.log('❌ Validation failed - stopping submission');
-    setIsLoading(false);
-    return;
-  }
-
-  console.log('✅ Validation passed - proceeding with submission');
-  
-  setIsLoading(true);
-  
-  try {
-    const invoiceData = await Promise.all(
-      invoices.map(async (invoice) => {
-        // העלאת קבצים
-        let uploadedFiles = [];
-
-        if (invoice.files && invoice.files.length > 0) {
-          for (const fileData of invoice.files) {
-            if (fileData.isLocal) {
-              try {
-                const formData = new FormData();
-                formData.append("file", fileData.file);
-                formData.append("folder", "invoices");
-
-                const uploadResponse = await api.post("/upload", formData, {
-                  headers: { "Content-Type": "multipart/form-data" },
-                });
-
-                uploadedFiles.push({
-                  name: fileData.name,
-                  url: uploadResponse.data.url,
-                  type: fileData.type,
-                  size: fileData.size,
-                  publicId: uploadResponse.data.publicId,
-                  resourceType: uploadResponse.data.resourceType,
-                });
-              } catch (uploadError) {
-                console.error("Error uploading file:", uploadError);
-                toast.error(`שגיאה בהעלאת ${fileData.name}`, {
-                  className: "sonner-toast error rtl",
-                });
-              }
-            } else {
-              uploadedFiles.push(fileData);
-            }
-          }
-        }
-
-        // ✅ התיקון החשוב - הוסף את ה-supplierId!
-        return {
-          invoiceNumber: invoice.invoiceNumber,
-          projectName: selectedProject.name,
-          projectId: selectedProject._id,
-          sum: Number(invoice.sum),
-          status: invoice.status,
-          invitingName: invoice.invitingName,
-          detail: invoice.detail,
-          paid: invoice.paid,
-          files: uploadedFiles,
-          paymentDate: invoice.paid === "כן" ? formatHebrewDate(invoice.paymentDate) : null,
-          createdAt: invoice.createdAt,
-          supplierId: invoice.supplierId // ✅ זה הקו החשוב שחסר!
-        };
-      })
-    );
-
-    console.log("Prepared invoice data with supplier IDs:", invoiceData);
-
-    const response = await api.post(
-      "/invoices",
-      { invoices: invoiceData },
-      { headers: { "Content-Type": "application/json" } }
-    );
-
-    toast.success("החשבונית/ות נוצרו בהצלחה!", {
-      className: "sonner-toast success rtl",
-    });
-    navigate("/invoices");
-  } catch (err) {
-    console.error("שגיאה במהלך יצירת החשבונית/יות:", err);
-    
-    if (err.response?.status === 409 || err.response?.data?.message?.includes('כבר קיימת חשבונית')) {
-      console.log('🔍 Duplicate error already handled by validation');
+    const isValid = await validateUniqueInvoiceNumbers();
+    if (!isValid) {
+      setIsLoading(false);
       return;
     }
 
-    if (err.response?.data?.message) {
-      toast.error(`שגיאה: ${err.response.data.message}`, {
-        className: "sonner-toast error rtl",
+    setIsLoading(true);
+
+    try {
+      const invoiceData = await Promise.all(
+        invoices.map(async (invoice) => {
+          let uploadedFiles = [];
+
+          // העלאת קבצים לקלאודינרי רק עכשיו!
+          if (invoice.files && invoice.files.length > 0) {
+            for (const fileData of invoice.files) {
+              // בדיקה אם זה קובץ מקומי שצריך להעלות
+              if (fileData.isLocal && fileData.file) {
+                try {
+                  console.log(`מעלה קובץ: ${fileData.name}`);
+
+                  const formData = new FormData();
+                  formData.append("file", fileData.file);
+                  formData.append("folder", fileData.folder || "invoices");
+
+                  const uploadResponse = await api.post("/upload", formData, {
+                    headers: { "Content-Type": "multipart/form-data" },
+                  });
+
+                  // הקובץ הועלה בהצלחה
+                  uploadedFiles.push({
+                    name: fileData.name,
+                    url: uploadResponse.data.file.url,
+                    type: fileData.type,
+                    size: fileData.size,
+                    publicId: uploadResponse.data.file.publicId,
+                    resourceType: uploadResponse.data.file.resourceType,
+                  });
+
+                  console.log(`✅ קובץ ${fileData.name} הועלה בהצלחה`);
+                } catch (uploadError) {
+                  console.error("Error uploading file:", uploadError);
+                  toast.error(`שגיאה בהעלאת ${fileData.name}`, {
+                    className: "sonner-toast error rtl",
+                  });
+                  throw uploadError; // עצור את התהליך אם יש שגיאה
+                }
+              } else {
+                // קובץ שכבר הועלה (אם יש כאלה)
+                uploadedFiles.push(fileData);
+              }
+            }
+          }
+
+          return {
+            invoiceNumber: invoice.invoiceNumber,
+            projectName: selectedProject.name,
+            projectId: selectedProject._id,
+            sum: Number(invoice.sum),
+            status: invoice.status,
+            invitingName: invoice.invitingName,
+            detail: invoice.detail,
+            paid: invoice.paid,
+            files: uploadedFiles, // הקבצים שהועלו עכשיו
+            paymentDate:
+              invoice.paid === "כן"
+                ? formatHebrewDate(invoice.paymentDate)
+                : null,
+            createdAt: invoice.createdAt,
+            supplierId: invoice.supplierId,
+          };
+        })
+      );
+
+      console.log("✅ כל הקבצים הועלו, שולח נתונים לשרת...");
+
+      const response = await api.post(
+        "/invoices",
+        { invoices: invoiceData },
+        { headers: { "Content-Type": "application/json" } }
+      );
+
+      toast.success("החשבונית/ות נוצרו בהצלחה!", {
+        className: "sonner-toast success rtl",
       });
-    } else {
-      toast.error("שגיאה ביצירת החשבונית - אנא נסה שוב", {
-        className: "sonner-toast error rtl",
-      });
+      navigate("/invoices");
+    } catch (err) {
+      console.error("שגיאה במהלך יצירת החשבונית/יות:", err);
+
+      // אם יש שגיאה, כדאי לנקות קבצים שכבר הועלו (אופציונלי)
+
+      if (err.response?.data?.message) {
+        toast.error(`שגיאה: ${err.response.data.message}`, {
+          className: "sonner-toast error rtl",
+        });
+      } else {
+        toast.error("שגיאה ביצירת החשבונית - אנא נסה שוב", {
+          className: "sonner-toast error rtl",
+        });
+      }
+    } finally {
+      setIsLoading(false);
     }
-  } finally {
-    setIsLoading(false);
-  }
-};
+  };
 
   const openInExcelViewer = (fileUrl) => {
     const officeUrl = `https://view.officeapps.live.com/op/view.aspx?src=${encodeURIComponent(
@@ -412,13 +434,29 @@ const handleSubmit = async (e) => {
   };
 
   const renderFile = (file) => {
+    // בדיקה אם זה קובץ מקומי או שכבר הועלה
     const fileUrl = file?.url || file?.fileUrl;
+    const isLocal = file?.isLocal || false;
 
     if (!fileUrl) return null;
 
+    // אם זה קובץ מקומי, הצג רק את השם
+    if (isLocal) {
+      return (
+        <div className="flex items-center gap-2">
+          <span className="text-gray-600 text-sm">
+            📄 {file.name} ({(file.size / 1024).toFixed(1)} KB)
+          </span>
+          <span className="text-orange-500 text-xs font-bold">
+            (יועלה בשמירה)
+          </span>
+        </div>
+      );
+    }
+
+    // אם הקובץ כבר הועלה, הצג כרגיל
     const fileExtension = fileUrl.split(".").pop().toLowerCase();
 
-    // בדיקה אם הקובץ הוא XLSX
     if (fileExtension === "xlsx") {
       return (
         <div>
@@ -432,11 +470,9 @@ const handleSubmit = async (e) => {
       );
     }
 
-    // אם הקובץ הוא PDF
     if (fileExtension === "pdf") {
       return (
         <div>
-          {/* <embed src={fileUrl} type="application/pdf" width="100%" height="600px" /> */}
           <a
             href={fileUrl}
             target="_blank"
@@ -449,11 +485,9 @@ const handleSubmit = async (e) => {
       );
     }
 
-    // אם הקובץ הוא תמונה
     if (fileUrl.match(/\.(jpeg|jpg|png|gif)$/)) {
       return (
         <div>
-          {/* <img src={fileUrl} alt="Invoice File" className="w-full max-w-lg mx-auto rounded-lg shadow-md" /> */}
           <a
             href={fileUrl}
             target="_blank"
@@ -466,10 +500,8 @@ const handleSubmit = async (e) => {
       );
     }
 
-    // אם הקובץ הוא סוג אחר
     return (
       <div>
-        {/* <iframe src={fileUrl} className="w-full max-w-lg h-96 mx-auto" title="Document Preview"></iframe> */}
         <a
           href={fileUrl}
           target="_blank"
@@ -481,11 +513,43 @@ const handleSubmit = async (e) => {
       </div>
     );
   };
-  const handleRemoveFile = (invoiceIndex, fileIndex) => {
-    const newInvoices = [...invoices];
-    newInvoices[invoiceIndex].files.splice(fileIndex, 1);
-    setInvoices(newInvoices);
-  };
+  const handleRemoveFile = async (invoiceIndex, fileIndex) => {
+    const fileToDelete = invoices[invoiceIndex].files[fileIndex];
+    
+    // בדיקה שהקובץ קיים
+    if (!fileToDelete) {
+        toast.error("קובץ לא נמצא");
+        return;
+    }
+    
+    // אם זה קובץ מקומי, פשוט תסיר מהמערך
+    if (fileToDelete.isLocal) {
+        const newInvoices = [...invoices];
+        newInvoices[invoiceIndex].files.splice(fileIndex, 1);
+        setInvoices(newInvoices);
+        
+        // נקה את ה-URL הזמני
+        if (fileToDelete.url) {
+            URL.revokeObjectURL(fileToDelete.url);
+        }
+        
+        toast.success("הקובץ הוסר מהרשימה");
+        return;
+    }
+    
+    // אם זה קובץ שכבר הועלה, מחק מהשרת
+    try {
+        await api.delete(`/upload/${fileToDelete._id}`);
+        
+        const newInvoices = [...invoices];
+        newInvoices[invoiceIndex].files.splice(fileIndex, 1);
+        setInvoices(newInvoices);
+        
+        toast.success("הקובץ נמחק בהצלחה");
+    } catch (error) {
+        toast.error("שגיאה במחיקת הקובץ");
+    }
+};
 
   return (
     <div className="mt-10 bg-gray-300 p-8 rounded-lg shadow-xl w-full max-w-5xl ">
@@ -542,50 +606,57 @@ const handleSubmit = async (e) => {
           className="bg-white p-6 rounded-xl shadow-xl mb-8 hover:shadow-2xl transition-shadow duration-300"
         >
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-     <div className="space-y-2">
-<SupplierSelector
-  label="שם הספק"
-  value={invoice.invitingName}
-  onChange={(supplier) => {
-    console.log('🔍 Raw supplier data:', supplier);
-    
-    const newInvoices = [...invoices];
-    newInvoices[index] = {
-      ...newInvoices[index],
-      invitingName: supplier?.name || supplier?.supplierName || '',
-      supplierId: supplier?._id || supplier?.id || '' // ✅ וודא שזה נשמר!
-    };
-    setInvoices(newInvoices);
-    
-    console.log('🔍 After update - invoice with supplier:', newInvoices[index]);
-  }}
-  placeholder="בחר ספק מהרשימה..."
-  required={true}
-/>
+            <div className="space-y-2">
+              <SupplierSelector
+                label="שם הספק"
+                value={invoice.invitingName}
+                onChange={(supplier) => {
+                  console.log("🔍 Raw supplier data:", supplier);
 
- {/* כפתור ליצירת ספק חדש */}
-   <div className="flex justify-center mt-3">
-    <button
-      type="button"
-      onClick={() => {
-        // שמירת הנתונים הנוכחיים ב-localStorage
-        localStorage.setItem('tempProjectData', JSON.stringify({
-          name,
-          // Contact_person
-        }));
-        
-        // מעבר לדף יצירת ספק עם פרמטר חזרה
-        navigate('/create-supplier?returnTo=/create-project');
-      }}
-      className="px-4 py-2 bg-gray-400 text-sm text-black font-bold rounded-xl hover:bg-gray-900 hover:text-white transition-colors flex items-center gap-2"
-    >
-      <span>➕</span>
-      <span>אין ספק ברשימה? צור ספק חדש</span>
-    </button>
-  </div>
-</div>
+                  const newInvoices = [...invoices];
+                  newInvoices[index] = {
+                    ...newInvoices[index],
+                    invitingName:
+                      supplier?.name || supplier?.supplierName || "",
+                    supplierId: supplier?._id || supplier?.id || "", // ✅ וודא שזה נשמר!
+                  };
+                  setInvoices(newInvoices);
 
-{/* <div className="space-y-2">
+                  console.log(
+                    "🔍 After update - invoice with supplier:",
+                    newInvoices[index]
+                  );
+                }}
+                placeholder="בחר ספק מהרשימה..."
+                required={true}
+              />
+
+              {/* כפתור ליצירת ספק חדש */}
+              <div className="flex justify-center mt-3">
+                <button
+                  type="button"
+                  onClick={() => {
+                    // שמירת הנתונים הנוכחיים ב-localStorage
+                    localStorage.setItem(
+                      "tempProjectData",
+                      JSON.stringify({
+                        name,
+                        // Contact_person
+                      })
+                    );
+
+                    // מעבר לדף יצירת ספק עם פרמטר חזרה
+                    navigate("/create-supplier?returnTo=/create-project");
+                  }}
+                  className="px-4 py-2 bg-gray-400 text-sm text-black font-bold rounded-xl hover:bg-gray-900 hover:text-white transition-colors flex items-center gap-2"
+                >
+                  <span>➕</span>
+                  <span>אין ספק ברשימה? צור ספק חדש</span>
+                </button>
+              </div>
+            </div>
+
+            {/* <div className="space-y-2">
   <label className="block text-slate-700 font-semibold">
     איש קשר:
   </label>
@@ -645,7 +716,7 @@ const handleSubmit = async (e) => {
               />
             </div>
 
-              <div className="space-y-2">
+            <div className="space-y-2">
               <label className="block text-slate-700 font-semibold">
                 תאריך יצירת החשבונית:
               </label>
@@ -719,36 +790,37 @@ const handleSubmit = async (e) => {
                 label="העלה קבצי חשבונית"
               />
 
-              {/* Display uploaded files */}
-              <div className="col-span-3">
-                {invoice.files && invoice.files.length > 0 ? (
-                  <div className="mt-4 space-y-4">
-                    {invoice.files.map((file, index) => (
-                      <div
-                        key={index}
-                        className="text-center flex items-center justify-center"
-                      >
-                        <p className="font-bold text-xl mr-2 ml-5">
-                          קובץ {index + 1} :
-                        </p>
-                        {renderFile(file)} {/* הצגת הקובץ */}
-                        <button
-                          onClick={() => handleRemoveFile(index, invoice.file)}
-                          className="text-xl font-bold mr-6 mt-2"
-                        >
-                          ❌ הסר
-                        </button>
-                      </div>
-                    ))}
-                  </div>
-                ) : (
-                  <div className="flex justify-center">
-                    <p className="text-gray-700 bg-white w-44 p-2 mt-10 text-center text-lg rounded-2xl">
-                      אין קבצים להצגה
-                    </p>
-                  </div>
-                )}
-              </div>
+           {/* Display uploaded files */}
+<div className="col-span-3">
+  {invoice.files && invoice.files.length > 0 ? (
+    <div className="mt-4 space-y-4">
+      {invoice.files.map((file, fileIndex) => ( // ✅ שינוי השם ל-fileIndex
+       <div
+       key={fileIndex}
+       className="text-center flex items-center justify-center"
+       >
+          {console.log(file)}
+          <p className="font-bold text-xl mr-2 ml-5">
+            קובץ {fileIndex + 1} :
+          </p>
+          {renderFile(file)}
+          <button
+            onClick={() => handleRemoveFile(index, fileIndex)} // ✅ עכשיו נכון!
+            className="text-xl font-bold mr-6 mt-2"
+          >
+            ❌ הסר
+          </button>
+        </div>
+      ))}
+    </div>
+  ) : (
+    <div className="flex justify-center">
+      <p className="text-gray-700 bg-white w-44 p-2 mt-10 text-center text-lg rounded-2xl">
+        אין קבצים להצגה
+      </p>
+    </div>
+  )}
+</div>
             </div>
           </div>
 

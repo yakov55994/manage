@@ -74,34 +74,42 @@ const CreateOrder = () => {
     setOrders(newOrders);
   };
 
-  const handleOrderUpload = (index, uploadedFiles) => {
-    console.log("Files received in handleOrderUpload:", uploadedFiles);
+  // 1. שינוי פונקציית handleOrderUpload - העלאה מקומית בלבד
+const handleOrderUpload = (index, selectedFiles) => {
+  console.log("Files selected for order:", selectedFiles);
 
-    if (!uploadedFiles || uploadedFiles.length === 0) {
-      toast.info('לא נבחר קובץ', { className: "sonner-toast info rtl" });
-      return;
-    }
+  if (!selectedFiles || selectedFiles.length === 0) {
+    toast.info('לא נבחרו קבצים', { className: "sonner-toast info rtl" });
+    return;
+  }
 
-    const newOrders = [...orders];
+  const newOrders = [...orders];
 
-    // Initialize files array if it doesn't exist
-    if (!newOrders[index].files) {
-      newOrders[index].files = [];
-    }
+  // Initialize files array if it doesn't exist
+  if (!newOrders[index].files) {
+    newOrders[index].files = [];
+  }
 
-    // Add new files to the order's files array, avoid duplicates
-    const updatedFiles = [
-      ...newOrders[index].files,
-      ...uploadedFiles.filter(file => !newOrders[index].files.some(f => f.name === file.name))
-    ];
+  // ✅ הוסף קבצים מקומיים בלבד (כמו בחשבוניות)
+  const updatedFiles = [
+    ...newOrders[index].files,
+    ...selectedFiles.filter(file => 
+      !newOrders[index].files.some(f => f.name === file.name)
+    )
+  ];
 
-    newOrders[index] = {
-      ...newOrders[index],
-      files: updatedFiles
-    };
-
-    setOrders(newOrders);
+  newOrders[index] = {
+    ...newOrders[index],
+    files: updatedFiles
   };
+
+  setOrders(newOrders);
+
+  // ✅ הודעה שהקבצים יועלו בשמירה (כמו בחשבוניות)
+  toast.success(`${selectedFiles.length} קבצים נבחרו (יועלו בעת השמירה)`, {
+    className: "sonner-toast success rtl",
+  });
+};
   const validateOrder = (order) => {
     const requiredFields = ['orderNumber', 'detail', 'sum', 'status', 'invitingName', 'Contact_person', 'createdAt'];
     return requiredFields.every(field => !!order[field]);
@@ -203,65 +211,95 @@ const validateSubmission = () => {
 
   return true;
 };
+const handleSubmit = async (e) => {
+  e.preventDefault();
 
-  const handleSubmit = async (e) => {
-    e.preventDefault();
+  if (!validateSubmission()) {
+    return;
+  }
 
-    if (!validateSubmission()) {
-      return;
-    }
+  setIsLoading(true);
+  try {
+    // שלב 1: העלאת כל הקבצים ל-Cloudinary (רק קבצים מקומיים)
+    const orderData = await Promise.all(
+      orders.map(async (order) => {
+        let uploadedFiles = [];
 
-    setIsLoading(true);
-    try {
-      // הכנת נתוני ההזמנות
-      const orderData = orders.map((order) => ({
-        orderNumber: order.orderNumber,
-        projectName: selectedProject.name,
-        projectId: selectedProject._id,
-        sum: Number(order.sum),
-        status: order.status,
-        invitingName: order.invitingName,
-        detail: order.detail,
-        files: order.files && order.files.length > 0
-          ? order.files.map(file => ({
-            _id: file._id,
-            name: file.name || '',
-            url: file.url || '',
-            type: file.type || 'application/octet-stream',
-            size: file.size || 0,
-            folder: file.folder
-          }))
-          : [],
+        if (order.files && order.files.length > 0) {
+          for (const fileData of order.files) {
+            if (fileData.isLocal && fileData.file) {
+              try {
+                const formData = new FormData();
+                formData.append("file", fileData.file);
+                formData.append("folder", fileData.folder || "orders");
+
+                const uploadResponse = await api.post("/upload", formData, {
+                  headers: { "Content-Type": "multipart/form-data" },
+                });
+
+                uploadedFiles.push({
+                  name: fileData.name,
+                  url: uploadResponse.data.file.url,
+                  type: fileData.type,
+                  size: fileData.size,
+                  publicId: uploadResponse.data.file.publicId,
+                  resourceType: uploadResponse.data.file.resourceType,
+                });
+              } catch (uploadError) {
+                toast.error(`שגיאה בהעלאת ${fileData.name}`, {
+                  className: "sonner-toast error rtl",
+                });
+                throw uploadError;
+              }
+            } else {
+              uploadedFiles.push(fileData);
+            }
+          }
+        }
+
+        return {
+          orderNumber: order.orderNumber,
+          projectName: selectedProject.name,
+          projectId: selectedProject._id,
+          sum: Number(order.sum),
+          status: order.status,
+          invitingName: order.invitingName,
+          detail: order.detail,
+          files: uploadedFiles,
           Contact_person: order.Contact_person,
-          createdAt: order.createdAt
-      }));
+          createdAt: order.createdAt,
+        };
+      })
+    );
 
-      // יצירת ההזמנה
-      const response = await api.post(
-        '/orders',
-        { orders: orderData },
-        { headers: { 'Content-Type': 'application/json' } }
-      );
+    // שלב 2: שליחת כל ההזמנות לשרת
+    const response = await api.post(
+      '/orders',
+      { orders: orderData },
+      { headers: { 'Content-Type': 'application/json' } }
+    );
 
-      toast.success('ההזמנה/ות נוצרו בהצלחה!', {
-        className: "sonner-toast success rtl"
-      });
-      navigate('/orders');
+    toast.success('ההזמנה/ות נוצרו בהצלחה!', {
+      className: "sonner-toast success rtl"
+    });
+    navigate('/orders');
+    setOrders([]); // ניקוי הזמנות לאחר שליחה מוצלחת
 
-      // כעת נבצע את העלאת הקבצים ל-Cloudinary עבור כל הזמנה
-      // ניקוי נתוני ההזמנות
-      setOrders([]);
-
-    } catch (err) {
-      console.error(err);  // הוסף את זה כדי לראות את כל פרטי השגיאה בקונסול
-      const errorMessage = err.response?.data?.error;
-      toast.error(errorMessage, {
+  } catch (err) {
+    console.error("שגיאה במהלך יצירת ההזמנה/ות:", err);
+    if (err.response?.data?.message) {
+      toast.error(`שגיאה: ${err.response.data.message}`, {
         className: "sonner-toast error rtl"
       });
-    } finally {
-      setIsLoading(false);
+    } else {
+      toast.error("שגיאה ביצירת ההזמנה - אנא נסה שוב", {
+        className: "sonner-toast error rtl"
+      });
     }
-  };
+  } finally {
+    setIsLoading(false);
+  }
+};
 
   const handleRemoveFile = (orderIndex, fileIndex) => {
     const newOrders = [...orders];

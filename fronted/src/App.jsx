@@ -79,7 +79,6 @@ const AppContent = () => {
           {/* מציג כפתור התחברות או התנתקות */}
           <div className="flex items-center justify-center gap-4 mb-14">
   <h1 className="text-xl font-bold">✨ סטטוס מצב חיבור: </h1>
-  <h1 className='font-bold text-2xl'>בדיקה</h1>
   <b className={`text-lg border-b-4 px-1 
     ${isLogin ? 'text-green-800 border-green-500' : 'text-red-700 border-red-800'} 
     inline-block w-fit`}>

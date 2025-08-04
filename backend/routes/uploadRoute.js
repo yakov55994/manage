@@ -30,6 +30,62 @@ cloudinary.v2.config({
     api_secret: process.env.CLOUDINARY_API_SECRET
 });
 
+// Routes לפי סדר חשיבות - הספציפי לפני הכללי!
+
+router.delete('/delete-cloudinary', async (req, res) => {
+  try {
+    console.log('🗑️ בקשת מחיקה מ-Cloudinary התקבלה:', req.body);
+    
+    const { publicId, resourceType } = req.body;
+    
+    if (!publicId) {
+      console.log('❌ חסר publicId');
+      return res.status(400).json({ 
+        error: 'publicId is required',
+        received: req.body 
+      });
+    }
+
+    console.log(`🔍 מנסה למחוק קובץ עם publicId: ${publicId}`);
+    console.log(`📂 resourceType: ${resourceType || 'auto'}`);
+
+    // מחיקה ישירה מ-Cloudinary (ללא נגיעה בDB!)
+    const result = await cloudinary.v2.uploader.destroy(publicId, {
+      resource_type: resourceType || 'raw'
+    });
+
+    console.log('✅ תוצאת מחיקה מ-Cloudinary:', result);
+
+    if (result.result === 'ok') {
+      res.json({ 
+        success: true, 
+        message: 'קובץ נמחק בהצלחה מ-Cloudinary',
+        result: result 
+      });
+    } else if (result.result === 'not found') {
+      res.json({ 
+        success: true, 
+        message: 'הקובץ לא נמצא ב-Cloudinary (אולי כבר נמחק)',
+        result: result 
+      });
+    } else {
+      res.status(400).json({ 
+        success: false, 
+        error: 'מחיקה נכשלה',
+        result: result 
+      });
+    }
+
+  } catch (error) {
+    console.error('❌ שגיאה במחיקת קובץ מ-Cloudinary:', error);
+    res.status(500).json({ 
+      error: 'שגיאה במחיקת הקובץ מ-Cloudinary',
+      details: error.message 
+    });
+  }
+});
+
+// 2. העלאת קובץ זמני
 router.post('/temporary', upload.single('file'), (req, res) => {
     if (!req.file) return res.status(400).json({ error: 'לא נבחר קובץ' });
 
@@ -40,17 +96,14 @@ router.post('/temporary', upload.single('file'), (req, res) => {
     });
 });
 
+// 3. העלאת קובץ ל-Cloudinary ושמירה ב-DB
 router.post('/', upload.single('file'), async (req, res) => {
     try {
         if (!req.file) return res.status(400).json({ error: 'לא נבחר קובץ' });
 
-        const folder = req.body.folder;
-        if (!['orders', 'invoices'].includes(folder)) {
-            await fs.unlink(req.file.path); // מחיקת קובץ במידה ויש שגיאה
-            return res.status(400).json({ error: 'יש לבחור תיקייה תקינה (orders או invoices)' });
-        }
-
+        const folder = req.body.folder || 'general'; // ברירת מחדל
         const { originalname: fileName, path: filePath, mimetype, size } = req.file;
+        
         const result = await cloudinary.v2.uploader.upload(filePath, {
             folder,
             resource_type: 'raw' // לא להסתמך על סוג אוטומטי
@@ -78,6 +131,30 @@ router.post('/', upload.single('file'), async (req, res) => {
         if (req.file && req.file.path) await fs.unlink(req.file.path).catch(() => {});
         res.status(500).json({ error: 'שגיאה בהעלאה', details: error.message });
     }
+});
+
+// 4. מחיקת קובץ לפי ID (מ-DB ומ-Cloudinary)
+router.delete('/:fileId', async (req, res) => {
+  try {
+    const file = await File.findById(req.params.fileId);
+    if (!file) return res.status(404).json({ error: 'קובץ לא נמצא במסד' });
+
+    const result = await cloudinary.v2.uploader.destroy(file.publicId, {
+      resource_type: file.resourceType || 'raw'
+    });
+
+    // בדיקה שתוצאת Cloudinary תקינה
+    if (result.result !== 'ok' && result.result !== 'not found') {
+      throw new Error(`מחיקה מקלאודינרי נכשלה: ${result.result}`);
+    }
+
+    await File.findByIdAndDelete(req.params.fileId);
+
+    res.json({ message: 'הקובץ נמחק מהמערכת ומ־Cloudinary בהצלחה', cloudinary: result });
+  } catch (error) {
+    console.error('❌ שגיאה במחיקת קובץ:', error);
+    res.status(500).json({ error: 'שגיאה במחיקת הקובץ', details: error.message });
+  }
 });
 
 export default router;

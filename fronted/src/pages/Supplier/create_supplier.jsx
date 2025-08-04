@@ -4,6 +4,7 @@ import api from "../../api/api";
 import { toast } from "sonner";
 import { UserPlus } from "lucide-react";
 import BankSelector from "../../Components/BankSelector";
+import Select from 'react-select'; // הוסף את זה
 import banksData from "../../../public/data/banks_and_branches.json";
 
 const CreateSupplier = () => {
@@ -239,27 +240,74 @@ const CreateSupplier = () => {
               />
             </div>
 
-            {/* דרופדאון לסניפים */}
+            {/* החלף את ה-select ב-Select של react-select */}
             {supplier.bankDetails.bankObj &&
               supplier.bankDetails.bankObj.branches?.length > 0 && (
                 <div className="space-y-2">
                   <label className="block text-slate-700 font-semibold">
                     בחר סניף:
                   </label>
-                  <select
-                    value={supplier.bankDetails.branchNumber}
-                    onChange={(e) =>
-                      handleBankDetailsChange("branchNumber", e.target.value)
+                  <Select
+                    options={supplier.bankDetails.bankObj.branches.map(branch => ({
+                      value: branch.branchCode,
+                      label: `${branch.branchCode} - ${branch.city} - ${branch.address}`,
+                      city: branch.city,
+                      address: branch.address,
+                      branchCode: branch.branchCode
+                    }))}
+                    value={
+                      supplier.bankDetails.bankObj.branches
+                        .map(branch => ({
+                          value: branch.branchCode,
+                          label: `${branch.branchCode} - ${branch.city} - ${branch.address}`
+                        }))
+                        .find(opt => opt.value === supplier.bankDetails.branchNumber) || null
                     }
-                    className="w-full p-3 border-2 border-slate-200 rounded-lg focus:ring-2 focus:ring-slate-500 transition-all"
-                  >
-                    <option value="">-- בחר סניף --</option>
-                    {supplier.bankDetails.bankObj.branches.map((branch) => (
-                      <option key={branch.branchCode} value={branch.branchCode}>
-                        {branch.branchCode} - {branch.city} - {branch.address}
-                      </option>
-                    ))}
-                  </select>
+                    onChange={(selected) =>
+                      handleBankDetailsChange("branchNumber", selected?.value || "")
+                    }
+                    placeholder="-- בחר סניף או הקלד לחיפוש --"
+                    isClearable
+                    isSearchable={true}
+                    filterOption={(option, inputValue) => {
+                      if (!inputValue) return true;
+                      const searchTerm = inputValue.toLowerCase();
+                      return (
+                        option.data.city.toLowerCase().includes(searchTerm) ||
+                        option.data.address.toLowerCase().includes(searchTerm) ||
+                        option.data.branchCode.toLowerCase().includes(searchTerm)
+                      );
+                    }}
+                    styles={{
+                      control: (provided) => ({ 
+                        ...provided, 
+                        minHeight: 48, // להתאים לגובה הקיים
+                        padding: '4px',
+                        borderWidth: '2px',
+                        borderColor: '#e2e8f0', // border-slate-200
+                        borderRadius: '8px', // rounded-lg
+                        '&:focus-within': {
+                          borderColor: '#64748b', // focus:ring-slate-500
+                          boxShadow: '0 0 0 2px rgba(100, 116, 139, 0.2)'
+                        }
+                      }),
+                      menu: (provided) => ({
+                        ...provided,
+                        maxHeight: 200,
+                        overflowY: 'auto'
+                      }),
+                      option: (provided, state) => ({
+                        ...provided,
+                        fontSize: '14px',
+                        padding: '8px 12px',
+                        backgroundColor: state.isFocused ? '#f1f5f9' : 'white',
+                        color: '#334155'
+                      })
+                    }}
+                    noOptionsMessage={({ inputValue }) => 
+                      inputValue ? `לא נמצאו סניפים עבור "${inputValue}"` : 'לא נמצאו סניפים'
+                    }
+                  />
                 </div>
               )}
 

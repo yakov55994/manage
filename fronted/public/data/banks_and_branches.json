@@ -7589,5 +7589,2046 @@
         "address": "הרוקמים 26 "
       }
     ]
-  }
+  },
+  {
+  "bankCode": "09",
+  "bankName": "בנק הדואר",
+  "branches": [
+    {
+      "branchCode": "137",
+      "city": "ירושלים",
+      "address": "ראבעה אל עדוויה 6"
+    },
+    {
+      "branchCode": "165",
+      "city": "אבו גוש",
+      "address": "דרך השלום 37"
+    },
+    {
+      "branchCode": "660",
+      "city": "אביחיל",
+      "address": "אביחיל"
+    },
+    {
+      "branchCode": "417",
+      "city": "תל אביב – יפו",
+      "address": "אבן גבירול 170"
+    },
+    {
+      "branchCode": "637",
+      "city": "נתניה",
+      "address": "אגם כנרת 6"
+    },
+    {
+      "branchCode": "533",
+      "city": "חולון",
+      "address": "חנקין 48"
+    },
+    {
+      "branchCode": "380",
+      "city": "נס ציונה",
+      "address": "הפטיש 6"
+    },
+    {
+      "branchCode": "723",
+      "city": "אום אל-פחם",
+      "address": "שאגור 1"
+    },
+    {
+      "branchCode": "825",
+      "city": "אום אל-פחם",
+      "address": "רח' עומר בן אלחטאב"
+    },
+    {
+      "branchCode": "148",
+      "city": "אורנית",
+      "address": "אורנית"
+    },
+    {
+      "branchCode": "643",
+      "city": "פתח תקווה",
+      "address": "אורלוב זאב 5"
+    },
+    {
+      "branchCode": "715",
+      "city": "חיפה",
+      "address": "אורן 23"
+    },
+    {
+      "branchCode": "572",
+      "city": "אזור",
+      "address": "שפינוזה 2"
+    },
+    {
+      "branchCode": "346",
+      "city": "אשדוד",
+      "address": "העבודה 65"
+    },
+    {
+      "branchCode": "487",
+      "city": "הרצליה",
+      "address": "משכית 35"
+    },
+    {
+      "branchCode": "618",
+      "city": "כפר סבא",
+      "address": "יד חרוצים 4"
+    },
+    {
+      "branchCode": "655",
+      "city": "נתניה",
+      "address": "יד חרוצים 11"
+    },
+    {
+      "branchCode": "608",
+      "city": "רעננה",
+      "address": "המלאכה 2"
+    },
+    {
+      "branchCode": "538",
+      "city": "חולון",
+      "address": "אחד במאי 4"
+    },
+    {
+      "branchCode": "702",
+      "city": "חיפה",
+      "address": "שד מוריה 122"
+    },
+    {
+      "branchCode": "893",
+      "city": "טירת כרמל",
+      "address": "הרצל 39"
+    },
+    {
+      "branchCode": "951",
+      "city": "אכסאל",
+      "address": "אכסאל"
+    },
+    {
+      "branchCode": "812",
+      "city": "אעבלין",
+      "address": "אעבלין"
+    },
+    {
+      "branchCode": "974",
+      "city": "שפרעם",
+      "address": "שפרעם"
+    },
+    {
+      "branchCode": "361",
+      "city": "אלון מורה",
+      "address": "אלון מורה"
+    },
+    {
+      "branchCode": "191",
+      "city": "אלון שבות",
+      "address": "אלון שבות"
+    },
+    {
+      "branchCode": "490",
+      "city": "אלעד",
+      "address": "שמעון בן שטח 10"
+    },
+    {
+      "branchCode": "183",
+      "city": "אלפי מנשה",
+      "address": "גלבוע 116"
+    },
+    {
+      "branchCode": "758",
+      "city": "אום אל-פחם",
+      "address": "אלקודס 36"
+    },
+    {
+      "branchCode": "141",
+      "city": "אלקנה",
+      "address": "אלקנה"
+    },
+    {
+      "branchCode": "815",
+      "city": "אפק",
+      "address": "אפק"
+    },
+    {
+      "branchCode": "212",
+      "city": "אשקלון",
+      "address": "אורט 24"
+    },
+    {
+      "branchCode": "197",
+      "city": "אפרת",
+      "address": "אפרת"
+    },
+    {
+      "branchCode": "203",
+      "city": "באר שבע",
+      "address": "רח' הדסה 78"
+    },
+    {
+      "branchCode": "854",
+      "city": "באקה אל-גרביה",
+      "address": "אלקודס 27"
+    },
+    {
+      "branchCode": "482",
+      "city": "בארות יצחק",
+      "address": "בארות יצחק"
+    },
+    {
+      "branchCode": "786",
+      "city": "בועיינה-נוג'ידאת",
+      "address": "בועיינה-נוג'ידאת"
+    },
+    {
+      "branchCode": "892",
+      "city": "בוקעאתא",
+      "address": "בוקעאתא"
+    },
+    {
+      "branchCode": "641",
+      "city": "פתח תקווה",
+      "address": "ז'בוטינסקי 39"
+    },
+    {
+      "branchCode": "467",
+      "city": "הרצליה",
+      "address": "מדינת היהודים 85"
+    },
+    {
+      "branchCode": "371",
+      "city": "ביצרון",
+      "address": "ביצרון"
+    },
+    {
+      "branchCode": "807",
+      "city": "ביר אל-מכסור",
+      "address": "ביר אל-מכסור"
+    },
+    {
+      "branchCode": "164",
+      "city": "בית אל",
+      "address": "בית אל"
+    },
+    {
+      "branchCode": "374",
+      "city": "בית אריה",
+      "address": "הזית 1"
+    },
+    {
+      "branchCode": "779",
+      "city": "בית ג'ן",
+      "address": "בית ג'ן"
+    },
+    {
+      "branchCode": "574",
+      "city": "בית דגן",
+      "address": "בגין מנחם 9"
+    },
+    {
+      "branchCode": "661",
+      "city": "אבן יהודה",
+      "address": "בני בנימין 1"
+    },
+    {
+      "branchCode": "810",
+      "city": "אום אל-פחם",
+      "address": "אום אל-פחם"
+    },
+    {
+      "branchCode": "250",
+      "city": "אופקים",
+      "address": "גולומב 1"
+    },
+    {
+      "branchCode": "571",
+      "city": "אור יהודה",
+      "address": "סעדון אליהו 130"
+    },
+    {
+      "branchCode": "811",
+      "city": "אור עקיבא",
+      "address": "רוטשילד 18"
+    },
+    {
+      "branchCode": "200",
+      "city": "אילת",
+      "address": "שד התמרים 19"
+    },
+    {
+      "branchCode": "193",
+      "city": "אריאל",
+      "address": "יהודה 14"
+    },
+    {
+      "branchCode": "300",
+      "city": "אשדוד",
+      "address": "הרצל 1"
+    },
+    {
+      "branchCode": "210",
+      "city": "אשקלון",
+      "address": "הרצל 18"
+    },
+    {
+      "branchCode": "819",
+      "city": "באקה אל-גרביה",
+      "address": "אלח'ולפאא אלראשדון 27"
+    },
+    {
+      "branchCode": "220",
+      "city": "באר שבע",
+      "address": "שד רגר יצחק 9"
+    },
+    {
+      "branchCode": "955",
+      "city": "בית שאן",
+      "address": "ירושלים הבירה 1"
+    },
+    {
+      "branchCode": "310",
+      "city": "בית שמש",
+      "address": "בן צבי 24"
+    },
+    {
+      "branchCode": "503",
+      "city": "בני ברק",
+      "address": "בן גוריון דוד 11"
+    },
+    {
+      "branchCode": "818",
+      "city": "בנימינה",
+      "address": "המיסדים 35"
+    },
+    {
+      "branchCode": "516",
+      "city": "בת ים",
+      "address": "שד העצמאות 67"
+    },
+    {
+      "branchCode": "520",
+      "city": "גבעתיים",
+      "address": "הלמד הא 61"
+    },
+    {
+      "branchCode": "830",
+      "city": "דאלית אל-כרמל",
+      "address": "שייח חמוד נסראלדין"
+    },
+    {
+      "branchCode": "581",
+      "city": "לוד",
+      "address": "שד דוד המלך 1"
+    },
+    {
+      "branchCode": "251",
+      "city": "דימונה",
+      "address": "מ\"ג המעפילים 5"
+    },
+    {
+      "branchCode": "600",
+      "city": "הוד השרון",
+      "address": "דרך רמתים 45"
+    },
+    {
+      "branchCode": "326",
+      "city": "ראשון לציון",
+      "address": "הרצל 30"
+    },
+    {
+      "branchCode": "610",
+      "city": "הרצליה",
+      "address": "סוקולוב 68"
+    },
+    {
+      "branchCode": "835",
+      "city": "זכרון יעקב",
+      "address": "הנדיב 17"
+    },
+    {
+      "branchCode": "800",
+      "city": "חדרה",
+      "address": "הרברט סמואל 54"
+    },
+    {
+      "branchCode": "530",
+      "city": "חולון",
+      "address": "ההסתדרות 36"
+    },
+    {
+      "branchCode": "900",
+      "city": "טבריה",
+      "address": "כיכר רבין 1"
+    },
+    {
+      "branchCode": "492",
+      "city": "טירה",
+      "address": "טארק עבד אלחי 30"
+    },
+    {
+      "branchCode": "837",
+      "city": "טירת כרמל",
+      "address": "מלחמת ששת הימים 5"
+    },
+    {
+      "branchCode": "997",
+      "city": "טמרה",
+      "address": "טמרה"
+    },
+    {
+      "branchCode": "378",
+      "city": "יבנה",
+      "address": "שד דואני 46"
+    },
+    {
+      "branchCode": "839",
+      "city": "יקנעם עילית",
+      "address": "צאלים 3"
+    },
+    {
+      "branchCode": "634",
+      "city": "כוכב יאיר",
+      "address": "מרכז מסחרי, כוכב יאיר"
+    },
+    {
+      "branchCode": "675",
+      "city": "כפר יונה",
+      "address": "יחזקאל 1"
+    },
+    {
+      "branchCode": "620",
+      "city": "כפר סבא",
+      "address": "התחיה 7"
+    },
+    {
+      "branchCode": "969",
+      "city": "כרמיאל",
+      "address": "הגליל 8"
+    },
+    {
+      "branchCode": "973",
+      "city": "מגדל העמק",
+      "address": "הזית 5"
+    },
+    {
+      "branchCode": "397",
+      "city": "מודיעין-מכבים-רעות",
+      "address": "לב העיר 2"
+    },
+    {
+      "branchCode": "196",
+      "city": "מעלה אדומים",
+      "address": "דרך קדם 5"
+    },
+    {
+      "branchCode": "979",
+      "city": "מעלות-תרשיחא",
+      "address": "הרב קוק 14"
+    },
+    {
+      "branchCode": "254",
+      "city": "מצפה רמון",
+      "address": "שד בן גוריון 8"
+    },
+    {
+      "branchCode": "910",
+      "city": "נהריה",
+      "address": "שד הגעתון 40"
+    },
+    {
+      "branchCode": "983",
+      "city": "נוף הגליל",
+      "address": "עצמון 16"
+    },
+    {
+      "branchCode": "383",
+      "city": "נס ציונה",
+      "address": "הבנים 3"
+    },
+    {
+      "branchCode": "853",
+      "city": "נשר",
+      "address": "דרך השלום 16"
+    },
+    {
+      "branchCode": "256",
+      "city": "נתיבות",
+      "address": "כיכר יהדות צרפת 4"
+    },
+    {
+      "branchCode": "630",
+      "city": "נתניה",
+      "address": "הרצל 59"
+    },
+    {
+      "branchCode": "984",
+      "city": "סח'נין",
+      "address": "הגליל 81"
+    },
+    {
+      "branchCode": "225",
+      "city": "עומר",
+      "address": "רותם 17"
+    },
+    {
+      "branchCode": "920",
+      "city": "עכו",
+      "address": "העצמאות 11"
+    },
+    {
+      "branchCode": "930",
+      "city": "עפולה",
+      "address": "הרב לוין 18"
+    },
+    {
+      "branchCode": "258",
+      "city": "ערד",
+      "address": "בן יאיר אלעזר 35"
+    },
+    {
+      "branchCode": "864",
+      "city": "פרדס חנה-כרכור",
+      "address": "דרך הבנים 1"
+    },
+    {
+      "branchCode": "640",
+      "city": "פתח תקווה",
+      "address": "הראשונים 13"
+    },
+    {
+      "branchCode": "940",
+      "city": "צפת",
+      "address": "הפלמ\"ח 100"
+    },
+    {
+      "branchCode": "798",
+      "city": "קצרין",
+      "address": "דליות 6"
+    },
+    {
+      "branchCode": "870",
+      "city": "קריית ביאליק",
+      "address": "שד ירושלים 15"
+    },
+    {
+      "branchCode": "240",
+      "city": "קריית גת",
+      "address": "הגפן 7"
+    },
+    {
+      "branchCode": "867",
+      "city": "קריית אתא",
+      "address": "המיסדים 1"
+    },
+    {
+      "branchCode": "874",
+      "city": "קריית חיים",
+      "address": "אח\"י אילת 13"
+    },
+    {
+      "branchCode": "877",
+      "city": "קריית טבעון",
+      "address": "רקפות 2"
+    },
+    {
+      "branchCode": "879",
+      "city": "קריית ים",
+      "address": "בובר מרטין 3"
+    },
+    {
+      "branchCode": "387",
+      "city": "קריית מלאכי",
+      "address": "רש\"י 1"
+    },
+    {
+      "branchCode": "999",
+      "city": "קריית שמונה",
+      "address": "כיכר צה\"ל 110"
+    },
+    {
+      "branchCode": "691",
+      "city": "ראש העין",
+      "address": "שבזי 27"
+    },
+    {
+      "branchCode": "988",
+      "city": "ראש פינה",
+      "address": "גיא אוני"
+    },
+    {
+      "branchCode": "237",
+      "city": "רהט",
+      "address": "רהט"
+    },
+    {
+      "branchCode": "540",
+      "city": "רמלה",
+      "address": "מס דני 2"
+    },
+    {
+      "branchCode": "650",
+      "city": "רמת השרון",
+      "address": "דרך ראשונים 88"
+    },
+    {
+      "branchCode": "550",
+      "city": "רמת גן",
+      "address": "ביאליק 17"
+    },
+    {
+      "branchCode": "695",
+      "city": "רעננה",
+      "address": "אופסטרלנד 4"
+    },
+    {
+      "branchCode": "299",
+      "city": "שדרות",
+      "address": "משעול הנשיא 8"
+    },
+    {
+      "branchCode": "899",
+      "city": "שפרעם",
+      "address": "שייח' אמין טריף 32"
+    },
+    {
+      "branchCode": "699",
+      "city": "תל מונד",
+      "address": "הדקל 50"
+    },
+    {
+      "branchCode": "102",
+      "city": "ירושלים",
+      "address": "בית הכרם 22"
+    },
+    {
+      "branchCode": "138",
+      "city": "בית זית",
+      "address": "הגפן 1"
+    },
+    {
+      "branchCode": "115",
+      "city": "ירושלים",
+      "address": "דרך בית חנינא 45"
+    },
+    {
+      "branchCode": "147",
+      "city": "ביתר עילית",
+      "address": "רבי עקיבא 7"
+    },
+    {
+      "branchCode": "370",
+      "city": "בית חנן",
+      "address": "בית חנן"
+    },
+    {
+      "branchCode": "844",
+      "city": "בני יהודה",
+      "address": "בני יהודה"
+    },
+    {
+      "branchCode": "246",
+      "city": "בני עי\"ש",
+      "address": "בני עי\"ש"
+    },
+    {
+      "branchCode": "304",
+      "city": "אשדוד",
+      "address": "רשב\"י 12"
+    },
+    {
+      "branchCode": "885",
+      "city": "בענה",
+      "address": "לוביה 10"
+    },
+    {
+      "branchCode": "279",
+      "city": "אשקלון",
+      "address": "לייפר- מילר רחל 17"
+    },
+    {
+      "branchCode": "473",
+      "city": "בת חפר",
+      "address": "בת חפר"
+    },
+    {
+      "branchCode": "189",
+      "city": "ירושלים",
+      "address": "חי אל-מדארס 141"
+    },
+    {
+      "branchCode": "977",
+      "city": "ג'ולס",
+      "address": "ג'ולס"
+    },
+    {
+      "branchCode": "556",
+      "city": "ג'לג'וליה",
+      "address": "ג'לג'וליה"
+    },
+    {
+      "branchCode": "829",
+      "city": "ג'ת",
+      "address": "ג'ת"
+    },
+    {
+      "branchCode": "372",
+      "city": "גבעת ברנר",
+      "address": "גבעת ברנר"
+    },
+    {
+      "branchCode": "667",
+      "city": "גבעת השלושה",
+      "address": "גבעת השלושה"
+    },
+    {
+      "branchCode": "178",
+      "city": "גבעת זאב",
+      "address": "המכבים 46"
+    },
+    {
+      "branchCode": "451",
+      "city": "ראש העין",
+      "address": "דיין משה 2"
+    },
+    {
+      "branchCode": "925",
+      "city": "נהריה",
+      "address": "טרומפלדור 33"
+    },
+    {
+      "branchCode": "824",
+      "city": "גבעת עדה",
+      "address": "גבעת עדה"
+    },
+    {
+      "branchCode": "315",
+      "city": "בית שמש",
+      "address": "ראובן 1"
+    },
+    {
+      "branchCode": "823",
+      "city": "כרמיאל",
+      "address": "אסיף 46"
+    },
+    {
+      "branchCode": "292",
+      "city": "גדרה",
+      "address": "דרך הפרחים 40"
+    },
+    {
+      "branchCode": "645",
+      "city": "פתח תקווה",
+      "address": "גרין יונה 9"
+    },
+    {
+      "branchCode": "956",
+      "city": "ג'ש (גוש חלב)",
+      "address": "ג'ש (גוש חלב)"
+    },
+    {
+      "branchCode": "882",
+      "city": "קריית מוצקין",
+      "address": "שד גושן משה 92"
+    },
+    {
+      "branchCode": "151",
+      "city": "ירושלים",
+      "address": "צביה ויצחק 800"
+    },
+    {
+      "branchCode": "375",
+      "city": "לוד",
+      "address": "ארבע העונות 12"
+    },
+    {
+      "branchCode": "591",
+      "city": "גני תקווה",
+      "address": "דרך ההדרים 7"
+    },
+    {
+      "branchCode": "808",
+      "city": "דבוריה",
+      "address": "אלזהראא 5"
+    },
+    {
+      "branchCode": "329",
+      "city": "ראשון לציון",
+      "address": "הכשרת הישוב 7"
+    },
+    {
+      "branchCode": "411",
+      "city": "תל אביב – יפו",
+      "address": "דיזנגוף 50"
+    },
+    {
+      "branchCode": "959",
+      "city": "דייר אל-אסד",
+      "address": "דייר אל-אסד"
+    },
+    {
+      "branchCode": "788",
+      "city": "דייר חנא",
+      "address": "דייר חנא"
+    },
+    {
+      "branchCode": "488",
+      "city": "בת ים",
+      "address": "הרצל 71"
+    },
+    {
+      "branchCode": "429",
+      "city": "תל אביב – יפו",
+      "address": "לבנון חיים 67"
+    },
+    {
+      "branchCode": "565",
+      "city": "רמת גן",
+      "address": "ז'בוטינסקי 3"
+    },
+    {
+      "branchCode": "528",
+      "city": "בני ברק",
+      "address": "רבי עקיבא 34"
+    },
+    {
+      "branchCode": "182",
+      "city": "ירושלים",
+      "address": "אבא ברדיצב 2"
+    },
+    {
+      "branchCode": "415",
+      "city": "תל אביב – יפו",
+      "address": "קהילת לבוב 24"
+    },
+    {
+      "branchCode": "470",
+      "city": "תל אביב – יפו",
+      "address": "ארלוזורוב 93"
+    },
+    {
+      "branchCode": "114",
+      "city": "ירושלים",
+      "address": "סלאח אל-דין 2"
+    },
+    {
+      "branchCode": "421",
+      "city": "תל אביב – יפו",
+      "address": "הירקון 61"
+    },
+    {
+      "branchCode": "106",
+      "city": "ירושלים",
+      "address": "קפלן 1"
+    },
+    {
+      "branchCode": "477",
+      "city": "תל אביב – יפו",
+      "address": "שד' שאול המלך 8"
+    },
+    {
+      "branchCode": "710",
+      "city": "חיפה",
+      "address": "הנביאים 22"
+    },
+    {
+      "branchCode": "762",
+      "city": "חיפה",
+      "address": "שד הנשיא 37"
+    },
+    {
+      "branchCode": "567",
+      "city": "העוגן",
+      "address": "העוגן"
+    },
+    {
+      "branchCode": "517",
+      "city": "לוד",
+      "address": "הרצל 55"
+    },
+    {
+      "branchCode": "308",
+      "city": "אשדוד",
+      "address": "העצמאות 26"
+    },
+    {
+      "branchCode": "742",
+      "city": "נוף הגליל",
+      "address": "לבנה 2"
+    },
+    {
+      "branchCode": "333",
+      "city": "רחובות",
+      "address": "גבריאלוב 12"
+    },
+    {
+      "branchCode": "539",
+      "city": "ראשון לציון",
+      "address": "הרצל 94"
+    },
+    {
+      "branchCode": "611",
+      "city": "הרצליה",
+      "address": "הרב פישמן 8"
+    },
+    {
+      "branchCode": "496",
+      "city": "כפר סבא",
+      "address": "אנגל 78"
+    },
+    {
+      "branchCode": "978",
+      "city": "מעלה עירון",
+      "address": "מעלה עירון"
+    },
+    {
+      "branchCode": "906",
+      "city": "זרזיר",
+      "address": "זרזיר"
+    },
+    {
+      "branchCode": "227",
+      "city": "חורה",
+      "address": "חורה"
+    },
+    {
+      "branchCode": "950",
+      "city": "חורפיש",
+      "address": "חורפיש"
+    },
+    {
+      "branchCode": "633",
+      "city": "נתניה",
+      "address": "גולומב 1"
+    },
+    {
+      "branchCode": "423",
+      "city": "תל אביב – יפو",
+      "address": "החשמונאים 88"
+    },
+    {
+      "branchCode": "961",
+      "city": "טורעאן",
+      "address": "טורעאן"
+    },
+    {
+      "branchCode": "621",
+      "city": "טייבה",
+      "address": "24"
+    },
+    {
+      "branchCode": "671",
+      "city": "טייבה",
+      "address": "24"
+    },
+    {
+      "branchCode": "846",
+      "city": "טמרה",
+      "address": "טמרה"
+    },
+    {
+      "branchCode": "905",
+      "city": "יאנוח-ג'ת",
+      "address": "יאנוח"
+    },
+    {
+      "branchCode": "962",
+      "city": "יבנאל",
+      "address": "יבנאל"
+    },
+    {
+      "branchCode": "413",
+      "city": "תל אביב – יפו",
+      "address": "השלושה 2"
+    },
+    {
+      "branchCode": "293",
+      "city": "יד בנימין",
+      "address": "עובדיה 1"
+    },
+    {
+      "branchCode": "303",
+      "city": "בני עי\"ש",
+      "address": "התנופה 5"
+    },
+    {
+      "branchCode": "366",
+      "city": "רמלה",
+      "address": "היצירה 21"
+    },
+    {
+      "branchCode": "943",
+      "city": "יסוד המעלה",
+      "address": "יסוד המעלה"
+    },
+    {
+      "branchCode": "414",
+      "city": "תל אביב – יפו",
+      "address": "שד' ירושלים 12"
+    },
+    {
+      "branchCode": "963",
+      "city": "יפיע",
+      "address": "יפיע"
+    },
+    {
+      "branchCode": "659",
+      "city": "יקום",
+      "address": "יקום"
+    },
+    {
+      "branchCode": "926",
+      "city": "ירכא",
+      "address": "ירכא"
+    },
+    {
+      "branchCode": "964",
+      "city": "כאבול",
+      "address": "כאבול"
+    },
+    {
+      "branchCode": "820",
+      "city": "כאוכב אבו אל-היג'א",
+      "address": "שכונה צפונית"
+    },
+    {
+      "branchCode": "987",
+      "city": "נצרת",
+      "address": "תופיק זיאד 3047"
+    },
+    {
+      "branchCode": "731",
+      "city": "כסרא-סמיע",
+      "address": "כסרא-סמיע"
+    },
+    {
+      "branchCode": "261",
+      "city": "כסיפה",
+      "address": "שכונה 43 163"
+    },
+    {
+      "branchCode": "843",
+      "city": "כפר המכבי",
+      "address": "כפר המכבי"
+    },
+    {
+      "branchCode": "642",
+      "city": "פתח תקווה",
+      "address": "העצמאות 65"
+    },
+    {
+      "branchCode": "553",
+      "city": "רמת גן",
+      "address": "ברנשטיין פרץ 7"
+    },
+    {
+      "branchCode": "796",
+      "city": "כפר ורדים",
+      "address": "כפר ורדים"
+    },
+    {
+      "branchCode": "579",
+      "city": "כפר חב\"ד",
+      "address": "כפר חב\"ד"
+    },
+    {
+      "branchCode": "845",
+      "city": "כפר חסידים ב'",
+      "address": "כפר חסידים ב'"
+    },
+    {
+      "branchCode": "967",
+      "city": "כפר יאסיף",
+      "address": "כפר יאסיף"
+    },
+    {
+      "branchCode": "672",
+      "city": "כפר ידידיה",
+      "address": "כפר ידידיה"
+    },
+    {
+      "branchCode": "907",
+      "city": "כפר כמא",
+      "address": "כפר כמא"
+    },
+    {
+      "branchCode": "968",
+      "city": "כפר כנא",
+      "address": "כפר כנא"
+    },
+    {
+      "branchCode": "805",
+      "city": "כפר מנדא",
+      "address": "כפר מנדא"
+    },
+    {
+      "branchCode": "908",
+      "city": "מעיליא",
+      "address": "מעיליא"
+    },
+    {
+      "branchCode": "624",
+      "city": "כפר סירקין",
+      "address": "הבנים"
+    },
+    {
+      "branchCode": "998",
+      "city": "עין מאהל",
+      "address": "עין מאהל"
+    },
+    {
+      "branchCode": "167",
+      "city": "ירושלים",
+      "address": "ראשי"
+    },
+    {
+      "branchCode": "678",
+      "city": "כפר קאסם",
+      "address": "כפר קאסם"
+    },
+    {
+      "branchCode": "847",
+      "city": "כפר קרע",
+      "address": "אבן סיינא"
+    },
+    {
+      "branchCode": "778",
+      "city": "כפר תבור",
+      "address": "לח\"י 2"
+    },
+    {
+      "branchCode": "511",
+      "city": "ראשון לציון",
+      "address": "מושביץ 3"
+    },
+    {
+      "branchCode": "239",
+      "city": "לקיה",
+      "address": "שכונה 3 18"
+    },
+    {
+      "branchCode": "971",
+      "city": "מג'ד אל כרום",
+      "address": "מג'ד אל כרום"
+    },
+    {
+      "branchCode": "787",
+      "city": "מג'דל שמס",
+      "address": "מרכז הכפר, על הכביש הראשי"
+    },
+    {
+      "branchCode": "972",
+      "city": "מגדל",
+      "address": "התמר 1"
+    },
+    {
+      "branchCode": "117",
+      "city": "ירושלים",
+      "address": "עומר בן אל ח'טאב 64"
+    },
+    {
+      "branchCode": "431",
+      "city": "תל אביב – יפו",
+      "address": "אחד העם 9"
+    },
+    {
+      "branchCode": "392",
+      "city": "מדרשת בן גוריון",
+      "address": "מדרשת בן גוריון"
+    },
+    {
+      "branchCode": "664",
+      "city": "בית יצחק-שער חפר",
+      "address": "בית יצחק-שער חפר"
+    },
+    {
+      "branchCode": "665",
+      "city": "בני ציון",
+      "address": "אנשי בראשית"
+    },
+    {
+      "branchCode": "673",
+      "city": "כפר ויתקין",
+      "address": "כפר ويتקין"
+    },
+    {
+      "branchCode": "481",
+      "city": "מגשימים",
+      "address": "נבון דוד 20"
+    },
+    {
+      "branchCode": "857",
+      "city": "מזרעה",
+      "address": "מזרעה"
+    },
+    {
+      "branchCode": "647",
+      "city": "פתח תקווה",
+      "address": "בן דוד יצחק 11"
+    },
+    {
+      "branchCode": "975",
+      "city": "מטולה",
+      "address": "הראשונים 29"
+    },
+    {
+      "branchCode": "631",
+      "city": "נתניה",
+      "address": "מכון וינגייט"
+    },
+    {
+      "branchCode": "649",
+      "city": "פתח תקווה",
+      "address": "גליס 51"
+    },
+    {
+      "branchCode": "461",
+      "city": "תל אביב – יפו",
+      "address": "דרך בן צבי 41"
+    },
+    {
+      "branchCode": "606",
+      "city": "מכמורת",
+      "address": "מכמורת"
+    },
+    {
+      "branchCode": "783",
+      "city": "ג'דיידה-מכר",
+      "address": "1034"
+    },
+    {
+      "branchCode": "780",
+      "city": "מנחמיה",
+      "address": "מנחמיה"
+    },
+    {
+      "branchCode": "938",
+      "city": "מסעדה",
+      "address": "מסעדה"
+    },
+    {
+      "branchCode": "682",
+      "city": "מעברות",
+      "address": "מעברות"
+    },
+    {
+      "branchCode": "194",
+      "city": "מעלה אפרים",
+      "address": "מעלה אפרים"
+    },
+    {
+      "branchCode": "757",
+      "city": "חיפה",
+      "address": "חורב 15"
+    },
+    {
+      "branchCode": "871",
+      "city": "קריית ביאליק",
+      "address": "העמקים 12"
+    },
+    {
+      "branchCode": "576",
+      "city": "בני עטרות",
+      "address": "בני עטרות"
+    },
+    {
+      "branchCode": "211",
+      "city": "אשקלון",
+      "address": "קיבוץ גלויות 5"
+    },
+    {
+      "branchCode": "294",
+      "city": "מרכז שפירא",
+      "address": "מרכז שפירא"
+    },
+    {
+      "branchCode": "101",
+      "city": "ירושלים",
+      "address": "יפו 23"
+    },
+    {
+      "branchCode": "929",
+      "city": "משהד",
+      "address": "משהד"
+    },
+    {
+      "branchCode": "569",
+      "city": "משמר השבעה",
+      "address": "זעירא"
+    },
+    {
+      "branchCode": "851",
+      "city": "יגור",
+      "address": "יגור"
+    },
+    {
+      "branchCode": "728",
+      "city": "חיפה",
+      "address": "סחרוב אנדרה 6"
+    },
+    {
+      "branchCode": "234",
+      "city": "נהורה",
+      "address": "האילנות 1"
+    },
+    {
+      "branchCode": "852",
+      "city": "נהלל",
+      "address": "נהלל"
+    },
+    {
+      "branchCode": "367",
+      "city": "יבנה",
+      "address": "חרוב 2"
+    },
+    {
+      "branchCode": "495",
+      "city": "ראשון לציון",
+      "address": "ארגמן 12"
+    },
+    {
+      "branchCode": "803",
+      "city": "חדרה",
+      "address": "אהרונוביץ 1"
+    },
+    {
+      "branchCode": "349",
+      "city": "ראשון לציון",
+      "address": "הנחשול 30"
+    },
+    {
+      "branchCode": "172",
+      "city": "ירושלים",
+      "address": "שד נוה יעקב 611"
+    },
+    {
+      "branchCode": "684",
+      "city": "נווה ירק",
+      "address": "נווה ירק"
+    },
+    {
+      "branchCode": "224",
+      "city": "באר שבע",
+      "address": "שטה 44"
+    },
+    {
+      "branchCode": "564",
+      "city": "רמת גן",
+      "address": "אצ\"ל 6"
+    },
+    {
+      "branchCode": "706",
+      "city": "חיפה",
+      "address": "הגליל 76"
+    },
+    {
+      "branchCode": "584",
+      "city": "יהוד-מונוסון",
+      "address": "שוהם נוה אפרים 1"
+    },
+    {
+      "branchCode": "659",
+      "city": "נתניה",
+      "address": "מכון וינגטית"
+    },
+    {
+      "branchCode": "927",
+      "city": "נחף",
+      "address": "נחף"
+    },
+    {
+      "branchCode": "336",
+      "city": "בית שמש",
+      "address": "נחל דולב 19"
+    },
+    {
+      "branchCode": "464",
+      "city": "תל אביב – יפו",
+      "address": "נחלת יצחק 18"
+    },
+    {
+      "branchCode": "489",
+      "city": "בת ים",
+      "address": "הרב ניסנבוים יצחק 29"
+    },
+    {
+      "branchCode": "546",
+      "city": "ניר צבי",
+      "address": "ניר צבי"
+    },
+    {
+      "branchCode": "586",
+      "city": "נען",
+      "address": "נען"
+    },
+    {
+      "branchCode": "738",
+      "city": "נצרת",
+      "address": "רח 4059 10"
+    },
+    {
+      "branchCode": "708",
+      "city": "חיפה",
+      "address": "טבנקין יצחק 2"
+    },
+    {
+      "branchCode": "209",
+      "city": "רהט",
+      "address": "צלאח אלדין 237"
+    },
+    {
+      "branchCode": "737",
+      "city": "קריית מוצקין",
+      "address": "ירושלים 1"
+    },
+    {
+      "branchCode": "362",
+      "city": "אריאל",
+      "address": "דרך רמת הגולן 25"
+    },
+    {
+      "branchCode": "806",
+      "city": "עפולה",
+      "address": "שד בגין מנחם 80"
+    },
+    {
+      "branchCode": "932",
+      "city": "עפולה",
+      "address": "הנרייטה סולד 8"
+    },
+    {
+      "branchCode": "373",
+      "city": "גדרה",
+      "address": "פייבל 3"
+    },
+    {
+      "branchCode": "295",
+      "city": "אשקלון",
+      "address": "העבודה 21"
+    },
+    {
+      "branchCode": "970",
+      "city": "עכו",
+      "address": "שלום הגליל 1"
+    },
+    {
+      "branchCode": "813",
+      "city": "חדרה",
+      "address": "הגבורים 67"
+    },
+    {
+      "branchCode": "797",
+      "city": "כרמיאל",
+      "address": "מעלה כמון 5"
+    },
+    {
+      "branchCode": "960",
+      "city": "חצור הגלילית",
+      "address": "ההסתדרות 1"
+    },
+    {
+      "branchCode": "799",
+      "city": "חריש",
+      "address": "דרך ארץ 39"
+    },
+    {
+      "branchCode": "840",
+      "city": "יקנעם (מושבה)",
+      "address": "שד הראשונים 1"
+    },
+    {
+      "branchCode": "253",
+      "city": "ירוחם",
+      "address": "בורנשטיין צבי 655"
+    },
+    {
+      "branchCode": "466",
+      "city": "תל אביב – יפו",
+      "address": "לוינסקי 108"
+    },
+    {
+      "branchCode": "949",
+      "city": "מגאר",
+      "address": "מגאר"
+    },
+    {
+      "branchCode": "981",
+      "city": "נצרת",
+      "address": "רח' 6077 4"
+    },
+    {
+      "branchCode": "947",
+      "city": "נוף הגליל",
+      "address": "דרך החטיבות 1"
+    },
+    {
+      "branchCode": "944",
+      "city": "סח'נין",
+      "address": "סח'נין"
+    },
+    {
+      "branchCode": "160",
+      "city": "ירושלים",
+      "address": "אל ערבסיא 1"
+    },
+    {
+      "branchCode": "636",
+      "city": "נתניה",
+      "address": "סמילנסקי 8"
+    },
+    {
+      "branchCode": "773",
+      "city": "קריית ביאליק",
+      "address": "שד ח\"ן 9"
+    },
+    {
+      "branchCode": "599",
+      "city": "יהוד",
+      "address": "ויצמן 7"
+    },
+    {
+      "branchCode": "590",
+      "city": "קריית אונו",
+      "address": "שלמה המלך 6"
+    },
+    {
+      "branchCode": "740",
+      "city": "עיילבון",
+      "address": "עיילבון"
+    },
+    {
+      "branchCode": "912",
+      "city": "עילוט",
+      "address": "עילוט"
+    },
+    {
+      "branchCode": "919",
+      "city": "נהריה",
+      "address": "שדרת שז\"ר 31"
+    },
+    {
+      "branchCode": "686",
+      "city": "עינת",
+      "address": "עינת"
+    },
+    {
+      "branchCode": "288",
+      "city": "עלי",
+      "address": "עלי"
+    },
+    {
+      "branchCode": "914",
+      "city": "נהריה",
+      "address": "הרצל 1"
+    },
+    {
+      "branchCode": "140",
+      "city": "עמנואל",
+      "address": "עמנואל"
+    },
+    {
+      "branchCode": "883",
+      "city": "פארק תעשיות עמק חפר",
+      "address": "החריש 20"
+    },
+    {
+      "branchCode": "986",
+      "city": "עראבה",
+      "address": "עראבה"
+    },
+    {
+      "branchCode": "861",
+      "city": "עארה",
+      "address": "עארה ערה"
+    },
+    {
+      "branchCode": "862",
+      "city": "ערערה",
+      "address": "ערערה"
+    },
+    {
+      "branchCode": "221",
+      "city": "ערערה-בנגב",
+      "address": "ערערה-בנגב"
+    },
+    {
+      "branchCode": "863",
+      "city": "עתלית",
+      "address": "ההרדוף"
+    },
+    {
+      "branchCode": "676",
+      "city": "ראש העין",
+      "address": "המלאכה 4"
+    },
+    {
+      "branchCode": "865",
+      "city": "קיסריה",
+      "address": "חלמיש 7"
+    },
+    {
+      "branchCode": "476",
+      "city": "נתניה",
+      "address": "אמנון ותמר 6"
+    },
+    {
+      "branchCode": "842",
+      "city": "פוריידיס",
+      "address": "פוריידיס"
+    },
+    {
+      "branchCode": "285",
+      "city": "אופקים",
+      "address": "חפץ חיים 51"
+    },
+    {
+      "branchCode": "159",
+      "city": "ירושלים",
+      "address": "שד דיין משה 106"
+    },
+    {
+      "branchCode": "774",
+      "city": "פסוטה",
+      "address": "מרכז הכפר 1"
+    },
+    {
+      "branchCode": "781",
+      "city": "פקיעין (בוקייעה)",
+      "address": "פקיעין (בוקייעה)"
+    },
+    {
+      "branchCode": "623",
+      "city": "פרדסיה",
+      "address": "הברוש 28"
+    },
+    {
+      "branchCode": "419",
+      "city": "תל אביב – יפו",
+      "address": "יהונתן 4"
+    },
+    {
+      "branchCode": "275",
+      "city": "צוחר",
+      "address": "מרכז מסחרי צוחר"
+    },
+    {
+      "branchCode": "155",
+      "city": "ירושלים",
+      "address": "א סעדייה"
+    },
+    {
+      "branchCode": "616",
+      "city": "הרצליה",
+      "address": "צמרות 2"
+    },
+    {
+      "branchCode": "793",
+      "city": "קריית שמונה",
+      "address": "הנשיא 4"
+    },
+    {
+      "branchCode": "192",
+      "city": "קדומים",
+      "address": "קדומים"
+    },
+    {
+      "branchCode": "506",
+      "city": "קדימה",
+      "address": "החסידה 1"
+    },
+    {
+      "branchCode": "385",
+      "city": "קדרון",
+      "address": "קדרון"
+    },
+    {
+      "branchCode": "327",
+      "city": "ראשון לציון",
+      "address": "ראובן ובת שבע 4"
+    },
+    {
+      "branchCode": "794",
+      "city": "קיסריה",
+      "address": "שד רוטשילד"
+    },
+    {
+      "branchCode": "690",
+      "city": "קלנסווה",
+      "address": "קלנסווה"
+    },
+    {
+      "branchCode": "231",
+      "city": "באר שבע",
+      "address": "מבצע יואב 49"
+    },
+    {
+      "branchCode": "108",
+      "city": "ירושלים",
+      "address": "גסר א-נסף 14"
+    },
+    {
+      "branchCode": "613",
+      "city": "כפר סבא",
+      "address": "ויצמן 207"
+    },
+    {
+      "branchCode": "187",
+      "city": "מבשרת ציון",
+      "address": "הראל 1"
+    },
+    {
+      "branchCode": "171",
+      "city": "ירושלים",
+      "address": "יד חרוצים 18"
+    },
+    {
+      "branchCode": "257",
+      "city": "נתיבות",
+      "address": "שד ירושלים 134"
+    },
+    {
+      "branchCode": "396",
+      "city": "רמלה",
+      "address": "רזיאל דוד 1"
+    },
+    {
+      "branchCode": "184",
+      "city": "ירושלים",
+      "address": "עטרות"
+    },
+    {
+      "branchCode": "110",
+      "city": "ירושלים",
+      "address": "דרך רופין 1"
+    },
+    {
+      "branchCode": "505",
+      "city": "נמל תעופה בן גוריון",
+      "address": "הגולן 49"
+    },
+    {
+      "branchCode": "162",
+      "city": "קריית ארבע",
+      "address": "קריית ארבע"
+    },
+    {
+      "branchCode": "525",
+      "city": "פתח תקווה",
+      "address": "זולא אמיל 39"
+    },
+    {
+      "branchCode": "828",
+      "city": "קריית אתא",
+      "address": "זבולון 91"
+    },
+    {
+      "branchCode": "751",
+      "city": "חיפה",
+      "address": "999"
+    },
+    {
+      "branchCode": "875",
+      "city": "קריית חיים",
+      "address": "ארן זלמן 56"
+    },
+    {
+      "branchCode": "878",
+      "city": "קריית טבעון",
+      "address": "זבולון 2"
+    },
+    {
+      "branchCode": "111",
+      "city": "ירושלים",
+      "address": "וולטה העלית 3"
+    },
+    {
+      "branchCode": "685",
+      "city": "פתח תקווה",
+      "address": "המגשימים 20"
+    },
+    {
+      "branchCode": "544",
+      "city": "רמלה",
+      "address": "אחימאיר אבא 15"
+    },
+    {
+      "branchCode": "331",
+      "city": "רחובות",
+      "address": "גבריאלוב 12"
+    },
+    {
+      "branchCode": "144",
+      "city": "מודיעין עילית",
+      "address": "אבני נזר 46"
+    },
+    {
+      "branchCode": "390",
+      "city": "קריית עקרון",
+      "address": "הרצל 1"
+    },
+    {
+      "branchCode": "420",
+      "city": "תל אביב – יפו",
+      "address": "הקשת 6"
+    },
+    {
+      "branchCode": "174",
+      "city": "קרני שומרון",
+      "address": "שדרות רחבעם 1"
+    },
+    {
+      "branchCode": "161",
+      "city": "ירושלים",
+      "address": "דרך יריחו 207"
+    },
+    {
+      "branchCode": "500",
+      "city": "בני ברק",
+      "address": "רבי עקיבא 75"
+    },
+    {
+      "branchCode": "302",
+      "city": "אשדוד",
+      "address": "רמב\"ם 4"
+    },
+    {
+      "branchCode": "348",
+      "city": "אשדוד",
+      "address": "גיא אוני 2"
+    },
+    {
+      "branchCode": "360",
+      "city": "אשדוד",
+      "address": "שד מונטיפיורי 6"
+    },
+    {
+      "branchCode": "318",
+      "city": "אשדוד",
+      "address": "המלך דוד 18"
+    },
+    {
+      "branchCode": "501",
+      "city": "גבעת שמואל",
+      "address": "בגין מנחם 38"
+    },
+    {
+      "branchCode": "909",
+      "city": "ריינה",
+      "address": "ריינה"
+    },
+    {
+      "branchCode": "993",
+      "city": "ראמה",
+      "address": "ראמה"
+    },
+    {
+      "branchCode": "166",
+      "city": "ירושלים",
+      "address": "מעלות כיסופים 801"
+    },
+    {
+      "branchCode": "124",
+      "city": "ירושלים",
+      "address": "כנפי נשרים 26"
+    },
+    {
+      "branchCode": "325",
+      "city": "ראשון לציון",
+      "address": "צייטלין 24"
+    },
+    {
+      "branchCode": "568",
+      "city": "רמת גן",
+      "address": "החוגה רמת אפעל 1"
+    },
+    {
+      "branchCode": "170",
+      "city": "ירושלים",
+      "address": "פארן 7"
+    },
+    {
+      "branchCode": "694",
+      "city": "רמת הכובש",
+      "address": "רמת הכובש"
+    },
+    {
+      "branchCode": "515",
+      "city": "בת ים",
+      "address": "כהן אלי 24"
+    },
+    {
+      "branchCode": "469",
+      "city": "רמת גן",
+      "address": "בניהו 29"
+    },
+    {
+      "branchCode": "559",
+      "city": "רמת גן",
+      "address": "המאה ואחד 45"
+    },
+    {
+      "branchCode": "560",
+      "city": "רמת גן",
+      "address": "שדרות ירושלים 25"
+    },
+    {
+      "branchCode": "888",
+      "city": "רמת ישי",
+      "address": "אקליפטוס 3"
+    },
+    {
+      "branchCode": "113",
+      "city": "ירושלים",
+      "address": "טשרניחובסקי 42"
+    },
+    {
+      "branchCode": "696",
+      "city": "רשפון",
+      "address": "הפרחים 16"
+    },
+    {
+      "branchCode": "573",
+      "city": "באר יעקב",
+      "address": "שא נס 17"
+    },
+    {
+      "branchCode": "775",
+      "city": "שבלי – אום אל-גנם",
+      "address": "שבלי – אום אל-גנם"
+    },
+    {
+      "branchCode": "262",
+      "city": "שגב-שלום",
+      "address": "אלשיח'עדה 89"
+    },
+    {
+      "branchCode": "711",
+      "city": "חיפה",
+      "address": "עבאס 2"
+    },
+    {
+      "branchCode": "588",
+      "city": "שוהם",
+      "address": "דקל 30"
+    },
+    {
+      "branchCode": "116",
+      "city": "ירושלים",
+      "address": "דרך שועפאט 34"
+    },
+    {
+      "branchCode": "135",
+      "city": "ירושלים",
+      "address": "שטנר 5"
+    },
+    {
+      "branchCode": "992",
+      "city": "נוף הגליל",
+      "address": "חרוד 11"
+    },
+    {
+      "branchCode": "901",
+      "city": "טבריה",
+      "address": "אור חיים 11"
+    },
+    {
+      "branchCode": "223",
+      "city": "באר שבע",
+      "address": "אברהם אבינו 31"
+    },
+    {
+      "branchCode": "230",
+      "city": "באר שבע",
+      "address": "שד יעלים 42"
+    },
+    {
+      "branchCode": "324",
+      "city": "ראשון לציון",
+      "address": "שד יעקב 43"
+    },
+    {
+      "branchCode": "638",
+      "city": "נתניה",
+      "address": "ויתקין 53"
+    },
+    {
+      "branchCode": "656",
+      "city": "פתח תקווה",
+      "address": "קהילת יוסטון 3"
+    },
+    {
+      "branchCode": "241",
+      "city": "קריית גת",
+      "address": "שדרות גת 42"
+    },
+    {
+      "branchCode": "426",
+      "city": "תל אביב – יפו",
+      "address": "אצ\"ל 16"
+    },
+    {
+      "branchCode": "398",
+      "city": "קריית מלאכי",
+      "address": "נחלת הר חב\"ד 4"
+    },
+    {
+      "branchCode": "995",
+      "city": "שלומי",
+      "address": "שלומי"
+    },
+    {
+      "branchCode": "827",
+      "city": "זכרון יעקב",
+      "address": "השמורה 2"
+    },
+    {
+      "branchCode": "776",
+      "city": "שעב",
+      "address": "שעב"
+    },
+    {
+      "branchCode": "701",
+      "city": "חיפה",
+      "address": "שער פלמר 1"
+    },
+    {
+      "branchCode": "338",
+      "city": "ראשון לציון",
+      "address": "גולדה מאיר 1"
+    },
+    {
+      "branchCode": "127",
+      "city": "ירושלים",
+      "address": "רחובות הבוכרים 7"
+    },
+    {
+      "branchCode": "698",
+      "city": "שפיים",
+      "address": "שפיים"
+    },
+    {
+      "branchCode": "447",
+      "city": "תל אביב – יפו",
+      "address": "לוינסקי 108"
+    },
+    {
+      "branchCode": "449",
+      "city": "תל אביב – יפו",
+      "address": "גרינבוים 41"
+    },
+    {
+      "branchCode": "281",
+      "city": "תל שבע",
+      "address": "תל שבע"
+    },
+    {
+      "branchCode": "552",
+      "city": "רמת גן",
+      "address": "קציר 1"
+    },
+    {
+      "branchCode": "358",
+      "city": "ביתר עילית",
+      "address": "הר\"ן 6"
+    }
+  ]
+}
 ]

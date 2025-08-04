@@ -7,7 +7,7 @@ const BankSelector = ({ banks, selectedBank, onChange, placeholder }) => {
   const options = banks.map((bank) => ({
     value: bank,
     label: (
-      <div style={{ display: 'flex', alignItems: 'center', gap: '8', fontWeight:'bold', fontSize:'15px' }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: '8px', fontWeight:'bold', fontSize:'15px' }}>
         {bank.logoUrl && (
           <img
             src={bank.logoUrl}
@@ -19,6 +19,9 @@ const BankSelector = ({ banks, selectedBank, onChange, placeholder }) => {
         <span>{bank.bankName} - קוד: {bank.bankCode}</span>
       </div>
     ),
+    // הוסף את הנתונים לחיפוש
+    bankName: bank.bankName,
+    bankCode: bank.bankCode
   }));
 
   return (
@@ -28,10 +31,17 @@ const BankSelector = ({ banks, selectedBank, onChange, placeholder }) => {
       onChange={(selected) => onChange(selected?.value || null)}
       placeholder={placeholder || 'בחר בנק'}
       isClearable
+      isSearchable={true}
       formatOptionLabel={(option) => option.label}
-      filterOption={(option, inputValue) =>
-        option.data.value.bankName.toLowerCase().includes(inputValue.toLowerCase())
-      }
+      // תיקון ה-filterOption לחפש גם בקוד וגם בשם
+      filterOption={(option, inputValue) => {
+        if (!inputValue) return true;
+        const searchTerm = inputValue.toLowerCase();
+        return (
+          option.data.bankName.toLowerCase().includes(searchTerm) ||
+          option.data.bankCode.toLowerCase().includes(searchTerm)
+        );
+      }}
       styles={{
         control: (provided) => ({ ...provided, minHeight: 40 }),
         option: (provided) => ({ ...provided, display: 'flex', alignItems: 'center' }),

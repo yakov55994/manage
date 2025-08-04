@@ -1,5 +1,4 @@
 import React, { useState } from 'react';
-import api from '../api/api';
 import { toast } from 'sonner';
 
 function FileUploader({
@@ -18,7 +17,7 @@ function FileUploader({
 
         setLoading(true);
 
-        const uploadedFiles = [];
+        const localFiles = [];
 
         for (const file of selectedFiles) {
             if (file.size > maxSize) {
@@ -28,52 +27,32 @@ function FileUploader({
                 continue;
             }
 
-            const formData = new FormData();
-            formData.append('file', file);
-            formData.append('folder', folder);
+            // במקום להעלות לקלאודינרי, רק שמור את הקובץ במקומי
+            const localFile = {
+                file: file,                    // הקובץ המקורי
+                name: file.name,
+                type: file.type,
+                size: file.size,
+                isLocal: true,                 // סימון שזה קובץ מקומי
+                url: URL.createObjectURL(file), // URL זמני לתצוגה מקדימה
+                folder: folder
+            };
 
-            try {
-                const response = await api.post('/upload', formData, {
-                    headers: {
-                        'Content-Type': 'multipart/form-data'
-                    }
-                });
-
-                if (response.data.file && response.data.file.url) {
-                    // Save the entire file object from the response
-                    uploadedFiles.push(response.data.file);
-
-                    // Log to verify what's being returned
-                    console.log("Uploaded file:", response.data.file);
-                } else {
-                    throw new Error(`שגיאה בהעלאת ${file.name}`);
-                }
-            } catch (err) {
-                if (err.response) {
-                    // אם יש תגובה מהשרת, נציג את השגיאה ממנו
-                    toast.error(`שגיאה מהשרת: ${err.response.data.message || 'שגיאה בהעלאה'}`, {
-                        className: "sonner-toast error rtl"
-                    });
-                } else {
-                    // אם לא הייתה תגובה מהשרת, מדובר בשגיאה שקשורה לרשת או קוד
-                    toast.error(`שגיאה בהעלאה: ${err.message || 'שגיאה לא צפויה'}`, {
-                        className: "sonner-toast error rtl"
-                    });
-                }
-            }
-            
-
+            localFiles.push(localFile);
         }
 
         // Update local state
-        setFiles((prev) => [...prev, ...uploadedFiles]);
+        setFiles((prev) => [...prev, ...localFiles]);
 
-        // IMPORTANT: Pass the full file objects to the parent component
-        onUploadSuccess(uploadedFiles);
+        // העבר את הקבצים המקומיים לקומפוננטה האב
+        onUploadSuccess(localFiles);
+        
+        toast.success(`${localFiles.length} קבצים נבחרו (יועלו בעת השמירה)`, {
+            className: "sonner-toast success rtl"
+        });
+        
         setLoading(false);
     };
-
-    // Rest of the component remains the same...
 
     return (
         <div className="mt-4">
@@ -83,15 +62,13 @@ function FileUploader({
             <input
                 type="file"
                 multiple
-                accept=".xlsx, .xls, .pdf, .docx"  // הגבלה לסוגי קבצים נתמכים
+                accept=".xlsx, .xls, .pdf, .docx"
                 onChange={handleUpload}
                 disabled={loading}
                 className="block w-full text-sm file:mr-4 file:py-2 file:px-4
     file:rounded-md file:border-0 file:text-sm file:font-semibold
     file:bg-slate-50 file:text-slate-700 hover:file:bg-slate-100"
             />
-
-
 
             {loading && (
                 <div className="mt-2 flex justify-center">

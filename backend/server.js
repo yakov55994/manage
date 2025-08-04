@@ -27,25 +27,25 @@ const allowedOrigins = [
 
 const corsOptions = {
   origin: function (origin, callback) {
-    console.log('🔎 Origin received:', origin);
-    console.log('📋 Allowed origins:', allowedOrigins); // הוסף את זה!
+    // console.log('🔎 Origin received:', origin);
+    // console.log('📋 Allowed origins:', allowedOrigins); // הוסף את זה!
     
     // אפשר בקשות ללא origin
     if (!origin) {
-      console.log('✅ No origin - allowing');
+      // console.log('✅ No origin - allowing');
       return callback(null, true);
     }
     
     // בדיקה מדויקת
     const isAllowed = allowedOrigins.includes(origin);
-    console.log('🔍 Is allowed:', isAllowed); // הוסף את זה!
+    // console.log('🔍 Is allowed:', isAllowed); // הוסף את זה!
     
     if (isAllowed) {
-      console.log('✅ Origin allowed:', origin);
+      // console.log('✅ Origin allowed:', origin);
       callback(null, true);
     } else {
-      console.log('❌ Blocked Origin:', origin);
-      console.log('📋 Available origins:', allowedOrigins); // עוד לוג
+      // console.log('❌ Blocked Origin:', origin);
+      // console.log('📋 Available origins:', allowedOrigins); // עוד לוג
       callback(new Error('Not allowed by CORS'));
     }
   },
