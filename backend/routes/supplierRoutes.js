@@ -3,6 +3,8 @@ import { supplierController } from '../controller/SupplierController.js';
 
 const router = express.Router();
 
+router.get('/search', supplierController.search);
+
 // POST /api/suppliers - יצירת ספק חדש
 router.post('/createSupplier', supplierController.createSupplier);
 

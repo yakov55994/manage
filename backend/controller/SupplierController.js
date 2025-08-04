@@ -82,5 +82,16 @@ export const supplierController = {
                 message: error.message
             });
         }
+    },
+      search: async (req, res) => {
+    try {
+      const { query } = req.query; // מקבלים את מילת החיפוש מתוך ה-URL
+      const results = await supplierService.search(query); // שולחים את מילת החיפוש לשירות
+      res.status(200).json(results); // מחזירים את התוצאות
+    } catch (error) {
+      console.error('שגיאה במהלך החיפוש: ', error); // הדפסת שגיאה
+      res.status(500).json({ message: 'שגיאה במהלך החיפוש', error: error.message });
     }
+  },
+
 };
