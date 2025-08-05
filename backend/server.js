@@ -21,7 +21,8 @@ const app = express();
 
 const allowedOrigins = [
   'http://localhost:5173',
- 'https://baloona-server.onrender.com'  // ← וודא שזה בדיוק ככה!
+  'https://management-server-owna.onrender.com',
+  'https://manage-app.pages.dev'  // ← וודא שזה בדיוק ככה!
 ];
 
 const corsOptions = {
@@ -114,7 +115,7 @@ app.use("/api/orders", orderRoutes);
 app.use('/api/notes', notesRoutes);
 app.use('/api/upload', uploadRoute);
 app.use('/api/suppliers', suppliersRoutes);
-z``
+
 // ✅ טיפול בשגיאות כללי
 app.use((err, req, res, next) => {
   console.error('❌ Server error:', err.stack); // לוג שגיאות מפורט
