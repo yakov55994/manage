@@ -12,6 +12,7 @@ import orderRoutes from './routes/orderRoutes.js';
 import notesRoutes from './routes/NotesRoutes.js';
 import uploadRoute from './routes/uploadRoute.js';
 import suppliersRoutes from './routes/supplierRoutes.js';
+import userRoutes from './routes/UserRoutes.js';
 
 dotenv.config();
 const app = express();
@@ -115,6 +116,7 @@ app.use("/api/orders", orderRoutes);
 app.use('/api/notes', notesRoutes);
 app.use('/api/upload', uploadRoute);
 app.use('/api/suppliers', suppliersRoutes);
+app.use('/api/users', userRoutes);
 
 // ✅ טיפול בשגיאות כללי
 app.use((err, req, res, next) => {

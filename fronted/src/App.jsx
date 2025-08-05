@@ -28,6 +28,7 @@ import CreateSupplier from './pages/Supplier/create_supplier.jsx';
 import SuppliersPage from './pages/Supplier/Supplier_view.jsx';
 import SupplierDetailsPage from './pages/Supplier/Supplier_details.jsx';
 import SupplierEditPage from './pages/Supplier/Supplier_update.jsx';
+import UserManagement from './pages/UserManagement.jsx';
 
 // קומפוננט פנימי שמשתמש ב-hooks
 const AppContent = () => {
@@ -198,6 +199,12 @@ const AppContent = () => {
   <ProtectedRoute>
 
     <SupplierEditPage />
+  </ProtectedRoute>
+  } />
+<Route path="/admin" element={
+  <ProtectedRoute>
+
+    <UserManagement />
   </ProtectedRoute>
   } />
 
