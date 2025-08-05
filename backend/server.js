@@ -21,8 +21,7 @@ const app = express();
 
 const allowedOrigins = [
   'http://localhost:5173',
-  'https://management-server-owna.onrender.com',
-  'https://manage-app.pages.dev'  // ← וודא שזה בדיוק ככה!
+ 'https://baloona-server.onrender.com'  // ← וודא שזה בדיוק ככה!
 ];
 
 const corsOptions = {
