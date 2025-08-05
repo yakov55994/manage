@@ -11,7 +11,7 @@ const Home = () => {
   };
 
   return (
-    <div className="flex flex-col items-center justify-center h-screen text-white mt-10">
+    <div className="flex flex-col items-center justify-center h-screen text-white -mt-10">
       <div className="text-black p-8 rounded-2xl shadow-xl text-center bg-slate-300 max-w-full">
         <div className="flex items-center justify-center gap-2">
           <Settings

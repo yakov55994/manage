@@ -372,7 +372,7 @@ const handleSubmit = async (e) => {
   };
 
   return (
-    <div className="mt-10 bg-gray-300 p-8 rounded-lg shadow-xl w-full max-w-5xl">
+    <div className="mt-10 bg-gray-300 p-8 rounded-lg shadow-xl w-full max-w-5xl mx-auto">
       <h1 className="text-4xl font-bold text-center text-slate-800 mb-8 drop-shadow-lg">
         יצירת הזמנה / הזמנות לפרוייקט
       </h1>

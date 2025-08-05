@@ -466,13 +466,13 @@ const ProjectsPage = ({ initialProjects = [] }) => {
                 <table className="w-full">
                   <thead>
                     <tr className="bg-slate-300 text-slate-800 text-l">
-                      <th className="px-6 py-4 text-right">שם הפרויקט</th>
-                      <th className="px-6 py-4 text-right">תקציב</th>
-                      <th className="px-6 py-4 text-right">תקציב שנותר</th>
-                      <th className="px-6 py-4 text-right">שם המזמין</th>
-                      <th className="px-6 py-4 text-right">תאריך יצירה</th>
-                      <th className="px-6 py-4 text-right">איש קשר</th>
-                      <th className="px-6 py-4 text-center">פעולות</th>
+                      <th className="px-6 py-4 ">שם הפרויקט</th>
+                      <th className="px-6 py-4 ">תקציב</th>
+                      <th className="px-6 py-4 ">תקציב שנותר</th>
+                      <th className="px-6 py-4 ">שם המזמין</th>
+                      <th className="px-6 py-4 ">תאריך יצירה</th>
+                      <th className="px-6 py-4 ">איש קשר</th>
+                      <th className="px-6 py-4 r">פעולות</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -482,11 +482,11 @@ const ProjectsPage = ({ initialProjects = [] }) => {
                         onClick={() => handleView(project._id)}
                         className="cursor-pointer text-l border-t border-slate-200 hover:bg-slate-200 transition-colors duration-150 bg-slate-50"
                       >
-                        <td className="px-6 py-4 font-medium">{project.name}</td>
-                        <td className="px-6 py-4 font-medium">
+                        <td className="px-6 py-4 font-medium text-center">{project.name}</td>
+                        <td className="px-6 py-4 font-medium text-center">
                           {project.budget ? formatNumber(project.budget) + " ₪" : "אין עדיין תקציב"}
                         </td>
-                        <td className="px-6 py-4 font-medium">
+                        <td className="px-6 py-4 font-medium text-center">
                           {project.remainingBudget !== undefined ? (
                             project.remainingBudget < 0 ? (
                               <span className="text-red-800 font-bold">{formatNumber(project.remainingBudget) + " ₪ ❗"}</span>
@@ -499,7 +499,7 @@ const ProjectsPage = ({ initialProjects = [] }) => {
                         </td>
                         <td className="px-6 py-4 font-medium text-center">{project.invitingName}</td>
                         <td className="px-6 py-4 font-medium text-center">{formatDate(project.createdAt)}</td>
-                        <td className="px-6 py-4 font-medium text-center">{project.Contact_person}</td>
+                        <td className="px-6 py-4 font-medium text-center">{project.Contact_person || "לא הוזן איש קשר"}</td>
                         <td className="px-6 py-4 font-medium text-center">
                           <div className="flex justify-center gap-2">
                             <button

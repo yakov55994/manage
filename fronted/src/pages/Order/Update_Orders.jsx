@@ -66,11 +66,119 @@ const OrderEditPage = () => {
     });
   };
 
-  const handleRemoveFile = (index) => {
-    const newFiles = [...files];
-    newFiles.splice(index, 1);
-    setFiles(newFiles);
-  };
+ // הוסף את הפונקציה הזו בתחילת הקומפוננט (לפני הפונקציות האחרות)
+const extractPublicIdFromUrl = (url, withExtension = true) => {
+  try {
+    // דוגמה ל-URL: https://res.cloudinary.com/your-cloud/raw/upload/v1234567890/folder/filename.pdf
+    const urlParts = url.split('/');
+    const uploadIndex = urlParts.findIndex(part => part === 'upload');
+    
+    if (uploadIndex === -1) return null;
+    
+    // לוקח את החלק אחרי upload/ (מדלג על version אם קיים)
+    let pathAfterUpload = urlParts.slice(uploadIndex + 1);
+    
+    // אם יש version (מתחיל ב-v והמשך מספרים), מדלג עליו
+    if (pathAfterUpload[0] && pathAfterUpload[0].match(/^v\d+$/)) {
+      pathAfterUpload = pathAfterUpload.slice(1);
+    }
+    
+    // מחבר את שאר החלקים
+    let publicId = pathAfterUpload.join('/');
+    
+    // אם לא רוצים extension, מסירים אותו
+    if (!withExtension) {
+      const lastDotIndex = publicId.lastIndexOf('.');
+      if (lastDotIndex > 0) {
+        publicId = publicId.substring(0, lastDotIndex);
+      }
+    }
+    
+    return publicId;
+  } catch (error) {
+    console.error('Error extracting publicId from URL:', error);
+    return null;
+  }
+};
+
+// החלף את הפונקציה handleRemoveFile הקיימת בזו:
+const handleRemoveFile = async (fileIndex) => {
+  const fileToDelete = files[fileIndex];
+  
+  // בדיקה שהקובץ קיים
+  if (!fileToDelete) {
+      toast.error("קובץ לא נמצא", {
+        className: "sonner-toast error rtl"
+      });
+      return;
+  }
+  
+  console.log("=== DELETING FILE ===");
+  console.log("File to delete:", fileToDelete);
+  
+  // אם זה קובץ מקומי, פשוט תסיר מהמערך
+  if (fileToDelete.isLocal) {
+      const newFiles = [...files];
+      newFiles.splice(fileIndex, 1);
+      setFiles(newFiles);
+      
+      // נקה את ה-URL הזמני
+      if (fileToDelete.tempUrl) {
+          URL.revokeObjectURL(fileToDelete.tempUrl);
+      }
+      
+      toast.success("הקובץ הוסר מהרשימה", {
+        className: "sonner-toast success rtl"
+      });
+      return;
+  }
+  
+  // מסיר מה-UI מיד
+  const newFiles = [...files];
+  newFiles.splice(fileIndex, 1);
+  setFiles(newFiles);
+  
+  // אם זה קובץ שכבר הועלה, מחק מ-Cloudinary
+  if (fileToDelete.url || fileToDelete.fileUrl) {
+      const fileUrl = fileToDelete.url || fileToDelete.fileUrl;
+      const publicId = extractPublicIdFromUrl(fileUrl, true); // עם extension
+      
+      if (publicId) {
+          try {
+              console.log(`מנסה למחוק עם publicId: ${publicId}`);
+              
+              // צריך לתקן את השרת - אבל בינתיים נשתמש בגישה הזו
+              //  await api.delete(`/upload/${fileToDelete._id}`);
+        
+              await api.delete("/upload/delete-cloudinary", {
+                  data: {
+                      publicId: publicId,
+                      resourceType: 'raw',
+                  },
+              });
+              
+              toast.success("הקובץ נמחק בהצלחה מ-Cloudinary", {
+                className: "sonner-toast success rtl"
+              });
+              console.log("✅ נמחק בהצלחה מ-Cloudinary");
+          } catch (deleteError) {
+              console.error("מחיקה מ-Cloudinary נכשלה:", deleteError.response?.status);
+              toast.warning("הקובץ הוסר מהרשימה. בדוק ידנית אם נמחק מ-Cloudinary", {
+                className: "sonner-toast warning rtl"
+              });
+          }
+      } else {
+          console.error("לא הצליח לחלץ publicId מ-URL:", fileUrl);
+          toast.warning("הקובץ הוסר מהרשימה, אך לא ניתן לחלץ את פרטי הקובץ", {
+            className: "sonner-toast warning rtl"
+          });
+      }
+  } else {
+      toast.success("הקובץ הוסר", {
+        className: "sonner-toast success rtl"
+      });
+  }
+};
 
   const renderFile = (file) => {
     const fileUrl = file?.url || file?.fileUrl;

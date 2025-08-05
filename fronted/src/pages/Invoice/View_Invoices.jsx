@@ -689,8 +689,9 @@ const InvoicesPage = () => {
                       <th className="px-6 py-4 text-right">שם הספק</th>
                       <th className="px-6 py-4 text-right">מספר חשבונית</th>
                       <th className="px-6 py-4 text-right">סכום</th>
-                      <th className="px-6 py-4 text-right">סטטוס</th>
-                      <th className="px-6 py-4 text-center">שם פרוייקט</th>
+                      <th className="mx-auto text-right">תאריך חשבונית</th>
+                      <th className="px-6 py-4 text-center">סטטוס</th>
+                      <th className="px-6 py-4 text-right">שם פרוייקט</th>
                       <th className="px-6 py-4 text-center">תשלום</th>
                       <th className="px-6 py-4 text-center">סימון תשלום</th>
                       <th className="px-6 py-4 text-center">פעולות</th>
@@ -707,9 +708,10 @@ const InvoicesPage = () => {
                           }
                         }}    
                       >
-                        <td className="px-6 py-4 font-medium">{invoice.supplier.name}</td>
-                        <td className="px-6 py-4 font-medium">{invoice.invoiceNumber}</td>
+                        <td className="px-6 py-4 font-medium text-center">{invoice.supplier.name}</td>
+                        <td className="px-6 py-4 font-medium text-center">{invoice.invoiceNumber}</td>
                         <td className="px-6 py-4 font-medium">{formatNumber(invoice.sum)} ₪</td>
+                        <td className="px-2 py-4 font-medium">{formatDate(invoice.createdAt)}</td>
                         <td className="px-6 py-4 font-medium">{invoice.status}</td>
                         <td className="px-6 py-4 font-medium">{invoice.projectName}</td>
                         <td className="px-6 py-4 font-medium">
