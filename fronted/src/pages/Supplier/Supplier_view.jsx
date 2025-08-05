@@ -365,7 +365,7 @@ const SuppliersPage = () => {
               <div className="flex gap-4">
                 <button
                   onClick={() => navigate('/create-supplier')}
-                  className="flex items-center gap-2 bg-green-600 text-white px-6 py-2.5 rounded-lg hover:bg-green-500 transition-colors duration-200 font-medium"
+                  className="flex items-center gap-2 bg-slate-300 text-black px-6 py-2.5 rounded-3xl hover:bg-slate-900 hover:text-white transition-colors duration-200 font-medium"
                 >
                   <span>➕</span>
                   <span>הוסף ספק חדש</span>
@@ -373,7 +373,7 @@ const SuppliersPage = () => {
 
                 <button
                   onClick={() => setShowReportModal(true)}
-                  className="flex items-center gap-2 bg-blue-600 text-white px-6 py-2.5 rounded-lg hover:bg-blue-500 transition-colors duration-200 font-medium"
+                  className="flex items-center gap-2 bg-slate-300 text-black px-6 py-2.5 rounded-3xl hover:bg-slate-900 hover:text-white transition-colors duration-200 font-medium"
                 >
                   <FileSpreadsheet size={20} />
                   <span>מחולל דוחות</span>
@@ -486,9 +486,9 @@ const SuppliersPage = () => {
                 <table className="w-full">
                   <thead>
                     <tr className="bg-slate-300 text-slate-800 text-l">
-                      <th className="px-6 py-4 text-right">שם הספק</th>
-                      <th className="px-6 py-4 text-right">מספר עוסק</th>
-                      <th className="px-6 py-4 text-right">טלפון</th>
+                      <th className="px-6 py-4 text-center">שם הספק</th>
+                      <th className="px-6 py-4 text-center">מספר עוסק</th>
+                      <th className="px-6 py-4 text-center">טלפון</th>
                       <th className="px-6 py-4 text-center">אימייל</th>
                       <th className="px-6 py-4 text-center">שם בנק</th>
                       <th className="px-6 py-4 text-center">פעולות</th>
@@ -501,12 +501,12 @@ const SuppliersPage = () => {
                         onClick={() => handleView(supplier._id)}
                         className="cursor-pointer text-l border-t border-slate-200 hover:bg-slate-200 transition-colors duration-150 bg-slate-50"
                       >
-                        <td className="px-6 py-4 font-medium">{supplier.name}</td>
-                        <td className="px-6 py-4 font-medium">{supplier.business_tax}</td>
-                        <td className="px-6 py-4 font-medium">{supplier.phone}</td>
-                        <td className="px-6 py-4 font-medium">{supplier.email}</td>
-                        <td className="px-6 py-4 font-medium">{supplier.bankDetails?.bankName || 'אין חשבון בנק'}</td>
-                        <td className="px-6 py-4 font-medium">
+                        <td className="px-6 py-4 font-medium text-center">{supplier.name}</td>
+                        <td className="px-6 py-4 font-medium text-center">{supplier.business_tax}</td>
+                        <td className="px-6 py-4 font-medium text-center">{supplier.phone}</td>
+                        <td className="px-6 py-4 font-medium text-center">{supplier.email ||"לא הוזן אימייל"}</td>
+                        <td className="px-6 py-4 font-medium text-center">{supplier.bankDetails?.bankName || 'אין חשבון בנק'}</td>
+                        <td className="px-6 py-4 font-medium text-center">
                           <div className="flex justify-center gap-2">
                             <button
                               onClick={(e) => {

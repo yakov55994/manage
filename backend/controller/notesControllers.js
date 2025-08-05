@@ -3,10 +3,10 @@ import notesService from '../services/notesService.js'; // מייבא את הס�
 const notesControllers = {
     // יצירת הערה
     createNoteController: async (req, res) => {
-        const { text, userName } = req.body;
+        const { text } = req.body;
         try {
-            const newNote = await notesService.createNote(text, userName); // קורא לפונקציה בסרוויס
-            res.status(201).json({ message: "ההערה נוצרה בהצלחה!", note: newNote });
+            const newNote = await notesService.createNote(text); // קורא לפונקציה בסרוויס
+            res.status(201).json(newNote);
         } catch (error) {
             res.status(500).json({ message: error.message });
         }

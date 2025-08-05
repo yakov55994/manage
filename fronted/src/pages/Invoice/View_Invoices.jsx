@@ -656,7 +656,7 @@ const InvoicesPage = () => {
               <div className="flex gap-4">
                 <button
                   onClick={() => setShowReportModal(true)}
-                  className="flex items-center gap-2 bg-blue-600 text-white px-6 py-2.5 rounded-lg hover:bg-blue-500 transition-colors duration-200 font-medium"
+                  className="flex items-center gap-2 bg-slate-300 text-black px-6 py-2.5 rounded-3xl hover:bg-slate-900 hover:text-white transition-colors duration-200 font-medium"
                 >
                   <FileSpreadsheet size={20} />
                   <span>מחולל דוחות</span>
@@ -664,7 +664,7 @@ const InvoicesPage = () => {
 
                 <button
                   onClick={exportToExcelWithSuppliers}
-                  className="flex items-center gap-2 bg-slate-800 text-white px-6 py-2.5 rounded-lg hover:bg-slate-700 transition-colors duration-200 font-medium"
+                  className="flex items-center gap-2 bg-slate-300 text-black px-6 py-2.5 rounded-3xl hover:bg-slate-900 hover:text-white transition-colors duration-200 font-medium"
                 >
                   <DownloadCloud size={20} />
                   <span>ייצוא מהיר</span>
@@ -686,7 +686,7 @@ const InvoicesPage = () => {
                 <table className="w-full">
                   <thead>
                     <tr className="bg-slate-300 text-slate-800 text-l">
-                      <th className="px-6 py-4 text-right">שם הספק</th>
+                      <th className="px-6 py-4 text-center">שם הספק</th>
                       <th className="px-6 py-4 text-right">מספר חשבונית</th>
                       <th className="px-6 py-4 text-right">סכום</th>
                       <th className="mx-auto text-right">תאריך חשבונית</th>
@@ -791,7 +791,10 @@ const InvoicesPage = () => {
 
         {/* מודל מחולל דוחות */}
         {showReportModal && (
-          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50" 
+          onClick={() => setShowReportModal(false)}
+
+>
             <div className="bg-white rounded-lg shadow-xl p-6 max-w-4xl w-full mx-4 max-h-[90vh] overflow-y-auto">
               <div className="flex justify-between items-center mb-6">
                 <h3 className="text-2xl font-bold">מחולל דוחות חשבוניות</h3>

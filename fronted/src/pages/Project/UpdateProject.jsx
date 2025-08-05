@@ -66,8 +66,10 @@ const UpdateProjectPage = () => {
         remainingBudget: Number(remainingBudget),
         Contact_person: Contact_person
       });
-      setSuccess('הפרוייקט עודכן בהצלחה!');
-      setShowAnimation(true);
+   toast.success('הפרוייקט עודכן בהצלחה!', {
+        className: "sonner-toast success rtl"
+      });
+            setShowAnimation(true);
 
       setTimeout(() => {
         setShowAnimation(false);

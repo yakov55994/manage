@@ -144,7 +144,7 @@ const SupplierDetailsPage = () => {
                 <div className="border-l-4 border-amber-600 pl-4 bg-white p-4 rounded-lg shadow">
                   <b className="text-xl block mb-2">תאריך יצירה:</b>
                   <span className="text-lg">
-                    {formatDate(supplier.createdAt)}
+                    {formatDate(supplier.date)}
                   </span>
                 </div>
               </div>
