@@ -115,7 +115,7 @@ app.use("/api/orders", orderRoutes);
 app.use('/api/notes', notesRoutes);
 app.use('/api/upload', uploadRoute);
 app.use('/api/suppliers', suppliersRoutes);
-
+z``
 // ✅ טיפול בשגיאות כללי
 app.use((err, req, res, next) => {
   console.error('❌ Server error:', err.stack); // לוג שגיאות מפורט
