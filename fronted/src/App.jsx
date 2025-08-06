@@ -280,9 +280,9 @@ const AppContent = () => {
           </Routes>
         </div>
       </div>
-      <p className="text-center font-bold text-slate-600 mx-auto">
-        © כל הזכויות שמורות ליעקב כהן
-      </p>
+     <p className="text-center font-bold text-slate-600 mx-auto">
+          © כל הזכויות שמורות ליעקב כהן
+        </p>
       <Toaster />
     </>
   );
