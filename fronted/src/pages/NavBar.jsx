@@ -29,10 +29,10 @@ return (
      dir="rtl"
      className="fixed top-0 left-0 right-0 bg-gradient-to-r from-gray-900 via-slate-800 to-gray-900 text-gray-100 px-6 py-4 shadow-2xl z-50 border-b-2 border-orange-500/30"
    >
-     <div className="flex items-center justify-between h-12">
+     <div className="flex items-center justify-between h-12 צש">
        
        {/* לוגו ושם המערכת - בצד ימין */}
-       <div className="flex items-center gap-3">
+       {/* <div className="flex items-center gap-3">
          <div className="bg-gradient-to-r from-orange-500 to-orange-600 p-2 rounded-lg">
            <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
@@ -41,10 +41,10 @@ return (
          <div className="text-right">
            <h1 className="text-xl font-bold text-orange-400 text-center">מערכת ניהול</h1>
          </div>
-       </div>
+       </div> */}
 
        {/* תפריט ניווט מרכזי */}
-       <nav className="flex items-center gap-2">
+       <nav className="flex items-center gap-2 -mr-5">
          {[
            { icon: LayoutDashboard, text: "דף הבית", path: "/home", desc: "מסך ראשי" },
            { icon: FolderPlus, text: "יצירת פרויקט", path: "/create-project", desc: "פרויקט חדש" },

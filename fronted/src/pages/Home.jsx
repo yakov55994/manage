@@ -27,7 +27,7 @@ const Home = () => {
     <div className="min-h-screen relative overflow-hidden">
     <div className="min-h-screen relative overflow-hidden">
       {/* Modern Gradient Mesh Background */}
-      <div className="absolute inset-0 bg-gradient-to-br from-slate-950 via-gray-900 to-black">
+      <div className=" fixed inset-0 bg-gradient-to-br from-slate-950 via-gray-900 to-black -z-10">
         
         {/* Large Abstract Shapes */}
         <div className="absolute inset-0">
@@ -94,19 +94,18 @@ const Home = () => {
             {/* Header with Logo */}
             <div className="flex items-center justify-center gap-4 mb-8">
               <Settings
-                className="transition-all duration-700 hover:rotate-180 cursor-pointer size-16 text-cyan-400 drop-shadow-lg animate-pulse"
+                className="mr-28 transition-all duration-700 hover:rotate-180 cursor-pointer size-16 text-orange-400 drop-shadow-lg animate-pulse"
               />
-              <h1 className="text-7xl md:text-8xl font-extralight text-white drop-shadow-2xl bg-gradient-to-r from-cyan-400 via-purple-400 to-pink-400 bg-clip-text text-transparent animate-pulse">
+              <h1 className="ml-48 mx-auto text-7xl md:text-8xl font-extralight text-white drop-shadow-2xl bg-gradient-to-r from-cyan-400 via-purple-400 to-pink-400 bg-clip-text text-transparent animate-pulse">
                 ניהולון
               </h1>
-              <Sparkles className="text-purple-400 size-12 animate-bounce" />
             </div>
 
             {/* Subtitle with Typing Effect */}
             <div className="mb-12">
               <p className="text-2xl md:text-3xl text-gray-200 font-light leading-relaxed">
                 האתר שינהל לך מה שצריך בצורה 
-                <span className="bg-gradient-to-r from-cyan-400 to-purple-400 bg-clip-text text-transparent font-semibold"> איכותית ונוחה!</span>
+                <span className="bg-gradient-to-r from-orange-400 via-orange-500 to-orange-600 bg-clip-text text-transparent font-semibold"> איכותית ונוחה!</span>
               </p>
             </div>
 
@@ -129,12 +128,12 @@ const Home = () => {
             </div>
 
             {/* Call to Action Button */}
-            <button
+           <button
               onClick={handleMove}
-              className="group relative px-12 py-5 bg-gradient-to-r from-cyan-500 via-purple-500 to-pink-500 text-white rounded-2xl shadow-2xl transform transition-all duration-300 hover:scale-105 hover:shadow-cyan-500/25 active:scale-95 font-bold text-xl overflow-hidden"
+              className="group relative px-12 py-5 bg-gradient-to-r from-orange-400 via-orange-500 to-orange-600 text-white rounded-2xl shadow-2xl transform transition-all duration-300 hover:scale-105 hover:shadow-orange-500/25 active:scale-95 font-bold text-xl overflow-hidden"
             >
               {/* Button Background Animation */}
-              <div className="absolute inset-0 bg-gradient-to-r from-cyan-600 via-purple-600 to-pink-600 opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+              <div className="absolute inset-0 bg-gradient-to-r from-orange-500 via-orange-600 to-orange-700 opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
               
               {/* Button Content */}
               <div className="relative flex items-center gap-3">
@@ -148,17 +147,11 @@ const Home = () => {
 
             {/* Bottom Decoration */}
             <div className="mt-8 flex justify-center">
-              <div className="w-24 h-1 bg-gradient-to-r from-cyan-500 to-purple-500 rounded-full"></div>
+              <div className="w-24 h-1 bg-gradient-to-r from-orange-400 via-orange-500 to-orange-600 rounded-full"></div>
             </div>
           </div>
         </div>
 
-        {/* Scroll Indicator */}
-        <div className="absolute bottom-8 left-1/2 transform -translate-x-1/2">
-          <div className="w-6 h-10 border-2 border-white/30 rounded-full flex justify-center">
-            <div className="w-1 h-3 bg-white/50 rounded-full mt-2 animate-bounce"></div>
-          </div>
-        </div>
       </div>
     </div>
     </div>
