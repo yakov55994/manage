@@ -22,7 +22,7 @@ const app = express();
 const allowedOrigins = [
   'http://localhost:5173',
   'https://management-server-owna.onrender.com',
-  'https://manage-tan-seven.vercel.app/'  // ← וודא שזה בדיוק ככה!
+  'https://manage-tan-seven.vercel.app'  // ← וודא שזה בדיוק ככה!
 ];
 
 const corsOptions = {
