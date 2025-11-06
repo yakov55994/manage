@@ -79,12 +79,12 @@ const AppContent = () => {
   };
 
   return (
-    <>
-      <div className="flex ">
+    <div className="min-h-screen flex flex-col">
+      <div className="flex flex-1">
         <Sidebar />
-        <div className="flex-1 p-6 mt-20 ">
+        <div className="flex-1 p-6 mt-20">
           {/* מציג כפתור התחברות או התנתקות */}
-          <div className=" mb-0 mr-auto max-w-60 top-1 z-50 flex items-center gap-4  text-white  p-2 ">
+          <div className="mb-0 mr-auto max-w-60 top-1 z-50 flex items-center gap-4 text-white p-2">
             <div
               className={`flex items-center gap-2 px-4 py-2 rounded-2xl font-semibold text-sm tracking-wide shadow-lg ${
                 isLogin ? "bg-green-600 text-white" : "bg-red-600 text-white"
@@ -99,7 +99,7 @@ const AppContent = () => {
             </div>
 
             <button
-              className={`flex items-center gap-2 px-4 py-2  rounded-2xl font-semibold text-sm tracking-wide transition-all hover:scale-105 ${
+              className={`flex items-center gap-2 px-4 py-2 rounded-2xl font-semibold text-sm tracking-wide transition-all hover:scale-105 ${
                 isLogin
                   ? "bg-red-600 text-white hover:bg-red-500 shadow-red-600/30"
                   : "bg-green-600 text-white hover:bg-green-500 shadow-green-600/30"
@@ -280,11 +280,22 @@ const AppContent = () => {
           </Routes>
         </div>
       </div>
-     <p className="text-center font-bold text-slate-600 mx-auto">
-          © כל הזכויות שמורות ליעקב כהן
-        </p>
+      
+      {/* Footer קבוע בתחתית הדף */}
+      <footer className="bg-gray-50 border-t border-gray-200 py-4">
+        <p className="text-center font-bold text-slate-600">
+  © כל הזכויות שמורות ל
+  <a 
+    href="https://yc-dev.pages.dev" 
+    target="_blank" 
+    rel="noopener noreferrer"
+  >
+    יעקב כהן
+  </a>
+</p>      </footer>
+      
       <Toaster />
-    </>
+    </div>
   );
 };
 
