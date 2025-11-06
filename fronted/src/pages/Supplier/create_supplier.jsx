@@ -6,6 +6,9 @@ import { UserPlus } from "lucide-react";
 import BankSelector from "../../Components/BankSelector";
 import Select from 'react-select'; // הוסף את זה
 import banksData from "../../../public/data/banks_and_branches.json";
+import { useLocation } from "react-router-dom";
+
+
 
 const CreateSupplier = () => {
   const [supplier, setSupplier] = useState({
@@ -24,6 +27,12 @@ const CreateSupplier = () => {
   const [banks, setBanks] = useState([]);
   const [isLoading, setIsLoading] = useState(false);
   const navigate = useNavigate();
+
+
+const location = useLocation();
+const params = new URLSearchParams(location.search);
+const returnTo = params.get("returnTo") || "/create-invoice";
+
 
   useEffect(() => {
     setBanks(banksData);
@@ -46,10 +55,11 @@ const CreateSupplier = () => {
     }));
   };
 
-  const validateForm = () => {
+  const validateForm = () => {  
     const requiredFields = ["name", "business_tax", "phone"];
 
     for (let field of requiredFields) {
+        if (field === "phone") continue;
       if (!supplier[field]) {
         toast.error(`יש למלא את השדה: ${getFieldName(field)}`, {
           className: "sonner-toast error rtl",
@@ -96,35 +106,41 @@ const CreateSupplier = () => {
     e.preventDefault();
     if (!validateForm()) return;
 
-    setIsLoading(true);
-    try {
-      // נקה את הנתונים לפני השליחה
-      const supplierData = {
-        name: supplier.name.trim(),
-        business_tax: supplier.business_tax.trim(),
-        phone: supplier.phone.trim(),
-        address: supplier.address?.trim() || undefined,
-        email: supplier.email?.trim() || undefined,
+     setIsLoading(true);
+  try {
+    const supplierData = {
+      name: supplier.name.trim(),
+      business_tax: supplier.business_tax.trim(),
+      phone: supplier.phone.trim(),
+      address: supplier.address?.trim() || undefined,
+      email: supplier.email?.trim() || undefined,
+    };
+
+    const { bankName, branchNumber, accountNumber } = supplier.bankDetails;
+    if (bankName && branchNumber && accountNumber) {
+      supplierData.bankDetails = {
+        bankName: bankName.trim(),
+        branchNumber: branchNumber.trim(),
+        accountNumber: accountNumber.trim(),
       };
+    }
 
-      // הוסף פרטי בנק רק אם הם מלאים
-      const { bankName, branchNumber, accountNumber } = supplier.bankDetails;
-      if (bankName && branchNumber && accountNumber) {
-        supplierData.bankDetails = {
-          bankName: bankName.trim(),
-          branchNumber: branchNumber.trim(),
-          accountNumber: accountNumber.trim(),
-        };
-      }
+    console.log("Sending data:", supplierData);
 
-      console.log("Sending data:", supplierData); // לדיבוג
+   const res = await api.post("/suppliers/createSupplier", supplierData);
 
-      await api.post("/suppliers/createSupplier", supplierData);
-      toast.success("הספק נוצר בהצלחה!", {
-        className: "sonner-toast success rtl",
-      });
-      navigate("/suppliers");
-    } catch (err) {
+    toast.success("הספק נוצר בהצלחה!", {
+      className: "sonner-toast success rtl",
+    });
+
+   // אם השרת מחזיר את הספק שנוצר:
+   if (res?.data?.supplier) {
+     sessionStorage.setItem("createdSupplier", JSON.stringify(res.data.supplier));
+   }
+   // חוזרים למסך שקרא לנו (ברירת מחדל: /create-invoice)
+   navigate(returnTo);
+  }
+ catch (err) {
       console.error("Error details:", err.response?.data); // לדיבוג
       const errorMessage = err.response?.data?.message || "שגיאה ביצירת הספק";
       toast.error(errorMessage, { className: "sonner-toast error rtl" });
@@ -132,6 +148,7 @@ const CreateSupplier = () => {
       setIsLoading(false);
     }
   };
+
 
   return (
     <div className="mt-10 bg-gray-300 p-8 rounded-lg shadow-xl w-full max-w-5xl mx-auto">
@@ -343,7 +360,7 @@ const CreateSupplier = () => {
 
           <button
             type="button"
-            onClick={() => navigate("/suppliers")}
+            onClick={() => navigate(returnTo)}
             className="px-8 py-3 bg-gray-500 text-white font-semibold rounded-xl hover:bg-gray-400 transition-colors shadow-lg hover:shadow-xl"
           >
             ביטול

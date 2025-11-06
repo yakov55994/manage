@@ -4,14 +4,14 @@ import api from '../api/api';
 import { toast } from 'sonner';
 
 const SupplierSelector = ({ 
-  value, 
-  onChange, 
-  label = "בחר ספק", 
-  placeholder = "חפש או בחר ספק...", 
-  required = false,
-  className = "",
-  disabled = false 
-}) => {
+   value, 
+   onChange, 
+   label = "בחר ספק", 
+   placeholder = "חפש או בחר ספק...", 
+   required = false,
+   className = "",
+   disabled = false 
+ }) => {
   const [suppliers, setSuppliers] = useState([]);
   const [loading, setLoading] = useState(false);
   const [isOpen, setIsOpen] = useState(false);
@@ -45,21 +45,27 @@ const SupplierSelector = ({
   }, []);
 
   // עדכון הספק הנבחר כשמשנים את value מבחוץ
-  useEffect(() => {
+ useEffect(() => {
     if (value && suppliers.length > 0) {
-      const supplier = suppliers.find(s => s._id === value || s.name === value);
-      setSelectedSupplier(supplier || null);
+      const supplier =
+        suppliers.find((s) => s?._id === value) ||
+        suppliers.find((s) => s?.name === value) ||
+        null;
+      setSelectedSupplier(supplier);
     } else {
       setSelectedSupplier(null);
     }
   }, [value, suppliers]);
 
   // סינון ספקים לפי חיפוש
-  const filteredSuppliers = suppliers.filter(supplier =>
-    supplier.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    supplier.business_tax.toString().includes(searchTerm) ||
-    supplier.email.toLowerCase().includes(searchTerm.toLowerCase())
-  );
+ const filteredSuppliers = (suppliers || []).filter((supplier) => {
+    const name = String(supplier?.name ?? "").toLowerCase();
+    const email = String(supplier?.email ?? "").toLowerCase();
+    const tax  = String(supplier?.business_tax ?? "");
+    const term = String(searchTerm ?? "").toLowerCase();
+    // חיפוש: name/email לא רגיל -> lowerCase; מספר עוסק -> השוואת מחרוזת כמו שהיא
+    return name.includes(term) || email.includes(term) || tax.includes(String(searchTerm ?? ""));
+  });
 
   const handleSupplierSelect = (supplier) => {
     setSelectedSupplier(supplier);
@@ -72,8 +78,10 @@ const SupplierSelector = ({
     }
   };
 
-  const formatSupplierDisplay = (supplier) => {
-    return `${supplier.name} - ${supplier.business_tax}`;
+ const formatSupplierDisplay = (supplier) => {
+    const name = supplier?.name ?? "ללא שם";
+    const tax  = supplier?.business_tax ?? "";
+    return tax ? `${name} - ${tax}` : name;
   };
 
   return (

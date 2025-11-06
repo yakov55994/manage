@@ -14,9 +14,21 @@ const CreateInvoice = () => {
   const [invoiceIndexToDelete, setInvoiceIndexToDelete] = useState(null);
   const [showModal, setShowModal] = useState(false);
   const [selectedSupplierId, setSelectedSupplierId] = useState("");
+  const [suppliers, setSuppliers] = useState([]);
   // const [Contact_person, setContact_Person] = useState('')
 
   const navigate = useNavigate();
+
+  useEffect(() => {
+  (async () => {
+    try {
+      const res = await api.get("/suppliers"); // או הנתיב אצלך
+      setSuppliers(res?.data || []);
+    } catch {
+      setSuppliers([]);
+    }
+  })();
+}, []);
 
   useEffect(() => {
     const fetchProjects = async () => {
@@ -32,6 +44,52 @@ const CreateInvoice = () => {
     };
     fetchProjects();
   }, []);
+
+  useEffect(() => {
+  // כשפרויקטים נטענים – ננסה לשחזר טיוטה
+  const draftStr = sessionStorage.getItem("invoiceDraft");
+  if (draftStr && projects.length) {
+    try {
+      const draft = JSON.parse(draftStr);
+      if (draft?.invoices) setInvoices(draft.invoices);
+      if (draft?.selectedProjectId) {
+        const p = projects.find(pr => pr._id === draft.selectedProjectId);
+        if (p) setSelectedProject(p);
+      }
+    } catch {}
+    finally {
+      sessionStorage.removeItem("invoiceDraft");
+    }
+  }
+}, [projects]);
+
+useEffect(() => {
+  // אם חזרנו מיצירת ספק – נעדכן את החשבונית עם הספק החדש
+  const supplierStr = sessionStorage.getItem("createdSupplier");
+  const targetIndexStr = sessionStorage.getItem("targetInvoiceIndex");
+  if (supplierStr && targetIndexStr) {
+    try {
+      const supplier = JSON.parse(supplierStr);
+      const idx = Number(targetIndexStr);
+      setInvoices(prev => {
+        const next = [...prev];
+        if (next[idx]) {
+          next[idx] = {
+            ...next[idx],
+            invitingName: supplier?.name || supplier?.supplierName || "",
+            supplierId: supplier?._id || supplier?.id || "",
+          };
+        }
+        return next;
+      });
+    } catch {}
+    finally {
+      sessionStorage.removeItem("createdSupplier");
+      sessionStorage.removeItem("targetInvoiceIndex");
+    }
+  }
+}, []);
+
 
   const handleProjectChange = (e) => {
     const projectId = e.target.value;
@@ -609,7 +667,8 @@ const CreateInvoice = () => {
             <div className="space-y-2">
               <SupplierSelector
                 label="שם הספק"
-                value={invoice.invitingName}
+                suppliers={suppliers}
+                value={invoice.invitingName || ""}
                 onChange={(supplier) => {
                   console.log("🔍 Raw supplier data:", supplier);
 
@@ -633,26 +692,29 @@ const CreateInvoice = () => {
 
               {/* כפתור ליצירת ספק חדש */}
               <div className="flex justify-center mt-3">
-                <button
-                  type="button"
-                  onClick={() => {
-                    // שמירת הנתונים הנוכחיים ב-localStorage
-                    localStorage.setItem(
-                      "tempProjectData",
-                      JSON.stringify({
-                        name,
-                        // Contact_person
-                      })
-                    );
+           <button
+  type="button"
+  onClick={() => {
+    // נשמור טיוטה לפני יציאה
+    sessionStorage.setItem(
+      "invoiceDraft",
+      JSON.stringify({
+        invoices,
+        selectedProjectId: selectedProject?._id ?? null,
+      })
+    );
+    // נשמור את האינדקס של החשבונית עליה עובדים עכשיו
+    sessionStorage.setItem("targetInvoiceIndex", String(index));
 
-                    // מעבר לדף יצירת ספק עם פרמטר חזרה
-                    navigate("/create-supplier?returnTo=/create-project");
-                  }}
-                  className="px-4 py-2 bg-gray-400 text-sm text-black font-bold rounded-xl hover:bg-gray-900 hover:text-white transition-colors flex items-center gap-2"
-                >
-                  <span>➕</span>
-                  <span>אין ספק ברשימה? צור ספק חדש</span>
-                </button>
+    // נווט ליצירת ספק עם returnTo נכון
+    navigate(`/create-supplier?returnTo=${encodeURIComponent("/create-invoice")}`);
+  }}
+  className="px-4 py-2 bg-gray-400 text-sm text-black font-bold rounded-xl hover:bg-gray-900 hover:text-white transition-colors flex items-center gap-2"
+>
+  <span>➕</span>
+  <span>אין ספק ברשימה? צור ספק חדש</span>
+</button>
+
               </div>
             </div>
 

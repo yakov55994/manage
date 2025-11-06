@@ -5,7 +5,7 @@ const supplierSchema = new mongoose.Schema({
     name: { type: String, required: true },
     business_tax: { type: String, required: true }, // תיקון: String במקום Str
     address: { type: String, required: false },
-    phone: { type: String, required: true },
+    phone: { type: String, required: false },
     email: { type: String, required: false },
     date: { type: Date, default: Date.now },
     bankDetails: { 
