@@ -8,6 +8,9 @@ import { toast } from "sonner";
 const ProjectDetailsPage = () => {
   const { id } = useParams(); // שליפת ה-ID מה-URL
   const [project, setProject] = useState(null);
+  const [confirmOpen, setConfirmOpen] = useState(false);
+  const [deleting, setDeleting] = useState(false);
+
   const [statusFilter, setStatusFilter] = useState("");
   const [orders, setOrders] = useState([]);
   const [invoices, setInvoices] = useState([]);
@@ -125,28 +128,25 @@ const ProjectDetailsPage = () => {
       );
     }
   };
-
   const handleDelete = async () => {
     try {
-      if (projectToDelete) {
-        await api.delete(`/projects/${projectToDelete}`);
-        const updatedProjects = projects.filter(
-          (project) => project._id !== projectToDelete
-        );
-        setProjects(updatedProjects);
-        setAllProjects(updatedProjects);
-        setShowModal(false);
-        toast.success("הפרוייקט נמחק בהצלחה", {
-          className: "sonner-toast success rtl",
-        });
-      }
+      setDeleting(true);
+      await api.delete(`/projects/${project._id}`); // או `/projects/${id}`
+      toast.success("הפרוייקט נמחק בהצלחה", {
+        className: "sonner-toast success rtl",
+      });
+      navigate("/projects"); // נווט חזרה לרשימת הפרויקטים
     } catch (error) {
       console.error("Error deleting project:", error);
       toast.error("שגיאה במחיקת הפרויקט", {
         className: "sonner-toast error rtl",
       });
+    } finally {
+      setDeleting(false);
+      setConfirmOpen(false);
     }
   };
+
   const handleEdit = (id) => {
     navigate(`/update-project/${id}`);
   };
@@ -168,7 +168,7 @@ const ProjectDetailsPage = () => {
         עריכת פרוייקט
       </button>
       <button
-        onClick={handleDelete}
+        onClick={() => setConfirmOpen(true)}
         className="p-3 bg-red-400 text-black hover:bg-red-600 hover:text-white rounded-full transition-colors duration-150"
       >
         מחק פרויקט
@@ -182,7 +182,7 @@ const ProjectDetailsPage = () => {
               <span className="text-l">{project.name}</span>
             </div>
 
-            <div className=" border-gray-500 pl-4">
+            <div className="border-l-2 border-gray-500 pl-4">
               <b className="text-lg block">איש קשר :</b>
               <span className="text-l">{project.Contact_person}</span>
             </div>
@@ -201,6 +201,22 @@ const ProjectDetailsPage = () => {
               <td className="px-6 py-0.5">
                 {formatCurrencyWithAlert(project.remainingBudget)}
               </td>
+            </div>
+
+            {console.log(project)}
+            <div className=" border-gray-500 pl-4">
+              <b className="text-lg block">שם הספק:</b>
+              <span className="text-l">{project.supplierName}</span>
+            </div>
+
+            <div className=" border-gray-500 pl-4">
+              <b className="text-lg block">סטטוס תשלום:</b>
+              <span className="text-l">{project.paymentStatus}</span>
+            </div>
+
+            <div className=" border-gray-500 pl-4">
+              <b className="text-lg block">חסר מסמך ?</b>
+              <span className="text-l">{project.missingDocument}</span>
             </div>
 
             <div className=" border-gray-500 pl-4">
@@ -329,34 +345,37 @@ const ProjectDetailsPage = () => {
           </table>
         </div>
       </div>
-       {showModal && (
-          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center">
-            <div className="bg-white rounded-lg shadow-xl p-6 max-w-sm w-full mx-4">
-              <div className="mb-6">
-                <div className="bg-red-100 text-red-600 p-4 rounded-lg mb-4">
-                  <h3 className="text-3xl font-bold text-center mb-3">האם אתה בטוח?</h3>
-                  <p className="mt-1 text-l text-center">שים לב! פעולה זו תמחק את הפרויקט לצמיתות.</p>
-                </div>
-              </div>
-              <div className="flex justify-center gap-3">
-                <button
-                  onClick={handleDelete}
-                  className="px-4 py-2 text-l font-bold text-white bg-red-600 hover:bg-red-700 rounded-lg transition-colors duration-150"
-                >
-                  מחק פרויקט
-                </button>
-                <button
-                  onClick={() => setShowModal(false)}
-                  className="px-4 py-2 text-l font-bold text-slate-600 hover:text-slate-700 bg-slate-100 hover:bg-slate-200 rounded-lg transition-colors duration-150"
-                >
-                  ביטול
-                </button>
-              </div>
+      {confirmOpen && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center">
+          <div className="bg-white rounded-lg shadow-xl p-6 max-w-sm w-full mx-4">
+            <div className="bg-red-100 text-red-600 p-4 rounded-lg mb-4">
+              <h3 className="text-3xl font-bold text-center mb-3">
+                האם אתה בטוח?
+              </h3>
+              <p className="mt-1 text-l text-center">
+                שים לב! פעולה זו תמחק את הפרויקט לצמיתות.
+              </p>
+            </div>
+            <div className="flex justify-center gap-3">
+              <button
+                onClick={handleDelete}
+                disabled={deleting}
+                className="px-4 py-2 text-l font-bold text-white bg-red-600 hover:bg-red-700 rounded-lg transition-colors disabled:opacity-60"
+              >
+                {deleting ? "מוחק..." : "מחק פרויקט"}
+              </button>
+              <button
+                onClick={() => setConfirmOpen(false)}
+                disabled={deleting}
+                className="px-4 py-2 text-l font-bold text-slate-600 hover:text-slate-700 bg-slate-100 hover:bg-slate-200 rounded-lg transition-colors"
+              >
+                ביטול
+              </button>
             </div>
           </div>
-        )}
+        </div>
+      )}
     </div>
-    
   );
 };
 

@@ -1,39 +1,47 @@
 import React, { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import api from '../../api/api'; import { ClipLoader } from 'react-spinners';
-// import SuccessAnimation from '../../Components/SuccessAnimation.jsx';
+import api from '../../api/api';
+import { ClipLoader } from 'react-spinners';
 import { toast } from 'sonner';
 
 const UpdateProjectPage = () => {
   const { id } = useParams();
+
   const [project, setProject] = useState(null);
   const [newProjectName, setNewProjectName] = useState('');
   const [budget, setBudget] = useState('');
   const [invitingName, setInvitingName] = useState('');
   const [remainingBudget, setRemainingBudget] = useState('');
-  const [Contact_person, setContact_Person] = useState(true);
+  const [Contact_person, setContact_Person] = useState('');
   const [loading, setLoading] = useState(true);
-  const [success, setSuccess] = useState(null);
   const [showAnimation, setShowAnimation] = useState(false);
+
+  // ✅ שדות חדשים ברמת פרויקט
+  const [supplierName, setSupplierName] = useState('');
+  const [paymentStatus, setPaymentStatus] = useState('');      // "", "שולם", "לא שולם"
+  const [missingDocument, setMissingDocument] = useState('');  // "", "כן", "לא"
 
   const navigate = useNavigate();
 
   useEffect(() => {
     const fetchProject = async () => {
       try {
-        const response = await api.get(`/projects/${id}`);
-        setProject(response.data);
-        setNewProjectName(response.data.name || '');
-        setBudget(response.data.budget ?? 0);
-        setInvitingName(response.data.invitingName || '');
-        setRemainingBudget(response.data.remainingBudget ?? 0);
-        setContact_Person(response.data.Contact_person || '');
+        const { data } = await api.get(`/projects/${id}`);
+        setProject(data);
+        setNewProjectName(data.name || '');
+        setBudget(data.budget ?? 0);
+        setInvitingName(data.invitingName || '');
+        setRemainingBudget(data.remainingBudget ?? 0);
+        setContact_Person(data.Contact_person || '');
+
+        // ✅ טעינת השדות החדשים
+        setSupplierName(data.supplierName ?? '');
+        setPaymentStatus(data.paymentStatus ?? '');
+        setMissingDocument(data.missingDocument ?? '');
+
         setLoading(false);
       } catch (error) {
-        toast.error('שגיאה בשליפת פרויקט',{
-          className: "sonner-toast error rtl"
-        }
-        );
+        toast.error('שגיאה בשליפת פרויקט', { className: 'sonner-toast error rtl' });
         setLoading(false);
       }
     };
@@ -44,19 +52,20 @@ const UpdateProjectPage = () => {
     e.preventDefault();
     setLoading(true);
 
+    // ולידציה בסיסית לשדות חובה הישנים (החדשים אופציונליים לפי הבקשה)
     if (
       !newProjectName ||
       !invitingName ||
-      budget === undefined || budget === null || budget === "" || isNaN(budget) ||
-      remainingBudget === undefined || remainingBudget === null || remainingBudget === "" || isNaN(remainingBudget || !! Contact_person)
+      budget === undefined || budget === null || budget === '' || isNaN(budget) ||
+      remainingBudget === undefined || remainingBudget === null || remainingBudget === '' || isNaN(remainingBudget) ||
+      !Contact_person
     ) {
       toast.error('לצורך עדכון פרוייקט נדרש למלא את כל השדות עם ערכים תקינים', {
-        className: "sonner-toast error rtl"
+        className: 'sonner-toast error rtl',
       });
       setLoading(false);
       return;
     }
-
 
     try {
       await api.put(`/projects/${id}`, {
@@ -64,21 +73,22 @@ const UpdateProjectPage = () => {
         budget: Number(budget),
         invitingName,
         remainingBudget: Number(remainingBudget),
-        Contact_person: Contact_person
-      });
-   toast.success('הפרוייקט עודכן בהצלחה!', {
-        className: "sonner-toast success rtl"
-      });
-            setShowAnimation(true);
+        Contact_person,
 
+        // ✅ שליחת השדות החדשים
+        supplierName,
+        paymentStatus,     // "", "שולם", "לא שולם"
+        missingDocument,   // "", "כן", "לא"
+      });
+
+      toast.success('הפרוייקט עודכן בהצלחה!', { className: 'sonner-toast success rtl' });
+      setShowAnimation(true);
       setTimeout(() => {
         setShowAnimation(false);
         navigate(`/project/${id}`);
-      }, 5000);
+      }, 1500);
     } catch (err) {
-      toast.error('נכשל ביצוע העדכון', {
-        className: "sonner-toast error rtl"
-      });
+      toast.error('נכשל ביצוע העדכון', { className: 'sonner-toast error rtl' });
       setLoading(false);
     }
   };
@@ -95,12 +105,12 @@ const UpdateProjectPage = () => {
   return (
     <div className="container mx-auto p-6">
       <h1 className="text-4xl font-bold text-center text-slate-700 mb-6">עריכת פרוייקט</h1>
+
       <div className="flex justify-center items-center min-h-screen">
         <form className="bg-gray-300 p-8 rounded-lg shadow-xl max-w-md w-full font-bold" onSubmit={handleSubmit}>
-          <div className="mb-5 font-bold">
-            <label htmlFor="newProjectName" className="block text-lg">
-              שם פרויקט חדש
-            </label>
+          {/* שם פרויקט */}
+          <div className="mb-5">
+            <label htmlFor="newProjectName" className="block text-lg">שם פרויקט חדש</label>
             <input
               type="text"
               id="newProjectName"
@@ -110,10 +120,12 @@ const UpdateProjectPage = () => {
               required
             />
           </div>
-          <div className="mb-5 font-bold">
+
+          {/* תקציב */}
+          <div className="mb-5">
             <label htmlFor="budget" className="block text-lg">תקציב</label>
             <input
-              type="text"
+              type="number"
               id="budget"
               value={budget}
               onChange={(e) => setBudget(e.target.value === '' ? 0 : e.target.value)}
@@ -121,7 +133,9 @@ const UpdateProjectPage = () => {
               required
             />
           </div>
-          <div className="mb-5 font-bold">
+
+          {/* שם המזמין + איש קשר */}
+          <div className="mb-5">
             <label htmlFor="invitingName" className="block text-lg">שם המזמין</label>
             <input
               type="text"
@@ -131,7 +145,8 @@ const UpdateProjectPage = () => {
               className="w-full p-2 border border-gray-300 rounded mt-2"
               required
             />
-            <label htmlFor="Contact_person" className="block text-lg">איש קשר</label>
+
+            <label htmlFor="Contact_person" className="block text-lg mt-4">איש קשר</label>
             <input
               type="text"
               id="Contact_person"
@@ -141,18 +156,59 @@ const UpdateProjectPage = () => {
               required
             />
           </div>
-          <div className="mb-5 font-bold">
-            <label htmlFor="remainingBudget" className="block text-lg">
-              תקציב שנותר
-            </label>
+
+          {/* תקציב שנותר */}
+          <div className="mb-5">
+            <label htmlFor="remainingBudget" className="block text-lg">תקציב שנותר</label>
             <input
-              type="text"
+              type="number"
               id="remainingBudget"
               value={remainingBudget}
               onChange={(e) => setRemainingBudget(e.target.value === '' ? 0 : e.target.value)}
               className="w-full p-2 border border-gray-300 rounded mt-2"
               disabled
             />
+          </div>
+
+          {/* ✅ שדות חדשים ברמת פרויקט */}
+          <div className="mb-5">
+            <label htmlFor="supplierName" className="block text-lg">שם ספק </label>
+            <input
+              type="text"
+              id="supplierName"
+              value={supplierName}
+              onChange={(e) => setSupplierName(e.target.value)}
+              className="w-full p-2 border border-gray-300 rounded mt-2"
+              placeholder="לדוגמה: חברת בנייה בע״מ"
+            />
+          </div>
+
+          <div className="mb-5">
+            <label htmlFor="paymentStatus" className="block text-lg">מצב תשלום </label>
+            <select
+              id="paymentStatus"
+              value={paymentStatus}
+              onChange={(e) => setPaymentStatus(e.target.value)}
+              className="w-full p-2 border border-gray-300 rounded mt-2 bg-white"
+            >
+              <option value="">— בחר —</option>
+              <option value="שולם">שולם</option>
+              <option value="לא שולם">לא שולם</option>
+            </select>
+          </div>
+
+          <div className="mb-5">
+            <label htmlFor="missingDocument" className="block text-lg">חוסר מסמך </label>
+            <select
+              id="missingDocument"
+              value={missingDocument}
+              onChange={(e) => setMissingDocument(e.target.value)}
+              className="w-full p-2 border border-gray-300 rounded mt-2 bg-white"
+            >
+              <option value="">— בחר —</option>
+              <option value="כן">כן</option>
+              <option value="לא">לא</option>
+            </select>
           </div>
 
           <div className="grid place-items-center mt-4">
@@ -167,8 +223,7 @@ const UpdateProjectPage = () => {
         </form>
       </div>
 
-
-      {showAnimation && <SuccessAnimation text={success} />}
+      {showAnimation && null /* SuccessAnimation אם תרצה להחזיר */}
     </div>
   );
 };

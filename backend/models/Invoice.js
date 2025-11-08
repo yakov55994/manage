@@ -36,6 +36,15 @@ paymentDate: {
         ref: 'Supplier',
         required: false // אופציונלי לחשבוניות ישנות
     },
+      documentType: {
+    type: String,
+    enum: [
+      'ח. עסקה',
+      'ה. עבודה',
+      'ד. תשלום, חשבונית מס / קבלה'
+    ],
+    required: true, // אם אתה רוצה לחייב בחירה
+  },
 });
 
 const Invoice = mongoose.model("Invoice", invoiceSchema);

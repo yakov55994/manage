@@ -135,7 +135,7 @@ getAllInvoices: async () => {
   deleteInvoiceById: async (id, invoiceNumber, projectName) => {
     try {
       // לוג לבדוק את הפרמטרים
-      // console.log("Deleting invoice with id:", id, "invoiceNumber:", invoiceNumber, "projectName:", projectName);
+      console.log("Deleting invoice with id:", id, "invoiceNumber:", invoiceNumber, "projectName:", projectName);
 
       // חיפוש החשבונית לפני המחיקה
       const invoice = await Invoice.findOne({

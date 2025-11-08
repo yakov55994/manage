@@ -131,15 +131,15 @@ const SupplierDetailsPage = () => {
                 </div>
                 <div className="border-l-4 border-amber-600 pl-4 bg-white p-4 rounded-lg shadow">
                   <b className="text-xl block mb-2">טלפון:</b>
-                  <span className="text-lg">{supplier.phone}</span>
+                  <span className="text-lg">{supplier.phone || "לא הוזן מספר טלפון"}</span>
                 </div>
                 <div className="border-l-4 border-amber-600 pl-4 bg-white p-4 rounded-lg shadow">
                   <b className="text-xl block mb-2">אימייל:</b>
-                  <span className="text-lg">{supplier.email || "לא הוכנס אימיל"}</span>
+                  <span className="text-lg">{supplier.email || "לא הוזן אימיל"}</span>
                 </div>
                 <div className="border-l-4 border-amber-600 pl-4 bg-white p-4 rounded-lg shadow lg:col-span-2">
                   <b className="text-xl block mb-2">כתובת:</b>
-                  <span className="text-lg">{supplier.address || "לא הוכנס כתובת"}</span>
+                  <span className="text-lg">{supplier.address || "לא הוזן כתובת"}</span>
                 </div>
                 <div className="border-l-4 border-amber-600 pl-4 bg-white p-4 rounded-lg shadow">
                   <b className="text-xl block mb-2">תאריך יצירה:</b>

@@ -28,7 +28,11 @@ const ProjectsPage = ({ initialProjects = [] }) => {
     projectName: "",
     invitingName: "",
     contactPerson: "",
-    budgetStatus: "all", // all, positive, negative, zero, noBudget
+    budgetStatus: "all",
+    supplierName: "",
+    paymentStatus: "",
+    missingDocument: "",
+     // all, positive, negative, zero, noBudget
   });
 
   // עמודות לייצוא
@@ -42,6 +46,9 @@ const ProjectsPage = ({ initialProjects = [] }) => {
     budgetUsage: false,
     budgetPercentage: false,
     projectStatus: false,
+    supplierName: false,
+    paymentStatus: false,
+    missingDocument: false,
   });
 
   const navigate = useNavigate();
@@ -63,6 +70,9 @@ const ProjectsPage = ({ initialProjects = [] }) => {
     { key: 'remainingBudget', label: 'תקציב שנותר', selected: exportColumns.remainingBudget },
     { key: 'createdAt', label: 'תאריך יצירה', selected: exportColumns.createdAt },
     { key: 'contactPerson', label: 'איש קשר', selected: exportColumns.contactPerson },
+    { key: 'contactPerson', label: 'שם ספק', selected: exportColumns.contactPerson },
+    { key: 'contactPerson', label: 'מצב תשלום', selected: exportColumns.contactPerson },
+    { key: 'contactPerson', label: 'חוסר מסמך', selected: exportColumns.contactPerson },
     { key: 'budgetUsage', label: 'תקציב שנוצל', selected: exportColumns.budgetUsage },
     { key: 'budgetPercentage', label: 'אחוז ניצול תקציב', selected: exportColumns.budgetPercentage },
     { key: 'projectStatus', label: 'סטטוס פרויקט', selected: exportColumns.projectStatus },
@@ -149,7 +159,23 @@ const ProjectsPage = ({ initialProjects = [] }) => {
           !project.budget || project.remainingBudget === undefined
         );
       }
+      if (advancedFilters.supplierName) {
+        filtered = filtered.filter(project => 
+          project.supplierName?.toLowerCase().includes(advancedFilters.supplierName.toLowerCase())
+        );
     }
+      if (advancedFilters.paymentStatus) {
+        filtered = filtered.filter(project =>
+          project.paymentStatus?.toLowerCase().includes(advancedFilters.paymentStatus.toLowerCase())
+        );
+      }
+      if (advancedFilters.missingDocument) {
+        filtered = filtered.filter(project =>
+          project.missingDocument?.toLowerCase().includes(advancedFilters.missingDocument.toLowerCase())
+        );
+      }
+    }
+
 
     return filtered;
   };
@@ -168,6 +194,9 @@ const ProjectsPage = ({ initialProjects = [] }) => {
       invitingName: "",
       contactPerson: "",
       budgetStatus: "all",
+      supplierName: "",
+      paymentStatus: "",
+      missingDocument: "",
     });
   };
 
@@ -240,6 +269,9 @@ const ProjectsPage = ({ initialProjects = [] }) => {
       budgetUsage: "תקציב שנוצל",
       budgetPercentage: "אחוז ניצול תקציב",
       projectStatus: "סטטוס פרויקט",
+      supplierName: "שם ספק",
+      paymentStatus: "מצב תשלום",
+      missingDocument: "חוסר מסמך",
     };
 
     const selectedColumns = Object.keys(exportColumns).filter(key => exportColumns[key]);
@@ -281,6 +313,17 @@ const ProjectsPage = ({ initialProjects = [] }) => {
             break;
           case 'projectStatus':
             row[columnMapping.projectStatus] = stats.projectStatus;
+            break;
+          case 'supplierName':
+            row[columnMapping.supplierName] = project.supplierName || 'לא זמין';
+            break;
+          case 'paymentStatus':
+            row[columnMapping.paymentStatus] = project.paymentStatus || 'לא זמין';
+            break;
+          case 'missingDocument':
+            row[columnMapping.missingDocument] = project.missingDocument || 'לא זמין';
+            break;
+          default:
             break;
         }
       });
@@ -331,7 +374,10 @@ const ProjectsPage = ({ initialProjects = [] }) => {
       "תאריך יצירה": formatDate(project.createdAt),
       "תקציב": project.budget || 'אין תקציב',
       "תקציב שנותר": project.remainingBudget !== undefined ? project.remainingBudget : 'לא זמין',
-      "איש קשר": project.Contact_person || 'לא זמין'
+      "איש קשר": project.Contact_person || 'לא זמין',
+      "שם ספק": project.supplierName || 'לא זמין',
+      "מצב תשלום": project.paymentStatus || 'לא זמין',
+      "חוסר מסמך": project.missingDocument || 'לא זמין',
     }));
 
     const worksheet = XLSX.utils.json_to_sheet(projectsWithHebrewHeaders);
@@ -470,6 +516,9 @@ const ProjectsPage = ({ initialProjects = [] }) => {
                       <th className="px-6 py-4 ">תקציב</th>
                       <th className="px-6 py-4 ">תקציב שנותר</th>
                       <th className="px-6 py-4 ">שם המזמין</th>
+                      <th className="px-6 py-4 ">שם הספק</th>
+                      <th className="px-6 py-4 ">מצב תשלום</th>
+                      <th className="px-6 py-4 ">חוסר מסמך</th>
                       <th className="px-6 py-4 ">תאריך יצירה</th>
                       <th className="px-6 py-4 ">איש קשר</th>
                       <th className="px-6 py-4 r">פעולות</th>
@@ -498,6 +547,9 @@ const ProjectsPage = ({ initialProjects = [] }) => {
                           )}
                         </td>
                         <td className="px-6 py-4 font-medium text-center">{project.invitingName}</td>
+                        <td className="px-6 py-4 font-medium text-center">{project.supplierName || "לא הוזן "}</td>
+                        <td className="px-6 py-4 font-medium text-center">{project.paymentStatus || "לא הוזן "}</td>
+                        <td className="px-6 py-4 font-medium text-center">{project.missingDocument || "לא הוזן"}</td>
                         <td className="px-6 py-4 font-medium text-center">{formatDate(project.createdAt)}</td>
                         <td className="px-6 py-4 font-medium text-center">{project.Contact_person || "לא הוזן איש קשר"}</td>
                         <td className="px-6 py-4 font-medium text-center">

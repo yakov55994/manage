@@ -5,12 +5,16 @@ import { ClipLoader } from "react-spinners";
 import { FileText } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import * as XLSX from "xlsx";
+import { toast } from "sonner";
 
 const InvoiceDetailsPage = () => {
-    console.log("🚀 InvoiceDetailsPage component loaded!"); // הוסף את זה
+  console.log("🚀 InvoiceDetailsPage component loaded!"); // הוסף את זה
 
   const { id } = useParams();
   const [invoice, setInvoice] = useState(null);
+  const [confirmOpen, setConfirmOpen] = useState(false);
+  const [deleting, setDeleting] = useState(false);
+
   const [loading, setLoading] = useState(true);
 
   const navigate = useNavigate();
@@ -238,6 +242,27 @@ const InvoiceDetailsPage = () => {
     navigate(`/update-invoice/${id}`);
   };
 
+  const handleDelete = async () => {
+    try {
+      console.log(invoice)
+      if (!invoice?._id) return;
+      setDeleting(true);
+      await api.delete(`/invoices/${invoice._id}`); // ודא שהראוט שלך הוא /invoices/:id
+      toast.success("החשבונית נמחקה בהצלחה", {
+        className: "sonner-toast success rtl",
+      });
+      navigate("/invoices");
+    } catch (error) {
+      console.error("Error deleting invoice:", error);
+      toast.error("שגיאה במחיקת החשבונית", {
+        className: "sonner-toast error rtl",
+      });
+    } finally {
+      setDeleting(false);
+      setConfirmOpen(false);
+    }
+  };
+
   if (!invoice) {
     return (
       <div className="flex justify-center items-center h-64">
@@ -258,20 +283,26 @@ const InvoiceDetailsPage = () => {
           e.stopPropagation();
           handleEdit(invoice._id);
         }}
-        className="p-2 bg-slate-400 text-black hover:bg-slate-600 hover:text-white rounded-full transition-colors duration-150"
+        className="ml-2 p-3 bg-slate-400 text-black hover:bg-slate-600 hover:text-white  rounded-full transition-colors duration-150"
       >
         עריכת חשבונית
+      </button>
+
+      <button
+        onClick={() => setConfirmOpen(true)}
+        className="p-3 bg-red-400 text-black hover:bg-red-600 hover:text-white rounded-full transition-colors duration-150"
+      >
+        מחק חשבונית
       </button>
 
       <div className="flex justify-center items-center text-center mt-14 mb-14">
         <div className="bg-slate-300 p-5 rounded-lg shadow-xl w-full max-w-4xl">
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 text-xl text-black">
-
-             <div className="border-l-2 border-amber-600 pl-4">
+            <div className="border-l-2 border-amber-600 pl-4">
               <b className="text-xl block">שם הספק:</b>
               <span className="text-l">{invoice.invitingName}</span>
             </div>
-            
+
             <div className="border-l-2 border-amber-600 pl-4">
               <b className="text-xl block">מספר חשבונית:</b>
               <span className="text-l">{invoice.invoiceNumber}</span>
@@ -288,13 +319,14 @@ const InvoiceDetailsPage = () => {
                 {formatHebrewDate(invoice.createdAt)}
               </span>
             </div>
-         
-          <div className="border-l-2 border-amber-600 pl-4">
+
+            <div className="border-l-2 border-amber-600 pl-4">
               <b className="text-xl block">פירוט:</b>
-              <span className="text-l">{invoice.detail || "לא הוכנס פירוט"}</span>
+              <span className="text-l">
+                {invoice.detail || "לא הוזן פירוט"}
+              </span>
             </div>
-           
-         
+
             <div className="border-l-2 border-amber-600 pl-4">
               <b className="text-xl block">פרוייקט:</b>
               <span className="text-l">{invoice.projectName}</span>
@@ -304,7 +336,7 @@ const InvoiceDetailsPage = () => {
               <b className="text-xl block">סטטוס חשבונית:</b>
               <span className="text-l">{invoice.status}</span>
             </div>
-            
+
             <div className="border-l-2 border-amber-600 pl-4">
               <b className="text-xl block">תאריך התשלום:</b>
               <span className="text-l">
@@ -313,7 +345,12 @@ const InvoiceDetailsPage = () => {
                   : "לא שולם"}
               </span>
             </div>
-           
+            <div className="border-l-2 border-amber-600 pl-4">
+              <b className="text-xl block">סוג מסמך:</b>
+              <span className="text-l">
+                {invoice.documentType || "לא הוזן"}
+              </span>
+            </div>
 
             {/* קטע הצגת הקבצים */}
             <div className="col-span-3 border-l-2 border-amber-600 pl-4">
@@ -348,6 +385,34 @@ const InvoiceDetailsPage = () => {
           </div>
         </div>
       </div>
+      {confirmOpen && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg shadow-xl p-6 max-w-sm w-full mx-4">
+            <div className="bg-red-100 text-red-700 p-4 rounded-lg mb-4">
+              <h3 className="text-2xl font-bold text-center mb-2">
+                האם למחוק את החשבונית?
+              </h3>
+              <p className="text-center">הפעולה בלתי הפיכה.</p>
+            </div>
+            <div className="flex justify-center gap-3">
+              <button
+                onClick={handleDelete}
+                disabled={deleting}
+                className="px-4 py-2 text-white bg-red-600 hover:bg-red-700 rounded-lg transition-colors disabled:opacity-60"
+              >
+                {deleting ? "מוחק..." : "מחק חשבונית"}
+              </button>
+              <button
+                onClick={() => setConfirmOpen(false)}
+                disabled={deleting}
+                className="px-4 py-2 text-slate-700 bg-slate-100 hover:bg-slate-200 rounded-lg transition-colors"
+              >
+                ביטול
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

@@ -16,6 +16,7 @@ const InvoiceEditPage = () => {
   const [paid, setPaid] = useState(""); // "לא" או "כן"
   const [createdAt, setCreatedAt] = useState(""); // ✅ הוסף state עבור תאריך יצירה
   const [files, setFiles] = useState([]); // הוספת state עבור קבצים
+  const [documentType, setDocumentType] = useState("");
   const [loading, setLoading] = useState(false);
   const { id } = useParams(); // Retrieve the invoice ID from the URL
   const navigate = useNavigate();
@@ -48,28 +49,32 @@ const InvoiceEditPage = () => {
         setInvitingName(invoiceData.invitingName);
         setPaymentDate(invoiceData?.paymentDate || "אין תאריך לתשלום");
         setPaid(invoiceData.paid); // Set paid status
+        setDocumentType(invoiceData.documentType || "");
 
         if (invoiceData.createdAt) {
           console.log("Original createdAt:", invoiceData.createdAt);
-          
+
           // אם התאריך שמור כ-Date או string, המר ל-string בפורמט YYYY-MM-DD
           let formattedDate;
-          
-          if (typeof invoiceData.createdAt === 'string' && invoiceData.createdAt.includes('-')) {
+
+          if (
+            typeof invoiceData.createdAt === "string" &&
+            invoiceData.createdAt.includes("-")
+          ) {
             // אם זה כבר בפורמט YYYY-MM-DD
-            formattedDate = invoiceData.createdAt.split('T')[0];
+            formattedDate = invoiceData.createdAt.split("T")[0];
           } else {
             // אם זה Date object או timestamp
             const date = new Date(invoiceData.createdAt);
-            formattedDate = date.toISOString().split('T')[0];
+            formattedDate = date.toISOString().split("T")[0];
           }
-          
+
           console.log("Formatted createdAt:", formattedDate);
           setCreatedAt(formattedDate);
         } else {
           console.log("No createdAt found in invoice data");
           // אם אין תאריך, קבע תאריך של היום כברירת מחדל
-          const today = new Date().toISOString().split('T')[0];
+          const today = new Date().toISOString().split("T")[0];
           setCreatedAt(today);
         }
 
@@ -247,23 +252,23 @@ const InvoiceEditPage = () => {
       const urlObj = new URL(url);
       const path = urlObj.pathname;
 
-      const parts = path.split('/');
-      const uploadIndex = parts.indexOf('upload');
+      const parts = path.split("/");
+      const uploadIndex = parts.indexOf("upload");
       if (uploadIndex === -1 || parts.length <= uploadIndex + 1) return null;
 
       const relevantParts = parts.slice(uploadIndex + 1);
-      if (relevantParts[0].startsWith('v')) {
+      if (relevantParts[0].startsWith("v")) {
         relevantParts.shift(); // מסיר את הגרסה
       }
 
       const fileNameWithExt = relevantParts.pop(); // example.pdf
-      const folder = relevantParts.join('/');
+      const folder = relevantParts.join("/");
 
-      const fileName = keepExtension ? fileNameWithExt : fileNameWithExt
+      const fileName = keepExtension ? fileNameWithExt : fileNameWithExt;
 
       return folder ? `${folder}/${fileName}` : fileName;
     } catch (err) {
-      console.error('❌ Failed to extract publicId:', err);
+      console.error("❌ Failed to extract publicId:", err);
       return null;
     }
   }
@@ -271,67 +276,70 @@ const InvoiceEditPage = () => {
   // פונקציה למחיקת קובץ - עם מחיקה אמיתית מ-Cloudinary
   const handleRemoveFile = async (fileIndex) => {
     const fileToDelete = files[fileIndex];
-    
+
     // בדיקה שהקובץ קיים
     if (!fileToDelete) {
-        toast.error("קובץ לא נמצא");
-        return;
+      toast.error("קובץ לא נמצא");
+      return;
     }
-    
+
     console.log("=== DELETING FILE ===");
     console.log("File to delete:", fileToDelete);
-    
+
     // אם זה קובץ מקומי, פשוט תסיר מהמערך
     if (fileToDelete.isLocal) {
-        const newFiles = [...files];
-        newFiles.splice(fileIndex, 1);
-        setFiles(newFiles);
-        
-        // נקה את ה-URL הזמני
-        if (fileToDelete.tempUrl) {
-            URL.revokeObjectURL(fileToDelete.tempUrl);
-        }
-        
-        toast.success("הקובץ הוסר מהרשימה");
-        return;
+      const newFiles = [...files];
+      newFiles.splice(fileIndex, 1);
+      setFiles(newFiles);
+
+      // נקה את ה-URL הזמני
+      if (fileToDelete.tempUrl) {
+        URL.revokeObjectURL(fileToDelete.tempUrl);
+      }
+
+      toast.success("הקובץ הוסר מהרשימה");
+      return;
     }
-    
+
     // מסיר מה-UI מיד
     const newFiles = [...files];
     newFiles.splice(fileIndex, 1);
     setFiles(newFiles);
-    
+
     // אם זה קובץ שכבר הועלה, מחק מ-Cloudinary
     if (fileToDelete.url || fileToDelete.fileUrl) {
-        const fileUrl = fileToDelete.url || fileToDelete.fileUrl;
-        const publicId = extractPublicIdFromUrl(fileUrl, false); // בלי extension
-        
-        if (publicId) {
-            try {
-                console.log(`מנסה למחוק עם publicId: ${publicId}`);
-                
-                // צריך לתקן את השרת - אבל בינתיים נשתמש בגישה הזו
-                  //  await api.delete(`/upload/${fileToDelete._id}`);
-          
-                await api.delete("/upload/delete-cloudinary", {
-                    data: {
-                        publicId: publicId,
-                        resourceType: 'raw',
-                    },
-                });
-                
-                toast.success("הקובץ נמחק בהצלחה מ-Cloudinary");
-                console.log("✅ נמחק בהצלחה מ-Cloudinary");
-            } catch (deleteError) {
-                console.error("מחיקה מ-Cloudinary נכשלה:", deleteError.response?.status);
-                toast.warning("הקובץ הוסר מהרשימה. בדוק ידנית אם נמחק מ-Cloudinary");
-            }
-        } else {
-            console.error("לא הצליח לחלץ publicId מ-URL:", fileUrl);
-            toast.warning("הקובץ הוסר מהרשימה, אך לא ניתן לחלץ את פרטי הקובץ");
+      const fileUrl = fileToDelete.url || fileToDelete.fileUrl;
+      const publicId = extractPublicIdFromUrl(fileUrl, false); // בלי extension
+
+      if (publicId) {
+        try {
+          console.log(`מנסה למחוק עם publicId: ${publicId}`);
+
+          // צריך לתקן את השרת - אבל בינתיים נשתמש בגישה הזו
+          //  await api.delete(`/upload/${fileToDelete._id}`);
+
+          await api.delete("/upload/delete-cloudinary", {
+            data: {
+              publicId: publicId,
+              resourceType: "raw",
+            },
+          });
+
+          toast.success("הקובץ נמחק בהצלחה מ-Cloudinary");
+          console.log("✅ נמחק בהצלחה מ-Cloudinary");
+        } catch (deleteError) {
+          console.error(
+            "מחיקה מ-Cloudinary נכשלה:",
+            deleteError.response?.status
+          );
+          toast.warning("הקובץ הוסר מהרשימה. בדוק ידנית אם נמחק מ-Cloudinary");
         }
+      } else {
+        console.error("לא הצליח לחלץ publicId מ-URL:", fileUrl);
+        toast.warning("הקובץ הוסר מהרשימה, אך לא ניתן לחלץ את פרטי הקובץ");
+      }
     } else {
-        toast.success("הקובץ הוסר");
+      toast.success("הקובץ הוסר");
     }
   };
 
@@ -469,7 +477,9 @@ const InvoiceEditPage = () => {
     }
 
     if (!createdAt) {
-      toast.error("יש לבחור תאריך יצירת החשבונית", { className: "sonner-toast error rtl" });
+      toast.error("יש לבחור תאריך יצירת החשבונית", {
+        className: "sonner-toast error rtl",
+      });
       setLoading(false);
       return;
     }
@@ -539,7 +549,8 @@ const InvoiceEditPage = () => {
         invitingName,
         paid,
         files: uploadedFiles, // הקבצים המעובדים
-        createdAt
+        createdAt,
+        documentType,
       };
 
       // הוספת תאריך תשלום רק אם החשבונית שולמה ויש תאריך תקף
@@ -643,6 +654,25 @@ const InvoiceEditPage = () => {
 
               <div className="flex flex-col">
                 <label className="font-bold text-xl text-black">
+                  סוג מסמך :
+                </label>
+                <select
+                  value={documentType}
+                  onChange={(e) => setDocumentType(e.target.value)}
+                  className="p-3 border border-gray-300 rounded-lg bg-slate-300 text-black font-bold mt-2 w-44"
+                  required
+                >
+                  <option value="">בחר סוג מסמך…</option>
+                  <option value="ח. עסקה">ח. עסקה</option>
+                  <option value="ה. עבודה">ה. עבודה</option>
+                  <option value="ד. תשלום, חשבונית מס / קבלה">
+                    ד. תשלום, חשבונית מס / קבלה
+                  </option>
+                </select>
+              </div>
+
+              <div className="flex flex-col">
+                <label className="font-bold text-xl text-black">
                   שם מזמין :
                 </label>
                 <input
@@ -697,7 +727,7 @@ const InvoiceEditPage = () => {
                         תאריך קיים: {formatDate(paymentDate)}
                       </div>
                     )}
-                    
+
                     {/* תמיד תן אפשרות לשנות/בחור תאריך */}
                     <div className="flex flex-col">
                       {(!paymentDate || paymentDate === "אין תאריך לתשלום") && (
@@ -712,8 +742,8 @@ const InvoiceEditPage = () => {
                         }
                         onChange={handlePaymentDateChange}
                         className={`w-44 p-3 border-2 rounded-lg focus:ring-2 focus:ring-slate-500 transition-all ${
-                          !paymentDate || paymentDate === "אין תאריך לתשלום" 
-                            ? "border-red-400" 
+                          !paymentDate || paymentDate === "אין תאריך לתשלום"
+                            ? "border-red-400"
                             : "border-green-400"
                         }`}
                         onFocus={(e) => e.target.showPicker()}
@@ -799,4 +829,4 @@ const InvoiceEditPage = () => {
   );
 };
 
-export default InvoiceEditPage; 
+export default InvoiceEditPage;

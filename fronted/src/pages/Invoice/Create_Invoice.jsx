@@ -5,6 +5,7 @@ import api from "../../api/api";
 import FileUploader from "../../Components/FileUploader";
 import { toast } from "sonner";
 import SupplierSelector from "../../Components/SupplierSelector.jsx";
+import DateField from "../../Components/DateField.jsx";
 
 const CreateInvoice = () => {
   const [projects, setProjects] = useState([]);
@@ -20,15 +21,15 @@ const CreateInvoice = () => {
   const navigate = useNavigate();
 
   useEffect(() => {
-  (async () => {
-    try {
-      const res = await api.get("/suppliers"); // או הנתיב אצלך
-      setSuppliers(res?.data || []);
-    } catch {
-      setSuppliers([]);
-    }
-  })();
-}, []);
+    (async () => {
+      try {
+        const res = await api.get("/suppliers"); // או הנתיב אצלך
+        setSuppliers(res?.data || []);
+      } catch {
+        setSuppliers([]);
+      }
+    })();
+  }, []);
 
   useEffect(() => {
     const fetchProjects = async () => {
@@ -46,50 +47,49 @@ const CreateInvoice = () => {
   }, []);
 
   useEffect(() => {
-  // כשפרויקטים נטענים – ננסה לשחזר טיוטה
-  const draftStr = sessionStorage.getItem("invoiceDraft");
-  if (draftStr && projects.length) {
-    try {
-      const draft = JSON.parse(draftStr);
-      if (draft?.invoices) setInvoices(draft.invoices);
-      if (draft?.selectedProjectId) {
-        const p = projects.find(pr => pr._id === draft.selectedProjectId);
-        if (p) setSelectedProject(p);
-      }
-    } catch {}
-    finally {
-      sessionStorage.removeItem("invoiceDraft");
-    }
-  }
-}, [projects]);
-
-useEffect(() => {
-  // אם חזרנו מיצירת ספק – נעדכן את החשבונית עם הספק החדש
-  const supplierStr = sessionStorage.getItem("createdSupplier");
-  const targetIndexStr = sessionStorage.getItem("targetInvoiceIndex");
-  if (supplierStr && targetIndexStr) {
-    try {
-      const supplier = JSON.parse(supplierStr);
-      const idx = Number(targetIndexStr);
-      setInvoices(prev => {
-        const next = [...prev];
-        if (next[idx]) {
-          next[idx] = {
-            ...next[idx],
-            invitingName: supplier?.name || supplier?.supplierName || "",
-            supplierId: supplier?._id || supplier?.id || "",
-          };
+    // כשפרויקטים נטענים – ננסה לשחזר טיוטה
+    const draftStr = sessionStorage.getItem("invoiceDraft");
+    if (draftStr && projects.length) {
+      try {
+        const draft = JSON.parse(draftStr);
+        if (draft?.invoices) setInvoices(draft.invoices);
+        if (draft?.selectedProjectId) {
+          const p = projects.find((pr) => pr._id === draft.selectedProjectId);
+          if (p) setSelectedProject(p);
         }
-        return next;
-      });
-    } catch {}
-    finally {
-      sessionStorage.removeItem("createdSupplier");
-      sessionStorage.removeItem("targetInvoiceIndex");
+      } catch {
+      } finally {
+        sessionStorage.removeItem("invoiceDraft");
+      }
     }
-  }
-}, []);
+  }, [projects]);
 
+  useEffect(() => {
+    // אם חזרנו מיצירת ספק – נעדכן את החשבונית עם הספק החדש
+    const supplierStr = sessionStorage.getItem("createdSupplier");
+    const targetIndexStr = sessionStorage.getItem("targetInvoiceIndex");
+    if (supplierStr && targetIndexStr) {
+      try {
+        const supplier = JSON.parse(supplierStr);
+        const idx = Number(targetIndexStr);
+        setInvoices((prev) => {
+          const next = [...prev];
+          if (next[idx]) {
+            next[idx] = {
+              ...next[idx],
+              invitingName: supplier?.name || supplier?.supplierName || "",
+              supplierId: supplier?._id || supplier?.id || "",
+            };
+          }
+          return next;
+        });
+      } catch {
+      } finally {
+        sessionStorage.removeItem("createdSupplier");
+        sessionStorage.removeItem("targetInvoiceIndex");
+      }
+    }
+  }, []);
 
   const handleProjectChange = (e) => {
     const projectId = e.target.value;
@@ -145,7 +145,8 @@ useEffect(() => {
         invitingName: "",
         files: [],
         paymentDate: "",
-        supplierId: "", // ✅ הוסף את זה!
+        supplierId: "",
+        documentType: "",
       },
     ]);
   };
@@ -377,6 +378,12 @@ useEffect(() => {
         );
         return;
       }
+      if (!invoice.documentType) {
+        toast.error(`חשבונית מספר ${invoiceNumber}: חסר סוג מסמך`, {
+          className: "sonner-toast error rtl",
+        });
+        return;
+      }
     }
 
     const isValid = await validateUniqueInvoiceNumbers();
@@ -449,6 +456,7 @@ useEffect(() => {
                 : null,
             createdAt: invoice.createdAt,
             supplierId: invoice.supplierId,
+            documentType: invoice.documentType,
           };
         })
       );
@@ -573,41 +581,41 @@ useEffect(() => {
   };
   const handleRemoveFile = async (invoiceIndex, fileIndex) => {
     const fileToDelete = invoices[invoiceIndex].files[fileIndex];
-    
+
     // בדיקה שהקובץ קיים
     if (!fileToDelete) {
-        toast.error("קובץ לא נמצא");
-        return;
+      toast.error("קובץ לא נמצא");
+      return;
     }
-    
+
     // אם זה קובץ מקומי, פשוט תסיר מהמערך
     if (fileToDelete.isLocal) {
-        const newInvoices = [...invoices];
-        newInvoices[invoiceIndex].files.splice(fileIndex, 1);
-        setInvoices(newInvoices);
-        
-        // נקה את ה-URL הזמני
-        if (fileToDelete.url) {
-            URL.revokeObjectURL(fileToDelete.url);
-        }
-        
-        toast.success("הקובץ הוסר מהרשימה");
-        return;
+      const newInvoices = [...invoices];
+      newInvoices[invoiceIndex].files.splice(fileIndex, 1);
+      setInvoices(newInvoices);
+
+      // נקה את ה-URL הזמני
+      if (fileToDelete.url) {
+        URL.revokeObjectURL(fileToDelete.url);
+      }
+
+      toast.success("הקובץ הוסר מהרשימה");
+      return;
     }
-    
+
     // אם זה קובץ שכבר הועלה, מחק מהשרת
     try {
-        await api.delete(`/upload/${fileToDelete._id}`);
-        
-        const newInvoices = [...invoices];
-        newInvoices[invoiceIndex].files.splice(fileIndex, 1);
-        setInvoices(newInvoices);
-        
-        toast.success("הקובץ נמחק בהצלחה");
+      await api.delete(`/upload/${fileToDelete._id}`);
+
+      const newInvoices = [...invoices];
+      newInvoices[invoiceIndex].files.splice(fileIndex, 1);
+      setInvoices(newInvoices);
+
+      toast.success("הקובץ נמחק בהצלחה");
     } catch (error) {
-        toast.error("שגיאה במחיקת הקובץ");
+      toast.error("שגיאה במחיקת הקובץ");
     }
-};
+  };
 
   return (
     <div className="mx-auto mt-10 bg-gray-300 p-8 rounded-lg shadow-xl w-full max-w-5xl ">
@@ -692,29 +700,32 @@ useEffect(() => {
 
               {/* כפתור ליצירת ספק חדש */}
               <div className="flex justify-center mt-3">
-           <button
-  type="button"
-  onClick={() => {
-    // נשמור טיוטה לפני יציאה
-    sessionStorage.setItem(
-      "invoiceDraft",
-      JSON.stringify({
-        invoices,
-        selectedProjectId: selectedProject?._id ?? null,
-      })
-    );
-    // נשמור את האינדקס של החשבונית עליה עובדים עכשיו
-    sessionStorage.setItem("targetInvoiceIndex", String(index));
+                <button
+                  type="button"
+                  onClick={() => {
+                    // נשמור טיוטה לפני יציאה
+                    sessionStorage.setItem(
+                      "invoiceDraft",
+                      JSON.stringify({
+                        invoices,
+                        selectedProjectId: selectedProject?._id ?? null,
+                      })
+                    );
+                    // נשמור את האינדקס של החשבונית עליה עובדים עכשיו
+                    sessionStorage.setItem("targetInvoiceIndex", String(index));
 
-    // נווט ליצירת ספק עם returnTo נכון
-    navigate(`/create-supplier?returnTo=${encodeURIComponent("/create-invoice")}`);
-  }}
-  className="px-4 py-2 bg-gray-400 text-sm text-black font-bold rounded-xl hover:bg-gray-900 hover:text-white transition-colors flex items-center gap-2"
->
-  <span>➕</span>
-  <span>אין ספק ברשימה? צור ספק חדש</span>
-</button>
-
+                    // נווט ליצירת ספק עם returnTo נכון
+                    navigate(
+                      `/create-supplier?returnTo=${encodeURIComponent(
+                        "/create-invoice"
+                      )}`
+                    );
+                  }}
+                  className="px-4 py-2 bg-gray-400 text-sm text-black font-bold rounded-xl hover:bg-gray-900 hover:text-white transition-colors flex items-center gap-2"
+                >
+                  <span>➕</span>
+                  <span>אין ספק ברשימה? צור ספק חדש</span>
+                </button>
               </div>
             </div>
 
@@ -782,15 +793,13 @@ useEffect(() => {
               <label className="block text-slate-700 font-semibold">
                 תאריך יצירת החשבונית:
               </label>
-              <input
+              <DateField
                 type="date"
                 value={invoice.createdAt}
-                onChange={(e) =>
-                  handleInvoiceChange(index, "createdAt", e.target.value)
-                }
                 className="w-full p-3 border-2 border-slate-200 rounded-lg focus:ring-2 focus:ring-slate-500 transition-all"
+                placeholder="yyyy-mm-dd"
                 required
-                onFocus={(e) => e.target.showPicker()}
+                onChange={(val) => handleInvoiceChange(index, "createdAt", val)}
               />
             </div>
 
@@ -852,37 +861,63 @@ useEffect(() => {
                 label="העלה קבצי חשבונית"
               />
 
-           {/* Display uploaded files */}
-<div className="col-span-3">
-  {invoice.files && invoice.files.length > 0 ? (
-    <div className="mt-4 space-y-4">
-      {invoice.files.map((file, fileIndex) => ( // ✅ שינוי השם ל-fileIndex
-       <div
-       key={fileIndex}
-       className="text-center flex items-center justify-center"
-       >
-          {console.log(file)}
-          <p className="font-bold text-xl mr-2 ml-5">
-            קובץ {fileIndex + 1} :
-          </p>
-          {renderFile(file)}
-          <button
-            onClick={() => handleRemoveFile(index, fileIndex)} // ✅ עכשיו נכון!
-            className="text-xl font-bold mr-6 mt-2"
-          >
-            ❌ הסר
-          </button>
-        </div>
-      ))}
-    </div>
-  ) : (
-    <div className="flex justify-center">
-      <p className="text-gray-700 bg-white w-44 p-2 mt-10 text-center text-lg rounded-2xl">
-        אין קבצים להצגה
-      </p>
-    </div>
-  )}
-</div>
+              {/* Display uploaded files */}
+              <div className="col-span-3">
+                {invoice.files && invoice.files.length > 0 ? (
+                  <div className="mt-4 space-y-4">
+                    {invoice.files.map(
+                      (
+                        file,
+                        fileIndex // ✅ שינוי השם ל-fileIndex
+                      ) => (
+                        <div
+                          key={fileIndex}
+                          className="text-center flex items-center justify-center"
+                        >
+                          {console.log(file)}
+                          <p className="font-bold text-xl mr-2 ml-5">
+                            קובץ {fileIndex + 1} :
+                          </p>
+                          {renderFile(file)}
+                          <button
+                            onClick={() => handleRemoveFile(index, fileIndex)} // ✅ עכשיו נכון!
+                            className="text-xl font-bold mr-6 mt-2"
+                          >
+                            ❌ הסר
+                          </button>
+                        </div>
+                      )
+                    )}
+                  </div>
+                ) : (
+                  <div className="flex justify-center">
+                    <p className="text-gray-700 bg-white w-44 p-2 mt-10 text-center text-lg rounded-2xl">
+                      אין קבצים להצגה
+                    </p>
+                  </div>
+                )}
+              </div>
+            </div>
+
+            <div className="space-y-2">
+              <label className="block text-slate-700 font-semibold">
+                סוג מסמך:
+              </label>
+              <select
+                value={invoice.documentType || ""}
+                onChange={(e) =>
+                  handleInvoiceChange(index, "documentType", e.target.value)
+                }
+                className="w-full p-3 border-2 border-slate-200 rounded-lg focus:ring-2 focus:ring-slate-500 transition-all bg-white"
+                required
+              >
+                <option value="">בחר סוג מסמך…</option>
+                <option value="ח. עסקה">ח. עסקה</option>
+                <option value="ה. עבודה">ה. עבודה</option>
+                <option value="ד. תשלום, חשבונית מס / קבלה">
+                  ד. תשלום, חשבונית מס / קבלה
+                </option>
+              </select>
             </div>
           </div>
 

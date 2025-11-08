@@ -4,8 +4,16 @@ import cloudinary from 'cloudinary'
 import Invoice from '../models/Invoice.js';
 import Supplier from '../models/Supplier.js'
 
+
+const ALLOWED_DOC_TYPES = [
+  "ח. עסקה",
+  "ה. עבודה",
+  "ד. תשלום, חשבונית מס / קבלה",
+];
+
 const invoiceControllers = {
 
+  
   check_duplicate: async (req, res) => {
   const { supplierName, invoiceNumber } = req.query;
 
@@ -33,32 +41,50 @@ createInvoices: async (req, res) => {
     if (!invoices || (Array.isArray(invoices) && invoices.length === 0)) {
       return res.status(400).json({ message: "Invalid invoices data" });
     }
+    if (!Array.isArray(invoices)) invoices = [invoices];
 
-    if (!Array.isArray(invoices)) {
-      invoices = [invoices];
-    }
-
-    const processedInvoices = invoices.map(invoice => {
+    const processedInvoices = invoices.map((invoice) => {
+      // מספר חשבונית חובה
       if (!invoice.invoiceNumber) {
         console.error("Missing invoiceNumber:", invoice);
         return null;
       }
 
+      // סוג מסמך חובה + תקינות ערך
+      const documentType = (invoice.documentType || "").trim();
+      if (!documentType) {
+        console.error("Missing documentType:", invoice);
+        return null;
+      }
+      if (!ALLOWED_DOC_TYPES.includes(documentType)) {
+        console.error("Invalid documentType:", documentType);
+        return null;
+      }
+
+      // קבצים (נורמליזציה)
       let files = [];
       if (invoice.files && Array.isArray(invoice.files)) {
-        files = invoice.files.map(file => ({
-          name: file?.name || file?.fileName || 'unknown',
-          url: file?.url || file?.fileUrl || '',
-          type: file?.type || file?.fileType || 'application/octet-stream',
+        files = invoice.files.map((file) => ({
+          name: file?.name || file?.fileName || "unknown",
+          url: file?.url || file?.fileUrl || "",
+          type: file?.type || file?.fileType || "application/octet-stream",
           size: file?.size || 0,
-          publicId: file?.publicId || '',
-          resourceType: file?.resourceType || 'auto'
+          publicId: file?.publicId || "",
+          resourceType: file?.resourceType || "auto",
         }));
       }
 
-      console.log(`Processing invoice ${invoice.invoiceNumber} with ${files.length} files.`);
-      return { ...invoice, files };
-    }).filter(invoice => invoice !== null);
+      console.log(
+        `Processing invoice ${invoice.invoiceNumber} with ${files.length} files.`
+      );
+
+      // החזרת האובייקט המעובד כולל documentType
+      return {
+        ...invoice,
+        documentType, // ✅ שמירה
+        files,
+      };
+    }).filter((invoice) => invoice !== null);
 
     if (processedInvoices.length === 0) {
       return res.status(400).json({ message: "No valid invoices to process" });
@@ -66,11 +92,11 @@ createInvoices: async (req, res) => {
 
     const newInvoices = await invoiceService.createInvoices(processedInvoices);
 
-    // ✅ עדכון הספקים - הוספת החשבוניות אליהם
+    // עדכון רפרנס אצל ספקים (כמו שהיה)
     for (const invoice of newInvoices) {
       if (invoice.supplierId) {
         await Supplier.findByIdAndUpdate(invoice.supplierId, {
-          $push: { invoices: invoice._id }
+          $push: { invoices: invoice._id },
         });
       }
     }
@@ -80,7 +106,7 @@ createInvoices: async (req, res) => {
     console.error("Error in createInvoices:", error);
     res.status(500).json({ error: error.message });
   }
-}, 
+},
 
   search: async (req, res) => {
     try {
@@ -298,7 +324,8 @@ updateInvoice: async (req, res) => {
       paymentDate,
       paid,
       files: newFiles,
-      createdAt
+      createdAt,
+      documentType
     } = req.body;
 
     const invoice = await Invoice.findById(id);
@@ -312,6 +339,7 @@ updateInvoice: async (req, res) => {
     invoice.detail = detail;
     invoice.paid = paid; // ✅ שמור כפי שמגיע ("כן"/"לא")
     invoice.createdAt = createdAt
+    invoice.documentType = documentType // סוג מסמך
     
     // תאריך תשלום רק אם שולם
     if (paid === "כן" && paymentDate && paymentDate !== "אין תאריך לתשלום") {
