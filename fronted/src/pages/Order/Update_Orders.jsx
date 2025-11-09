@@ -3,6 +3,20 @@ import { useNavigate, useParams } from 'react-router-dom';
 import api from '../../api/api';
 import { ClipLoader } from 'react-spinners';
 import { toast } from 'sonner';
+import { 
+  ShoppingCart, 
+  Hash, 
+  DollarSign, 
+  FileText, 
+  User, 
+  Briefcase, 
+  Phone, 
+  Upload, 
+  X, 
+  Save,
+  AlertCircle,
+  CheckCircle
+} from 'lucide-react';
 
 const OrderEditPage = () => {
   const [projectName, setProjectName] = useState('');
@@ -66,144 +80,169 @@ const OrderEditPage = () => {
     });
   };
 
- // הוסף את הפונקציה הזו בתחילת הקומפוננט (לפני הפונקציות האחרות)
-const extractPublicIdFromUrl = (url, withExtension = true) => {
-  try {
-    // דוגמה ל-URL: https://res.cloudinary.com/your-cloud/raw/upload/v1234567890/folder/filename.pdf
-    const urlParts = url.split('/');
-    const uploadIndex = urlParts.findIndex(part => part === 'upload');
-    
-    if (uploadIndex === -1) return null;
-    
-    // לוקח את החלק אחרי upload/ (מדלג על version אם קיים)
-    let pathAfterUpload = urlParts.slice(uploadIndex + 1);
-    
-    // אם יש version (מתחיל ב-v והמשך מספרים), מדלג עליו
-    if (pathAfterUpload[0] && pathAfterUpload[0].match(/^v\d+$/)) {
-      pathAfterUpload = pathAfterUpload.slice(1);
-    }
-    
-    // מחבר את שאר החלקים
-    let publicId = pathAfterUpload.join('/');
-    
-    // אם לא רוצים extension, מסירים אותו
-    if (!withExtension) {
-      const lastDotIndex = publicId.lastIndexOf('.');
-      if (lastDotIndex > 0) {
-        publicId = publicId.substring(0, lastDotIndex);
+  const extractPublicIdFromUrl = (url, withExtension = true) => {
+    try {
+      const urlParts = url.split('/');
+      const uploadIndex = urlParts.findIndex(part => part === 'upload');
+      
+      if (uploadIndex === -1) return null;
+      
+      let pathAfterUpload = urlParts.slice(uploadIndex + 1);
+      
+      if (pathAfterUpload[0] && pathAfterUpload[0].match(/^v\d+$/)) {
+        pathAfterUpload = pathAfterUpload.slice(1);
       }
+      
+      let publicId = pathAfterUpload.join('/');
+      
+      if (!withExtension) {
+        const lastDotIndex = publicId.lastIndexOf('.');
+        if (lastDotIndex > 0) {
+          publicId = publicId.substring(0, lastDotIndex);
+        }
+      }
+      
+      return publicId;
+    } catch (error) {
+      console.error('Error extracting publicId from URL:', error);
+      return null;
     }
-    
-    return publicId;
-  } catch (error) {
-    console.error('Error extracting publicId from URL:', error);
-    return null;
-  }
-};
+  };
 
-// החלף את הפונקציה handleRemoveFile הקיימת בזו:
-const handleRemoveFile = async (fileIndex) => {
-  const fileToDelete = files[fileIndex];
-  
-  // בדיקה שהקובץ קיים
-  if (!fileToDelete) {
+  const handleRemoveFile = async (fileIndex) => {
+    const fileToDelete = files[fileIndex];
+    
+    if (!fileToDelete) {
       toast.error("קובץ לא נמצא", {
         className: "sonner-toast error rtl"
       });
       return;
-  }
-  
-  console.log("=== DELETING FILE ===");
-  console.log("File to delete:", fileToDelete);
-  
-  // אם זה קובץ מקומי, פשוט תסיר מהמערך
-  if (fileToDelete.isLocal) {
+    }
+    
+    console.log("=== DELETING FILE ===");
+    console.log("File to delete:", fileToDelete);
+    
+    if (fileToDelete.isLocal) {
       const newFiles = [...files];
       newFiles.splice(fileIndex, 1);
       setFiles(newFiles);
       
-      // נקה את ה-URL הזמני
       if (fileToDelete.tempUrl) {
-          URL.revokeObjectURL(fileToDelete.tempUrl);
+        URL.revokeObjectURL(fileToDelete.tempUrl);
       }
       
       toast.success("הקובץ הוסר מהרשימה", {
         className: "sonner-toast success rtl"
       });
       return;
-  }
-  
-  // מסיר מה-UI מיד
-  const newFiles = [...files];
-  newFiles.splice(fileIndex, 1);
-  setFiles(newFiles);
-  
-  // אם זה קובץ שכבר הועלה, מחק מ-Cloudinary
-  if (fileToDelete.url || fileToDelete.fileUrl) {
+    }
+    
+    const newFiles = [...files];
+    newFiles.splice(fileIndex, 1);
+    setFiles(newFiles);
+    
+    if (fileToDelete.url || fileToDelete.fileUrl) {
       const fileUrl = fileToDelete.url || fileToDelete.fileUrl;
-      const publicId = extractPublicIdFromUrl(fileUrl, true); // עם extension
+      const publicId = extractPublicIdFromUrl(fileUrl, true);
       
       if (publicId) {
-          try {
-              console.log(`מנסה למחוק עם publicId: ${publicId}`);
-              
-              // צריך לתקן את השרת - אבל בינתיים נשתמש בגישה הזו
-              //  await api.delete(`/upload/${fileToDelete._id}`);
-        
-              await api.delete("/upload/delete-cloudinary", {
-                  data: {
-                      publicId: publicId,
-                      resourceType: 'raw',
-                  },
-              });
-              
-              toast.success("הקובץ נמחק בהצלחה מ-Cloudinary", {
-                className: "sonner-toast success rtl"
-              });
-              console.log("✅ נמחק בהצלחה מ-Cloudinary");
-          } catch (deleteError) {
-              console.error("מחיקה מ-Cloudinary נכשלה:", deleteError.response?.status);
-              toast.warning("הקובץ הוסר מהרשימה. בדוק ידנית אם נמחק מ-Cloudinary", {
-                className: "sonner-toast warning rtl"
-              });
-          }
-      } else {
-          console.error("לא הצליח לחלץ publicId מ-URL:", fileUrl);
-          toast.warning("הקובץ הוסר מהרשימה, אך לא ניתן לחלץ את פרטי הקובץ", {
+        try {
+          console.log(`מנסה למחוק עם publicId: ${publicId}`);
+          
+          await api.delete("/upload/delete-cloudinary", {
+            data: {
+              publicId: publicId,
+              resourceType: 'raw',
+            },
+          });
+          
+          toast.success("הקובץ נמחק בהצלחה מ-Cloudinary", {
+            className: "sonner-toast success rtl"
+          });
+          console.log("✅ נמחק בהצלחה מ-Cloudinary");
+        } catch (deleteError) {
+          console.error("מחיקה מ-Cloudinary נכשלה:", deleteError.response?.status);
+          toast.warning("הקובץ הוסר מהרשימה. בדוק ידנית אם נמחק מ-Cloudinary", {
             className: "sonner-toast warning rtl"
           });
+        }
+      } else {
+        console.error("לא הצליח לחלץ publicId מ-URL:", fileUrl);
+        toast.warning("הקובץ הוסר מהרשימה, אך לא ניתן לחלץ את פרטי הקובץ", {
+          className: "sonner-toast warning rtl"
+        });
       }
-  } else {
+    } else {
       toast.success("הקובץ הוסר", {
         className: "sonner-toast success rtl"
       });
-  }
-};
+    }
+  };
 
   const renderFile = (file) => {
     const fileUrl = file?.url || file?.fileUrl;
     const fileName = file.name || (fileUrl && fileUrl.split('/').pop());
 
     if (!fileUrl && file?.file) {
-      return <span>{file.name}</span>;
+      return <span className="text-gray-700 font-medium">{file.name}</span>;
     }
 
     const ext = fileUrl?.split('.').pop().toLowerCase();
 
     if (ext === 'pdf') {
-      return <a href={fileUrl} target="_blank" rel="noreferrer" className="text-blue-600 hover:underline">📄 {fileName}</a>;
+      return (
+        <a 
+          href={fileUrl} 
+          target="_blank" 
+          rel="noreferrer" 
+          className="inline-flex items-center gap-2 text-orange-600 hover:text-orange-700 font-medium hover:underline"
+        >
+          <FileText className="w-4 h-4" />
+          {fileName}
+        </a>
+      );
     }
 
     if (['jpg', 'jpeg', 'png', 'gif'].includes(ext)) {
-      return <a href={fileUrl} target="_blank" rel="noreferrer" className="text-blue-600 hover:underline">🖼️ {fileName}</a>;
+      return (
+        <a 
+          href={fileUrl} 
+          target="_blank" 
+          rel="noreferrer" 
+          className="inline-flex items-center gap-2 text-blue-600 hover:text-blue-700 font-medium hover:underline"
+        >
+          <FileText className="w-4 h-4" />
+          {fileName}
+        </a>
+      );
     }
 
     if (ext === 'xlsx') {
       const viewUrl = `https://view.officeapps.live.com/op/view.aspx?src=${encodeURIComponent(fileUrl)}`;
-      return <a href={viewUrl} target="_blank" rel="noreferrer" className="text-blue-600 hover:underline">📊 {fileName}</a>;
+      return (
+        <a 
+          href={viewUrl} 
+          target="_blank" 
+          rel="noreferrer" 
+          className="inline-flex items-center gap-2 text-green-600 hover:text-green-700 font-medium hover:underline"
+        >
+          <FileText className="w-4 h-4" />
+          {fileName}
+        </a>
+      );
     }
 
-    return <a href={fileUrl} target="_blank" rel="noreferrer" className="text-blue-600 hover:underline">📁 {fileName}</a>;
+    return (
+      <a 
+        href={fileUrl} 
+        target="_blank" 
+        rel="noreferrer" 
+        className="inline-flex items-center gap-2 text-purple-600 hover:text-purple-700 font-medium hover:underline"
+      >
+        <FileText className="w-4 h-4" />
+        {fileName}
+      </a>
+    );
   };
 
   const handleSubmit = async (e) => {
@@ -232,7 +271,7 @@ const handleRemoveFile = async (fileIndex) => {
             type: file.file.type
           });
         } else {
-          uploadedFiles.push(file); // שמור קבצים שכבר קיימים
+          uploadedFiles.push(file);
         }
       }
 
@@ -264,87 +303,261 @@ const handleRemoveFile = async (fileIndex) => {
 
   if (loading) {
     return (
-      <div className="flex flex-col justify-center items-center h-64">
-        <ClipLoader size={100} color="#3498db" loading={loading} />
-        <h1 className="mt-4 font-bold text-2xl text-cyan-950">טוען . . .</h1>
+      <div className="flex flex-col justify-center items-center min-h-screen bg-gradient-to-br from-orange-50 via-amber-50 to-orange-100">
+        <div className="relative">
+          <div className="absolute inset-0 bg-orange-500/20 blur-3xl rounded-full"></div>
+          <ClipLoader size={80} color="#f97316" loading={loading} />
+        </div>
+        <h1 className="mt-6 font-bold text-2xl text-orange-900">טוען נתונים...</h1>
       </div>
     );
   }
 
   return (
-    <div className="container mx-auto p-6">
-      <h1 className="text-4xl font-bold text-center text-slate-700 mb-20">עריכת הזמנה</h1>
+    <div className="min-h-screen bg-gradient-to-br from-orange-50 via-amber-50 to-orange-100 py-8 px-4">
+      <div className="max-w-6xl mx-auto">
+        {/* Header */}
+        <div className="bg-white rounded-2xl shadow-xl p-6 mb-8">
+          <div className="flex items-center gap-3">
+            <div className="bg-gradient-to-br from-orange-500 to-amber-500 p-3 rounded-xl shadow-lg">
+              <ShoppingCart className="text-white w-8 h-8" />
+            </div>
+            <div>
+              <h1 className="text-3xl md:text-4xl font-bold text-gray-900">עריכת הזמנה</h1>
+              <p className="text-gray-600 mt-1">עדכון פרטי ההזמנה</p>
+            </div>
+          </div>
+        </div>
 
-      {order && (
-        <div className="flex justify-center items-center min-h-screen">
-          <form onSubmit={handleSubmit} className="bg-slate-400 w-full max-w-4xl rounded-xl font-bold p-6 shadow-lg">
-            <div className="flex flex-wrap justify-between gap-4">
-              <div className="flex flex-col">
-                <label className="font-bold text-xl text-black">מספר הזמנה :</label>
-                <input type="number" value={orderNumber} className="border p-3 text-sm rounded-lg w-44 mt-2" disabled />
+        {order && (
+          <form onSubmit={handleSubmit} className="bg-white rounded-2xl shadow-xl p-8">
+            {/* Grid של שדות */}
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
+              {/* מספר הזמנה */}
+              <div className="space-y-2">
+                <label className="flex items-center gap-2 text-sm font-semibold text-gray-700">
+                  <div className="bg-orange-100 p-1.5 rounded-lg">
+                    <Hash className="w-4 h-4 text-orange-600" />
+                  </div>
+                  מספר הזמנה
+                </label>
+                <input
+                  type="number"
+                  value={orderNumber}
+                  disabled
+                  className="w-full px-4 py-3 bg-gray-100 border-2 border-gray-200 rounded-xl text-gray-600 font-medium cursor-not-allowed focus:outline-none"
+                />
               </div>
 
-              <div className="flex flex-col">
-                <label className="font-bold text-xl text-black">סכום :</label>
-                <input type="number" value={sum} onChange={(e) => setSum(e.target.value)} className="bg-slate-300 border p-3 rounded-lg text-sm w-44 mt-2" />
+              {/* סכום */}
+              <div className="space-y-2">
+                <label className="flex items-center gap-2 text-sm font-semibold text-gray-700">
+                  <div className="bg-green-100 p-1.5 rounded-lg">
+                    <DollarSign className="w-4 h-4 text-green-600" />
+                  </div>
+                  סכום
+                </label>
+                <input
+                  type="number"
+                  value={sum}
+                  onChange={(e) => setSum(e.target.value)}
+                  className="w-full px-4 py-3 bg-gradient-to-br from-green-50 to-emerald-50 border-2 border-green-200 rounded-xl font-medium focus:border-green-400 focus:outline-none focus:ring-2 focus:ring-green-200 transition-all"
+                  placeholder="הזן סכום"
+                />
               </div>
 
-              <div className="flex flex-col">
-                <label className="font-bold text-xl text-black">סטטוס :</label>
-                <select onChange={(e) => setStatus(e.target.value)} value={status} className="p-3 border border-gray-300 rounded-lg bg-slate-300 text-black font-bold mt-2 w-44">
+              {/* סטטוס */}
+              <div className="space-y-2">
+                <label className="flex items-center gap-2 text-sm font-semibold text-gray-700">
+                  <div className="bg-blue-100 p-1.5 rounded-lg">
+                    <AlertCircle className="w-4 h-4 text-blue-600" />
+                  </div>
+                  סטטוס הזמנה
+                </label>
+                <select
+                  onChange={(e) => setStatus(e.target.value)}
+                  value={status}
+                  className="w-full px-4 py-3 bg-gradient-to-br from-blue-50 to-cyan-50 border-2 border-blue-200 rounded-xl font-medium focus:border-blue-400 focus:outline-none focus:ring-2 focus:ring-blue-200 transition-all cursor-pointer"
+                >
                   <option value="הוגש">הוגש</option>
                   <option value="בעיבוד">בעיבוד</option>
                   <option value="לא הוגש">לא הוגש</option>
                 </select>
               </div>
 
-              <div className="flex flex-col">
-                <label className="font-bold text-xl text-black">שם מזמין :</label>
-                <input type="text" value={invitingName} onChange={(e) => setInvitingName(e.target.value)} className="bg-slate-300 border p-3 rounded-lg w-44 mt-2" />
-              </div>
-
-              <div className="flex flex-col">
-                <label className="font-bold text-xl text-black">פרויקט :</label>
-                <input type="text" value={projectName} onChange={(e) => setProjectName(e.target.value)} className="bg-slate-300 border p-3 rounded-lg w-44 mt-2" />
-              </div>
-
-              <div className="flex flex-col">
-                <label className="font-bold text-xl text-black">איש קשר :</label>
-                <input type="text" value={Contact_person} onChange={(e) => setContact_Person(e.target.value)} className="bg-slate-300 border p-3 rounded-lg w-44 mt-2" />
-              </div>
-            </div>
-
-            <div className="mt-6">
-              <label className="font-bold text-l text-black">פירוט :</label>
-              <textarea value={detail} onChange={(e) => setDetail(e.target.value)} className="border-2 bg-slate-300 border-gray-900 p-3 rounded-lg w-full min-h-[100px] h-32 mt-6" />
-            </div>
-
-            <div className="mt-6">
-              <label className="font-bold text-l text-black">העלה קבצים נוספים:</label>
-              <input type="file" multiple onChange={(e) => handleFileUpload(e.target.files)} className="mt-2 p-2 border rounded-lg bg-white" />
-            </div>
-
-            <div className="mt-6">
-              <label className="font-bold text-l text-black">קבצים מצורפים:</label>
-              <div className="space-y-3 mt-3">
-                {files.length > 0 ? files.map((file, index) => (
-                  <div key={index} className="flex items-center gap-4">
-                    <span className="font-semibold">📎 קובץ {index + 1}:</span>
-                    {renderFile(file)}
-                    <button type="button" onClick={() => handleRemoveFile(index)} className="text-red-600 font-bold hover:underline">הסר ❌</button>
+              {/* שם מזמין */}
+              <div className="space-y-2">
+                <label className="flex items-center gap-2 text-sm font-semibold text-gray-700">
+                  <div className="bg-purple-100 p-1.5 rounded-lg">
+                    <User className="w-4 h-4 text-purple-600" />
                   </div>
-                )) : (
-                  <p className="text-gray-700">אין קבצים מוצגים</p>
-                )}
+                  שם מזמין
+                </label>
+                <input
+                  type="text"
+                  value={invitingName}
+                  onChange={(e) => setInvitingName(e.target.value)}
+                  className="w-full px-4 py-3 bg-gradient-to-br from-purple-50 to-pink-50 border-2 border-purple-200 rounded-xl font-medium focus:border-purple-400 focus:outline-none focus:ring-2 focus:ring-purple-200 transition-all"
+                  placeholder="הזן שם מזמין"
+                />
+              </div>
+
+              {/* פרויקט */}
+              <div className="space-y-2">
+                <label className="flex items-center gap-2 text-sm font-semibold text-gray-700">
+                  <div className="bg-indigo-100 p-1.5 rounded-lg">
+                    <Briefcase className="w-4 h-4 text-indigo-600" />
+                  </div>
+                  שם פרויקט
+                </label>
+                <input
+                  type="text"
+                  value={projectName}
+                  onChange={(e) => setProjectName(e.target.value)}
+                  className="w-full px-4 py-3 bg-gradient-to-br from-indigo-50 to-blue-50 border-2 border-indigo-200 rounded-xl font-medium focus:border-indigo-400 focus:outline-none focus:ring-2 focus:ring-indigo-200 transition-all"
+                  placeholder="הזן שם פרויקט"
+                />
+              </div>
+
+              {/* איש קשר */}
+              <div className="space-y-2">
+                <label className="flex items-center gap-2 text-sm font-semibold text-gray-700">
+                  <div className="bg-teal-100 p-1.5 rounded-lg">
+                    <Phone className="w-4 h-4 text-teal-600" />
+                  </div>
+                  איש קשר
+                </label>
+                <input
+                  type="text"
+                  value={Contact_person}
+                  onChange={(e) => setContact_Person(e.target.value)}
+                  className="w-full px-4 py-3 bg-gradient-to-br from-teal-50 to-cyan-50 border-2 border-teal-200 rounded-xl font-medium focus:border-teal-400 focus:outline-none focus:ring-2 focus:ring-teal-200 transition-all"
+                  placeholder="הזן שם איש קשר"
+                />
               </div>
             </div>
 
-            <button type="submit" className="bg-slate-900 text-white px-6 py-2 rounded-lg mt-6 font-bold w-32 hover:bg-slate-700">
-              עדכן
-            </button>
+            {/* פירוט */}
+            <div className="mb-8">
+              <label className="flex items-center gap-2 text-sm font-semibold text-gray-700 mb-2">
+                <div className="bg-amber-100 p-1.5 rounded-lg">
+                  <FileText className="w-4 h-4 text-amber-600" />
+                </div>
+                פירוט ההזמנה
+              </label>
+              <textarea
+                value={detail}
+                onChange={(e) => setDetail(e.target.value)}
+                rows={5}
+                className="w-full px-4 py-3 bg-gradient-to-br from-amber-50 to-orange-50 border-2 border-amber-200 rounded-xl font-medium focus:border-amber-400 focus:outline-none focus:ring-2 focus:ring-amber-200 transition-all resize-none"
+                placeholder="הזן פירוט מפורט של ההזמנה..."
+              />
+            </div>
+
+            {/* העלאת קבצים */}
+            <div className="mb-8">
+              <label className="flex items-center gap-2 text-sm font-semibold text-gray-700 mb-3">
+                <div className="bg-orange-100 p-1.5 rounded-lg">
+                  <Upload className="w-4 h-4 text-orange-600" />
+                </div>
+                העלאת קבצים נוספים
+              </label>
+              
+              <div className="relative">
+                <input
+                  type="file"
+                  multiple
+                  onChange={(e) => handleFileUpload(e.target.files)}
+                  className="hidden"
+                  id="file-upload"
+                />
+                <label
+                  htmlFor="file-upload"
+                  className="flex items-center justify-center gap-3 w-full px-6 py-4 bg-gradient-to-r from-orange-500 to-amber-500 text-white rounded-xl cursor-pointer hover:from-orange-600 hover:to-amber-600 transition-all duration-300 shadow-lg hover:shadow-xl font-medium"
+                >
+                  <Upload className="w-5 h-5" />
+                  <span>בחר קבצים להעלאה</span>
+                </label>
+              </div>
+            </div>
+
+            {/* רשימת קבצים */}
+            <div className="mb-8">
+              <label className="flex items-center gap-2 text-sm font-semibold text-gray-700 mb-3">
+                <div className="bg-blue-100 p-1.5 rounded-lg">
+                  <FileText className="w-4 h-4 text-blue-600" />
+                </div>
+                קבצים מצורפים ({files.length})
+              </label>
+
+              {files.length > 0 ? (
+                <div className="space-y-3">
+                  {files.map((file, index) => (
+                    <div
+                      key={index}
+                      className="flex items-center justify-between p-4 bg-gradient-to-br from-gray-50 to-gray-100 border-2 border-gray-200 rounded-xl hover:border-orange-300 transition-all duration-300 group"
+                    >
+                      <div className="flex items-center gap-3">
+                        <div className="bg-gradient-to-br from-orange-500 to-amber-500 text-white font-bold w-10 h-10 rounded-lg flex items-center justify-center shadow-md">
+                          {index + 1}
+                        </div>
+                        <div className="flex items-center gap-2">
+                          {renderFile(file)}
+                        </div>
+                      </div>
+
+                      <button
+                        type="button"
+                        onClick={() => handleRemoveFile(index)}
+                        className="flex items-center gap-2 px-4 py-2 bg-red-100 text-red-600 rounded-lg hover:bg-red-200 transition-all duration-200 font-medium group-hover:scale-105"
+                      >
+                        <X className="w-4 h-4" />
+                        <span>הסר</span>
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <div className="bg-gradient-to-br from-gray-50 to-gray-100 p-8 rounded-xl border-2 border-dashed border-gray-300 text-center">
+                  <FileText className="w-12 h-12 text-gray-400 mx-auto mb-3" />
+                  <p className="text-lg font-semibold text-gray-600">אין קבצים מצורפים</p>
+                  <p className="text-sm text-gray-500 mt-1">העלה קבצים כדי להוסיף אותם להזמנה</p>
+                </div>
+              )}
+            </div>
+
+            {/* כפתורי פעולה */}
+            <div className="flex gap-4 pt-6 border-t-2 border-gray-200">
+              <button
+                type="submit"
+                disabled={loading}
+                className="flex-1 flex items-center justify-center gap-3 px-8 py-4 bg-gradient-to-r from-orange-500 to-amber-500 text-white rounded-xl hover:from-orange-600 hover:to-amber-600 transition-all duration-300 shadow-lg hover:shadow-xl font-bold text-lg disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                {loading ? (
+                  <>
+                    <ClipLoader size={24} color="#ffffff" />
+                    <span>מעדכן...</span>
+                  </>
+                ) : (
+                  <>
+                    <CheckCircle className="w-6 h-6" />
+                    <span>עדכן הזמנה</span>
+                  </>
+                )}
+              </button>
+
+              <button
+                type="button"
+                onClick={() => navigate(`/order/${id}`)}
+                disabled={loading}
+                className="px-8 py-4 bg-gray-200 text-gray-700 rounded-xl hover:bg-gray-300 transition-all duration-300 font-bold text-lg disabled:opacity-50"
+              >
+                ביטול
+              </button>
+            </div>
           </form>
-        </div>
-      )}
+        )}
+      </div>
     </div>
   );
 };

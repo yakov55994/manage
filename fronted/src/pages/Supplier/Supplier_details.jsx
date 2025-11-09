@@ -516,6 +516,7 @@ const SupplierDetailsPage = () => {
                           <tr
                             key={inv._id || i}
                             className="border-t border-purple-100 hover:bg-purple-50/50 transition-colors"
+                            // onClick={}
                           >
                             <td className="px-4 py-3 text-sm">{i + 1}</td>
                             <td className="px-4 py-3 text-sm">

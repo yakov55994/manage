@@ -3,7 +3,21 @@ import { useNavigate, useParams } from 'react-router-dom';
 import api from '../../api/api';
 import { ClipLoader } from 'react-spinners';
 import { toast } from 'sonner';
-import { UserCog, Save, ArrowRight } from 'lucide-react';
+import { 
+  UserCog, 
+  Save, 
+  ArrowRight, 
+  User, 
+  Hash, 
+  Phone, 
+  Mail, 
+  MapPin,
+  Building2,
+  CreditCard,
+  AlertCircle,
+  CheckCircle,
+  X
+} from 'lucide-react';
 import banksData from '../../../public/data/banks_and_branches.json';
 import Select from 'react-select';
 import BankSelector from '../../Components/BankSelector';
@@ -19,7 +33,7 @@ const SupplierEditPage = () => {
       bankName: "",
       branchNumber: "",
       accountNumber: "",
-      bankObj: null, // עזר לUI בלבד
+      bankObj: null,
     },
   });
   const [loading, setLoading] = useState(false);
@@ -39,7 +53,6 @@ const SupplierEditPage = () => {
         const response = await api.get(`/suppliers/${id}`);
         const supplierData = response.data.data;
         
-        // מצא את הבנק המתאים
         const bankObj = banksData.find(b => b.bankName === supplierData.bankDetails?.bankName);
 
         setSupplier({
@@ -88,9 +101,8 @@ const SupplierEditPage = () => {
   };
 
   const validateForm = () => {
-    const requiredFields = ['name', 'business_tax', 'phone']; // הסרתי address ו-email מחובה
+    const requiredFields = ['name', 'business_tax', 'phone'];
 
-    // בדיקת שדות עיקריים
     for (let field of requiredFields) {
       if (!supplier[field] || supplier[field].toString().trim() === '') {
         toast.error(`יש למלא את השדה: ${getFieldName(field)}`, {
@@ -100,7 +112,6 @@ const SupplierEditPage = () => {
       }
     }
 
-    // בדיקת תקינות אימייל רק אם הוכנס
     if (supplier.email && supplier.email.trim() !== '') {
       const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
       if (!emailRegex.test(supplier.email)) {
@@ -111,7 +122,6 @@ const SupplierEditPage = () => {
       }
     }
 
-    // בדיקה שאם יש פרטי בנק חלקיים - דורש הכל
     const { bankName, branchNumber, accountNumber } = supplier.bankDetails;
     const hasBankInfo = bankName || branchNumber || accountNumber;
     
@@ -147,7 +157,6 @@ const SupplierEditPage = () => {
 
     setLoading(true);
     try {
-      // נקה את הנתונים לפני השליחה
       const supplierData = {
         name: supplier.name.trim(),
         business_tax: supplier.business_tax.trim(),
@@ -156,7 +165,6 @@ const SupplierEditPage = () => {
         email: supplier.email?.trim() || undefined,
       };
 
-      // הוסף פרטי בנק רק אם הם מלאים
       const { bankName, branchNumber, accountNumber } = supplier.bankDetails;
       if (bankName && branchNumber && accountNumber) {
         supplierData.bankDetails = {
@@ -166,7 +174,7 @@ const SupplierEditPage = () => {
         };
       }
 
-      console.log('Updating supplier with data:', supplierData); // לדיבוג
+      console.log('Updating supplier with data:', supplierData);
 
       await api.put(`/suppliers/${id}`, supplierData);
 
@@ -176,7 +184,7 @@ const SupplierEditPage = () => {
       
       navigate(`/supplier/${id}`);
     } catch (error) {
-      console.error('Update error:', error.response?.data); // לדיבוג
+      console.error('Update error:', error.response?.data);
       const errorMessage = error.response?.data?.message || 'שגיאה בעדכון הספק';
       toast.error(errorMessage, {
         className: "sonner-toast error rtl"
@@ -188,111 +196,171 @@ const SupplierEditPage = () => {
 
   if (initialLoading) {
     return (
-      <div className="flex flex-col justify-center items-center h-64">
-        <ClipLoader size={100} color="#3498db" loading={initialLoading} />
-        <h1 className="mt-4 font-bold text-2xl text-cyan-950">טוען פרטי ספק . . .</h1>
+      <div className="flex flex-col justify-center items-center min-h-screen bg-gradient-to-br from-orange-50 via-amber-50 to-orange-100">
+        <div className="relative">
+          <div className="absolute inset-0 bg-orange-500/20 blur-3xl rounded-full"></div>
+          <ClipLoader size={80} color="#f97316" loading={initialLoading} />
+        </div>
+        <h1 className="mt-6 font-bold text-2xl text-orange-900">טוען פרטי ספק...</h1>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-b py-8">
-      <div className="container mx-auto px-4">
-        {/* כותרת */}
-        <div className="flex items-center justify-center space-x-3 mb-8">
-          <UserCog className="text-slate-800 ml-4 mt-2 size-8" />
-          <h1 className="text-4xl font-bold text-center text-slate-800">עריכת ספק</h1>
+    <div className="min-h-screen bg-gradient-to-br from-orange-50 via-amber-50 to-orange-100 py-8 px-4">
+      <div className="max-w-6xl mx-auto">
+        {/* Header */}
+        <div className="bg-white rounded-2xl shadow-xl p-6 mb-8">
+          <div className="flex items-center justify-center gap-3 mb-2">
+            <div className="bg-gradient-to-br from-orange-500 to-amber-500 p-3 rounded-xl shadow-lg">
+              <UserCog className="text-white w-8 h-8" />
+            </div>
+            <h1 className="text-4xl font-bold text-gray-900">עריכת ספק</h1>
+          </div>
+          <div className="h-1 w-32 bg-gradient-to-r from-orange-500 to-amber-500 rounded-full mx-auto"></div>
         </div>
 
         {/* כפתור חזרה */}
-        <div className="flex justify-center mb-6">
+        <div className="mb-6">
           <button
             onClick={() => navigate(`/supplier/${id}`)}
-            className="flex items-center gap-3 px-6 py-2 bg-slate-400 font-bold rounded-xl hover:bg-slate-600 hover:text-white transition-colors"
+            className="inline-flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-gray-500 to-gray-600 text-white rounded-xl hover:from-gray-600 hover:to-gray-700 transition-all duration-300 shadow-lg hover:shadow-xl font-medium"
           >
-            <ArrowRight size={20} />
+            <ArrowRight className="w-5 h-5" />
             <span>חזור לפרטי הספק</span>
           </button>
         </div>
 
         {/* טופס עריכה */}
-        <div className="flex justify-center">
-          <form onSubmit={handleSubmit} className="bg-slate-400 w-full max-w-6xl rounded-xl p-8 shadow-lg">
+        <form onSubmit={handleSubmit} className="bg-white rounded-2xl shadow-xl p-8">
+          {/* פרטי ספק עיקריים */}
+          <div className="mb-8">
+            <div className="flex items-center gap-3 mb-6 pb-4 border-b-2 border-gradient-to-r from-orange-200 to-amber-200">
+              <div className="bg-gradient-to-br from-orange-500 to-amber-500 p-2 rounded-lg shadow-md">
+                <User className="text-white w-6 h-6" />
+              </div>
+              <h2 className="text-2xl font-bold text-gray-900">פרטי הספק</h2>
+            </div>
             
-            {/* פרטי ספק עיקריים */}
-            <div className="mb-8">
-              <h2 className="text-2xl font-bold text-black mb-6 border-b-2 border-slate-200 pb-2">
-                פרטי הספק
-              </h2>
-              
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                <div className="flex flex-col">
-                  <label className="font-bold text-xl text-black mb-2">
-                    שם הספק <span className="text-red-500">*</span>
-                  </label>
-                  <input
-                    type="text"
-                    value={supplier.name}
-                    onChange={(e) => handleInputChange('name', e.target.value)}
-                    className="bg-slate-300 border p-3 rounded-lg text-l font-bold"
-                  />
-                </div>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {/* שם הספק */}
+              <div className="space-y-2">
+                <label className="flex items-center gap-2 text-sm font-semibold text-gray-700">
+                  <div className="bg-orange-100 p-1.5 rounded-lg">
+                    <User className="w-4 h-4 text-orange-600" />
+                  </div>
+                  שם הספק
+                  <span className="text-red-500">*</span>
+                </label>
+                <input
+                  type="text"
+                  value={supplier.name}
+                  onChange={(e) => handleInputChange('name', e.target.value)}
+                  className="w-full px-4 py-3 bg-gradient-to-br from-orange-50 to-amber-50 border-2 border-orange-200 rounded-xl font-medium focus:border-orange-400 focus:outline-none focus:ring-2 focus:ring-orange-200 transition-all"
+                  placeholder="הזן שם ספק"
+                />
+              </div>
 
-                <div className="flex flex-col">
-                  <label className="font-bold text-xl text-black mb-2">
-                    מספר עוסק <span className="text-red-500">*</span>
-                  </label>
-                  <input
-                    type="text"
-                    value={supplier.business_tax}
-                    onChange={(e) => handleInputChange('business_tax', e.target.value)}
-                    className="bg-slate-300 border p-3 rounded-lg text-l font-bold"
-                  />
-                </div>
+              {/* מספר עוסק */}
+              <div className="space-y-2">
+                <label className="flex items-center gap-2 text-sm font-semibold text-gray-700">
+                  <div className="bg-blue-100 p-1.5 rounded-lg">
+                    <Hash className="w-4 h-4 text-blue-600" />
+                  </div>
+                  מספר עוסק
+                  <span className="text-red-500">*</span>
+                </label>
+                <input
+                  type="text"
+                  value={supplier.business_tax}
+                  onChange={(e) => handleInputChange('business_tax', e.target.value)}
+                  className="w-full px-4 py-3 bg-gradient-to-br from-blue-50 to-cyan-50 border-2 border-blue-200 rounded-xl font-medium focus:border-blue-400 focus:outline-none focus:ring-2 focus:ring-blue-200 transition-all"
+                  placeholder="הזן מספר עוסק"
+                />
+              </div>
 
-                <div className="flex flex-col">
-                  <label className="font-bold text-xl text-black mb-2">
-                    טלפון <span className="text-red-500">*</span>
-                  </label>
-                  <input
-                    type="tel"
-                    value={supplier.phone}
-                    onChange={(e) => handleInputChange('phone', e.target.value)}
-                    className="bg-slate-300 border p-3 rounded-lg text-l font-bold"
-                  />
-                </div>
+              {/* טלפון */}
+              <div className="space-y-2">
+                <label className="flex items-center gap-2 text-sm font-semibold text-gray-700">
+                  <div className="bg-green-100 p-1.5 rounded-lg">
+                    <Phone className="w-4 h-4 text-green-600" />
+                  </div>
+                  טלפון
+                  <span className="text-red-500">*</span>
+                </label>
+                <input
+                  type="tel"
+                  value={supplier.phone}
+                  onChange={(e) => handleInputChange('phone', e.target.value)}
+                  className="w-full px-4 py-3 bg-gradient-to-br from-green-50 to-emerald-50 border-2 border-green-200 rounded-xl font-medium focus:border-green-400 focus:outline-none focus:ring-2 focus:ring-green-200 transition-all"
+                  placeholder="הזן מספר טלפון"
+                />
+              </div>
 
-                <div className="flex flex-col">
-                  <label className="font-bold text-xl text-black mb-2">אימייל</label>
-                  <input
-                    type="email"
-                    value={supplier.email}
-                    onChange={(e) => handleInputChange('email', e.target.value)}
-                    className="bg-slate-300 border p-3 rounded-lg text-l font-bold"
-                  />
-                </div>
+              {/* אימייל */}
+              <div className="space-y-2">
+                <label className="flex items-center gap-2 text-sm font-semibold text-gray-700">
+                  <div className="bg-purple-100 p-1.5 rounded-lg">
+                    <Mail className="w-4 h-4 text-purple-600" />
+                  </div>
+                  אימייל
+                </label>
+                <input
+                  type="email"
+                  value={supplier.email}
+                  onChange={(e) => handleInputChange('email', e.target.value)}
+                  className="w-full px-4 py-3 bg-gradient-to-br from-purple-50 to-pink-50 border-2 border-purple-200 rounded-xl font-medium focus:border-purple-400 focus:outline-none focus:ring-2 focus:ring-purple-200 transition-all"
+                  placeholder="הזן כתובת אימייל"
+                />
+              </div>
 
-                <div className="flex flex-col md:col-span-2">
-                  <label className="font-bold text-xl text-black mb-2">כתובת</label>
-                  <input
-                    type="text"
-                    value={supplier.address}
-                    onChange={(e) => handleInputChange('address', e.target.value)}
-                    className="bg-slate-300 border p-3 rounded-lg text-l font-bold"
-                  />
-                </div>
+              {/* כתובת */}
+              <div className="space-y-2 md:col-span-2">
+                <label className="flex items-center gap-2 text-sm font-semibold text-gray-700">
+                  <div className="bg-indigo-100 p-1.5 rounded-lg">
+                    <MapPin className="w-4 h-4 text-indigo-600" />
+                  </div>
+                  כתובת
+                </label>
+                <input
+                  type="text"
+                  value={supplier.address}
+                  onChange={(e) => handleInputChange('address', e.target.value)}
+                  className="w-full px-4 py-3 bg-gradient-to-br from-indigo-50 to-blue-50 border-2 border-indigo-200 rounded-xl font-medium focus:border-indigo-400 focus:outline-none focus:ring-2 focus:ring-indigo-200 transition-all"
+                  placeholder="הזן כתובת מלאה"
+                />
               </div>
             </div>
+          </div>
 
-            {/* פרטי בנק */}
-            <div className="mb-8">
-              <h2 className="text-2xl font-bold text-black mb-6 border-b-2 border-slate-200 pb-2">
-                פרטי חשבון בנק (אופציונלי)
-              </h2>
-              
-              {/* בחירת בנק */}
-              <div className="mb-4">
-                <label className="font-bold text-xl text-black mb-2 block">בחר בנק:</label>
+          {/* פרטי בנק */}
+          <div className="mb-8">
+            <div className="flex items-center gap-3 mb-6 pb-4 border-b-2 border-gradient-to-r from-orange-200 to-amber-200">
+              <div className="bg-gradient-to-br from-green-500 to-emerald-500 p-2 rounded-lg shadow-md">
+                <Building2 className="text-white w-6 h-6" />
+              </div>
+              <h2 className="text-2xl font-bold text-gray-900">פרטי חשבון בנק</h2>
+              <span className="text-sm text-gray-500 bg-gray-100 px-3 py-1 rounded-full font-medium">אופציונלי</span>
+            </div>
+
+            <div className="bg-gradient-to-br from-amber-50 to-orange-50 p-6 rounded-xl border-2 border-amber-200 mb-6">
+              <div className="flex items-start gap-3">
+                <AlertCircle className="w-5 h-5 text-amber-600 flex-shrink-0 mt-0.5" />
+                <p className="text-sm text-gray-700 font-medium">
+                  פרטי הבנק הם אופציונליים. אם תבחר למלא - יש למלא את כל השדות (בנק, סניף ומספר חשבון).
+                </p>
+              </div>
+            </div>
+            
+            {/* בחירת בנק */}
+            <div className="mb-6">
+              <label className="flex items-center gap-2 text-sm font-semibold text-gray-700 mb-2">
+                <div className="bg-teal-100 p-1.5 rounded-lg">
+                  <Building2 className="w-4 h-4 text-teal-600" />
+                </div>
+                בחר בנק
+              </label>
+              <div className="relative">
                 <BankSelector
                   banks={banks}
                   selectedBank={supplier.bankDetails.bankObj}
@@ -304,91 +372,129 @@ const SupplierEditPage = () => {
                   placeholder="בחר בנק מהרשימה"
                 />
               </div>
-
-              {/* דרופדאון סניפים */}
-              {supplier.bankDetails.bankObj?.branches?.length > 0 && (
-                <div className="mb-4">
-                  <label className="font-bold text-xl text-black mb-2 block">בחר סניף:</label>
-                  <Select
-                    styles={{
-                      control: (provided) => ({
-                        ...provided,
-                        fontWeight: 'bold',
-                        fontSize: '15px'
-                      }),
-                      option: (provided) => ({
-                        ...provided,
-                        fontWeight: 'bold',
-                        fontSize: '15px'
-                      }),
-                      placeholder: (provided) => ({
-                        ...provided,
-                        fontWeight: 'bold',
-                        fontSize: '15px'
-                      })
-                    }}      
-                    options={supplier.bankDetails.bankObj.branches.map(branch => ({
-                      value: branch.branchCode,
-                      label: `${branch.branchCode} - ${branch.city} - ${branch.address}`
-                    }))}
-                    value={
-                      supplier.bankDetails.branchNumber
-                        ? {
-                            value: supplier.bankDetails.branchNumber,
-                            label: supplier.bankDetails.bankObj.branches.find(b => b.branchCode === supplier.bankDetails.branchNumber)
-                              ? `${supplier.bankDetails.branchNumber} - ${supplier.bankDetails.bankObj.branches.find(b => b.branchCode === supplier.bankDetails.branchNumber).city} - ${supplier.bankDetails.bankObj.branches.find(b => b.branchCode === supplier.bankDetails.branchNumber).address}`
-                              : supplier.bankDetails.branchNumber
-                          }
-                        : null
-                    }
-                    onChange={opt =>
-                      handleBankDetailsChange('branchNumber', opt?.value || '')
-                    }
-                    placeholder="בחר סניף"
-                    isSearchable
-                    isClearable
-                  />
-                </div>
-              )}
-
-              {/* שדה חשבון */}
-              {supplier.bankDetails.bankName && (
-                <div>
-                  <label className="font-bold text-xl text-black mb-2 block">מספר חשבון:</label>
-                  <input
-                    type="text"
-                    value={supplier.bankDetails.accountNumber}
-                    onChange={(e) =>
-                      handleBankDetailsChange('accountNumber', e.target.value)
-                    }
-                    className="bg-slate-300 border p-3 rounded-lg text-l font-bold w-full"
-                    placeholder="הזן מספר חשבון"
-                  />
-                </div>
-              )}
             </div>
 
-            {/* כפתורי פעולה */}
-            <div className="flex justify-center gap-4">
-              <button
-                type="submit"
-                className="flex items-center gap-2 bg-slate-900 text-white px-8 py-3 rounded-lg font-bold hover:bg-slate-700 transition-colors disabled:bg-gray-400 disabled:cursor-not-allowed"
-                disabled={loading}
-              >
-                <Save size={20} />
-                {loading ? 'מעדכן...' : 'עדכן ספק'}
-              </button>
+            {/* דרופדאון סניפים */}
+            {supplier.bankDetails.bankObj?.branches?.length > 0 && (
+              <div className="mb-6">
+                <label className="flex items-center gap-2 text-sm font-semibold text-gray-700 mb-2">
+                  <div className="bg-cyan-100 p-1.5 rounded-lg">
+                    <MapPin className="w-4 h-4 text-cyan-600" />
+                  </div>
+                  בחר סניף
+                </label>
+                <Select
+                  styles={{
+                    control: (provided, state) => ({
+                      ...provided,
+                      fontWeight: '500',
+                      fontSize: '15px',
+                      padding: '6px',
+                      borderRadius: '0.75rem',
+                      border: state.isFocused ? '2px solid #06b6d4' : '2px solid #a5f3fc',
+                      background: 'linear-gradient(to bottom right, #ecfeff, #cffafe)',
+                      boxShadow: state.isFocused ? '0 0 0 3px rgba(6, 182, 212, 0.1)' : 'none',
+                      '&:hover': {
+                        border: '2px solid #06b6d4'
+                      }
+                    }),
+                    option: (provided, state) => ({
+                      ...provided,
+                      fontWeight: '500',
+                      fontSize: '15px',
+                      backgroundColor: state.isSelected ? '#f97316' : state.isFocused ? '#fed7aa' : 'white',
+                      color: state.isSelected ? 'white' : '#1f2937',
+                    }),
+                    placeholder: (provided) => ({
+                      ...provided,
+                      fontWeight: '500',
+                      fontSize: '15px',
+                      color: '#9ca3af'
+                    })
+                  }}      
+                  options={supplier.bankDetails.bankObj.branches.map(branch => ({
+                    value: branch.branchCode,
+                    label: `${branch.branchCode} - ${branch.city} - ${branch.address}`
+                  }))}
+                  value={
+                    supplier.bankDetails.branchNumber
+                      ? {
+                          value: supplier.bankDetails.branchNumber,
+                          label: supplier.bankDetails.bankObj.branches.find(b => b.branchCode === supplier.bankDetails.branchNumber)
+                            ? `${supplier.bankDetails.branchNumber} - ${supplier.bankDetails.bankObj.branches.find(b => b.branchCode === supplier.bankDetails.branchNumber).city} - ${supplier.bankDetails.bankObj.branches.find(b => b.branchCode === supplier.bankDetails.branchNumber).address}`
+                            : supplier.bankDetails.branchNumber
+                        }
+                      : null
+                  }
+                  onChange={opt =>
+                    handleBankDetailsChange('branchNumber', opt?.value || '')
+                  }
+                  placeholder="בחר סניף מהרשימה"
+                  isSearchable
+                  isClearable
+                />
+              </div>
+            )}
 
-              <button
-                type="button"
-                onClick={() => navigate(`/supplier/${id}`)}
-                className="bg-gray-500 text-white px-8 py-3 rounded-lg font-bold hover:bg-gray-400 transition-colors"
-              >
-                ביטול
-              </button>
-            </div>
-          </form>
-        </div>
+            {/* שדה חשבון */}
+            {supplier.bankDetails.bankName && (
+              <div className="space-y-2">
+                <label className="flex items-center gap-2 text-sm font-semibold text-gray-700">
+                  <div className="bg-emerald-100 p-1.5 rounded-lg">
+                    <CreditCard className="w-4 h-4 text-emerald-600" />
+                  </div>
+                  מספר חשבון
+                </label>
+                <input
+                  type="text"
+                  value={supplier.bankDetails.accountNumber}
+                  onChange={(e) =>
+                    handleBankDetailsChange('accountNumber', e.target.value)
+                  }
+                  className="w-full px-4 py-3 bg-gradient-to-br from-emerald-50 to-green-50 border-2 border-emerald-200 rounded-xl font-medium focus:border-emerald-400 focus:outline-none focus:ring-2 focus:ring-emerald-200 transition-all"
+                  placeholder="הזן מספר חשבון"
+                />
+              </div>
+            )}
+          </div>
+
+          {/* כפתורי פעולה */}
+          <div className="flex gap-4 pt-6 border-t-2 border-gray-200">
+            <button
+              type="submit"
+              disabled={loading}
+              className="flex-1 flex items-center justify-center gap-3 px-8 py-4 bg-gradient-to-r from-orange-500 to-amber-500 text-white rounded-xl hover:from-orange-600 hover:to-amber-600 transition-all duration-300 shadow-lg hover:shadow-xl font-bold text-lg disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              {loading ? (
+                <>
+                  <ClipLoader size={24} color="#ffffff" />
+                  <span>מעדכן...</span>
+                </>
+              ) : (
+                <>
+                  <CheckCircle className="w-6 h-6" />
+                  <span>עדכן ספק</span>
+                </>
+              )}
+            </button>
+
+            <button
+              type="button"
+              onClick={() => navigate(`/supplier/${id}`)}
+              disabled={loading}
+              className="px-8 py-4 bg-gray-200 text-gray-700 rounded-xl hover:bg-gray-300 transition-all duration-300 font-bold text-lg disabled:opacity-50 flex items-center justify-center gap-2"
+            >
+              <X className="w-6 h-6" />
+              <span>ביטול</span>
+            </button>
+          </div>
+
+          {/* הערת שדות חובה */}
+          <div className="mt-6 flex items-center gap-2 text-sm text-gray-600 bg-gray-50 p-4 rounded-lg">
+            <AlertCircle className="w-5 h-5 text-gray-500" />
+            <span>שדות המסומנים ב-<span className="text-red-500 font-bold">*</span> הם שדות חובה</span>
+          </div>
+        </form>
       </div>
     </div>
   );

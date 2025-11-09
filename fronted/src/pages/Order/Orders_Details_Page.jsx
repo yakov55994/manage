@@ -1,16 +1,15 @@
 import { useEffect, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
-import api from '../../api/api'; import { ClipLoader } from 'react-spinners';  // ייבוא של האנימציה החדשה
-import { ShoppingCart } from "lucide-react";
+import api from '../../api/api';
+import { ClipLoader } from 'react-spinners';
+import { ShoppingCart, Edit, Trash2, FileText, Calendar, User, Hash, DollarSign, Briefcase, AlertCircle, Phone, X } from "lucide-react";
 import { toast } from 'sonner';
 
 const OrderDetailsPage = () => {
-
   const { id } = useParams();
   const [order, setOrder] = useState(null);
   const [confirmOpen, setConfirmOpen] = useState(false);
   const [deleting, setDeleting] = useState(false);
-
   const [loading, setLoading] = useState(true);
   const navigate = useNavigate();
 
@@ -24,14 +23,11 @@ const OrderDetailsPage = () => {
           const fileDetails = await Promise.all(
             orderData.files.map(async (file) => {
               if (file && file._id) {
-                // אם יש ID, שלח את הבקשה הרגילה
-                // console.log("File ID:", file._id);
                 const fileRes = await api.get(`/files/${file._id}`);
                 return fileRes.data;
               } else {
-                // אם אין ID, פשוט הצג את הקובץ (או טיפל בו אחרת)
                 console.warn("File has no ID, using URL directly:", file.url);
-                return file;  // החזר את הקובץ כפי שהוא (למשל, רק עם URL)
+                return file;
               }
             })
           );
@@ -46,18 +42,17 @@ const OrderDetailsPage = () => {
       }
     };
 
-
-
-
     fetchInvoiceDetails();
   }, [id]);
 
-
   if (loading) {
     return (
-      <div className="flex flex-col justify-center items-center h-64">
-        <ClipLoader size={100} color="#3498db" loading={loading} />
-        <h1 className="mt-4 font-bold text-2xl text-cyan-950">טוען . . .</h1>
+      <div className="flex flex-col justify-center items-center min-h-screen bg-gradient-to-br from-orange-50 via-amber-50 to-orange-100">
+        <div className="relative">
+          <div className="absolute inset-0 bg-orange-500/20 blur-3xl rounded-full"></div>
+          <ClipLoader size={80} color="#f97316" loading={loading} />
+        </div>
+        <h1 className="mt-6 font-bold text-2xl text-orange-900">טוען פרטי הזמנה...</h1>
       </div>
     );
   }
@@ -70,7 +65,7 @@ const OrderDetailsPage = () => {
     const date = new Date(dateTime);
     return date.toLocaleString('he-IL', { year: 'numeric', month: '2-digit', day: '2-digit' });
   }
-  
+
   const openInExcelViewer = (fileUrl) => {
     const officeUrl = `https://view.officeapps.live.com/op/view.aspx?src=${encodeURIComponent(fileUrl)}`;
     window.open(officeUrl, "_blank");
@@ -78,67 +73,68 @@ const OrderDetailsPage = () => {
 
   const renderFile = (file) => {
     const fileUrl = file?.url || file?.fileUrl;
-
     if (!fileUrl) return null;
 
     const fileExtension = fileUrl.split('.').pop().toLowerCase();
 
     if (fileExtension === 'pdf') {
       return (
-        <div>
-          {/* <embed src={fileUrl} type="application/pdf" width="100%" height="600px" /> */}
-          <a href={fileUrl} target="_blank" rel="noopener noreferrer" className="block text-blue-500 font-bold mt-2">
-            📂 צפה בקובץ בחלון חדש
-          </a>
-        </div>
+        <a 
+          href={fileUrl} 
+          target="_blank" 
+          rel="noopener noreferrer" 
+          className="inline-flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-orange-500 to-amber-500 text-white rounded-lg hover:from-orange-600 hover:to-amber-600 transition-all duration-300 shadow-md hover:shadow-lg"
+        >
+          <FileText className="w-5 h-5" />
+          <span className="font-medium">צפה בקובץ PDF</span>
+        </a>
       );
-    }
-
-    // בתוך ה-renderFile
-    else if (fileExtension === 'xlsx' || fileExtension === 'xls') {
+    } else if (fileExtension === 'xlsx' || fileExtension === 'xls') {
       return (
-        <div>
-          <button
-            onClick={() => openInExcelViewer(fileUrl)}
-            className="block text-blue-500 font-bold mt-2"
-          >
-            📂 לצפייה בקובץ לחץ כאן
-
-          </button>
-        </div>
+        <button
+          onClick={() => openInExcelViewer(fileUrl)}
+          className="inline-flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-green-500 to-emerald-500 text-white rounded-lg hover:from-green-600 hover:to-emerald-600 transition-all duration-300 shadow-md hover:shadow-lg"
+        >
+          <FileText className="w-5 h-5" />
+          <span className="font-medium">צפה בקובץ Excel</span>
+        </button>
       );
-    }
-    else if (fileUrl.match(/\.(jpeg|jpg|png|gif)$/)) {
+    } else if (fileUrl.match(/\.(jpeg|jpg|png|gif)$/)) {
       return (
-        <div>
-          {/* <img src={fileUrl} alt="Invoice File" className="w-full max-w-lg mx-auto rounded-lg shadow-md" /> */}
-          <a href={fileUrl} target="_blank" rel="noopener noreferrer" className="block text-blue-500 font-bold mt-2">
-            📂 צפה בקובץ בחלון חדש
-          </a>
-        </div>
+        <a 
+          href={fileUrl} 
+          target="_blank" 
+          rel="noopener noreferrer" 
+          className="inline-flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-blue-500 to-cyan-500 text-white rounded-lg hover:from-blue-600 hover:to-cyan-600 transition-all duration-300 shadow-md hover:shadow-lg"
+        >
+          <FileText className="w-5 h-5" />
+          <span className="font-medium">צפה בתמונה</span>
+        </a>
       );
     } else {
       return (
-        <div>
-          {/* <iframe src={fileUrl} className="w-full max-w-lg h-96 mx-auto" title="Document Preview"></iframe> */}
-          <a href={fileUrl} target="_blank" rel="noopener noreferrer" className="block text-blue-500 font-bold mt-2">
-            📂 צפה בקובץ בחלון חדש
-          </a>
-        </div>
+        <a 
+          href={fileUrl} 
+          target="_blank" 
+          rel="noopener noreferrer" 
+          className="inline-flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-purple-500 to-pink-500 text-white rounded-lg hover:from-purple-600 hover:to-pink-600 transition-all duration-300 shadow-md hover:shadow-lg"
+        >
+          <FileText className="w-5 h-5" />
+          <span className="font-medium">צפה בקובץ</span>
+        </a>
       );
     }
   };
 
-
-    const handleEdit = (id) => {
+  const handleEdit = (id) => {
     navigate(`/update-order/${id}`);
   };
 
- const handleDelete = async () => {
+  const handleDelete = async () => {
     try {
       if (!order?._id) return;
       setDeleting(true);
-      await api.delete(`/orders/${order._id}`); // ודא שהראוט שלך הוא /invoices/:id
+      await api.delete(`/orders/${order._id}`);
       toast.success("ההזמנה נמחקה בהצלחה", {
         className: "sonner-toast success rtl",
       });
@@ -154,147 +150,264 @@ const OrderDetailsPage = () => {
     }
   };
 
-    if (!order) {
+  if (!order) {
     return (
-      <div className="flex justify-center items-center h-64">
-        <h1 className="text-2xl font-bold text-red-600">הזמנה לא נמצאה</h1>
+      <div className="flex flex-col justify-center items-center min-h-screen bg-gradient-to-br from-orange-50 via-amber-50 to-orange-100">
+        <div className="bg-white rounded-2xl shadow-2xl p-8 max-w-md">
+          <div className="flex flex-col items-center">
+            <div className="bg-red-100 rounded-full p-4 mb-4">
+              <AlertCircle className="w-16 h-16 text-red-600" />
+            </div>
+            <h1 className="text-3xl font-bold text-red-600 mb-2">הזמנה לא נמצאה</h1>
+            <p className="text-gray-600 text-center mb-6">לא ניתן למצוא את ההזמנה המבוקשת</p>
+            <button
+              onClick={() => navigate('/orders')}
+              className="px-6 py-3 bg-gradient-to-r from-orange-500 to-amber-500 text-white rounded-xl hover:from-orange-600 hover:to-amber-600 transition-all duration-300 shadow-lg hover:shadow-xl font-medium"
+            >
+              חזור לרשימת הזמנות
+            </button>
+          </div>
+        </div>
       </div>
     );
   }
 
   return (
-    <div>
-      <div className="flex items-center justify-center space-x-3 mb-8">
-        <ShoppingCart className="text-sky-950 ml-4 mt-2 size-8" />
-        <h1 className="text-4xl font-bold text-black">פרטי הזמנה</h1>
-      </div>
-
-       <button
-        onClick={(e) => {
-          e.stopPropagation();
-          handleEdit(order._id);
-        }}
-        className="ml-2 p-3 bg-slate-400 text-black hover:bg-slate-600 hover:text-white  rounded-full transition-colors duration-150"
-      >
-        עריכת הזמנה
-      </button>
-
-   <button
-        onClick={() => setConfirmOpen(true)}
-        className="p-3 bg-red-400 text-black hover:bg-red-600 hover:text-white rounded-full transition-colors duration-150"
-      >
-        מחק הזמנה
-      </button>
-      <div className="flex justify-center items-center mt-14 mb-14">
-        <div className="bg-slate-300 p-5 rounded-lg shadow-xl w-full max-w-4xl">
-          <div key={order._id} className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 text-xl text-black text-center">
-            
-             <div className="border-l-2 border-amber-600 pl-4">
-              <b className="text-xl block">שם המזמין:</b>
-              <span className="text-lg">{order.invitingName}</span>
-            </div>
-            
-            
-            <div className="border-l-2 border-amber-600 pl-4">
-              <b className="text-xl block">מספר הזמנה:</b>
-              <span className="text-lg">{order.orderNumber}</span>
-            </div>
-
-            <div className="border-l-2 border-amber-600 pl-4">
-              <b className="text-xl block">סכום:</b>
-              <span className="text-lg">{formatNumber(order.sum)} ₪</span>
-            </div>
-
-           <div className="border-l-2 border-amber-600 pl-4">
-              <b className="text-xl block">פירוט:</b>
-              <span className="text-lg">{order.detail}</span>
-            </div>
-
-             <div className="border-l-2 border-amber-600 pl-4">
-              <b className="text-xl block">פרוייקט:</b>
-              <span className="text-lg">{order.projectName}</span>
-            </div>
-
-            <div className="border-l-2 border-amber-600 pl-4">
-              <b className="text-xl block">תאריך יצירת הזמנה:</b>
-              <span className="text-lg">{formatHebrewDate(order.createdAt)}</span>
-            </div>
-
-            {/* <div className="border-l-2 border-amber-600 pl-4">
-              <b className="text-xl block">תאריך תשלום:</b>
-              <span className="text-lg">{order.paymentDate ? formatHebrewDate(order.paymentDate) : "לא שולם"}</span>
-            </div> */}
-
-           
-
-            <div className="border-l-2 border-amber-600 pl-4">
-              <b className="text-xl block">סטטוס הזמנה:</b>
-              <span className="text-lg">{order.status}</span>
-            </div>
-
-            <div className="border-l-2 border-amber-600 pl-4">
-              <b className="text-xl block">איש קשר:</b>
-              <span className="text-lg">{order.Contact_person}</span>
-            </div>
-
-       
-           
-            <div className="col-span-3">
-              <div className="col-span-3">
-                {order.files && order.files.length > 0 ? (
-                  <div className="mt-4 space-y-4">
-                    {order.files.map((file, index) => (
-                      <div key={index} className="text-center flex items-center justify-center ">
-                        {/* הצגת מספר הקובץ מצד שמאל */}
-                        <p className="font-bold text-xl mr-2 ml-5  ">קובץ {index + 1} :</p>
-                        {/* הצגת הקובץ מצד ימין */}
-                        {renderFile(file)}
-                      </div>
-                    ))}
-                  </div>
-                ) : (
-                  <div className="flex justify-center">
-                    <p className="text-gray-700 bg-white w-44 p-2 mt-10 text-center text-xl rounded-2xl">אין קבצים להצגה</p>
-                  </div>
-                )}
+    <div className="min-h-screen bg-gradient-to-br from-orange-50 via-amber-50 to-orange-100 py-8 px-4">
+      <div className="max-w-7xl mx-auto">
+        {/* Header */}
+        <div className="bg-white rounded-2xl shadow-xl p-6 mb-8">
+          <div className="flex items-center justify-between flex-wrap gap-4">
+            <div className="flex items-center gap-3">
+              <div className="bg-gradient-to-br from-orange-500 to-amber-500 p-3 rounded-xl shadow-lg">
+                <ShoppingCart className="text-white w-8 h-8" />
               </div>
+              <div>
+                <h1 className="text-3xl md:text-4xl font-bold text-gray-900">פרטי הזמנה</h1>
+                <p className="text-gray-600 mt-1">הצגת מידע מפורט על ההזמנה</p>
+              </div>
+            </div>
 
+            {/* Action Buttons */}
+            <div className="flex items-center gap-3">
+              <button
+                onClick={() => handleEdit(order._id)}
+                className="inline-flex items-center gap-2 px-5 py-3 bg-gradient-to-r from-blue-500 to-cyan-500 text-white rounded-xl hover:from-blue-600 hover:to-cyan-600 transition-all duration-300 shadow-lg hover:shadow-xl font-medium"
+              >
+                <Edit className="w-5 h-5" />
+                <span>עריכת הזמנה</span>
+              </button>
 
+              <button
+                onClick={() => setConfirmOpen(true)}
+                className="inline-flex items-center gap-2 px-5 py-3 bg-gradient-to-r from-red-500 to-rose-500 text-white rounded-xl hover:from-red-600 hover:to-rose-600 transition-all duration-300 shadow-lg hover:shadow-xl font-medium"
+              >
+                <Trash2 className="w-5 h-5" />
+                <span>מחק הזמנה</span>
+              </button>
             </div>
           </div>
         </div>
-      </div>
- {confirmOpen && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-lg shadow-xl p-6 max-w-sm w-full mx-4">
-            <div className="bg-red-100 text-red-700 p-4 rounded-lg mb-4">
-              <h3 className="text-2xl font-bold text-center mb-2">
-                האם למחוק את ההזמנה?
-              </h3>
-              <p className="text-center">הפעולה בלתי הפיכה.</p>
+
+        {/* Order Details Card */}
+        <div className="bg-white rounded-2xl shadow-xl p-8">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {/* שם המזמין */}
+            <div className="group bg-gradient-to-br from-orange-50 to-amber-50 p-5 rounded-xl border-r-4 border-orange-500 hover:shadow-lg transition-all duration-300">
+              <div className="flex items-center gap-3 mb-2">
+                <div className="bg-white p-2 rounded-lg shadow-sm">
+                  <User className="w-5 h-5 text-orange-600" />
+                </div>
+                <span className="text-sm font-semibold text-gray-600">שם המזמין</span>
+              </div>
+              <p className="text-xl font-bold text-gray-900 mr-10">{order.invitingName}</p>
             </div>
-            <div className="flex justify-center gap-3">
-              <button
-                onClick={handleDelete}
-                disabled={deleting}
-                className="px-4 py-2 text-white bg-red-600 hover:bg-red-700 rounded-lg transition-colors disabled:opacity-60"
-              >
-                {deleting ? "מוחק..." : "מחק הזמנה"}
-              </button>
-              <button
-                onClick={() => setConfirmOpen(false)}
-                disabled={deleting}
-                className="px-4 py-2 text-slate-700 bg-slate-100 hover:bg-slate-200 rounded-lg transition-colors"
-              >
-                ביטול
-              </button>
+
+            {/* מספר הזמנה */}
+            <div className="group bg-gradient-to-br from-orange-50 to-amber-50 p-5 rounded-xl border-r-4 border-amber-500 hover:shadow-lg transition-all duration-300">
+              <div className="flex items-center gap-3 mb-2">
+                <div className="bg-white p-2 rounded-lg shadow-sm">
+                  <Hash className="w-5 h-5 text-amber-600" />
+                </div>
+                <span className="text-sm font-semibold text-gray-600">מספר הזמנה</span>
+              </div>
+              <p className="text-xl font-bold text-gray-900 mr-10">{order.orderNumber}</p>
+            </div>
+
+            {/* סכום */}
+            <div className="group bg-gradient-to-br from-green-50 to-emerald-50 p-5 rounded-xl border-r-4 border-green-500 hover:shadow-lg transition-all duration-300">
+              <div className="flex items-center gap-3 mb-2">
+                <div className="bg-white p-2 rounded-lg shadow-sm">
+                  <DollarSign className="w-5 h-5 text-green-600" />
+                </div>
+                <span className="text-sm font-semibold text-gray-600">סכום</span>
+              </div>
+              <p className="text-xl font-bold text-green-700 mr-10">{formatNumber(order.sum)} ₪</p>
+            </div>
+
+            {/* פירוט */}
+            <div className="group bg-gradient-to-br from-blue-50 to-cyan-50 p-5 rounded-xl border-r-4 border-blue-500 hover:shadow-lg transition-all duration-300">
+              <div className="flex items-center gap-3 mb-2">
+                <div className="bg-white p-2 rounded-lg shadow-sm">
+                  <FileText className="w-5 h-5 text-blue-600" />
+                </div>
+                <span className="text-sm font-semibold text-gray-600">פירוט</span>
+              </div>
+              <p className="text-xl font-bold text-gray-900 mr-10">{order.detail}</p>
+            </div>
+
+            {/* פרויקט */}
+            <div className="group bg-gradient-to-br from-purple-50 to-pink-50 p-5 rounded-xl border-r-4 border-purple-500 hover:shadow-lg transition-all duration-300">
+              <div className="flex items-center gap-3 mb-2">
+                <div className="bg-white p-2 rounded-lg shadow-sm">
+                  <Briefcase className="w-5 h-5 text-purple-600" />
+                </div>
+                <span className="text-sm font-semibold text-gray-600">פרויקט</span>
+              </div>
+              <p className="text-xl font-bold text-gray-900 mr-10">{order.projectName}</p>
+            </div>
+
+            {/* תאריך יצירה */}
+            <div className="group bg-gradient-to-br from-indigo-50 to-blue-50 p-5 rounded-xl border-r-4 border-indigo-500 hover:shadow-lg transition-all duration-300">
+              <div className="flex items-center gap-3 mb-2">
+                <div className="bg-white p-2 rounded-lg shadow-sm">
+                  <Calendar className="w-5 h-5 text-indigo-600" />
+                </div>
+                <span className="text-sm font-semibold text-gray-600">תאריך יצירה</span>
+              </div>
+              <p className="text-xl font-bold text-gray-900 mr-10">{formatHebrewDate(order.createdAt)}</p>
+            </div>
+
+            {/* סטטוס */}
+            <div className="group bg-gradient-to-br from-orange-50 to-amber-50 p-5 rounded-xl border-r-4 border-orange-500 hover:shadow-lg transition-all duration-300">
+              <div className="flex items-center gap-3 mb-2">
+                <div className="bg-white p-2 rounded-lg shadow-sm">
+                  <AlertCircle className="w-5 h-5 text-orange-600" />
+                </div>
+                <span className="text-sm font-semibold text-gray-600">סטטוס הזמנה</span>
+              </div>
+              <p className="text-xl font-bold text-gray-900 mr-10">{order.status}</p>
+            </div>
+
+            {/* איש קשר */}
+            <div className="group bg-gradient-to-br from-teal-50 to-cyan-50 p-5 rounded-xl border-r-4 border-teal-500 hover:shadow-lg transition-all duration-300">
+              <div className="flex items-center gap-3 mb-2">
+                <div className="bg-white p-2 rounded-lg shadow-sm">
+                  <Phone className="w-5 h-5 text-teal-600" />
+                </div>
+                <span className="text-sm font-semibold text-gray-600">איש קשר</span>
+              </div>
+              <p className="text-xl font-bold text-gray-900 mr-10">{order.Contact_person}</p>
+            </div>
+          </div>
+
+          {/* Files Section */}
+          {order.files && order.files.length > 0 && (
+            <div className="mt-8 pt-8 border-t-2 border-gray-200">
+              <div className="flex items-center gap-3 mb-6">
+                <div className="bg-gradient-to-br from-orange-500 to-amber-500 p-2 rounded-lg shadow-lg">
+                  <FileText className="text-white w-6 h-6" />
+                </div>
+                <h2 className="text-2xl font-bold text-gray-900">קבצים מצורפים</h2>
+              </div>
+              
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {order.files.map((file, index) => (
+                  <div 
+                    key={index} 
+                    className="bg-gradient-to-br from-gray-50 to-gray-100 p-5 rounded-xl border-2 border-gray-200 hover:border-orange-400 transition-all duration-300 shadow-md hover:shadow-lg"
+                  >
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-3">
+                        <div className="bg-gradient-to-br from-orange-500 to-amber-500 text-white font-bold w-10 h-10 rounded-lg flex items-center justify-center shadow-md">
+                          {index + 1}
+                        </div>
+                        <span className="font-semibold text-gray-700">קובץ {index + 1}</span>
+                      </div>
+                      <div>
+                        {renderFile(file)}
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {(!order.files || order.files.length === 0) && (
+            <div className="mt-8 pt-8 border-t-2 border-gray-200">
+              <div className="bg-gradient-to-br from-gray-50 to-gray-100 p-8 rounded-xl border-2 border-dashed border-gray-300 text-center">
+                <FileText className="w-16 h-16 text-gray-400 mx-auto mb-3" />
+                <p className="text-xl font-semibold text-gray-600">אין קבצים מצורפים</p>
+              </div>
+            </div>
+          )}
+        </div>
+      </div>
+
+      {/* Delete Confirmation Modal */}
+      {confirmOpen && (
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-2xl shadow-2xl max-w-md w-full transform transition-all">
+            <div className="bg-gradient-to-r from-red-500 to-rose-500 text-white p-6 rounded-t-2xl">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <div className="bg-white/20 p-2 rounded-lg">
+                    <AlertCircle className="w-6 h-6" />
+                  </div>
+                  <h3 className="text-2xl font-bold">אישור מחיקה</h3>
+                </div>
+                <button
+                  onClick={() => setConfirmOpen(false)}
+                  disabled={deleting}
+                  className="text-white hover:bg-white/20 rounded-lg p-2 transition-colors"
+                >
+                  <X className="w-6 h-6" />
+                </button>
+              </div>
+            </div>
+
+            <div className="p-6">
+              <p className="text-lg text-gray-700 text-center mb-2">
+                האם אתה בטוח שברצונך למחוק את ההזמנה?
+              </p>
+              <p className="text-red-600 text-center font-semibold mb-6">
+                פעולה זו אינה ניתנת לביטול!
+              </p>
+
+              <div className="flex gap-3">
+                <button
+                  onClick={handleDelete}
+                  disabled={deleting}
+                  className="flex-1 px-6 py-3 bg-gradient-to-r from-red-500 to-rose-500 text-white rounded-xl hover:from-red-600 hover:to-rose-600 transition-all duration-300 shadow-lg hover:shadow-xl font-medium disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  {deleting ? (
+                    <span className="flex items-center justify-center gap-2">
+                      <ClipLoader size={20} color="#ffffff" />
+                      מוחק...
+                    </span>
+                  ) : (
+                    <span className="flex items-center justify-center gap-2">
+                      <Trash2 className="w-5 h-5" />
+                      מחק הזמנה
+                    </span>
+                  )}
+                </button>
+
+                <button
+                  onClick={() => setConfirmOpen(false)}
+                  disabled={deleting}
+                  className="flex-1 px-6 py-3 bg-gray-200 text-gray-700 rounded-xl hover:bg-gray-300 transition-all duration-300 font-medium disabled:opacity-50"
+                >
+                  ביטול
+                </button>
+              </div>
             </div>
           </div>
         </div>
       )}
     </div>
   );
-
 };
 
 export default OrderDetailsPage;
