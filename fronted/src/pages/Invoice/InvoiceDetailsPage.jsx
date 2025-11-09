@@ -4,7 +4,7 @@ import api from "../../api/api";
 import { ClipLoader } from "react-spinners";
 import { FileText } from "lucide-react";
 import { useNavigate } from "react-router-dom";
-import MoveInvoiceModal from "../../components/MoveInvoiceModal.jsx"; // נתיב בהתאם
+import MoveInvoiceModal from "../../Components/MoveInvoiceModal.jsx";
 
 // import * as XLSX from "xlsx";
 import { toast } from "sonner";
