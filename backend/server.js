@@ -23,7 +23,7 @@ const allowedOrigins = [
   'http://localhost:5173',
   'https://management-server-owna.onrender.com',
   'https://manage-2dkj.onrender.com',  // ← וודא שזה בדיוק ככה!
-  'https://manage-46b.pages.dev/'  // ← וודא שזה בדיוק ככה!
+  'https://manage-46b.pages.dev'  // ← וודא שזה בדיוק ככה!
 ];
 
 const corsOptions = {
