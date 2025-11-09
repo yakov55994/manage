@@ -1,11 +1,15 @@
-import React, { useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 import { ClipLoader } from "react-spinners";
 import api from "../../api/api";
 import * as XLSX from "xlsx";
 import { saveAs } from "file-saver";
-import { Link, useNavigate } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 import { DownloadCloud, Edit2, Trash2, Filter, FileSpreadsheet, X } from "lucide-react";
 import { toast } from "sonner";
+import MoveInvoiceModal from "../../components/MoveInvoiceModal"; // נתיב בהתאם לפרויקט
+import PaymentCaptureModal from "../../Components/PaymentCaptureModal.jsx"; // עדכן נתיב נכון
+
+
 
 const InvoicesPage = () => {
   const [invoices, setInvoices] = useState([]);
@@ -16,6 +20,24 @@ const InvoicesPage = () => {
   const [showModal, setShowModal] = useState(false);
   const [showReportModal, setShowReportModal] = useState(false);
   const [invoiceToDelete, setInvoiceToDelete] = useState(null);
+  const [moveModal, setMoveModal] = useState({ open: false, invoice: null });
+  const [paymentDateModal, setPaymentDateModal] = useState({
+  open: false,
+  invoice: null,
+  date: new Date().toISOString().slice(0,10), // YYYY-MM-DD
+});
+const [paymentCapture, setPaymentCapture] = useState({
+  open: false,
+  invoice: null,
+  defaultDate: new Date().toISOString().slice(0,10),
+  defaultMethod: "",
+});
+// const dateOnlyToUtcIso = (yyyy_mm_dd) => {
+//   if (!yyyy_mm_dd) return null;
+//   const [y, m, d] = yyyy_mm_dd.split('-').map(Number);
+//   return new Date(Date.UTC(y, m - 1, d, 12, 0, 0)).toISOString();
+// };
+
   
   // פילטרים בסיסיים
   const [paymentFilter, setPaymentFilter] = useState("all");
@@ -553,29 +575,85 @@ const InvoicesPage = () => {
     );
   }
   
-  const togglePaymentStatus = async (invoice) => {
-    try {
-      const updatedInvoice = { ...invoice, paid: invoice.paid === "כן" ? "לא" : "כן" };
-      
-      await api.put(`/invoices/${invoice._id}/status`, { paid: updatedInvoice.paid });
-  
-      setInvoices((prevInvoices) =>
-        prevInvoices.map((inv) => (inv._id === invoice._id ? updatedInvoice : inv))
-      );
-      setAllInvoices((prevAllInvoices) =>
-        prevAllInvoices.map((inv) => (inv._id === invoice._id ? updatedInvoice : inv))
-      );
-  
-      toast.success(`סטטוס התשלום עודכן ל - ${updatedInvoice.paid}`, {
-        className: "sonner-toast success rtl",
+const togglePaymentStatus = async (invoice) => {
+  try {
+    // אם מסמנים לשולם – פתח מודל בחירה
+    if (invoice.paid !== "כן") {
+      setPaymentCapture({
+        open: true,
+        invoice,
+        defaultDate: new Date().toISOString().slice(0,10),
+        defaultMethod: "",
       });
-    } catch (error) {
-      console.error("Error updating payment status:", error);
-      toast.error("שגיאה בעדכון סטטוס התשלום", {
-        className: "sonner-toast error rtl",
-      });
+      return;
     }
-  };
+
+    // אם מורידים מ"כן" ל"לא"
+    const { data: updated } = await api.put(
+      `/invoices/${invoice._id}/status`,
+      { paid: "לא", paymentDate: null, paymentMethod: "" }
+    );
+    setInvoices((prev) => prev.map((inv) => inv._id === invoice._id ? updated : inv));
+    setAllInvoices((prev) => prev.map((inv) => inv._id === invoice._id ? updated : inv));
+    toast.success("סטטוס התשלום עודכן ל - לא", { className: "sonner-toast success rtl" });
+  } catch (err) {
+    console.error(err);
+    toast.error("שגיאה בעדכון סטטוס התשלום", { className: "sonner-toast error rtl" });
+  }
+};
+
+const handleSavePaymentCapture = async ({ paymentDate, paymentMethod }) => {
+  const invoice = paymentCapture.invoice;
+  if (!invoice) return;
+
+  try {
+    const { data: updated } = await api.put(
+      `/invoices/${invoice._id}/status`,
+      { paid: "כן", paymentDate, paymentMethod }
+    );
+
+    setInvoices((prev) => prev.map((inv) => inv._id === invoice._id ? updated : inv));
+    setAllInvoices((prev) => prev.map((inv) => inv._id === invoice._id ? updated : inv));
+    toast.success(`עודכן לשולם (${paymentMethod === "check" ? "צ׳ק" : "העברה"})`, {
+      className: "sonner-toast success rtl",
+    });
+  } catch (err) {
+    console.error(err);
+    toast.error("שגיאה בשמירת פרטי התשלום", { className: "sonner-toast error rtl" });
+  } finally {
+    setPaymentCapture({ open: false, invoice: null, defaultDate: "", defaultMethod: "" });
+  }
+};
+
+
+const savePaymentDate = async () => {
+  try {
+    const { invoice, date } = paymentDateModal;
+    if (!invoice) return;
+
+    // מעדכנים שרת עם paid="כן" + תאריך תשלום
+    await api.put(`/invoices/${invoice._id}/date`, { paid: "כן", paymentDate: date });
+
+    const updated = { ...invoice, paid: "כן", paymentDate: date };
+
+    setInvoices((prev) => prev.map((inv) => inv._id === invoice._id ? updated : inv));
+    setAllInvoices((prev) => prev.map((inv) => inv._id === invoice._id ? updated : inv));
+
+    setPaymentDateModal({ open: false, invoice: null, date: new Date().toISOString().slice(0,10) });
+    toast.success(`סטטוס עודכן לשולם • תאריך: ${new Date(date).toLocaleDateString('he-IL')}`, {
+      className: "sonner-toast success rtl",
+    });
+  } catch (error) {
+    console.error(error);
+    toast.error("שגיאה בשמירת תאריך התשלום", { className: "sonner-toast error rtl" });
+  }
+};
+
+const cancelPaymentDate = () => {
+  // המשתמש חזר בו; לא משנים כלום
+  setPaymentDateModal({ open: false, invoice: null, date: new Date().toISOString().slice(0,10) });
+};
+
   
   return (
     <div className="min-h-screen py-8">
@@ -708,7 +786,7 @@ const InvoicesPage = () => {
                           }
                         }}    
                       >
-                        <td className="px-6 py-4 font-medium text-center">{invoice.supplier.name}</td>
+                        <td className="px-6 py-4 font-medium text-center">{invoice.supplier?.name}</td>
                         <td className="px-6 py-4 font-medium text-center">{invoice.invoiceNumber}</td>
                         <td className="px-6 py-4 font-medium">{formatNumber(invoice.sum)} ₪</td>
                         <td className="px-2 py-4 font-medium">{formatDate(invoice.createdAt)}</td>
@@ -772,6 +850,23 @@ const InvoicesPage = () => {
                             >
                               <Trash2 size={25} />
                             </button>
+                            <button
+  onClick={(e) => {
+    e.stopPropagation();
+    setMoveModal({ open: true, invoice });
+  }}
+  className="p-2 text-slate-600 hover:text-slate-900 hover:bg-slate-100 rounded-full transition-colors duration-150"
+  title="העבר לפרויקט"
+>
+  {/* אייקון תיקייה/העברה – אפשר להשתמש ב- FolderCog או ArrowRightLeft */}
+  <svg xmlns="http://www.w3.org/2000/svg" className="w-6 h-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+    <path d="M16 3h5v5" />
+    <path d="M10 14L21 3" />
+    <path d="M8 21H3v-5" />
+    <path d="M3 21l11-11" />
+  </svg>
+</button>
+
                           </div>
                         </td>
                       </tr>
@@ -1040,6 +1135,63 @@ const InvoicesPage = () => {
             </div>
           </div>
         )}
+
+    {paymentDateModal.open && (
+  <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50" onClick={cancelPaymentDate}>
+    <div
+      className="bg-white rounded-xl shadow-2xl p-6 w-full max-w-md mx-4"
+      onClick={(e) => e.stopPropagation()}
+    >
+      <h3 className="text-2xl font-bold mb-4 text-slate-800 text-center">בחר תאריך תשלום</h3>
+      <p className="text-center text-slate-600 mb-4">
+        חשבונית #{paymentDateModal.invoice?.invoiceNumber} • {paymentDateModal.invoice?.supplier?.name || paymentDateModal.invoice?.invitingName}
+      </p>
+
+      <div className="flex items-center justify-center mb-6">
+        <input
+          type="date"
+          value={paymentDateModal.date}
+          onChange={(e) => setPaymentDateModal((prev) => ({ ...prev, date: e.target.value }))}
+          className="px-4 py-2 border border-slate-300 rounded-lg"
+        />
+      </div>
+
+      <div className="flex justify-center gap-3">
+        <button
+          onClick={savePaymentDate}
+          className="px-5 py-2 bg-slate-900 text-white rounded-lg hover:bg-slate-700 transition"
+        >
+          שמור
+        </button>
+        <button
+          onClick={cancelPaymentDate}
+          className="px-5 py-2 bg-slate-100 text-slate-700 rounded-lg hover:bg-slate-200 transition"
+        >
+          ביטול
+        </button>
+      </div>
+    </div>
+  </div>
+)}
+<MoveInvoiceModal
+  open={moveModal.open}
+  invoice={moveModal.invoice}
+  onClose={() => setMoveModal({ open: false, invoice: null })}
+  onMoved={(updatedInvoice) => {
+    // עדכון במערכים
+    setInvoices((prev) => prev.map(inv => inv._id === updatedInvoice._id ? updatedInvoice : inv));
+    setAllInvoices((prev) => prev.map(inv => inv._id === updatedInvoice._id ? updatedInvoice : inv));
+  }}
+/>
+
+<PaymentCaptureModal
+  open={paymentCapture.open}
+  onClose={() => setPaymentCapture({ open: false, invoice: null, defaultDate: "", defaultMethod: "" })}
+  onSave={handleSavePaymentCapture}
+  defaultDate={paymentCapture.defaultDate}
+  defaultMethod={paymentCapture.defaultMethod}
+/>
+
       </div>
     </div>
   );

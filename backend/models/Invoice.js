@@ -45,6 +45,11 @@ paymentDate: {
     ],
     required: true, // אם אתה רוצה לחייב בחירה
   },
+paymentMethod: {
+  type: String,
+  enum: ["", "check", "bank_transfer"],
+  default: "",
+},
 });
 
 const Invoice = mongoose.model("Invoice", invoiceSchema);

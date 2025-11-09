@@ -2,11 +2,15 @@ import { useEffect, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import api from '../../api/api'; import { ClipLoader } from 'react-spinners';  // ייבוא של האנימציה החדשה
 import { ShoppingCart } from "lucide-react";
+import { toast } from 'sonner';
 
 const OrderDetailsPage = () => {
 
   const { id } = useParams();
   const [order, setOrder] = useState(null);
+  const [confirmOpen, setConfirmOpen] = useState(false);
+  const [deleting, setDeleting] = useState(false);
+
   const [loading, setLoading] = useState(true);
   const navigate = useNavigate();
 
@@ -130,7 +134,33 @@ const OrderDetailsPage = () => {
     navigate(`/update-order/${id}`);
   };
 
+ const handleDelete = async () => {
+    try {
+      if (!order?._id) return;
+      setDeleting(true);
+      await api.delete(`/orders/${order._id}`); // ודא שהראוט שלך הוא /invoices/:id
+      toast.success("ההזמנה נמחקה בהצלחה", {
+        className: "sonner-toast success rtl",
+      });
+      navigate("/orders");
+    } catch (error) {
+      console.error("Error deleting order:", error);
+      toast.error("שגיאה במחיקת ההזמנה", {
+        className: "sonner-toast error rtl",
+      });
+    } finally {
+      setDeleting(false);
+      setConfirmOpen(false);
+    }
+  };
 
+    if (!order) {
+    return (
+      <div className="flex justify-center items-center h-64">
+        <h1 className="text-2xl font-bold text-red-600">הזמנה לא נמצאה</h1>
+      </div>
+    );
+  }
 
   return (
     <div>
@@ -144,12 +174,17 @@ const OrderDetailsPage = () => {
           e.stopPropagation();
           handleEdit(order._id);
         }}
-        className="p-2 bg-slate-400 text-black hover:bg-slate-600 hover:text-white rounded-full transition-colors duration-150"
+        className="ml-2 p-3 bg-slate-400 text-black hover:bg-slate-600 hover:text-white  rounded-full transition-colors duration-150"
       >
         עריכת הזמנה
       </button>
 
-
+   <button
+        onClick={() => setConfirmOpen(true)}
+        className="p-3 bg-red-400 text-black hover:bg-red-600 hover:text-white rounded-full transition-colors duration-150"
+      >
+        מחק הזמנה
+      </button>
       <div className="flex justify-center items-center mt-14 mb-14">
         <div className="bg-slate-300 p-5 rounded-lg shadow-xl w-full max-w-4xl">
           <div key={order._id} className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 text-xl text-black text-center">
@@ -229,7 +264,34 @@ const OrderDetailsPage = () => {
           </div>
         </div>
       </div>
-
+ {confirmOpen && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg shadow-xl p-6 max-w-sm w-full mx-4">
+            <div className="bg-red-100 text-red-700 p-4 rounded-lg mb-4">
+              <h3 className="text-2xl font-bold text-center mb-2">
+                האם למחוק את ההזמנה?
+              </h3>
+              <p className="text-center">הפעולה בלתי הפיכה.</p>
+            </div>
+            <div className="flex justify-center gap-3">
+              <button
+                onClick={handleDelete}
+                disabled={deleting}
+                className="px-4 py-2 text-white bg-red-600 hover:bg-red-700 rounded-lg transition-colors disabled:opacity-60"
+              >
+                {deleting ? "מוחק..." : "מחק הזמנה"}
+              </button>
+              <button
+                onClick={() => setConfirmOpen(false)}
+                disabled={deleting}
+                className="px-4 py-2 text-slate-700 bg-slate-100 hover:bg-slate-200 rounded-lg transition-colors"
+              >
+                ביטול
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 

@@ -312,62 +312,44 @@ res.json({
     return res.status(500).json({ error: 'שגיאת שרת במהלך מחיקת קובץ', details: error.message });
   }
 },
-updateInvoice: async (req, res) => {
-  try {
-    const { id } = req.params;
-    const {
-      invoiceNumber,
-      sum,
-      status,
-      invitingName,
-      detail,
-      paymentDate,
-      paid,
-      files: newFiles,
-      createdAt,
-      documentType
-    } = req.body;
+updateInvoice : async (req, res) => {
+  const { id } = req.params;
 
-    const invoice = await Invoice.findById(id);
-    if (!invoice) return res.status(404).json({ error: "חשבונית לא נמצאה" });
-
-    // עדכון עם הערכים הנכונים
-    invoice.invoiceNumber = invoiceNumber;
-    invoice.sum = sum;
-    invoice.status = status;
-    invoice.invitingName = invitingName;
-    invoice.detail = detail;
-    invoice.paid = paid; // ✅ שמור כפי שמגיע ("כן"/"לא")
-    invoice.createdAt = createdAt
-    invoice.documentType = documentType // סוג מסמך
-    
-    // תאריך תשלום רק אם שולם
-    if (paid === "כן" && paymentDate && paymentDate !== "אין תאריך לתשלום") {
-      invoice.paymentDate = paymentDate;
-    } else {
-      invoice.paymentDate = null; // נקה את התאריך אם לא שולם
-    }
-    
-    invoice.files = newFiles || [];
-
-    await invoice.save();
-    res.json({ message: "החשבונית עודכנה בהצלחה", invoice });
-
-  } catch (error) {
-    console.error("שגיאה בעדכון חשבונית:", error);
-    res.status(500).json({ error: error.message });
+  const updated = await invoiceService.updateInvoiceService (id, req.body);
+  if (!updated) {
+    return res.status(404).json({ error: "חשבונית לא נמצאה" });
   }
+
+  res.json({ message: "החשבונית עודכנה בהצלחה", invoice: updated });
 },
 
 
-
   updateInvoicePaymentStatus: async (req, res) => {
+  const { id } = req.params;
+  const { paid, paymentDate, paymentMethod } = req.body; 
+  try {
+    const updatedInvoice = await invoiceService.updatePaymentStatusService(
+      id,
+      { paid, paymentDate, paymentMethod }
+    );
+
+    if (!updatedInvoice) {
+      return res.status(404).json({ message: "חשבונית לא נמצאה" });
+    }
+    return res.status(200).json(updatedInvoice);
+  } catch (error) {
+    console.error("updateInvoicePaymentStatus error:", error);
+    return res.status(400).json({ message: error.message || "שגיאה בעדכון החשבונית" });
+  }
+},
+
+  updateInvoicePaymentDate: async (req, res) => {
     const { id } = req.params;
-    const { paid } = req.body; // 'paid' יהיה 'כן' או 'לא'
+    const { paid, paymentDate } = req.body; // 'paid' יהיה 'כן' או 'לא'
   
     try {
       // קריאה לשירות לעדכון הסטטוס
-      const updatedInvoice = await invoiceService.updatePaymentStatusService(id, paid);
+      const updatedInvoice = await invoiceService.updatePaymentDate(id, paid, paymentDate);
   
       if (!updatedInvoice) {
         return res.status(404).json({ message: "חשבונית לא נמצאה" });
@@ -382,10 +364,9 @@ updateInvoice: async (req, res) => {
 
   deleteInvoice: async (req, res) => {
     const { id } = req.params;
-    const { projectName, invoiceNumber } = req.body;
 
     try {
-      const deletedInvoice = await invoiceService.deleteInvoiceById(id, invoiceNumber, projectName);
+      const deletedInvoice = await invoiceService.deleteInvoiceById(id);
       if (!deletedInvoice) {
         return res.status(404).json({ error: 'Invoice not found' });
       }
@@ -396,7 +377,49 @@ updateInvoice: async (req, res) => {
       console.error('Error deleting invoice:', error);
       return res.status(500).json({ message: error.message || 'שגיאה במחיקת החשבונית' });
     }
+  },
+
+  moveInvoice : async (req, res) => {
+  try {
+    const { id } = req.params; // invoiceId
+    const { toProjectId, toProjectName } = req.body;
+
+    const target = toProjectId || toProjectName;
+    if (!target) {
+      return res.status(400).json({ message: 'Missing toProjectId or toProjectName' });
+    }
+
+    const result = await invoiceService.moveInvoiceToProject(id, target);
+    if (!result?.invoice) {
+      return res.status(404).json({ message: 'Invoice not found or not moved' });
+    }
+
+    return res.json({
+      message: 'Invoice moved successfully',
+      invoice: result.invoice,
+      toProject: result.toProject?._id,
+    });
+  } catch (err) {
+    console.error('[moveInvoice] error:', err);
+    return res.status(500).json({ message: err.message || 'Internal error' });
   }
+},
+
+getSupplierInvoices : async  (req, res) => {
+  const { id } = req.params;                 // supplier id
+  const { page = 1, limit = 50, populate } = req.query;
+
+  const { data, total, pages } = await invoiceService.listInvoicesBySupplier(id, {
+    page,
+    limit,
+    withPopulate: String(populate) === "true", // /suppliers/:id/invoices?populate=true
+  });
+
+  res.json({
+    data,
+    meta: { total, page: Number(page), limit: Number(limit), pages },
+  });
+},
 }
 
 export default invoiceControllers;

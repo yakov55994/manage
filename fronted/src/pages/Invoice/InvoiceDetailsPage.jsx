@@ -1,10 +1,12 @@
-import React, { useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 import { useParams } from "react-router-dom";
 import api from "../../api/api";
 import { ClipLoader } from "react-spinners";
 import { FileText } from "lucide-react";
 import { useNavigate } from "react-router-dom";
-import * as XLSX from "xlsx";
+import MoveInvoiceModal from "../../components/MoveInvoiceModal"; // נתיב בהתאם
+
+// import * as XLSX from "xlsx";
 import { toast } from "sonner";
 
 const InvoiceDetailsPage = () => {
@@ -14,6 +16,8 @@ const InvoiceDetailsPage = () => {
   const [invoice, setInvoice] = useState(null);
   const [confirmOpen, setConfirmOpen] = useState(false);
   const [deleting, setDeleting] = useState(false);
+  const [moveModal, setMoveModal] = useState(false);
+
 
   const [loading, setLoading] = useState(true);
 
@@ -244,7 +248,6 @@ const InvoiceDetailsPage = () => {
 
   const handleDelete = async () => {
     try {
-      console.log(invoice)
       if (!invoice?._id) return;
       setDeleting(true);
       await api.delete(`/invoices/${invoice._id}`); // ודא שהראוט שלך הוא /invoices/:id
@@ -285,7 +288,7 @@ const InvoiceDetailsPage = () => {
         }}
         className="ml-2 p-3 bg-slate-400 text-black hover:bg-slate-600 hover:text-white  rounded-full transition-colors duration-150"
       >
-        עריכת חשבונית
+        ערוך חשבונית
       </button>
 
       <button
@@ -294,6 +297,17 @@ const InvoiceDetailsPage = () => {
       >
         מחק חשבונית
       </button>
+
+      <button
+  onClick={(e) => {
+    e.stopPropagation();
+    setMoveModal(true);
+  }}
+  className="mr-3 p-3 bg-slate-400 text-black hover:bg-slate-600 hover:text-white rounded-full transition-colors duration-150"
+>
+  העבר לפרויקט
+</button>
+
 
       <div className="flex justify-center items-center text-center mt-14 mb-14">
         <div className="bg-slate-300 p-5 rounded-lg shadow-xl w-full max-w-4xl">
@@ -349,6 +363,13 @@ const InvoiceDetailsPage = () => {
               <b className="text-xl block">סוג מסמך:</b>
               <span className="text-l">
                 {invoice.documentType || "לא הוזן"}
+              </span>
+            </div>
+         
+            <div className="border-l-2 border-amber-600 pl-4">
+              <b className="text-xl block">צורת תשלום:</b>
+              <span className="text-l">
+                {invoice.paymentMethod === "check" ? "צ'יק" : invoice.paymentMethod === "bank_transfer" ? "העברה בנקאית" : "לא הוגדר"}
               </span>
             </div>
 
@@ -413,6 +434,16 @@ const InvoiceDetailsPage = () => {
           </div>
         </div>
       )}
+      <MoveInvoiceModal
+  open={moveModal}
+  onClose={() => setMoveModal(false)}
+  invoice={invoice}
+  onMoved={(updated) => {
+    // עדכון מצב עמוד פרטים
+    setInvoice(updated);
+  }}
+/>
+
     </div>
   );
 };

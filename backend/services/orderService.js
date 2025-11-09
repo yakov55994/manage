@@ -45,28 +45,34 @@ throw new Error(`הזמנה עם מספר ${orderData.orderNumber} עבור הל
   },
 
 
-  deleteOrder: async (id) => {
-    const order = await Order.findById(id);
-    if (!order) throw new Error("Order not found");
+deleteOrder: async (id) => {
+  // 1) הבא את ההזמנה
+  const order = await Order.findById(id);
+  if (!order) throw new Error("Order not found");
 
-    // מצא את הפרויקט
-    const project = await Project.findById(order.projectId);
-    if (!project) throw new Error("Project not found");
+  // 2) ודא שיש projectId
+  if (!order.projectId) throw new Error("Order has no projectId");
 
-    // מסנן את המערך orders כדי להסיר את ההזמנה
-    project.orders = project.orders.filter(o => !o._id.equals(order._id));
+  // 3) חשב דלתא לתקציב (מספר בטוח)
+  const delta = Number(order.sum) || 0;
 
-    // עדכון התקציב
-    project.remainingBudget -= order.sum;
-    project.budget -= order.sum;
+  // 4) עדכן את הפרויקט בצורה אטומית: הוצא את ההזמנה מהמארך ועדכן תקציבים
+  const project = await Project.findByIdAndUpdate(
+    order.projectId,
+    {
+      $pull: { orders: order._id },          // מסיר את ה־ObjectId מהמערך
+      $inc:  { remainingBudget: -delta, budget: -delta }
+    },
+    { new: true }
+  );
+  if (!project) throw new Error("Project not found");
 
-    // שמירת השינויים
-    await project.save();
+  // 5) מחק את ההזמנה
+  await Order.findByIdAndDelete(id);
 
-    // מחיקת ההזמנה
-    await Order.findByIdAndDelete(id);
-    return order;
-  },
+  return { order, project };
+},
+
 
   // עדכון הזמנה – מאפשר לעדכן שדות לפי מה שנשלח ב-body (מעודכן גם את runValidators)
   updateOrder: async (id, updateData) => {
@@ -109,8 +115,6 @@ throw new Error(`הזמנה עם מספר ${orderData.orderNumber} עבור הל
       searchConditions.push({ orderNumber: parseInt(query) });
       searchConditions.push({ sum: parseFloat(query) });
     }
-
-    console.log('🔍 Search conditions:', searchConditions); // דיבוג
 
     const orders = await Order.find({
       $or: searchConditions

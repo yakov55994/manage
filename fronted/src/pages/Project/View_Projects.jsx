@@ -4,20 +4,32 @@ import { ClipLoader } from 'react-spinners';
 import { useNavigate } from 'react-router-dom';
 import * as XLSX from "xlsx";
 import { saveAs } from "file-saver";
-import { DownloadCloud, Edit2, Trash2, Filter, FileSpreadsheet, X } from "lucide-react";
+import {
+  DownloadCloud,
+  Edit2,
+  Trash2,
+  Filter,
+  FileSpreadsheet,
+  X,
+  Building2,
+  Sparkles,
+  AlertCircle,
+  ArrowUpDown,
+  Search,
+} from "lucide-react";
 import { toast } from 'sonner';
 
 const ProjectsPage = ({ initialProjects = [] }) => {
   const [projects, setProjects] = useState(initialProjects);
   const [allProjects, setAllProjects] = useState([]);
   const [loading, setLoading] = useState(false);
-  const [sortBy, setSortBy] = useState("sum");
+  const [sortBy, setSortBy] = useState("name");
   const [sortOrder, setSortOrder] = useState("asc");
   const [showModal, setShowModal] = useState(false);
   const [showReportModal, setShowReportModal] = useState(false);
   const [projectToDelete, setProjectToDelete] = useState(null);
+  const [searchTerm, setSearchTerm] = useState("");
 
-  // פילטרים מתקדמים
   const [advancedFilters, setAdvancedFilters] = useState({
     dateFrom: "",
     dateTo: "",
@@ -32,10 +44,8 @@ const ProjectsPage = ({ initialProjects = [] }) => {
     supplierName: "",
     paymentStatus: "",
     missingDocument: "",
-     // all, positive, negative, zero, noBudget
   });
 
-  // עמודות לייצוא
   const [exportColumns, setExportColumns] = useState({
     name: true,
     invitingName: true,
@@ -62,120 +72,96 @@ const ProjectsPage = ({ initialProjects = [] }) => {
     });
   };
 
-  // רשימת עמודות זמינות
   const availableColumns = [
-    { key: 'name', label: 'שם הפרויקט', selected: exportColumns.name },
-    { key: 'invitingName', label: 'שם המזמין', selected: exportColumns.invitingName },
-    { key: 'budget', label: 'תקציב', selected: exportColumns.budget },
-    { key: 'remainingBudget', label: 'תקציב שנותר', selected: exportColumns.remainingBudget },
-    { key: 'createdAt', label: 'תאריך יצירה', selected: exportColumns.createdAt },
-    { key: 'contactPerson', label: 'איש קשר', selected: exportColumns.contactPerson },
-    { key: 'contactPerson', label: 'שם ספק', selected: exportColumns.contactPerson },
-    { key: 'contactPerson', label: 'מצב תשלום', selected: exportColumns.contactPerson },
-    { key: 'contactPerson', label: 'חוסר מסמך', selected: exportColumns.contactPerson },
-    { key: 'budgetUsage', label: 'תקציב שנוצל', selected: exportColumns.budgetUsage },
-    { key: 'budgetPercentage', label: 'אחוז ניצול תקציב', selected: exportColumns.budgetPercentage },
-    { key: 'projectStatus', label: 'סטטוס פרויקט', selected: exportColumns.projectStatus },
+    { key: 'name', label: 'שם הפרויקט' },
+    { key: 'invitingName', label: 'שם המזמין' },
+    { key: 'budget', label: 'תקציב' },
+    { key: 'remainingBudget', label: 'תקציב שנותר' },
+    { key: 'createdAt', label: 'תאריך יצירה' },
+    { key: 'contactPerson', label: 'איש קשר' },
+    { key: 'supplierName', label: 'שם ספק' },
+    { key: 'paymentStatus', label: 'מצב תשלום' },
+    { key: 'missingDocument', label: 'חוסר מסמך' },
+    { key: 'budgetUsage', label: 'תקציב שנוצל' },
+    { key: 'budgetPercentage', label: 'אחוז ניצול תקציב' },
+    { key: 'projectStatus', label: 'סטטוס פרויקט' },
   ];
 
-  // פילטור פרויקטים עם פילטרים מתקדמים
   const getFilteredProjects = () => {
     let filtered = [...allProjects];
 
-    // פילטרים מתקדמים (רק עבור מחולל הדוחות)
+    if (searchTerm) {
+      filtered = filtered.filter(project =>
+        project.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        project.invitingName?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        project.Contact_person?.toLowerCase().includes(searchTerm.toLowerCase())
+      );
+    }
+
     if (showReportModal) {
-      // תאריכי יצירה
       if (advancedFilters.dateFrom) {
-        filtered = filtered.filter(project => 
+        filtered = filtered.filter(project =>
           new Date(project.createdAt) >= new Date(advancedFilters.dateFrom)
         );
       }
       if (advancedFilters.dateTo) {
-        filtered = filtered.filter(project => 
+        filtered = filtered.filter(project =>
           new Date(project.createdAt) <= new Date(advancedFilters.dateTo)
         );
       }
-
-      // טווח תקציב
       if (advancedFilters.budgetMin) {
-        filtered = filtered.filter(project => 
+        filtered = filtered.filter(project =>
           project.budget && project.budget >= parseInt(advancedFilters.budgetMin)
         );
       }
       if (advancedFilters.budgetMax) {
-        filtered = filtered.filter(project => 
+        filtered = filtered.filter(project =>
           project.budget && project.budget <= parseInt(advancedFilters.budgetMax)
         );
       }
-
-      // טווח תקציב נותר
       if (advancedFilters.remainingBudgetMin) {
-        filtered = filtered.filter(project => 
+        filtered = filtered.filter(project =>
           project.remainingBudget !== undefined && project.remainingBudget >= parseInt(advancedFilters.remainingBudgetMin)
         );
       }
       if (advancedFilters.remainingBudgetMax) {
-        filtered = filtered.filter(project => 
+        filtered = filtered.filter(project =>
           project.remainingBudget !== undefined && project.remainingBudget <= parseInt(advancedFilters.remainingBudgetMax)
         );
       }
-
-      // שם פרויקט
       if (advancedFilters.projectName) {
-        filtered = filtered.filter(project => 
+        filtered = filtered.filter(project =>
           project.name?.toLowerCase().includes(advancedFilters.projectName.toLowerCase())
         );
       }
-
-      // שם מזמין
       if (advancedFilters.invitingName) {
-        filtered = filtered.filter(project => 
+        filtered = filtered.filter(project =>
           project.invitingName?.toLowerCase().includes(advancedFilters.invitingName.toLowerCase())
         );
       }
-
-      // איש קשר
       if (advancedFilters.contactPerson) {
-        filtered = filtered.filter(project => 
+        filtered = filtered.filter(project =>
           project.Contact_person?.toLowerCase().includes(advancedFilters.contactPerson.toLowerCase())
         );
       }
-
-      // סטטוס תקציב
       if (advancedFilters.budgetStatus === "positive") {
-        filtered = filtered.filter(project => 
+        filtered = filtered.filter(project =>
           project.remainingBudget !== undefined && project.remainingBudget > 0
         );
       } else if (advancedFilters.budgetStatus === "negative") {
-        filtered = filtered.filter(project => 
+        filtered = filtered.filter(project =>
           project.remainingBudget !== undefined && project.remainingBudget < 0
         );
       } else if (advancedFilters.budgetStatus === "zero") {
-        filtered = filtered.filter(project => 
+        filtered = filtered.filter(project =>
           project.remainingBudget !== undefined && project.remainingBudget === 0
         );
       } else if (advancedFilters.budgetStatus === "noBudget") {
-        filtered = filtered.filter(project => 
+        filtered = filtered.filter(project =>
           !project.budget || project.remainingBudget === undefined
         );
       }
-      if (advancedFilters.supplierName) {
-        filtered = filtered.filter(project => 
-          project.supplierName?.toLowerCase().includes(advancedFilters.supplierName.toLowerCase())
-        );
     }
-      if (advancedFilters.paymentStatus) {
-        filtered = filtered.filter(project =>
-          project.paymentStatus?.toLowerCase().includes(advancedFilters.paymentStatus.toLowerCase())
-        );
-      }
-      if (advancedFilters.missingDocument) {
-        filtered = filtered.filter(project =>
-          project.missingDocument?.toLowerCase().includes(advancedFilters.missingDocument.toLowerCase())
-        );
-      }
-    }
-
 
     return filtered;
   };
@@ -200,7 +186,7 @@ const ProjectsPage = ({ initialProjects = [] }) => {
     });
   };
 
-  const sortedProjects = [...projects].sort((a, b) => {
+  const sortedProjects = [...(searchTerm ? filteredProjects : projects)].sort((a, b) => {
     if (sortBy === "budget") {
       const aVal = a.budget || 0;
       const bVal = b.budget || 0;
@@ -217,20 +203,19 @@ const ProjectsPage = ({ initialProjects = [] }) => {
         : new Date(b.createdAt) - new Date(a.createdAt);
     }
     if (sortBy === "name") {
-      return sortOrder === "asc" 
+      return sortOrder === "asc"
         ? (a.name || '').localeCompare((b.name || ''), 'he')
         : (b.name || '').localeCompare((a.name || ''), 'he');
     }
     return 0;
   });
 
-  // חישוב נתונים נוספים לפרויקט
   const calculateProjectStats = (project) => {
-    const budgetUsed = project.budget && project.remainingBudget !== undefined 
-      ? project.budget - project.remainingBudget 
+    const budgetUsed = project.budget && project.remainingBudget !== undefined
+      ? project.budget - project.remainingBudget
       : 0;
-    
-    const budgetPercentage = project.budget && project.remainingBudget !== undefined 
+
+    const budgetPercentage = project.budget && project.remainingBudget !== undefined
       ? ((budgetUsed / project.budget) * 100).toFixed(1)
       : 0;
 
@@ -250,10 +235,9 @@ const ProjectsPage = ({ initialProjects = [] }) => {
     return { budgetUsed, budgetPercentage, projectStatus };
   };
 
-  // ייצוא מותאם אישית
   const exportCustomReport = () => {
     const dataToExport = filteredProjects;
-    
+
     if (!dataToExport || dataToExport.length === 0) {
       toast.error("אין נתונים לייצוא", { className: "sonner-toast error rtl" });
       return;
@@ -275,7 +259,7 @@ const ProjectsPage = ({ initialProjects = [] }) => {
     };
 
     const selectedColumns = Object.keys(exportColumns).filter(key => exportColumns[key]);
-    
+
     if (selectedColumns.length === 0) {
       toast.error("יש לבחור לפחות עמודה אחת לייצוא", { className: "sonner-toast error rtl" });
       return;
@@ -284,9 +268,9 @@ const ProjectsPage = ({ initialProjects = [] }) => {
     const projectsData = dataToExport.map((project) => {
       const stats = calculateProjectStats(project);
       const row = {};
-      
+
       selectedColumns.forEach(col => {
-        switch(col) {
+        switch (col) {
           case 'name':
             row[columnMapping.name] = project.name || '';
             break;
@@ -327,7 +311,7 @@ const ProjectsPage = ({ initialProjects = [] }) => {
             break;
         }
       });
-      
+
       return row;
     });
 
@@ -338,7 +322,7 @@ const ProjectsPage = ({ initialProjects = [] }) => {
     const fileName = `דוח_פרויקטים_${new Date().toLocaleDateString('he-IL').replace(/\//g, '-')}.xlsx`;
     const wbout = XLSX.write(workbook, { bookType: "xlsx", type: "array" });
     saveAs(new Blob([wbout], { type: "application/octet-stream" }), fileName);
-    
+
     setShowReportModal(false);
     toast.success(`הדוח יוצא בהצלחה עם ${projectsData.length} פרויקטים`, { className: "sonner-toast success rtl" });
   };
@@ -366,7 +350,6 @@ const ProjectsPage = ({ initialProjects = [] }) => {
     setExportColumns(newState);
   };
 
-  // ייצוא פשוט (הקיים)
   const exportToExcel = () => {
     const projectsWithHebrewHeaders = sortedProjects.map(project => ({
       "שם הפרוייקט": project.name,
@@ -438,396 +421,265 @@ const ProjectsPage = ({ initialProjects = [] }) => {
 
   if (loading) {
     return (
-      <div className="flex flex-col justify-center items-center h-64">
-        <ClipLoader size={100} color="#3498db" loading={loading} />
-        <h1 className="mt-4 font-bold text-2xl text-cyan-950">טוען רשימת פרוייקטים . . .</h1>
+      <div className="min-h-screen bg-gradient-to-br from-orange-50 via-amber-50 to-yellow-50 flex flex-col justify-center items-center">
+        <div className="relative">
+          <div className="absolute inset-0 bg-gradient-to-r from-orange-500 to-amber-500 blur-3xl opacity-20 animate-pulse"></div>
+          <ClipLoader size={100} color="#f97316" loading />
+        </div>
+        <h1 className="mt-8 font-bold text-3xl text-slate-900">
+          טוען רשימת פרויקטים...
+        </h1>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-b py-8">
-      <div className="container mx-auto px-4">
-        <div className="bg-slate-100 rounded-lg shadow-xl">
-          <div className="p-6 border-b border-slate-200">
-            <div className="text-center">
-              <h1 className="text-4xl font-bold text-slate-800">רשימת פרויקטים</h1>
-              <div className="h-1 w-24 bg-slate-800 rounded-full mt-2 mx-auto"></div>
-            </div>
-          </div>
+    <div className="min-h-screen bg-gradient-to-br from-orange-50 via-amber-50 to-yellow-50 relative overflow-hidden py-12">
+      {/* Animated Background */}
+      <div className="absolute inset-0 overflow-hidden pointer-events-none">
+        <div className="absolute top-0 left-1/4 w-96 h-96 bg-gradient-to-br from-orange-400/20 to-amber-400/20 rounded-full blur-3xl animate-pulse"></div>
+        <div className="absolute bottom-0 right-1/4 w-96 h-96 bg-gradient-to-br from-yellow-400/20 to-orange-400/20 rounded-full blur-3xl animate-pulse delay-1000"></div>
+      </div>
 
-          <div className="p-6">
-            <div className="flex flex-col sm:flex-row justify-between items-center gap-4 mb-8">
-              <div className="flex flex-wrap items-end gap-4">
-                <div className="flex items-center gap-2">
-                  <Filter className="text-slate-600" size={20} />
-                  <label className="mr-4 font-bold">מיין לפי:</label>
-                  <select
-                    onChange={(e) => setSortBy(e.target.value)}
-                    value={sortBy}
-                    className="bg-white border border-slate-200 rounded-lg px-4 py-2 text-sm font-medium hover:border-slate-300 focus:outline-none focus:ring-2 focus:ring-slate-500 ml-3"
-                  >
-                    <option value="name" className="font-bold">שם פרויקט</option>
-                    <option value="budget" className="font-bold">תקציב</option>
-                    <option value="remainingBudget" className="font-bold">תקציב שנותר</option>
-                    <option value="createdAt" className="font-bold">תאריך יצירה</option>
-                  </select>
-                  <select
-                    onChange={(e) => setSortOrder(e.target.value)}
-                    value={sortOrder}
-                    className="bg-white border border-slate-200 rounded-lg px-4 py-2 text-sm font-medium hover:border-slate-300 focus:outline-none focus:ring-2 focus:ring-slate-500"
-                  >
-                    <option value="asc" className="font-bold">עולה</option>
-                    <option value="desc" className="font-bold">יורד</option>
-                  </select>
+      <div className="relative z-10 container mx-auto px-4 md:px-6 max-w-7xl">
+        {/* Hero Header */}
+        <header className="mb-10">
+          <div className="relative">
+            <div className="absolute -inset-x-6 -inset-y-3 bg-gradient-to-r from-orange-500 via-amber-500 to-yellow-500 rounded-3xl opacity-5 blur-xl"></div>
+
+            <div className="relative bg-white/80 backdrop-blur-xl rounded-3xl shadow-2xl shadow-orange-500/10 p-8 border border-white/50">
+              <div className="flex items-center justify-center gap-4 mb-6">
+                <div className="p-4 rounded-2xl bg-gradient-to-br from-orange-500 to-amber-600 shadow-lg shadow-orange-500/30">
+                  <Building2 className="w-10 h-10 text-white" />
+                </div>
+                <div className="text-center">
+                  <h1 className="text-4xl font-black text-slate-900">
+                    רשימת פרויקטים
+                  </h1>
+                  <div className="flex items-center justify-center gap-2 mt-2">
+                    <Sparkles className="w-4 h-4 text-orange-500" />
+                    <span className="text-sm font-medium text-slate-600">
+                      ניהול וניתוח פרויקטים
+                    </span>
+                  </div>
                 </div>
               </div>
 
-              <div className="flex gap-4">
-                <button
-                  onClick={() => setShowReportModal(true)}
-                  className="flex items-center gap-2 bg-slate-300 text-black px-6 py-2.5 rounded-3xl hover:bg-slate-900 hover:text-white transition-colors duration-200 font-medium"
-                >
-                  <FileSpreadsheet size={20} />
-                  <span>מחולל דוחות</span>
-                </button>
-
-                <button
-                  onClick={exportToExcel}
-                  className="flex items-center gap-2 bg-slate-300 text-black px-6 py-2.5 rounded-3xl hover:bg-slate-900 hover:text-white transition-colors duration-200 font-medium"
-                >
-                  <DownloadCloud size={20} />
-                  <span>ייצוא מהיר</span>
-                </button>
+              {/* Search Bar */}
+              <div className="max-w-2xl mx-auto">
+                <div className="relative">
+                  <Search className="absolute right-4 top-1/2 transform -translate-y-1/2 text-orange-500 w-5 h-5" />
+                  <input
+                    type="text"
+                    value={searchTerm}
+                    onChange={(e) => setSearchTerm(e.target.value)}
+                    placeholder="חיפוש לפי שם פרויקט, מזמין או איש קשר..."
+                    className="w-full pr-12 pl-4 py-4 border-2 border-orange-200 rounded-xl bg-white font-medium focus:border-orange-500 focus:outline-none focus:ring-4 focus:ring-orange-500/20 transition-all"
+                  />
+                  {searchTerm && (
+                    <button
+                      onClick={() => setSearchTerm("")}
+                      className="absolute left-4 top-1/2 transform -translate-y-1/2 text-slate-400 hover:text-slate-600"
+                    >
+                      <X className="w-5 h-5" />
+                    </button>
+                  )}
+                </div>
               </div>
             </div>
+          </div>
+        </header>
 
-            {/* הצגת תוצאות */}
-            <div className="mb-4 text-sm text-slate-600">
-              מציג {sortedProjects.length} פרויקטים מתוך {allProjects.length}
+        {/* Controls Bar */}
+        <div className="mb-6 bg-white/80 backdrop-blur-xl rounded-2xl shadow-lg p-6 border border-white/50">
+          <div className="flex flex-col lg:flex-row justify-between items-center gap-4">
+            {/* Sort Controls */}
+            <div className="flex flex-wrap items-center gap-4">
+              <div className="flex items-center gap-2">
+                <ArrowUpDown className="text-orange-600 w-5 h-5" />
+                <span className="font-bold text-slate-700">מיין לפי:</span>
+              </div>
+              <select
+                onChange={(e) => setSortBy(e.target.value)}
+                value={sortBy}
+                className="px-4 py-2 border-2 border-orange-200 rounded-xl bg-white font-bold text-slate-900 focus:border-orange-500 focus:outline-none focus:ring-4 focus:ring-orange-500/20 transition-all"
+              >
+                <option value="name">שם פרויקט</option>
+                <option value="budget">תקציב</option>
+                <option value="remainingBudget">תקציב שנותר</option>
+                <option value="createdAt">תאריך יצירה</option>
+              </select>
+              <select
+                onChange={(e) => setSortOrder(e.target.value)}
+                value={sortOrder}
+                className="px-4 py-2 border-2 border-orange-200 rounded-xl bg-white font-bold text-slate-900 focus:border-orange-500 focus:outline-none focus:ring-4 focus:ring-orange-500/20 transition-all"
+              >
+                <option value="asc">עולה</option>
+                <option value="desc">יורד</option>
+              </select>
             </div>
 
-            {projects.length > 0 ? (
-              <div className="overflow-x-auto rounded-lg border border-slate-200">
-                <table className="w-full">
-                  <thead>
-                    <tr className="bg-slate-300 text-slate-800 text-l">
-                      <th className="px-6 py-4 ">שם הפרויקט</th>
-                      <th className="px-6 py-4 ">תקציב</th>
-                      <th className="px-6 py-4 ">תקציב שנותר</th>
-                      <th className="px-6 py-4 ">שם המזמין</th>
-                      <th className="px-6 py-4 ">שם הספק</th>
-                      <th className="px-6 py-4 ">מצב תשלום</th>
-                      <th className="px-6 py-4 ">חוסר מסמך</th>
-                      <th className="px-6 py-4 ">תאריך יצירה</th>
-                      <th className="px-6 py-4 ">איש קשר</th>
-                      <th className="px-6 py-4 r">פעולות</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {sortedProjects.map((project) => (
-                      <tr
-                        key={project._id}
-                        onClick={() => handleView(project._id)}
-                        className="cursor-pointer text-l border-t border-slate-200 hover:bg-slate-200 transition-colors duration-150 bg-slate-50"
-                      >
-                        <td className="px-6 py-4 font-medium text-center">{project.name}</td>
-                        <td className="px-6 py-4 font-medium text-center">
-                          {project.budget ? formatNumber(project.budget) + " ₪" : "אין עדיין תקציב"}
-                        </td>
-                        <td className="px-6 py-4 font-medium text-center">
-                          {project.remainingBudget !== undefined ? (
-                            project.remainingBudget < 0 ? (
-                              <span className="text-red-800 font-bold">{formatNumber(project.remainingBudget) + " ₪ ❗"}</span>
-                            ) : (
-                              <span>{formatNumber(project.remainingBudget) + " ₪"}</span>
-                            )
-                          ) : (
-                            "אין עדיין תקציב"
-                          )}
-                        </td>
-                        <td className="px-6 py-4 font-medium text-center">{project.invitingName}</td>
-                        <td className="px-6 py-4 font-medium text-center">{project.supplierName || "לא הוזן "}</td>
-                        <td className="px-6 py-4 font-medium text-center">{project.paymentStatus || "לא הוזן "}</td>
-                        <td className="px-6 py-4 font-medium text-center">{project.missingDocument || "לא הוזן"}</td>
-                        <td className="px-6 py-4 font-medium text-center">{formatDate(project.createdAt)}</td>
-                        <td className="px-6 py-4 font-medium text-center">{project.Contact_person || "לא הוזן איש קשר"}</td>
-                        <td className="px-6 py-4 font-medium text-center">
-                          <div className="flex justify-center gap-2">
-                            <button
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                handleEdit(project._id);
-                              }}
-                              className="p-2 text-slate-600 hover:text-slate-900 hover:bg-slate-100 rounded-full transition-colors duration-150"
-                            >
-                              <Edit2 size={25} />
-                            </button>
-                            <button
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                setProjectToDelete(project._id);
-                                setShowModal(true);
-                              }}
-                              className="p-2 text-red-600 hover:text-red-700 hover:bg-red-50 rounded-full transition-colors duration-150"
-                            >
-                              <Trash2 size={25} />
-                            </button>
-                          </div>
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            ) : (
-              <div className="text-center py-12">
-                <h2 className="text-2xl font-medium text-slate-600">
-                  עדיין אין פרויקטים...
-                </h2>
-              </div>
-            )}
+            {/* Export Buttons */}
+            <div className="flex gap-3">
+              <button
+                onClick={() => setShowReportModal(true)}
+                className="flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-purple-600 to-indigo-600 text-white font-bold rounded-xl hover:from-purple-700 hover:to-indigo-700 transition-all shadow-lg shadow-purple-500/30"
+              >
+                <FileSpreadsheet className="w-5 h-5" />
+                <span>מחולל דוחות</span>
+              </button>
+
+              <button
+                onClick={exportToExcel}
+                className="flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-emerald-600 to-teal-600 text-white font-bold rounded-xl hover:from-emerald-700 hover:to-teal-700 transition-all shadow-lg shadow-emerald-500/30"
+              >
+                <DownloadCloud className="w-5 h-5" />
+                <span>ייצוא מהיר</span>
+              </button>
+            </div>
+          </div>
+
+          {/* Results Count */}
+          <div className="mt-4 text-sm text-slate-600 font-medium">
+            מציג {sortedProjects.length} פרויקטים מתוך {allProjects.length}
           </div>
         </div>
 
-        {/* מודל מחולל דוחות */}
-        {showReportModal && (
-          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50" 
-          onClick={() => setShowReportModal(false)}
-
->
-            <div className="bg-white rounded-lg shadow-xl p-6 max-w-4xl w-full mx-4 max-h-[90vh] overflow-y-auto">
-              <div className="flex justify-between items-center mb-6">
-                <h3 className="text-2xl font-bold">מחולל דוחות פרויקטים</h3>
-                <button
-                  onClick={() => setShowReportModal(false)}
-                  className="text-gray-500 hover:text-gray-700"
-                >
-                  <X size={24} />
-                </button>
-              </div>
-
-              {/* פילטרים מתקדמים */}
-              <div className="mb-6">
-                <h4 className="text-lg font-bold mb-4 flex items-center gap-2">
-                  <Filter size={20} />
-                  פילטרים מתקדמים
-                </h4>
-                
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                  <div>
-                    <label className="block text-sm font-medium mb-1">תאריך יצירה מ:</label>
-                    <input
-                      type="date"
-                      value={advancedFilters.dateFrom}
-                      onChange={(e) => setAdvancedFilters(prev => ({...prev, dateFrom: e.target.value}))}
-                      className="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm"
-                    />
-                  </div>
-                  
-                  <div>
-                    <label className="block text-sm font-medium mb-1">תאריך יצירה עד:</label>
-                    <input
-                      type="date"
-                      value={advancedFilters.dateTo}
-                      onChange={(e) => setAdvancedFilters(prev => ({...prev, dateTo: e.target.value}))}
-                      className="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm"
-                    />
-                  </div>
-
-                  <div>
-                    <label className="block text-sm font-medium mb-1">תקציב מינימלי:</label>
-                    <input
-                      type="number"
-                      value={advancedFilters.budgetMin}
-                      onChange={(e) => setAdvancedFilters(prev => ({...prev, budgetMin: e.target.value}))}
-                      className="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm"
-                      placeholder="₪"
-                    />
-                  </div>
-
-                  <div>
-                    <label className="block text-sm font-medium mb-1">תקציב מקסימלי:</label>
-                    <input
-                      type="number"
-                      value={advancedFilters.budgetMax}
-                      onChange={(e) => setAdvancedFilters(prev => ({...prev, budgetMax: e.target.value}))}
-                      className="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm"
-                      placeholder="₪"
-                    />
-                  </div>
-
-                  <div>
-                    <label className="block text-sm font-medium mb-1">תקציב נותר מינימלי:</label>
-                    <input
-                      type="number"
-                      value={advancedFilters.remainingBudgetMin}
-                      onChange={(e) => setAdvancedFilters(prev => ({...prev, remainingBudgetMin: e.target.value}))}
-                      className="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm"
-                      placeholder="₪"
-                    />
-                  </div>
-
-                  <div>
-                    <label className="block text-sm font-medium mb-1">תקציב נותר מקסימלי:</label>
-                    <input
-                      type="number"
-                      value={advancedFilters.remainingBudgetMax}
-                      onChange={(e) => setAdvancedFilters(prev => ({...prev, remainingBudgetMax: e.target.value}))}
-                      className="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm"
-                      placeholder="₪"
-                    />
-                  </div>
-
-                  <div>
-                    <label className="block text-sm font-medium mb-1">שם פרויקט:</label>
-                    <input
-                      type="text"
-                      value={advancedFilters.projectName}
-                      onChange={(e) => setAdvancedFilters(prev => ({...prev, projectName: e.target.value}))}
-                      className="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm"
-                      placeholder="חיפוש חלקי..."
-                    />
-                  </div>
-
-                  <div>
-                    <label className="block text-sm font-medium mb-1">שם מזמין:</label>
-                    <input
-                      type="text"
-                      value={advancedFilters.invitingName}
-                      onChange={(e) => setAdvancedFilters(prev => ({...prev, invitingName: e.target.value}))}
-                      className="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm"
-                      placeholder="חיפוש חלקי..."
-                    />
-                  </div>
-
-                  <div>
-                    <label className="block text-sm font-medium mb-1">איש קשר:</label>
-                    <input
-                      type="text"
-                      value={advancedFilters.contactPerson}
-                      onChange={(e) => setAdvancedFilters(prev => ({...prev, contactPerson: e.target.value}))}
-                      className="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm"
-                      placeholder="חיפוש חלקי..."
-                    />
-                  </div>
-
-                  <div>
-                    <label className="block text-sm font-medium mb-1">סטטוס תקציב:</label>
-                    <select
-                      value={advancedFilters.budgetStatus}
-                      onChange={(e) => setAdvancedFilters(prev => ({...prev, budgetStatus: e.target.value}))}
-                      className="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm"
+        {/* Projects Table */}
+        {sortedProjects.length > 0 ? (
+          <div className="bg-white/90 backdrop-blur-xl rounded-2xl shadow-xl border border-white/50 overflow-hidden">
+            <div className="overflow-x-auto">
+              <table className="w-full">
+                <thead>
+                  <tr className="bg-gradient-to-r from-orange-500 via-amber-500 to-yellow-500">
+                    <th className="px-4 py-4 text-sm font-bold text-white">שם הפרויקט</th>
+                    <th className="px-4 py-4 text-sm font-bold text-white">תקציב</th>
+                    <th className="px-4 py-4 text-sm font-bold text-white">תקציב שנותר</th>
+                    <th className="px-4 py-4 text-sm font-bold text-white">שם המזמין</th>
+                    <th className="px-4 py-4 text-sm font-bold text-white">שם הספק</th>
+                    <th className="px-4 py-4 text-sm font-bold text-white">מצב תשלום</th>
+                    <th className="px-4 py-4 text-sm font-bold text-white">חוסר מסמך</th>
+                    <th className="px-4 py-4 text-sm font-bold text-white">תאריך יצירה</th>
+                    <th className="px-4 py-4 text-sm font-bold text-white">איש קשר</th>
+                    <th className="px-4 py-4 text-sm font-bold text-white">פעולות</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {sortedProjects.map((project) => (
+                    <tr
+                      key={project._id}
+                      onClick={() => handleView(project._id)}
+                      className="cursor-pointer border-t border-orange-100 hover:bg-orange-50 transition-colors"
                     >
-                      <option value="all">הכל</option>
-                      <option value="positive">תקציב חיובי</option>
-                      <option value="negative">חריגה מתקציב</option>
-                      <option value="zero">תקציב מוצה</option>
-                      <option value="noBudget">אין תקציב</option>
-                    </select>
-                  </div>
-                </div>
-                
-                <div className="flex items-center gap-4 mt-4">
-                  <button
-                    onClick={clearAdvancedFilters}
-                    className="flex items-center gap-2 bg-gray-500 text-white px-4 py-2 rounded-lg hover:bg-gray-600 transition-colors text-sm"
-                  >
-                    <X size={16} />
-                    נקה פילטרים
-                  </button>
-                </div>
-              </div>
-
-              {/* בחירת עמודות */}
-              <div className="mb-6" >
-                <h4 className="text-lg font-bold mb-4">בחר עמודות לייצוא:</h4>
-                
-                <div className="flex gap-2 mb-4">
-                  <button
-                    onClick={selectAllColumns}
-                    className="px-4 py-2 bg-green-500 text-white rounded-lg hover:bg-green-600 transition-colors text-sm"
-                  >
-                    בחר הכל
-                  </button>
-                  <button
-                    onClick={deselectAllColumns}
-                    className="px-4 py-2 bg-red-500 text-white rounded-lg hover:bg-red-600 transition-colors text-sm"
-                  >
-                    בטל הכל
-                  </button>
-                </div>
-
-                <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
-                  {availableColumns.map(column => (
-                    <label key={column.key} className="flex items-center gap-2 cursor-pointer">
-                      <input
-                        type="checkbox"
-                        checked={exportColumns[column.key]}
-                        onChange={() => toggleColumn(column.key)}
-                        className="w-4 h-4 text-blue-600"
-                      />
-                      <span className="text-sm">{column.label}</span>
-                    </label>
+                      <td className="px-4 py-4 text-sm font-bold text-center text-slate-900">
+                        {project.name}
+                      </td>
+                      <td className="px-4 py-4 text-sm font-bold text-center text-slate-900">
+                        {project.budget ? formatNumber(project.budget) + " ₪" : "אין תקציב"}
+                      </td>
+                      <td className="px-4 py-4 text-sm font-bold text-center">
+                        {project.remainingBudget !== undefined ? (
+                          project.remainingBudget < 0 ? (
+                            <span className="text-red-600 flex items-center justify-center gap-1">
+                              {formatNumber(project.remainingBudget)} ₪
+                              <AlertCircle className="w-4 h-4" />
+                            </span>
+                          ) : (
+                            <span className="text-emerald-600">{formatNumber(project.remainingBudget)} ₪</span>
+                          )
+                        ) : (
+                          "אין תקציב"
+                        )}
+                      </td>
+                      <td className="px-4 py-4 text-sm font-medium text-center text-slate-900">
+                        {project.invitingName}
+                      </td>
+                      <td className="px-4 py-4 text-sm text-center text-slate-600">
+                        {project.supplierName || "—"}
+                      </td>
+                      <td className="px-4 py-4 text-sm text-center text-slate-600">
+                        {project.paymentStatus || "—"}
+                      </td>
+                      <td className="px-4 py-4 text-sm text-center text-slate-600">
+                        {project.missingDocument || "—"}
+                      </td>
+                      <td className="px-4 py-4 text-sm text-center text-slate-600">
+                        {formatDate(project.createdAt)}
+                      </td>
+                      <td className="px-4 py-4 text-sm text-center text-slate-600">
+                        {project.Contact_person || "—"}
+                      </td>
+                      <td className="px-4 py-4">
+                        <div className="flex justify-center gap-2">
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleEdit(project._id);
+                            }}
+                            className="p-2 text-orange-600 hover:bg-orange-100 rounded-lg transition-all"
+                          >
+                            <Edit2 className="w-5 h-5" />
+                          </button>
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setProjectToDelete(project._id);
+                              setShowModal(true);
+                            }}
+                            className="p-2 text-red-600 hover:bg-red-100 rounded-lg transition-all"
+                          >
+                            <Trash2 className="w-5 h-5" />
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
                   ))}
-                </div>
-              </div>
-
-              {/* סיכום הדוח */}
-              <div className="mb-6 p-4 bg-blue-50 rounded-lg">
-                <h4 className="font-bold mb-2">סיכום הדוח:</h4>
-                <p className="text-sm">
-                  <strong>מספר פרויקטים:</strong> {filteredProjects.length} <br/>
-                  <strong>עמודות נבחרות:</strong> {Object.values(exportColumns).filter(v => v).length} <br/>
-                  <strong>סכום תקציבים:</strong> {filteredProjects.reduce((sum, proj) => sum + (proj.budget || 0), 0).toLocaleString('he-IL')} ₪ <br/>
-                  <strong>סכום תקציב נותר:</strong> {filteredProjects.reduce((sum, proj) => sum + (proj.remainingBudget !== undefined ? proj.remainingBudget : 0), 0).toLocaleString('he-IL')} ₪ <br/>
-                  <strong>פרויקטים עם חריגה:</strong> {filteredProjects.filter(proj => proj.remainingBudget !== undefined && proj.remainingBudget < 0).length} <br/>
-                  <strong>פרויקטים ללא תקציב:</strong> {filteredProjects.filter(proj => !proj.budget).length}
-                </p>
-              </div>
-
-              <div className="flex justify-end gap-4">
-                <button
-                  onClick={() => setShowReportModal(false)}
-                  className="px-6 py-2 text-gray-600 bg-gray-100 rounded-lg hover:bg-gray-200 transition-colors"
-                >
-                  ביטול
-                </button>
-                <button
-                  onClick={exportCustomReport}
-                  className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors flex items-center gap-2"
-                >
-                  <DownloadCloud size={20} />
-                  ייצא דוח
-                </button>
-              </div>
+                </tbody>
+              </table>
             </div>
+          </div>
+        ) : (
+          <div className="bg-white/90 backdrop-blur-xl rounded-2xl shadow-xl border border-white/50 p-12 text-center">
+            <Building2 className="w-16 h-16 text-slate-300 mx-auto mb-4" />
+            <h2 className="text-2xl font-bold text-slate-600">
+              {searchTerm ? "לא נמצאו תוצאות" : "עדיין אין פרויקטים"}
+            </h2>
           </div>
         )}
 
-        {/* מודל מחיקה */}
+        {/* Delete Modal */}
         {showModal && (
-          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center">
-            <div className="bg-white rounded-lg shadow-xl p-6 max-w-sm w-full mx-4">
-              <div className="mb-6">
-                <div className="bg-red-100 text-red-600 p-4 rounded-lg mb-4">
-                  <h3 className="text-3xl font-bold text-center mb-3">האם אתה בטוח?</h3>
-                  <p className="mt-1 text-l text-center">שים לב! פעולה זו תמחק את הפרויקט לצמיתות.</p>
+          <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+            <div className="relative">
+              <div className="absolute -inset-4 bg-gradient-to-r from-red-500 to-rose-500 rounded-3xl opacity-20 blur-2xl"></div>
+
+              <div className="relative bg-white rounded-3xl shadow-2xl p-8 max-w-md w-full">
+                <div className="text-center mb-6">
+                  <div className="mx-auto w-16 h-16 rounded-full bg-gradient-to-br from-red-500 to-rose-500 flex items-center justify-center mb-4">
+                    <AlertCircle className="w-8 h-8 text-white" />
+                  </div>
+                  <h3 className="text-3xl font-bold text-slate-900 mb-2">
+                    האם אתה בטוח?
+                  </h3>
+                  <p className="text-slate-600">
+                    שים לב! פעולה זו תמחק את הפרויקט לצמיתות.
+                  </p>
                 </div>
-              </div>
-              <div className="flex justify-center gap-3">
-                <button
-                  onClick={handleDelete}
-                  className="px-4 py-2 text-l font-bold text-white bg-red-600 hover:bg-red-700 rounded-lg transition-colors duration-150"
-                >
-                  מחק פרויקט
-                </button>
-                <button
-                  onClick={() => setShowModal(false)}
-                  className="px-4 py-2 text-l font-bold text-slate-600 hover:text-slate-700 bg-slate-100 hover:bg-slate-200 rounded-lg transition-colors duration-150"
-                >
-                  ביטול
-                </button>
+
+                <div className="flex gap-3">
+                  <button
+                    onClick={handleDelete}
+                    className="flex-1 px-6 py-3 rounded-xl font-bold text-white bg-gradient-to-r from-red-500 to-rose-500 hover:from-red-600 hover:to-rose-600 transition-all shadow-lg"
+                  >
+                    מחק
+                  </button>
+                  <button
+                    onClick={() => setShowModal(false)}
+                    className="flex-1 px-6 py-3 rounded-xl font-bold text-slate-700 bg-slate-100 hover:bg-slate-200 transition-all"
+                  >
+                    ביטול
+                  </button>
+                </div>
               </div>
             </div>
           </div>

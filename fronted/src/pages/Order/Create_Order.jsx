@@ -1,9 +1,24 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import SuccessAnimation from '../../Components/SuccessAnimation.jsx';
 import api from '../../api/api';
 import FileUploader from '../../Components/FileUploader';
 import { toast } from 'sonner';
+import {
+  ShoppingCart,
+  FileText,
+  Building2,
+  User,
+  Calendar,
+  Upload,
+  Save,
+  Plus,
+  Trash2,
+  CheckCircle2,
+  AlertCircle,
+  Sparkles,
+  TrendingUp,
+  Phone,
+} from 'lucide-react';
 
 const CreateOrder = () => {
   const [projects, setProjects] = useState([]);
@@ -22,7 +37,7 @@ const CreateOrder = () => {
         setProjects(response.data || []);
       } catch (err) {
         toast.error('שגיאה בהבאת הפרויקטים', {
-          className: "sonner-toast error rtl"
+          className: 'sonner-toast error rtl',
         });
       }
     };
@@ -38,7 +53,7 @@ const CreateOrder = () => {
   const addOrder = () => {
     if (!selectedProject) {
       toast.error('יש לבחור פרוייקט קודם', {
-        className: "sonner-toast error rtl"
+        className: 'sonner-toast error rtl',
       });
       return;
     }
@@ -51,10 +66,10 @@ const CreateOrder = () => {
         sum: '',
         status: 'לא הוגש',
         invitingName: '',
-        file: null,
-        Contact_person: "",
-        createdAt: "",
-      }
+        files: [],
+        Contact_person: '',
+        createdAt: '',
+      },
     ]);
   };
 
@@ -74,502 +89,612 @@ const CreateOrder = () => {
     setOrders(newOrders);
   };
 
-  // 1. שינוי פונקציית handleOrderUpload - העלאה מקומית בלבד
-const handleOrderUpload = (index, selectedFiles) => {
-  console.log("Files selected for order:", selectedFiles);
+  const handleOrderUpload = (index, selectedFiles) => {
+    if (!selectedFiles || selectedFiles.length === 0) {
+      toast.info('לא נבחרו קבצים', { className: 'sonner-toast info rtl' });
+      return;
+    }
 
-  if (!selectedFiles || selectedFiles.length === 0) {
-    toast.info('לא נבחרו קבצים', { className: "sonner-toast info rtl" });
-    return;
-  }
+    const newOrders = [...orders];
 
-  const newOrders = [...orders];
+    if (!newOrders[index].files) {
+      newOrders[index].files = [];
+    }
 
-  // Initialize files array if it doesn't exist
-  if (!newOrders[index].files) {
-    newOrders[index].files = [];
-  }
+    const updatedFiles = [
+      ...newOrders[index].files,
+      ...selectedFiles.filter(
+        (file) => !newOrders[index].files.some((f) => f.name === file.name)
+      ),
+    ];
 
-  // ✅ הוסף קבצים מקומיים בלבד (כמו בחשבוניות)
-  const updatedFiles = [
-    ...newOrders[index].files,
-    ...selectedFiles.filter(file => 
-      !newOrders[index].files.some(f => f.name === file.name)
-    )
-  ];
+    newOrders[index] = {
+      ...newOrders[index],
+      files: updatedFiles,
+    };
 
-  newOrders[index] = {
-    ...newOrders[index],
-    files: updatedFiles
+    setOrders(newOrders);
+
+    toast.success(`${selectedFiles.length} קבצים נבחרו (יועלו בעת השמירה)`, {
+      className: 'sonner-toast success rtl',
+    });
   };
 
-  setOrders(newOrders);
+  const validateSubmission = () => {
+    if (!selectedProject) {
+      toast.error('יש לבחור פרויקט תחילה', {
+        className: 'sonner-toast error rtl',
+      });
+      return false;
+    }
 
-  // ✅ הודעה שהקבצים יועלו בשמירה (כמו בחשבוניות)
-  toast.success(`${selectedFiles.length} קבצים נבחרו (יועלו בעת השמירה)`, {
-    className: "sonner-toast success rtl",
-  });
-};
-  const validateOrder = (order) => {
-    const requiredFields = ['orderNumber', 'detail', 'sum', 'status', 'invitingName', 'Contact_person', 'createdAt'];
-    return requiredFields.every(field => !!order[field]);
+    if (orders.length === 0) {
+      toast.error('יש להוסיף לפחות הזמנה אחת', {
+        className: 'sonner-toast error rtl',
+      });
+      return false;
+    }
+
+    for (let i = 0; i < orders.length; i++) {
+      const order = orders[i];
+      const orderNumber = i + 1;
+
+      if (!order.orderNumber) {
+        toast.error(`הזמנה מספר ${orderNumber}: חסר מספר הזמנה`, {
+          className: 'sonner-toast error rtl',
+        });
+        return false;
+      }
+
+      if (!order.invitingName || order.invitingName.trim() === '') {
+        toast.error(`הזמנה מספר ${orderNumber}: חסר שם המזמין`, {
+          className: 'sonner-toast error rtl',
+        });
+        return false;
+      }
+
+      if (!order.sum || order.sum <= 0) {
+        toast.error(
+          `הזמנה מספר ${orderNumber}: חסר סכום או שהסכום לא תקין`,
+          {
+            className: 'sonner-toast error rtl',
+          }
+        );
+        return false;
+      }
+
+      if (!order.detail || order.detail.trim() === '') {
+        toast.error(`הזמנה מספר ${orderNumber}: חסר פירוט ההזמנה`, {
+          className: 'sonner-toast error rtl',
+        });
+        return false;
+      }
+
+      if (!order.Contact_person || order.Contact_person.trim() === '') {
+        toast.error(`הזמנה מספר ${orderNumber}: חסר איש קשר`, {
+          className: 'sonner-toast error rtl',
+        });
+        return false;
+      }
+
+      if (!order.status) {
+        toast.error(`הזמנה מספר ${orderNumber}: חסר סטטוס ההזמנה`, {
+          className: 'sonner-toast error rtl',
+        });
+        return false;
+      }
+
+      if (!order.createdAt) {
+        toast.error(`הזמנה מספר ${orderNumber}: חסר תאריך יצירת ההזמנה`, {
+          className: 'sonner-toast error rtl',
+        });
+        return false;
+      }
+    }
+
+    const invitingNames = orders.map((order) => order.invitingName.trim());
+    const duplicates = invitingNames.filter(
+      (name, index) => invitingNames.indexOf(name) !== index
+    );
+
+    if (duplicates.length > 0) {
+      toast.error(`שם מזמין "${duplicates[0]}" מופיע יותר מפעם אחת`, {
+        className: 'sonner-toast error rtl',
+      });
+      return false;
+    }
+
+    return true;
   };
 
- // החלף את הפונקציה validateSubmission בקוד הזה:
+  const handleSubmit = async (e) => {
+    e.preventDefault();
 
-const validateSubmission = () => {
-  if (!selectedProject) {
-    toast.error('יש לבחור פרויקט תחילה', {
-      className: "sonner-toast error rtl"
-    });
-    return false;
-  }
-
-  if (orders.length === 0) {
-    toast.error('יש להוסיף לפחות הזמנה אחת', {
-      className: "sonner-toast error rtl"
-    });
-    return false;
-  }
-
-  // בדיקה מפורטת עבור כל הזמנה
-  for (let i = 0; i < orders.length; i++) {
-    const order = orders[i];
-    const orderNumber = i + 1; // מספר ההזמנה בממשק
-
-    // בדיקת מספר הזמנה
-    if (!order.orderNumber) {
-      toast.error(`הזמנה מספר ${orderNumber}: חסר מספר הזמנה`, {
-        className: "sonner-toast error rtl",
-      });
-      return false;
+    if (!validateSubmission()) {
+      return;
     }
 
-    // בדיקת שם מזמין
-    if (!order.invitingName || order.invitingName.trim() === '') {
-      toast.error(`הזמנה מספר ${orderNumber}: חסר שם המזמין`, {
-        className: "sonner-toast error rtl",
-      });
-      return false;
-    }
+    setIsLoading(true);
+    try {
+      const orderData = await Promise.all(
+        orders.map(async (order) => {
+          let uploadedFiles = [];
 
-    // בדיקת סכום
-    if (!order.sum || order.sum <= 0) {
-      toast.error(`הזמנה מספר ${orderNumber}: חסר סכום או שהסכום לא תקין`, {
-        className: "sonner-toast error rtl",
-      });
-      return false;
-    }
+          if (order.files && order.files.length > 0) {
+            for (const fileData of order.files) {
+              if (fileData.isLocal && fileData.file) {
+                try {
+                  const formData = new FormData();
+                  formData.append('file', fileData.file);
+                  formData.append('folder', fileData.folder || 'orders');
 
-    // בדיקת פירוט
-    if (!order.detail || order.detail.trim() === '') {
-      toast.error(`הזמנה מספר ${orderNumber}: חסר פירוט ההזמנה`, {
-        className: "sonner-toast error rtl",
-      });
-      return false;
-    }
+                  const uploadResponse = await api.post('/upload', formData, {
+                    headers: { 'Content-Type': 'multipart/form-data' },
+                  });
 
-    // בדיקת איש קשר
-    if (!order.Contact_person || order.Contact_person.trim() === '') {
-      toast.error(`הזמנה מספר ${orderNumber}: חסר איש קשר`, {
-        className: "sonner-toast error rtl",
-      });
-      return false;
-    }
-
-    
-
-    // בדיקת סטטוס
-    if (!order.status) {
-      toast.error(`הזמנה מספר ${orderNumber}: חסר סטטוס ההזמנה`, {
-        className: "sonner-toast error rtl",
-      });
-      return false;
-    }
-
-     if (!order.createdAt) {
-      toast.error(`הזמנה מספר ${orderNumber}: חסר תאריך יצירת ההזמנה`, {
-        className: "sonner-toast error rtl",
-      });
-      return false;
-    }
-  
-  }
-
-  // בדיקת שמות מזמינים כפולים - רק אחרי שכל ההזמנות תקינות
-  const invitingNames = orders.map(order => order.invitingName.trim());
-  const duplicates = invitingNames.filter((name, index) =>
-    invitingNames.indexOf(name) !== index
-  );
-  
-  if (duplicates.length > 0) {
-    toast.error(`שם מזמין "${duplicates[0]}" מופיע יותר מפעם אחת`, {
-      className: "sonner-toast error rtl"
-    });
-    return false;
-  }
-
-  return true;
-};
-const handleSubmit = async (e) => {
-  e.preventDefault();
-
-  if (!validateSubmission()) {
-    return;
-  }
-
-  setIsLoading(true);
-  try {
-    // שלב 1: העלאת כל הקבצים ל-Cloudinary (רק קבצים מקומיים)
-    const orderData = await Promise.all(
-      orders.map(async (order) => {
-        let uploadedFiles = [];
-
-        if (order.files && order.files.length > 0) {
-          for (const fileData of order.files) {
-            if (fileData.isLocal && fileData.file) {
-              try {
-                const formData = new FormData();
-                formData.append("file", fileData.file);
-                formData.append("folder", fileData.folder || "orders");
-
-                const uploadResponse = await api.post("/upload", formData, {
-                  headers: { "Content-Type": "multipart/form-data" },
-                });
-
-                uploadedFiles.push({
-                  name: fileData.name,
-                  url: uploadResponse.data.file.url,
-                  type: fileData.type,
-                  size: fileData.size,
-                  publicId: uploadResponse.data.file.publicId,
-                  resourceType: uploadResponse.data.file.resourceType,
-                });
-              } catch (uploadError) {
-                toast.error(`שגיאה בהעלאת ${fileData.name}`, {
-                  className: "sonner-toast error rtl",
-                });
-                throw uploadError;
+                  uploadedFiles.push({
+                    name: fileData.name,
+                    url: uploadResponse.data.file.url,
+                    type: fileData.type,
+                    size: fileData.size,
+                    publicId: uploadResponse.data.file.publicId,
+                    resourceType: uploadResponse.data.file.resourceType,
+                  });
+                } catch (uploadError) {
+                  toast.error(`שגיאה בהעלאת ${fileData.name}`, {
+                    className: 'sonner-toast error rtl',
+                  });
+                  throw uploadError;
+                }
+              } else {
+                uploadedFiles.push(fileData);
               }
-            } else {
-              uploadedFiles.push(fileData);
             }
           }
-        }
 
-        return {
-          orderNumber: order.orderNumber,
-          projectName: selectedProject.name,
-          projectId: selectedProject._id,
-          sum: Number(order.sum),
-          status: order.status,
-          invitingName: order.invitingName,
-          detail: order.detail,
-          files: uploadedFiles,
-          Contact_person: order.Contact_person,
-          createdAt: order.createdAt,
-        };
-      })
-    );
+          return {
+            orderNumber: order.orderNumber,
+            projectName: selectedProject.name,
+            projectId: selectedProject._id,
+            sum: Number(order.sum),
+            status: order.status,
+            invitingName: order.invitingName,
+            detail: order.detail,
+            files: uploadedFiles,
+            Contact_person: order.Contact_person,
+            createdAt: order.createdAt,
+          };
+        })
+      );
 
-    // שלב 2: שליחת כל ההזמנות לשרת
-    const response = await api.post(
-      '/orders',
-      { orders: orderData },
-      { headers: { 'Content-Type': 'application/json' } }
-    );
+      const response = await api.post(
+        '/orders',
+        { orders: orderData },
+        { headers: { 'Content-Type': 'application/json' } }
+      );
 
-    toast.success('ההזמנה/ות נוצרו בהצלחה!', {
-      className: "sonner-toast success rtl"
-    });
-    navigate('/orders');
-    setOrders([]); // ניקוי הזמנות לאחר שליחה מוצלחת
-
-  } catch (err) {
-    console.error("שגיאה במהלך יצירת ההזמנה/ות:", err);
-    if (err.response?.data?.message) {
-      toast.error(`שגיאה: ${err.response.data.message}`, {
-        className: "sonner-toast error rtl"
+      toast.success('ההזמנה/ות נוצרו בהצלחה!', {
+        className: 'sonner-toast success rtl',
       });
-    } else {
-      toast.error("שגיאה ביצירת ההזמנה - אנא נסה שוב", {
-        className: "sonner-toast error rtl"
-      });
+      navigate('/orders');
+      setOrders([]);
+    } catch (err) {
+      console.error('שגיאה במהלך יצירת ההזמנה/ות:', err);
+      if (err.response?.data?.message) {
+        toast.error(`שגיאה: ${err.response.data.message}`, {
+          className: 'sonner-toast error rtl',
+        });
+      } else {
+        toast.error('שגיאה ביצירת ההזמנה - אנא נסה שוב', {
+          className: 'sonner-toast error rtl',
+        });
+      }
+    } finally {
+      setIsLoading(false);
     }
-  } finally {
-    setIsLoading(false);
-  }
-};
+  };
 
   const handleRemoveFile = (orderIndex, fileIndex) => {
     const newOrders = [...orders];
     newOrders[orderIndex].files.splice(fileIndex, 1);
     setOrders(newOrders);
   };
+
   const openInExcelViewer = (fileUrl) => {
-    const officeUrl = `https://view.officeapps.live.com/op/view.aspx?src=${encodeURIComponent(fileUrl)}`;
-    window.open(officeUrl, "_blank");
+    const officeUrl = `https://view.officeapps.live.com/op/view.aspx?src=${encodeURIComponent(
+      fileUrl
+    )}`;
+    window.open(officeUrl, '_blank');
   };
 
   const renderFile = (file) => {
     const fileUrl = file?.url || file?.fileUrl;
+    const isLocal = file?.isLocal || false;
 
     if (!fileUrl) return null;
 
+    if (isLocal) {
+      return (
+        <div className="flex items-center gap-2">
+          <span className="text-gray-600 text-sm">
+            📄 {file.name} ({(file.size / 1024).toFixed(1)} KB)
+          </span>
+          <span className="text-orange-500 text-xs font-bold">
+            (יועלה בשמירה)
+          </span>
+        </div>
+      );
+    }
+
     const fileExtension = fileUrl.split('.').pop().toLowerCase();
 
-    // בדיקה אם הקובץ הוא XLSX
     if (fileExtension === 'xlsx') {
       return (
-        <div>
-          <button
-            onClick={() => openInExcelViewer(fileUrl)}
-            className="text-blue-500 font-bold mt-2"
-          >
-            📂 לצפייה בקובץ לחץ כאן
-
-          </button>
-        </div>
-      );
-    }
-
-    // אם הקובץ הוא PDF
-    if (fileExtension === 'pdf') {
-      return (
-        <div>
-          {/* <embed src={fileUrl} type="application/pdf" width="100%" height="600px" /> */}
-          <a href={fileUrl} target="_blank" rel="noopener noreferrer" className="block text-blue-500 font-bold mt-2">
-            📂 לצפייה בקובץ לחץ כאן
-
-          </a>
-        </div>
-      );
-    }
-
-    // אם הקובץ הוא תמונה
-    if (fileUrl.match(/\.(jpeg|jpg|png|gif)$/)) {
-      return (
-        <div>
-          {/* <img src={fileUrl} alt="Invoice File" className="w-full max-w-lg mx-auto rounded-lg shadow-md" /> */}
-          <a href={fileUrl} target="_blank" rel="noopener noreferrer" className="block text-blue-500 font-bold mt-2">
-            📂 לצפייה בקובץ לחץ כאן
-
-          </a>
-        </div>
-      );
-    }
-
-    // אם הקובץ הוא סוג אחר
-    return (
-      <div>
-        {/* <iframe src={fileUrl} className="w-full max-w-lg h-96 mx-auto" title="Document Preview"></iframe> */}
-        <a href={fileUrl} target="_blank" rel="noopener noreferrer" className="block text-blue-500 font-bold mt-2">
+        <button
+          onClick={() => openInExcelViewer(fileUrl)}
+          className="text-blue-500 font-bold hover:underline"
+        >
           📂 לצפייה בקובץ לחץ כאן
+        </button>
+      );
+    }
 
+    if (fileExtension === 'pdf' || fileUrl.match(/\.(jpeg|jpg|png|gif)$/)) {
+      return (
+        <a
+          href={fileUrl}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="text-blue-500 font-bold hover:underline"
+        >
+          📂 לצפייה בקובץ לחץ כאן
         </a>
-      </div>
+      );
+    }
+
+    return (
+      <a
+        href={fileUrl}
+        target="_blank"
+        rel="noopener noreferrer"
+        className="text-blue-500 font-bold hover:underline"
+      >
+        📂 לצפייה בקובץ לחץ כאן
+      </a>
     );
   };
 
   return (
-    <div className="mt-10 bg-gray-300 p-8 rounded-lg shadow-xl w-full max-w-5xl mx-auto">
-      <h1 className="text-4xl font-bold text-center text-slate-800 mb-8 drop-shadow-lg">
-        יצירת הזמנה / הזמנות לפרוייקט
-      </h1>
-
-      <div className="mb-8 flex justify-center">
-        <select
-          onChange={handleProjectChange}
-          className="mt-5 w-64 p-3 border border-gray-300 rounded-lg bg-slate-400 text-black font-bold"
-        >
-          <option value="" className="font-bold">לא נבחר פרוייקט</option>
-          {projects.map((project) => (
-            <option key={project._id} value={project._id} className="font-bold text-black">
-              {project.name}
-            </option>
-          ))}
-        </select>
+    <div className="min-h-screen bg-gradient-to-br from-orange-50 via-amber-50 to-yellow-50 relative overflow-hidden py-12">
+      {/* Animated Background Elements */}
+      <div className="absolute inset-0 overflow-hidden pointer-events-none">
+        <div className="absolute top-0 left-1/4 w-96 h-96 bg-gradient-to-br from-orange-400/20 to-amber-400/20 rounded-full blur-3xl animate-pulse"></div>
+        <div className="absolute bottom-0 right-1/4 w-96 h-96 bg-gradient-to-br from-yellow-400/20 to-orange-400/20 rounded-full blur-3xl animate-pulse delay-1000"></div>
+        <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] bg-gradient-to-br from-amber-400/10 to-orange-400/10 rounded-full blur-3xl"></div>
       </div>
 
-      {orders.map((order, index) => (
-        <div key={index} className="bg-white p-6 rounded-xl shadow-xl mb-8 hover:shadow-2xl transition-shadow duration-300">
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            <div className="space-y-2">
-              <label className="block text-slate-700 font-semibold">שם המזמין:</label>
-              <input
-                type="text"
-                value={order.invitingName}
-                onChange={(e) => handleOrderChange(index, 'invitingName', e.target.value)}
-                className="w-full p-3 border-2 border-slate-200 rounded-lg focus:ring-2 focus:ring-slate-500 transition-all"
-                required
-              />
-            </div>
+      <div className="relative z-10 container mx-auto px-4 md:px-6 max-w-7xl">
+        {/* Hero Header */}
+        <header className="mb-10">
+          <div className="relative">
+            <div className="absolute -inset-x-6 -inset-y-3 bg-gradient-to-r from-orange-500 via-amber-500 to-yellow-500 rounded-3xl opacity-5 blur-xl"></div>
 
-            <div className="space-y-2">
-              <label className="block text-slate-700 font-semibold">מספר הזמנה:</label>
-              <input
-                type="number"
-                value={order.orderNumber}
-                onChange={(e) => handleOrderChange(index, 'orderNumber', e.target.value)}
-                className="w-full p-3 border-2 border-slate-200 rounded-lg focus:ring-2 focus:ring-slate-500 transition-all"
-                required
-              />
-            </div>
-
-            <div className="space-y-2">
-              <label className="block text-slate-700 font-semibold">סכום ההזמנה:</label>
-              <input
-                type="number"
-                value={order.sum}
-                onChange={(e) => handleOrderChange(index, 'sum', e.target.value)}
-                className="w-full p-3 border-2 border-slate-200 rounded-lg focus:ring-2 focus:ring-slate-500 transition-all"
-                required
-              />
-            </div>
-
-            <div className="space-y-2 md:col-span-2">
-              <label className="block text-slate-700 font-semibold">פירוט הזמנה:</label>
-              <textarea
-                value={order.detail}
-                onChange={(e) => handleOrderChange(index, 'detail', e.target.value)}
-                className="w-full p-3 border-2 border-slate-200 rounded-lg focus:ring-2 focus:ring-slate-500 transition-all h-24"
-                required
-              />
-            </div>
-
-            <div className="space-y-2">
-  <label className="block text-slate-700 font-semibold">
-    תאריך יצירת ההזמנה:
-  </label>
-  <input
-    type="date"
-    value={order.createdAt}
-    onChange={(e) => handleOrderChange(index, "createdAt", e.target.value)}
-    className="w-full p-3 border-2 border-slate-200 rounded-lg focus:ring-2 focus:ring-slate-500 transition-all"
-    required
-    onFocus={(e) => e.target.showPicker()}
-  />
-</div>
-
-  <div className="space-y-2">
-          <label className="block text-slate-700 font-semibold">
-            איש קשר:
-          </label>
-          <input
-            type="text"
-            value={order.Contact_person} // ✅ הערך של החשבונית הספציפית
-            onChange={(e) =>
-              handleOrderChange(index, "Contact_person", e.target.value)
-            }
-            placeholder="הכנס שם איש הקשר"
-            className="w-full p-3 border-2 border-slate-200 rounded-lg focus:ring-2 focus:ring-slate-500 transition-all"
-            required
-          />
-        </div> 
-
-            <div className="space-y-2">
-              <label className="block text-slate-700 font-semibold">סטטוס:</label>
-              <select
-                value={order.status}
-                onChange={(e) => handleOrderChange(index, 'status', e.target.value)}
-                className="w-full p-3 border-2 border-slate-200 rounded-lg focus:ring-2 focus:ring-slate-500 transition-all bg-white"
-                required
-              >
-                <option value="לא הוגש">לא הוגש</option>
-                <option value="הוגש">הוגש</option>
-                <option value="בעיבוד">בעיבוד</option>
-              </select>
-            </div>
-                  
-            <div className="space-y-2 lg:col-span-3">
-              <FileUploader
-                onUploadSuccess={(files) => handleOrderUpload(index, files)}
-                folder="invoices"
-                label="העלה קבצי הזמנה"
-              />
-
-              {/* Display uploaded files */}
-              <div className="col-span-3">
-                {order.files && order.files.length > 0 ? (
-                  <div className="mt-4 space-y-4">
-                    {order.files.map((file, index) => (
-                      <div key={index} className="text-center flex items-center justify-center">
-                        <p className="font-bold text-xl mr-2 ml-5">קובץ {index + 1} :</p>
-                        {renderFile(file)} {/* הצגת הקובץ */}
-                        <button
-                          onClick={() => handleRemoveFile(index, order.file)}
-                          className='text-xl font-bold mr-6 mt-2'
-                        >
-                          ❌ הסר
-                        </button>
-                      </div>
-                    ))}
+            <div className="relative bg-white/80 backdrop-blur-xl rounded-3xl shadow-2xl shadow-orange-500/10 p-8 border border-white/50">
+              <div className="flex items-center justify-center gap-3 mb-4">
+                <div className="p-3 rounded-2xl bg-gradient-to-br from-orange-500 to-amber-600 shadow-lg shadow-orange-500/30">
+                  <ShoppingCart className="w-8 h-8 text-white" />
+                </div>
+                <div className="text-center">
+                  <h1 className="text-4xl font-black text-slate-900">
+                    יצירת הזמנות לפרויקט
+                  </h1>
+                  <div className="flex items-center justify-center gap-2 mt-2">
+                    <Sparkles className="w-4 h-4 text-orange-500" />
+                    <span className="text-sm font-medium text-slate-600">
+                      מערכת ניהול הזמנות מתקדמת
+                    </span>
                   </div>
-                ) : (
-                  <div className="flex justify-center">
-                    <p className="text-gray-700 bg-white w-44 p-2 mt-10 text-center text-lg rounded-2xl">אין קבצים להצגה</p>
-                  </div>
-                )}
-
+                </div>
               </div>
 
+              {/* Project Selector */}
+              <div className="max-w-md mx-auto mt-6">
+                <label className="block text-sm font-bold text-slate-700 mb-2 flex items-center gap-2">
+                  <Building2 className="w-4 h-4 text-orange-500" />
+                  בחר פרויקט
+                </label>
+                <select
+                  onChange={handleProjectChange}
+                  className="w-full p-4 border-2 border-orange-200 rounded-xl bg-white font-bold text-slate-900 focus:border-orange-500 focus:outline-none focus:ring-4 focus:ring-orange-500/20 transition-all"
+                >
+                  <option value="">לא נבחר פרוייקט</option>
+                  {projects.map((project) => (
+                    <option key={project._id} value={project._id}>
+                      {project.name}
+                    </option>
+                  ))}
+                </select>
+              </div>
             </div>
           </div>
+        </header>
+
+        {/* Orders List */}
+        <div className="space-y-6">
+          {orders.map((order, index) => (
+            <div key={index} className="relative">
+              <div className="absolute -inset-2 bg-gradient-to-r from-orange-500 via-amber-500 to-yellow-500 rounded-3xl opacity-10 blur-xl"></div>
+
+              <div className="relative bg-white/90 backdrop-blur-xl rounded-3xl shadow-xl shadow-orange-500/10 border border-white/50 overflow-hidden">
+                {/* Order Header */}
+                <div className="bg-gradient-to-r from-orange-500 via-amber-500 to-yellow-500 p-1">
+                  <div className="bg-white/95 backdrop-blur-xl p-4">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-3">
+                        <div className="p-2 rounded-xl bg-gradient-to-br from-orange-100 to-amber-100">
+                          <ShoppingCart className="w-5 h-5 text-orange-600" />
+                        </div>
+                        <h3 className="text-xl font-bold text-slate-900">
+                          הזמנה מספר {index + 1}
+                        </h3>
+                      </div>
+                      <button
+                        onClick={() => removeOrder(index)}
+                        className="flex items-center gap-2 px-4 py-2 rounded-xl bg-gradient-to-r from-red-500 to-rose-500 text-white font-bold hover:from-red-600 hover:to-rose-600 transition-all shadow-lg"
+                        type="button"
+                      >
+                        <Trash2 className="w-4 h-4" />
+                        <span>מחק</span>
+                      </button>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Order Form */}
+                <div className="p-6">
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                    {/* Inviting Name */}
+                    <div className="group">
+                      <label className="text-sm font-bold text-slate-700 mb-2 flex items-center gap-2">
+                        <User className="w-4 h-4 text-orange-500" />
+                        שם המזמין
+                      </label>
+                      <input
+                        type="text"
+                        value={order.invitingName}
+                        onChange={(e) =>
+                          handleOrderChange(index, 'invitingName', e.target.value)
+                        }
+                        className="mt-2 w-full rounded-xl border-2 border-slate-200 bg-white px-4 py-3 text-sm font-medium focus:border-orange-500 focus:outline-none focus:ring-4 focus:ring-orange-500/20 transition-all group-hover:border-orange-300"
+                        placeholder="הזן שם מזמין..."
+                        required
+                      />
+                    </div>
+
+                    {/* Order Number */}
+                    <div className="group">
+                      <label className="text-sm font-bold text-slate-700 mb-2 block">
+                        מספר הזמנה
+                      </label>
+                      <input
+                        type="number"
+                        value={order.orderNumber}
+                        onChange={(e) =>
+                          handleOrderChange(index, 'orderNumber', e.target.value)
+                        }
+                        className="mt-2 w-full rounded-xl border-2 border-slate-200 bg-white px-4 py-3 text-sm font-medium focus:border-orange-500 focus:outline-none focus:ring-4 focus:ring-orange-500/20 transition-all group-hover:border-orange-300"
+                        required
+                      />
+                    </div>
+
+                    {/* Sum */}
+                    <div className="group">
+                      <label className="text-sm font-bold text-slate-700 mb-2 flex items-center gap-2">
+                        <TrendingUp className="w-4 h-4 text-orange-500" />
+                        סכום ההזמנה
+                      </label>
+                      <input
+                        type="number"
+                        value={order.sum}
+                        onChange={(e) =>
+                          handleOrderChange(index, 'sum', e.target.value)
+                        }
+                        className="mt-2 w-full rounded-xl border-2 border-slate-200 bg-white px-4 py-3 text-sm font-medium focus:border-orange-500 focus:outline-none focus:ring-4 focus:ring-orange-500/20 transition-all group-hover:border-orange-300"
+                        required
+                      />
+                    </div>
+
+                    {/* Detail */}
+                    <div className="md:col-span-2 lg:col-span-3 group">
+                      <label className="text-sm font-bold text-slate-700 mb-2 block">
+                        פירוט הזמנה
+                      </label>
+                      <textarea
+                        value={order.detail}
+                        onChange={(e) =>
+                          handleOrderChange(index, 'detail', e.target.value)
+                        }
+                        className="mt-2 w-full min-h-[100px] rounded-xl border-2 border-slate-200 bg-white px-4 py-3 text-sm font-medium focus:border-orange-500 focus:outline-none focus:ring-4 focus:ring-orange-500/20 transition-all resize-none group-hover:border-orange-300"
+                        placeholder="הוסף פירוט על ההזמנה..."
+                        required
+                      />
+                    </div>
+
+                    {/* Created At */}
+                    <div className="group">
+                      <label className="text-sm font-bold text-slate-700 mb-2 flex items-center gap-2">
+                        <Calendar className="w-4 h-4 text-orange-500" />
+                        תאריך יצירת ההזמנה
+                      </label>
+                      <input
+                        type="date"
+                        value={order.createdAt}
+                        onChange={(e) =>
+                          handleOrderChange(index, 'createdAt', e.target.value)
+                        }
+                        className="mt-2 w-full rounded-xl border-2 border-slate-200 bg-white px-4 py-3 text-sm font-medium focus:border-orange-500 focus:outline-none focus:ring-4 focus:ring-orange-500/20 transition-all group-hover:border-orange-300"
+                        required
+                        onFocus={(e) => e.target.showPicker()}
+                      />
+                    </div>
+
+                    {/* Contact Person */}
+                    <div className="group">
+                      <label className="text-sm font-bold text-slate-700 mb-2 flex items-center gap-2">
+                        <Phone className="w-4 h-4 text-orange-500" />
+                        איש קשר
+                      </label>
+                      <input
+                        type="text"
+                        value={order.Contact_person}
+                        onChange={(e) =>
+                          handleOrderChange(index, 'Contact_person', e.target.value)
+                        }
+                        className="mt-2 w-full rounded-xl border-2 border-slate-200 bg-white px-4 py-3 text-sm font-medium focus:border-orange-500 focus:outline-none focus:ring-4 focus:ring-orange-500/20 transition-all group-hover:border-orange-300"
+                        placeholder="הכנס שם איש הקשר..."
+                        required
+                      />
+                    </div>
+
+                    {/* Status */}
+                    <div className="group">
+                      <label className="text-sm font-bold text-slate-700 mb-2 block">
+                        סטטוס
+                      </label>
+                      <select
+                        value={order.status}
+                        onChange={(e) =>
+                          handleOrderChange(index, 'status', e.target.value)
+                        }
+                        className="mt-2 w-full rounded-xl border-2 border-slate-200 bg-white px-4 py-3 text-sm font-medium focus:border-orange-500 focus:outline-none focus:ring-4 focus:ring-orange-500/20 transition-all group-hover:border-orange-300"
+                        required
+                      >
+                        <option value="לא הוגש">לא הוגש</option>
+                        <option value="הוגש">הוגש</option>
+                        <option value="בעיבוד">בעיבוד</option>
+                      </select>
+                    </div>
+
+                    {/* File Uploader */}
+                    <div className="lg:col-span-3">
+                      <div className="p-6 rounded-2xl bg-gradient-to-br from-slate-50 to-slate-100 border-2 border-dashed border-slate-300 hover:border-orange-400 transition-all">
+                        <FileUploader
+                          onUploadSuccess={(files) =>
+                            handleOrderUpload(index, files)
+                          }
+                          folder="orders"
+                          label="העלה קבצי הזמנה"
+                        />
+                      </div>
+
+                      {/* Display Files */}
+                      {order.files && order.files.length > 0 ? (
+                        <div className="mt-4 grid grid-cols-1 md:grid-cols-2 gap-4">
+                          {order.files.map((file, fileIndex) => (
+                            <div
+                              key={fileIndex}
+                              className="flex items-center justify-between rounded-2xl border-2 border-slate-200 bg-white/80 backdrop-blur-sm px-4 py-3 hover:border-orange-400 hover:shadow-lg transition-all"
+                            >
+                              <div className="flex items-center gap-3 flex-1 truncate">
+                                <div className="p-2 rounded-lg bg-gradient-to-br from-orange-100 to-amber-100">
+                                  <FileText className="w-4 h-4 text-orange-600" />
+                                </div>
+                                <div className="truncate">{renderFile(file)}</div>
+                              </div>
+                              <button
+                                onClick={() => handleRemoveFile(index, fileIndex)}
+                                className="mr-2 px-3 py-1.5 rounded-lg text-sm text-red-600 hover:bg-red-50 font-medium transition-all"
+                              >
+                                הסר
+                              </button>
+                            </div>
+                          ))}
+                        </div>
+                      ) : (
+                        <div className="mt-4 text-center py-8 text-slate-400">
+                          <Upload className="w-12 h-12 mx-auto mb-3 opacity-50" />
+                          <p className="text-sm font-medium">
+                            אין קבצים מצורפים כרגע
+                          </p>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          ))}
+        </div>
+
+        {/* Action Buttons */}
+        <div className="mt-10 flex flex-wrap justify-center gap-4">
+          <button
+            onClick={addOrder}
+            className="group px-8 py-4 rounded-xl font-bold text-white bg-gradient-to-r from-slate-700 to-slate-800 hover:from-slate-800 hover:to-slate-900 transition-all shadow-xl hover:shadow-2xl flex items-center gap-3"
+            type="button"
+          >
+            <Plus className="w-5 h-5 group-hover:scale-110 transition-transform" />
+            <span>הוסף הזמנה</span>
+          </button>
 
           <button
-            onClick={() => removeOrder(index)}
-            className="mt-6 px-6 py-2 bg-red-500 text-white font-semibold rounded-lg hover:bg-red-600 transition-colors flex items-center gap-2"
+            onClick={handleSubmit}
+            disabled={isLoading || !selectedProject || orders.length === 0}
+            className="group px-8 py-4 rounded-xl font-bold text-white bg-gradient-to-r from-orange-600 via-amber-600 to-yellow-600 hover:from-orange-700 hover:via-amber-700 hover:to-yellow-700 disabled:opacity-60 disabled:cursor-not-allowed shadow-xl shadow-orange-500/30 hover:shadow-2xl hover:shadow-orange-500/40 transition-all flex items-center gap-3"
           >
-            <span>מחק הזמנה זו מהרשימה</span>
-            <span>❌</span>
+            {isLoading ? (
+              <>
+                <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                <span>יוצר אנא המתן...</span>
+              </>
+            ) : (
+              <>
+                <Save className="w-5 h-5 group-hover:scale-110 transition-transform" />
+                <span>צור הזמנה/ות</span>
+              </>
+            )}
           </button>
         </div>
-      ))}
 
-      <div className="flex flex-col sm:flex-row justify-center gap-4 items-center mt-8">
-        <button
-          onClick={addOrder}
-          className="w-48 py-3 bg-slate-700 text-white font-semibold rounded-xl hover:bg-slate-600 transition-colors shadow-lg hover:shadow-xl flex items-center justify-center gap-2"
-        >
-          <span>הוסף הזמנה לרשימה</span>
-          <span>➕</span>
-        </button>
+        {/* Delete Confirmation Modal */}
+        {showModal && (
+          <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+            <div className="relative">
+              <div className="absolute -inset-4 bg-gradient-to-r from-red-500 to-rose-500 rounded-3xl opacity-20 blur-2xl"></div>
 
-        <button
-          onClick={handleSubmit}
-          className="w-48 py-3 bg-green-600 text-white font-semibold rounded-xl hover:bg-green-500 transition-colors shadow-lg hover:shadow-xl disabled:bg-gray-400 disabled:cursor-not-allowed"
-          disabled={isLoading || !selectedProject || orders.length === 0}
-        >
-          {isLoading ? 'יוצר אנא המתן...' : 'צור הזמנה/ות'}
-        </button>
-      </div>
+              <div className="relative bg-white rounded-3xl shadow-2xl p-8 max-w-md w-full">
+                <div className="text-center mb-6">
+                  <div className="mx-auto w-16 h-16 rounded-full bg-gradient-to-br from-red-500 to-rose-500 flex items-center justify-center mb-4">
+                    <AlertCircle className="w-8 h-8 text-white" />
+                  </div>
+                  <h3 className="text-3xl font-bold text-slate-900 mb-2">
+                    האם אתה בטוח?
+                  </h3>
+                  <p className="text-slate-600">
+                    שים לב! פעולה זו תמחק את ההזמנה לצמיתות.
+                  </p>
+                </div>
 
-
-
-      {showModal && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center">
-          <div className="bg-white rounded-lg shadow-xl p-6 max-w-sm w-full mx-4">
-            <div className="mb-6">
-              <h3 className="text-3xl font-bold text-center text-red-600">האם אתה בטוח?</h3>
-              <p className="mt-1 text-l text-center">שים לב! פעולה זו תמחק את הזמנה לצמיתות.</p>
-            </div>
-            <div className="flex justify-center gap-3">
-              <button
-                onClick={handleDelete}
-                className="px-4 py-2 text-white bg-red-600 hover:bg-red-700 rounded-lg transition">
-                מחק
-              </button>
-              <button
-                onClick={() => setShowModal(false)}
-                className="px-4 py-2 text-slate-600 hover:text-slate-700 bg-slate-100 hover:bg-slate-200 rounded-lg transition-colors duration-150">
-                ביטול
-              </button>
+                <div className="flex gap-3">
+                  <button
+                    onClick={handleDelete}
+                    className="flex-1 px-6 py-3 rounded-xl font-bold text-white bg-gradient-to-r from-red-500 to-rose-500 hover:from-red-600 hover:to-rose-600 transition-all shadow-lg"
+                  >
+                    מחק
+                  </button>
+                  <button
+                    onClick={() => setShowModal(false)}
+                    className="flex-1 px-6 py-3 rounded-xl font-bold text-slate-700 bg-slate-100 hover:bg-slate-200 transition-all"
+                  >
+                    ביטול
+                  </button>
+                </div>
+              </div>
             </div>
           </div>
-        </div>
-      )}
+        )}
+      </div>
     </div>
-
   );
 };
 

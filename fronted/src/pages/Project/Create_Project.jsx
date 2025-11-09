@@ -1,111 +1,233 @@
 import { useState } from 'react';
-// import SuccessAnimation from '../../Components/SuccessAnimation.jsx'
 import api from '../../api/api.jsx';
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
-
+import {
+  FolderPlus,
+  Building2,
+  User,
+  Phone,
+  Sparkles,
+  Save,
+  ArrowRight,
+} from 'lucide-react';
 
 const CreateProject = () => {
-	const [name, setName] = useState('');
-	const [invitingName, setInvitingName] = useState('')
-	const [Contact_person, setContact_Person] = useState('')
-	const [loading, setLoading] = useState(true);
+  const [name, setName] = useState('');
+  const [invitingName, setInvitingName] = useState('');
+  const [Contact_person, setContact_Person] = useState('');
+  const [loading, setLoading] = useState(false);
 
-	// const [selectedSupplier, setSelectedSupplier] = useState(null);
-	// const [success, setSuccess] = useState(null);
-	// const [showAnimation, setShowAnimation] = useState(false);
+  const navigate = useNavigate();
 
-	const navigate = useNavigate();
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    setLoading(true);
 
+    try {
+      await api.post(
+        '/projects',
+        { name, invitingName, Contact_person },
+        {
+          headers: {
+            'Content-Type': 'application/json',
+          },
+        }
+      );
 
-	const handleSubmit = async (e) => {
-		e.preventDefault();
-		try {
+      toast.success('הפרויקט נוצר בהצלחה', {
+        className: 'sonner-toast success rtl',
+      });
 
-			await api.post('/projects',
-				{ name, invitingName, Contact_person },
-				{
-					headers: {
-						'Content-Type': 'application/json',
-					},
-				}
-			);
-			// setShowAnimation(true);
-			toast.success('הפרויקט נוצר בהצלחה ', {
-				className: "sonner-toast success rtl"
-			});
-			setName('');
-			setInvitingName('');
-			navigate('/projects')
+      setName('');
+      setInvitingName('');
+      setContact_Person('');
+      navigate('/projects');
+    } catch (err) {
+      if (err.response && err.response.status === 400) {
+        toast.error(err.response.data.error, {
+          className: 'sonner-toast error rtl',
+        });
+      } else {
+        toast.error('נכשל ביצירת הפרויקט', {
+          className: 'sonner-toast error rtl',
+        });
+      }
+    } finally {
+      setLoading(false);
+    }
+  };
 
+  return (
+    <div className="min-h-screen bg-gradient-to-br from-orange-50 via-amber-50 to-yellow-50 relative overflow-hidden flex items-center justify-center p-4">
+      {/* Animated Background Elements */}
+      <div className="absolute inset-0 overflow-hidden pointer-events-none">
+        <div className="absolute top-0 left-1/4 w-96 h-96 bg-gradient-to-br from-orange-400/20 to-amber-400/20 rounded-full blur-3xl animate-pulse"></div>
+        <div className="absolute bottom-0 right-1/4 w-96 h-96 bg-gradient-to-br from-yellow-400/20 to-orange-400/20 rounded-full blur-3xl animate-pulse delay-1000"></div>
+        <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] bg-gradient-to-br from-amber-400/10 to-orange-400/10 rounded-full blur-3xl"></div>
+      </div>
 
+      {/* Main Card */}
+      <div className="relative z-10 w-full max-w-2xl">
+        {/* Decorative gradient background */}
+        <div className="absolute -inset-4 bg-gradient-to-r from-orange-500 via-amber-500 to-yellow-500 rounded-3xl opacity-10 blur-2xl"></div>
 
-		} catch (err) {
-			// If the server returns a 400 error, it means the project already exists
-			if (err.response && err.response.status === 400) {
-				toast.error(err.response.data.error, {
-					className: "sonner-toast error rtl"
-				});  // Show the error message from the server
-			} else {
-				toast.error('נכשל ביצירת הפרויקט', {
-					className: "sonner-toast error rtl"
-				});
-			}
-		}
-	};
+        <div className="relative bg-white/90 backdrop-blur-2xl rounded-3xl shadow-2xl shadow-orange-500/10 border border-white/50 overflow-hidden">
+          {/* Header with Gradient Border */}
+          <div className="bg-gradient-to-r from-orange-500 via-amber-500 to-yellow-500 p-1">
+            <div className="bg-white/95 backdrop-blur-xl p-8">
+              <div className="flex items-center justify-center gap-4 mb-4">
+                <div className="p-4 rounded-2xl bg-gradient-to-br from-orange-500 to-amber-600 shadow-lg shadow-orange-500/30">
+                  <FolderPlus className="w-10 h-10 text-white" />
+                </div>
+                <div className="text-center">
+                  <h2 className="text-4xl font-black text-slate-900">
+                    יצירת פרויקט חדש
+                  </h2>
+                  <div className="flex items-center justify-center gap-2 mt-2">
+                    <Sparkles className="w-4 h-4 text-orange-500" />
+                    <span className="text-sm font-medium text-slate-600">
+                      הוסף פרויקט למערכת
+                    </span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
 
-	return (
-		<div className="min-h-screen flex items-center justify-center p-4 ">
-			<div className="bg-gray-300 p-8 rounded-lg shadow-xl max-w-md w-full">
-				<h2 className="text-3xl font-bold text-center text-slate-700 mb-6">יצירת פרויקט</h2>
-				{/* {success && <p className="text-green-600 text-center mb-4">{success}</p>} */}
+          {/* Form Body */}
+          <form onSubmit={handleSubmit} className="p-8 space-y-8">
+            {/* Project Name Section */}
+            <section className="relative">
+              <div className="absolute -right-4 top-0 w-1 h-full bg-gradient-to-b from-orange-500 to-amber-500 rounded-full"></div>
 
-				<form onSubmit={handleSubmit}>
-					<div className="mb-8">
-						<label className="block text-lg font-bold text-black mb-2">שם הפרויקט : </label>
-						<input
-							type="text"
-							value={name}
-							onChange={(e) => setName(e.target.value)}
-							required
-							className="w-full font-bold p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-						/>
-					</div>
+              <div className="flex items-center gap-3 mb-6">
+                <div className="p-3 rounded-2xl bg-gradient-to-br from-orange-500 to-orange-600 shadow-lg shadow-orange-500/30">
+                  <Building2 className="w-6 h-6 text-white" />
+                </div>
+                <h3 className="text-2xl font-bold text-slate-900">
+                  פרטי הפרויקט
+                </h3>
+              </div>
 
-					<div className="mb-10">
-				  <div className="mb-10">
+              <div className="space-y-6">
+                {/* Project Name */}
+                <div className="group">
+                  <label className="text-sm font-bold text-slate-700 mb-2 flex items-center gap-2">
+                    <Building2 className="w-4 h-4 text-orange-500" />
+                    שם הפרויקט
+                  </label>
+                  <input
+                    type="text"
+                    value={name}
+                    onChange={(e) => setName(e.target.value)}
+                    required
+                    placeholder="הזן את שם הפרויקט..."
+                    className="mt-2 w-full rounded-xl border-2 border-slate-200 bg-white px-4 py-4 text-base font-medium focus:border-orange-500 focus:outline-none focus:ring-4 focus:ring-orange-500/20 transition-all group-hover:border-orange-300"
+                  />
+                </div>
+              </div>
+            </section>
 
-  <label className="block text-lg font-bold text-black mb-2 mt-6">שם המזמין :</label>
-  <input
-    type="text"
-    value={invitingName}
-    onChange={(e) => setInvitingName(e.target.value)}
-    required
-    className="w-full p-3 border font-bold border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-  />
-  <label className="block text-lg font-bold text-black mb-2 mt-6">איש קשר:</label>
-  <input
-    type="text"
-    value={Contact_person}
-    onChange={(e) => setContact_Person(e.target.value)}
-    required
-    className="w-full p-3 border font-bold border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-  />
-</div>
-					
-					</div>
-					<div className="grid place-items-center ">
-						<button type="submit" className="grid place-items-center w-36 py-3 bg-slate-800 text-white text-lg font-semibold rounded-lg hover:bg-slate-600 focus:outline-none focus:ring-2 focus:ring-blue-500">
-							צור פרויקט
-						</button>
-					</div>
+            {/* Divider */}
+            <div className="relative py-4">
+              <div className="absolute inset-0 flex items-center">
+                <div className="w-full border-t-2 border-slate-200"></div>
+              </div>
+              <div className="relative flex justify-center">
+                <span className="px-4 bg-gradient-to-r from-orange-500 to-amber-500 text-white text-xs font-bold rounded-full py-1">
+                  פרטי מזמין
+                </span>
+              </div>
+            </div>
 
-					{/* {showAnimation && <SuccessAnimation text="הפרויקט נוצר בהצלחה!" />} */}
+            {/* Client Details Section */}
+            <section className="relative">
+              <div className="absolute -right-4 top-0 w-1 h-full bg-gradient-to-b from-amber-500 to-yellow-500 rounded-full"></div>
 
-				</form>
-			</div>
-		</div>
-	);
+              <div className="flex items-center gap-3 mb-6">
+                <div className="p-3 rounded-2xl bg-gradient-to-br from-amber-500 to-yellow-600 shadow-lg shadow-amber-500/30">
+                  <User className="w-6 h-6 text-white" />
+                </div>
+                <h3 className="text-2xl font-bold text-slate-900">
+                  פרטי המזמין
+                </h3>
+              </div>
+
+              <div className="space-y-6">
+                {/* Inviting Name */}
+                <div className="group">
+                  <label className="text-sm font-bold text-slate-700 mb-2 flex items-center gap-2">
+                    <User className="w-4 h-4 text-amber-500" />
+                    שם המזמין
+                  </label>
+                  <input
+                    type="text"
+                    value={invitingName}
+                    onChange={(e) => setInvitingName(e.target.value)}
+                    required
+                    placeholder="הזן את שם המזמין..."
+                    className="mt-2 w-full rounded-xl border-2 border-slate-200 bg-white px-4 py-4 text-base font-medium focus:border-amber-500 focus:outline-none focus:ring-4 focus:ring-amber-500/20 transition-all group-hover:border-amber-300"
+                  />
+                </div>
+
+                {/* Contact Person */}
+                <div className="group">
+                  <label className="text-sm font-bold text-slate-700 mb-2 flex items-center gap-2">
+                    <Phone className="w-4 h-4 text-yellow-500" />
+                    איש קשר
+                  </label>
+                  <input
+                    type="text"
+                    value={Contact_person}
+                    onChange={(e) => setContact_Person(e.target.value)}
+                    required
+                    placeholder="הזן את שם איש הקשר..."
+                    className="mt-2 w-full rounded-xl border-2 border-slate-200 bg-white px-4 py-4 text-base font-medium focus:border-yellow-500 focus:outline-none focus:ring-4 focus:ring-yellow-500/20 transition-all group-hover:border-yellow-300"
+                  />
+                </div>
+              </div>
+            </section>
+
+            {/* Submit Button */}
+            <div className="pt-6">
+              <div className="flex justify-center gap-4">
+                <button
+                  type="button"
+                  onClick={() => navigate('/projects')}
+                  className="px-8 py-4 rounded-xl font-bold text-slate-600 hover:bg-slate-100 transition-all"
+                >
+                  ביטול
+                </button>
+                <button
+                  type="submit"
+                  disabled={loading}
+                  className="group relative px-10 py-4 rounded-xl font-bold text-white bg-gradient-to-r from-orange-600 via-amber-600 to-yellow-600 hover:from-orange-700 hover:via-amber-700 hover:to-yellow-700 disabled:opacity-60 disabled:cursor-not-allowed shadow-xl shadow-orange-500/30 hover:shadow-2xl hover:shadow-orange-500/40 transition-all duration-300 flex items-center gap-3"
+                >
+                  {loading ? (
+                    <>
+                      <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                      <span>יוצר פרויקט...</span>
+                    </>
+                  ) : (
+                    <>
+                      <Save className="w-5 h-5 group-hover:scale-110 transition-transform" />
+                      <span>צור פרויקט</span>
+                      <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
+                    </>
+                  )}
+                </button>
+              </div>
+            </div>
+          </form>
+        </div>
+
+        {/* Decorative Elements */}
+        <div className="absolute -top-10 -right-10 w-20 h-20 bg-gradient-to-br from-orange-400 to-amber-500 rounded-full blur-2xl opacity-30 animate-pulse"></div>
+        <div className="absolute -bottom-10 -left-10 w-20 h-20 bg-gradient-to-br from-yellow-400 to-orange-500 rounded-full blur-2xl opacity-30 animate-pulse delay-1000"></div>
+      </div>
+    </div>
+  );
 };
 
 export default CreateProject;
