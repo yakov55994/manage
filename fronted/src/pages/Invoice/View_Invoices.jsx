@@ -18,6 +18,7 @@ import {
   CheckCircle2,
   XCircle,
   ArrowLeftRight,
+  AlertTriangle,
 } from "lucide-react";
 import { toast } from "sonner";
 import MoveInvoiceModal from "../../Components/MoveInvoiceModal.jsx";
@@ -115,8 +116,12 @@ const InvoicesPage = () => {
       filtered = filtered.filter(
         (invoice) =>
           invoice.invoiceNumber?.toString().includes(searchTerm) ||
-          invoice.projectName?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-          invoice.supplier?.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+          invoice.projectName
+            ?.toLowerCase()
+            .includes(searchTerm.toLowerCase()) ||
+          invoice.supplier?.name
+            ?.toLowerCase()
+            .includes(searchTerm.toLowerCase()) ||
           invoice.invitingName?.toLowerCase().includes(searchTerm.toLowerCase())
       );
     }
@@ -124,7 +129,9 @@ const InvoicesPage = () => {
     if (paymentFilter !== "all") {
       const isPaid = paymentFilter === "paid";
       filtered = filtered.filter(
-        (invoice) => (isPaid && invoice.paid === "כן") || (!isPaid && invoice.paid !== "כן")
+        (invoice) =>
+          (isPaid && invoice.paid === "כן") ||
+          (!isPaid && invoice.paid !== "כן")
       );
     }
 
@@ -141,37 +148,47 @@ const InvoicesPage = () => {
     if (showReportModal) {
       if (advancedFilters.dateFrom) {
         filtered = filtered.filter(
-          (invoice) => new Date(invoice.createdAt) >= new Date(advancedFilters.dateFrom)
+          (invoice) =>
+            new Date(invoice.createdAt) >= new Date(advancedFilters.dateFrom)
         );
       }
       if (advancedFilters.dateTo) {
         filtered = filtered.filter(
-          (invoice) => new Date(invoice.createdAt) <= new Date(advancedFilters.dateTo)
+          (invoice) =>
+            new Date(invoice.createdAt) <= new Date(advancedFilters.dateTo)
         );
       }
       if (advancedFilters.paymentDateFrom) {
         filtered = filtered.filter(
           (invoice) =>
             invoice.paymentDate &&
-            new Date(invoice.paymentDate) >= new Date(advancedFilters.paymentDateFrom)
+            new Date(invoice.paymentDate) >=
+              new Date(advancedFilters.paymentDateFrom)
         );
       }
       if (advancedFilters.paymentDateTo) {
         filtered = filtered.filter(
           (invoice) =>
             invoice.paymentDate &&
-            new Date(invoice.paymentDate) <= new Date(advancedFilters.paymentDateTo)
+            new Date(invoice.paymentDate) <=
+              new Date(advancedFilters.paymentDateTo)
         );
       }
       if (advancedFilters.amountMin) {
-        filtered = filtered.filter((invoice) => invoice.sum >= parseInt(advancedFilters.amountMin));
+        filtered = filtered.filter(
+          (invoice) => invoice.sum >= parseInt(advancedFilters.amountMin)
+        );
       }
       if (advancedFilters.amountMax) {
-        filtered = filtered.filter((invoice) => invoice.sum <= parseInt(advancedFilters.amountMax));
+        filtered = filtered.filter(
+          (invoice) => invoice.sum <= parseInt(advancedFilters.amountMax)
+        );
       }
       if (advancedFilters.projectName) {
         filtered = filtered.filter((invoice) =>
-          invoice.projectName?.toLowerCase().includes(advancedFilters.projectName.toLowerCase())
+          invoice.projectName
+            ?.toLowerCase()
+            .includes(advancedFilters.projectName.toLowerCase())
         );
       }
       if (advancedFilters.supplierName) {
@@ -180,18 +197,23 @@ const InvoicesPage = () => {
             invoice.supplier?.name
               ?.toLowerCase()
               .includes(advancedFilters.supplierName.toLowerCase()) ||
-            invoice.invitingName?.toLowerCase().includes(advancedFilters.supplierName.toLowerCase())
+            invoice.invitingName
+              ?.toLowerCase()
+              .includes(advancedFilters.supplierName.toLowerCase())
         );
       }
       if (advancedFilters.invoiceNumberFrom) {
         filtered = filtered.filter(
           (invoice) =>
-            parseInt(invoice.invoiceNumber) >= parseInt(advancedFilters.invoiceNumberFrom)
+            parseInt(invoice.invoiceNumber) >=
+            parseInt(advancedFilters.invoiceNumberFrom)
         );
       }
       if (advancedFilters.invoiceNumberTo) {
         filtered = filtered.filter(
-          (invoice) => parseInt(invoice.invoiceNumber) <= parseInt(advancedFilters.invoiceNumberTo)
+          (invoice) =>
+            parseInt(invoice.invoiceNumber) <=
+            parseInt(advancedFilters.invoiceNumberTo)
         );
       }
       if (advancedFilters.hasSupplier === "yes") {
@@ -228,17 +250,25 @@ const InvoicesPage = () => {
     if (paymentFilter !== "all") {
       const isPaid = paymentFilter === "paid";
       filteredResults = filteredResults.filter(
-        (invoice) => (isPaid && invoice.paid === "כן") || (!isPaid && invoice.paid !== "כן")
+        (invoice) =>
+          (isPaid && invoice.paid === "כן") ||
+          (!isPaid && invoice.paid !== "כן")
       );
     }
 
     if (statusFilter !== "all") {
       if (statusFilter === "submitted") {
-        filteredResults = filteredResults.filter((invoice) => invoice.status === "הוגש");
+        filteredResults = filteredResults.filter(
+          (invoice) => invoice.status === "הוגש"
+        );
       } else if (statusFilter === "inProgress") {
-        filteredResults = filteredResults.filter((invoice) => invoice.status === "בעיבוד");
+        filteredResults = filteredResults.filter(
+          (invoice) => invoice.status === "בעיבוד"
+        );
       } else if (statusFilter === "notSubmitted") {
-        filteredResults = filteredResults.filter((invoice) => invoice.status === "לא הוגש");
+        filteredResults = filteredResults.filter(
+          (invoice) => invoice.status === "לא הוגש"
+        );
       }
     }
 
@@ -276,27 +306,29 @@ const InvoicesPage = () => {
     }
   }, [paymentFilter, statusFilter]);
 
-  const sortedInvoices = [...(searchTerm ? filteredInvoices : invoices)].sort((a, b) => {
-    if (sortBy === "sum") {
-      return sortOrder === "asc" ? a.sum - b.sum : b.sum - a.sum;
+  const sortedInvoices = [...(searchTerm ? filteredInvoices : invoices)].sort(
+    (a, b) => {
+      if (sortBy === "sum") {
+        return sortOrder === "asc" ? a.sum - b.sum : b.sum - a.sum;
+      }
+      if (sortBy === "createdAt") {
+        return sortOrder === "asc"
+          ? new Date(a.createdAt) - new Date(b.createdAt)
+          : new Date(b.createdAt) - new Date(a.createdAt);
+      }
+      if (sortBy === "invoiceNumber") {
+        return sortOrder === "asc"
+          ? a.invoiceNumber - b.invoiceNumber
+          : b.invoiceNumber - a.invoiceNumber;
+      }
+      if (sortBy === "projectName") {
+        return sortOrder === "asc"
+          ? a.projectName.localeCompare(b.projectName)
+          : b.projectName.localeCompare(a.projectName);
+      }
+      return 0;
     }
-    if (sortBy === "createdAt") {
-      return sortOrder === "asc"
-        ? new Date(a.createdAt) - new Date(b.createdAt)
-        : new Date(b.createdAt) - new Date(a.createdAt);
-    }
-    if (sortBy === "invoiceNumber") {
-      return sortOrder === "asc"
-        ? a.invoiceNumber - b.invoiceNumber
-        : b.invoiceNumber - a.invoiceNumber;
-    }
-    if (sortBy === "projectName") {
-      return sortOrder === "asc"
-        ? a.projectName.localeCompare(b.projectName)
-        : b.projectName.localeCompare(a.projectName);
-    }
-    return 0;
-  });
+  );
 
   const exportCustomReport = () => {
     const dataToExport = filteredInvoices;
@@ -324,10 +356,14 @@ const InvoicesPage = () => {
       supplierAccountNumber: "מספר חשבון ספק",
     };
 
-    const selectedColumns = Object.keys(exportColumns).filter((key) => exportColumns[key]);
+    const selectedColumns = Object.keys(exportColumns).filter(
+      (key) => exportColumns[key]
+    );
 
     if (selectedColumns.length === 0) {
-      toast.error("יש לבחור לפחות עמודה אחת לייצוא", { className: "sonner-toast error rtl" });
+      toast.error("יש לבחור לפחות עמודה אחת לייצוא", {
+        className: "sonner-toast error rtl",
+      });
       return;
     }
 
@@ -356,7 +392,8 @@ const InvoicesPage = () => {
             row[columnMapping.status] = invoice.status || "";
             break;
           case "paid":
-            row[columnMapping.paid] = invoice.paid === "כן" ? "שולם" : "לא שולם";
+            row[columnMapping.paid] =
+              invoice.paid === "כן" ? "שולם" : "לא שולם";
             break;
           case "createdAt":
             row[columnMapping.createdAt] = formatDate(invoice.createdAt);
@@ -371,10 +408,12 @@ const InvoicesPage = () => {
             row[columnMapping.detail] = invoice.detail || "";
             break;
           case "supplierPhone":
-            row[columnMapping.supplierPhone] = invoice.supplier?.phone || "לא זמין";
+            row[columnMapping.supplierPhone] =
+              invoice.supplier?.phone || "לא זמין";
             break;
           case "supplierEmail":
-            row[columnMapping.supplierEmail] = invoice.supplier?.email || "לא זמין";
+            row[columnMapping.supplierEmail] =
+              invoice.supplier?.email || "לא זמין";
             break;
           case "supplierBankName":
             row[columnMapping.supplierBankName] =
@@ -451,7 +490,8 @@ const InvoicesPage = () => {
         סטטוס: invoice.status,
         פירוט: invoice.detail,
         שולם: invoice.paid === "כן" ? "כן" : "לא",
-        "תאריך תשלום": invoice.paid === "כן" ? formatDate(invoice.paymentDate) : "לא שולם",
+        "תאריך תשלום":
+          invoice.paid === "כן" ? formatDate(invoice.paymentDate) : "לא שולם",
       };
 
       if (invoice.supplier && typeof invoice.supplier === "object") {
@@ -461,7 +501,8 @@ const InvoicesPage = () => {
           "טלפון ספק": invoice.supplier.phone || "לא זמין",
           "שם הבנק": invoice.supplier.bankDetails?.bankName || "לא זמין",
           "מספר סניף": invoice.supplier.bankDetails?.branchNumber || "לא זמין",
-          "מספר חשבון": invoice.supplier.bankDetails?.accountNumber || "לא זמין",
+          "מספר חשבון":
+            invoice.supplier.bankDetails?.accountNumber || "לא זמין",
         };
       } else {
         return {
@@ -584,17 +625,28 @@ const InvoicesPage = () => {
         return;
       }
 
-      const { data: updated } = await api.put(`/invoices/${invoice._id}/status`, {
-        paid: "לא",
-        paymentDate: null,
-        paymentMethod: "",
+      const { data: updated } = await api.put(
+        `/invoices/${invoice._id}/status`,
+        {
+          paid: "לא",
+          paymentDate: null,
+          paymentMethod: "",
+        }
+      );
+      setInvoices((prev) =>
+        prev.map((inv) => (inv._id === invoice._id ? updated : inv))
+      );
+      setAllInvoices((prev) =>
+        prev.map((inv) => (inv._id === invoice._id ? updated : inv))
+      );
+      toast.success("סטטוס התשלום עודכן ל - לא", {
+        className: "sonner-toast success rtl",
       });
-      setInvoices((prev) => prev.map((inv) => (inv._id === invoice._id ? updated : inv)));
-      setAllInvoices((prev) => prev.map((inv) => (inv._id === invoice._id ? updated : inv)));
-      toast.success("סטטוס התשלום עודכן ל - לא", { className: "sonner-toast success rtl" });
     } catch (err) {
       console.error(err);
-      toast.error("שגיאה בעדכון סטטוס התשלום", { className: "sonner-toast error rtl" });
+      toast.error("שגיאה בעדכון סטטוס התשלום", {
+        className: "sonner-toast error rtl",
+      });
     }
   };
 
@@ -603,23 +655,65 @@ const InvoicesPage = () => {
     if (!invoice) return;
 
     try {
-      const { data: updated } = await api.put(`/invoices/${invoice._id}/status`, {
-        paid: "כן",
-        paymentDate,
-        paymentMethod,
-      });
+      const { data: updated } = await api.put(
+        `/invoices/${invoice._id}/status`,
+        {
+          paid: "כן",
+          paymentDate,
+          paymentMethod,
+        }
+      );
 
-      setInvoices((prev) => prev.map((inv) => (inv._id === invoice._id ? updated : inv)));
-      setAllInvoices((prev) => prev.map((inv) => (inv._id === invoice._id ? updated : inv)));
-      toast.success(`עודכן לשולם (${paymentMethod === "check" ? "צ׳ק" : "העברה"})`, {
-        className: "sonner-toast success rtl",
-      });
+      setInvoices((prev) =>
+        prev.map((inv) => (inv._id === invoice._id ? updated : inv))
+      );
+      setAllInvoices((prev) =>
+        prev.map((inv) => (inv._id === invoice._id ? updated : inv))
+      );
+      toast.success(
+        `עודכן לשולם (${paymentMethod === "check" ? "צ׳ק" : "העברה"})`,
+        {
+          className: "sonner-toast success rtl",
+        }
+      );
     } catch (err) {
       console.error(err);
-      toast.error("שגיאה בשמירת פרטי התשלום", { className: "sonner-toast error rtl" });
+      toast.error("שגיאה בשמירת פרטי התשלום", {
+        className: "sonner-toast error rtl",
+      });
     } finally {
-      setPaymentCapture({ open: false, invoice: null, defaultDate: "", defaultMethod: "" });
+      setPaymentCapture({
+        open: false,
+        invoice: null,
+        defaultDate: "",
+        defaultMethod: "",
+      });
     }
+  };
+
+  const checkMissingFields = (invoice) => {
+    const missingFields = [];
+
+    if (!invoice.supplier || !invoice.supplier.name) {
+      missingFields.push("ספק");
+    }
+    if (!invoice.invoiceNumber) {
+      missingFields.push("מספר חשבונית");
+    }
+    if (!invoice.sum) {
+      missingFields.push("סכום");
+    }
+    if (!invoice.projectName) {
+      missingFields.push("פרויקט");
+    }
+    if (!invoice.files || invoice.files.length === 0) {
+      missingFields.push("קבצים");
+    }
+    if (!invoice.detail || invoice.detail.trim() === "") {
+      missingFields.push("פירוט");
+    }
+
+    return missingFields;
   };
 
   if (loading) {
@@ -629,7 +723,9 @@ const InvoicesPage = () => {
           <div className="absolute inset-0 bg-gradient-to-r from-orange-500 to-amber-500 blur-3xl opacity-20 animate-pulse"></div>
           <ClipLoader size={100} color="#f97316" loading />
         </div>
-        <h1 className="mt-8 font-bold text-3xl text-slate-900">טוען רשימת חשבוניות...</h1>
+        <h1 className="mt-8 font-bold text-3xl text-slate-900">
+          טוען רשימת חשבוניות...
+        </h1>
       </div>
     );
   }
@@ -654,7 +750,9 @@ const InvoicesPage = () => {
                   <Receipt className="w-10 h-10 text-white" />
                 </div>
                 <div className="text-center">
-                  <h1 className="text-4xl font-black text-slate-900">רשימת חשבוניות</h1>
+                  <h1 className="text-4xl font-black text-slate-900">
+                    רשימת חשבוניות
+                  </h1>
                   <div className="flex items-center justify-center gap-2 mt-2">
                     <Sparkles className="w-4 h-4 text-orange-500" />
                     <span className="text-sm font-medium text-slate-600">
@@ -741,7 +839,9 @@ const InvoicesPage = () => {
                 <option value="notSubmitted">לא הוגשו</option>
               </select>
 
-              {(paymentFilter !== "all" || statusFilter !== "all" || searchTerm) && (
+              {(paymentFilter !== "all" ||
+                statusFilter !== "all" ||
+                searchTerm) && (
                 <button
                   onClick={resetFilters}
                   className="px-4 py-2 bg-slate-200 text-slate-700 rounded-xl hover:bg-slate-300 transition-all font-bold"
@@ -784,129 +884,219 @@ const InvoicesPage = () => {
               <table className="w-full">
                 <thead>
                   <tr className="bg-gradient-to-r from-orange-500 via-amber-500 to-yellow-500">
-                    <th className="px-4 py-4 text-sm font-bold text-white">שם הספק</th>
-                    <th className="px-4 py-4 text-sm font-bold text-white">מספר חשבונית</th>
-                    <th className="px-4 py-4 text-sm font-bold text-white">סכום</th>
-                    <th className="px-4 py-4 text-sm font-bold text-white">תאריך חשבונית</th>
-                    <th className="px-4 py-4 text-sm font-bold text-white">סטטוס</th>
-                    <th className="px-4 py-4 text-sm font-bold text-white">שם פרוייקט</th>
-                    <th className="px-4 py-4 text-sm font-bold text-white">תשלום</th>
-                    <th className="px-4 py-4 text-sm font-bold text-white">סימון תשלום</th>
-                    <th className="px-4 py-4 text-sm font-bold text-white">פעולות</th>
+                    <th className="px-4 py-4 text-sm font-bold text-center">
+                      סטטוס
+                    </th>{" "}
+                    {/* עמודה חדשה */}
+                    <th className="px-4 py-4 text-sm font-bold text-white">
+                      שם הספק
+                    </th>
+                    <th className="px-4 py-4 text-sm font-bold text-white">
+                      מספר חשבונית
+                    </th>
+                    <th className="px-4 py-4 text-sm font-bold text-white">
+                      סכום
+                    </th>
+                    <th className="px-4 py-4 text-sm font-bold text-white">
+                      תאריך חשבונית
+                    </th>
+                    <th className="px-4 py-4 text-sm font-bold text-white">
+                      סטטוס
+                    </th>
+                    <th className="px-4 py-4 text-sm font-bold text-white">
+                      שם פרוייקט
+                    </th>
+                    <th className="px-4 py-4 text-sm font-bold text-white">
+                      תשלום
+                    </th>
+                    <th className="px-4 py-4 text-sm font-bold text-white">
+                      סימון תשלום
+                    </th>
+                    <th className="px-4 py-4 text-sm font-bold text-white">
+                      פעולות
+                    </th>
                   </tr>
                 </thead>
-                <tbody>
-                  {sortedInvoices.map((invoice) => (
-                    <tr
-                      key={invoice._id}
-                      className="cursor-pointer border-t border-orange-100 hover:bg-orange-50 transition-colors"
-                      onClick={(e) => {
-                        if (!e.target.closest("label")) {
-                          handleView(invoice._id);
-                        }
-                      }}
-                    >
-                      <td className="px-4 py-4 text-sm font-bold text-center text-slate-900">
-                        {invoice.supplier?.name || "—"}
-                      </td>
-                      <td className="px-4 py-4 text-sm font-bold text-center text-slate-900">
-                        {invoice.invoiceNumber}
-                      </td>
-                      <td className="px-4 py-4 text-sm font-bold text-slate-900">
-                        {formatNumber(invoice.sum)} ₪
-                      </td>
-                      <td className="px-4 py-4 text-sm text-slate-600 text-center">
-                        {formatDate(invoice.createdAt)}
-                      </td>
-                      <td className="px-4 py-4 text-sm font-medium text-center text-slate-900">
-                        {invoice.status}
-                      </td>
-                      <td className="px-4 py-4 text-sm font-medium text-slate-900">
-                        {invoice.projectName}
-                      </td>
-                      <td className="px-4 py-4 text-center">
-                        {invoice.paid === "כן" ? (
-                          <span className="inline-flex items-center gap-1 px-3 py-1 rounded-full text-xs font-bold bg-emerald-100 text-emerald-700 border border-emerald-200">
-                            <CheckCircle2 className="w-3 h-3" />
-                            שולם
-                          </span>
-                        ) : (
-                          <span className="inline-flex items-center gap-1 px-3 py-1 rounded-full text-xs font-bold bg-red-100 text-red-700 border border-red-200">
-                            <XCircle className="w-3 h-3" />
-                            לא שולם
-                          </span>
-                        )}
-                      </td>
-                      <td className="px-4 py-4 text-center">
-                        <label className="relative inline-block cursor-pointer">
-                          <input
-                            type="checkbox"
-                            checked={invoice.paid === "כן"}
-                            onChange={(e) => {
-                              e.stopPropagation();
-                              togglePaymentStatus(invoice);
-                            }}
-                            className="absolute opacity-0 cursor-pointer"
-                          />
-                          <span
-                            className={`w-7 h-7 inline-block border-2 rounded-full transition-all duration-300 
-                                ${
-                                  invoice.paid === "כן"
-                                    ? "bg-emerald-500 border-emerald-500"
-                                    : "bg-gray-200 border-gray-400"
-                                }
-                                flex items-center justify-center relative`}
-                          >
-                            {invoice.paid === "כן" && (
-                              <svg
-                                xmlns="http://www.w3.org/2000/svg"
-                                viewBox="0 0 24 24"
-                                fill="none"
-                                stroke="white"
-                                strokeWidth="2"
-                                className="w-5 h-5"
-                              >
-                                <path d="M20 6L9 17l-5-5" />
-                              </svg>
-                            )}
-                          </span>
-                        </label>
-                      </td>
-                      <td className="px-4 py-4">
-                        <div className="flex justify-center gap-2">
-                          <button
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              handleEdit(invoice._id);
-                            }}
-                            className="p-2 text-orange-600 hover:bg-orange-100 rounded-lg transition-all"
-                          >
-                            <Edit2 className="w-5 h-5" />
-                          </button>
-                          <button
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              handleConfirmDelete(invoice);
-                            }}
-                            className="p-2 text-red-600 hover:bg-red-100 rounded-lg transition-all"
-                          >
-                            <Trash2 className="w-5 h-5" />
-                          </button>
-                          <button
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              setMoveModal({ open: true, invoice });
-                            }}
-                            className="p-2 text-slate-600 hover:bg-slate-100 rounded-lg transition-all"
-                            title="העבר לפרויקט"
-                          >
-                            <ArrowLeftRight className="w-5 h-5" />
-                          </button>
-                        </div>
-                      </td>
-                    </tr>
+<tbody>
+  {sortedInvoices.map((invoice) => {
+    const missingFields = checkMissingFields(invoice);
+    const hasMissingData = missingFields.length > 0;
+    
+    return (
+      <tr
+        key={invoice._id}
+        className="cursor-pointer border-t border-orange-100 hover:bg-orange-50 transition-colors"
+        onClick={(e) => {
+          if (!e.target.closest("label")) {
+            handleView(invoice._id);
+          }
+        }}
+      >
+        {/* עמודת סטטוס - חדש */}
+        <td className="px-4 py-4 text-center">
+          {hasMissingData ? (
+            <div className="relative group">
+              <div className="flex items-center justify-center">
+                <AlertTriangle className="w-6 h-6 text-red-500 animate-pulse" />
+              </div>
+              
+              {/* Tooltip שמראה מה חסר */}
+              <div className="-ml-5 absolute z-50 invisible group-hover:visible bg-red-600 text-white text-xs rounded-lg py-2 px-3 -top-2 left-1/2 transform -translate-x-1/2 -translate-y-full whitespace-nowrap shadow-xl border-2 border-red-700">
+                <div className="font-bold mb-1">חסרים פרטים:</div>
+                <ul className="text-right space-y-1">
+                  {missingFields.map((field, idx) => (
+                    <li key={idx}>• {field}</li>
                   ))}
-                </tbody>
+                </ul>
+                <div className="absolute top-full left-1/2 transform -translate-x-1/2 -mt-1">
+                  <div className="border-8 border-transparent border-t-red-700"></div>
+                </div>
+              </div>
+            </div>
+          ) : (
+            <div className="flex items-center justify-center">
+              <CheckCircle2 className="w-6 h-6 text-green-500" />
+            </div>
+          )}
+        </td>
+
+        <td className="px-4 py-4 text-sm font-bold text-center text-slate-900">
+          {invoice.supplier?.name || (
+            <span className="text-red-500 italic flex items-center justify-center gap-1">
+              <AlertTriangle className="w-3 h-3" />
+              חסר
+            </span>
+          )}
+        </td>
+        
+        <td className="px-4 py-4 text-sm font-bold text-center text-slate-900">
+          {invoice.invoiceNumber || (
+            <span className="text-red-500 italic flex items-center justify-center gap-1">
+              <AlertTriangle className="w-3 h-3" />
+              חסר
+            </span>
+          )}
+        </td>
+        
+        <td className="px-4 py-4 text-sm font-bold text-slate-900">
+          {invoice.sum ? (
+            `${formatNumber(invoice.sum)} ₪`
+          ) : (
+            <span className="text-red-500 italic flex items-center gap-1">
+              <AlertTriangle className="w-3 h-3" />
+              חסר
+            </span>
+          )}
+        </td>
+        
+        <td className="px-4 py-4 text-sm text-slate-600 text-center">
+          {formatDate(invoice.createdAt)}
+        </td>
+        
+        <td className="px-4 py-4 text-sm font-medium text-center text-slate-900">
+          {invoice.status || (
+            <span className="text-red-500 italic flex items-center justify-center gap-1">
+              <AlertTriangle className="w-3 h-3" />
+              חסר
+            </span>
+          )}
+        </td>
+        
+        <td className="px-4 py-4 text-sm font-medium text-slate-900">
+          {invoice.projectName || (
+            <span className="text-red-500 italic flex items-center gap-1">
+              <AlertTriangle className="w-3 h-3" />
+              חסר
+            </span>
+          )}
+        </td>
+        
+        <td className="px-4 py-4 text-center">
+          {invoice.paid === "כן" ? (
+            <span className="inline-flex items-center gap-1 px-3 py-1 rounded-full text-xs font-bold bg-emerald-100 text-emerald-700 border border-emerald-200">
+              <CheckCircle2 className="w-3 h-3" />
+              שולם
+            </span>
+          ) : (
+            <span className="inline-flex items-center gap-1 px-3 py-1 rounded-full text-xs font-bold bg-red-100 text-red-700 border border-red-200">
+              <XCircle className="w-3 h-3" />
+              לא שולם
+            </span>
+          )}
+        </td>
+        
+        <td className="px-4 py-4 text-center">
+          <label className="relative inline-block cursor-pointer">
+            <input
+              type="checkbox"
+              checked={invoice.paid === "כן"}
+              onChange={(e) => {
+                e.stopPropagation();
+                togglePaymentStatus(invoice);
+              }}
+              className="absolute opacity-0 cursor-pointer"
+            />
+            <span
+              className={`w-7 h-7 inline-block border-2 rounded-full transition-all duration-300 
+                  ${
+                    invoice.paid === "כן"
+                      ? "bg-emerald-500 border-emerald-500"
+                      : "bg-gray-200 border-gray-400"
+                  }
+                  flex items-center justify-center relative`}
+            >
+              {invoice.paid === "כן" && (
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="white"
+                  strokeWidth="2"
+                  className="w-5 h-5"
+                >
+                  <path d="M20 6L9 17l-5-5" />
+                </svg>
+              )}
+            </span>
+          </label>
+        </td>
+        
+        <td className="px-4 py-4">
+          <div className="flex justify-center gap-2">
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                handleEdit(invoice._id);
+              }}
+              className="p-2 text-orange-600 hover:bg-orange-100 rounded-lg transition-all"
+            >
+              <Edit2 className="w-5 h-5" />
+            </button>
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                handleConfirmDelete(invoice);
+              }}
+              className="p-2 text-red-600 hover:bg-red-100 rounded-lg transition-all"
+            >
+              <Trash2 className="w-5 h-5" />
+            </button>
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                setMoveModal({ open: true, invoice });
+              }}
+              className="p-2 text-slate-600 hover:bg-slate-100 rounded-lg transition-all"
+              title="העבר לפרויקט"
+            >
+              <ArrowLeftRight className="w-5 h-5" />
+            </button>
+          </div>
+        </td>
+      </tr>
+    );
+  })}
+</tbody>
               </table>
             </div>
           </div>
@@ -931,8 +1121,12 @@ const InvoicesPage = () => {
                   <div className="mx-auto w-16 h-16 rounded-full bg-gradient-to-br from-red-500 to-rose-500 flex items-center justify-center mb-4">
                     <X className="w-8 h-8 text-white" />
                   </div>
-                  <h3 className="text-3xl font-bold text-slate-900 mb-2">האם אתה בטוח?</h3>
-                  <p className="text-slate-600">שים לב! פעולה זו תמחק את החשבונית לצמיתות.</p>
+                  <h3 className="text-3xl font-bold text-slate-900 mb-2">
+                    האם אתה בטוח?
+                  </h3>
+                  <p className="text-slate-600">
+                    שים לב! פעולה זו תמחק את החשבונית לצמיתות.
+                  </p>
                 </div>
                 <div className="flex gap-3">
                   <button
@@ -959,10 +1153,14 @@ const InvoicesPage = () => {
           onClose={() => setMoveModal({ open: false, invoice: null })}
           onMoved={(updatedInvoice) => {
             setInvoices((prev) =>
-              prev.map((inv) => (inv._id === updatedInvoice._id ? updatedInvoice : inv))
+              prev.map((inv) =>
+                inv._id === updatedInvoice._id ? updatedInvoice : inv
+              )
             );
             setAllInvoices((prev) =>
-              prev.map((inv) => (inv._id === updatedInvoice._id ? updatedInvoice : inv))
+              prev.map((inv) =>
+                inv._id === updatedInvoice._id ? updatedInvoice : inv
+              )
             );
           }}
         />
@@ -970,7 +1168,12 @@ const InvoicesPage = () => {
         <PaymentCaptureModal
           open={paymentCapture.open}
           onClose={() =>
-            setPaymentCapture({ open: false, invoice: null, defaultDate: "", defaultMethod: "" })
+            setPaymentCapture({
+              open: false,
+              invoice: null,
+              defaultDate: "",
+              defaultMethod: "",
+            })
           }
           onSave={handleSavePaymentCapture}
           defaultDate={paymentCapture.defaultDate}
