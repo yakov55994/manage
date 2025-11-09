@@ -20,7 +20,7 @@ import {
   ArrowLeftRight,
 } from "lucide-react";
 import { toast } from "sonner";
-import MoveInvoiceModal from "../../components/MoveInvoiceModal";
+import MoveInvoiceModal from "../../Components/MoveInvoiceModal.jsx";
 import PaymentCaptureModal from "../../Components/PaymentCaptureModal.jsx";
 
 const InvoicesPage = () => {
