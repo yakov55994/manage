@@ -20,9 +20,8 @@ const app = express();
 // ✅ רשימת הדומיינים המותרים
 const allowedOrigins = [
   'http://localhost:5173',
-  'https://management-server-owna.onrender.com',
-  'https://manage-2dkj.onrender.com',
-  'https://manage-46b.pages.dev'
+  'https://manage-46b.pages.dev',
+  'https://manage-2dkj.onrender.com'
 ];
 
 const corsOptions = {
@@ -46,13 +45,7 @@ const corsOptions = {
 };
 
 // ✅ 1. CORS - ראשון!
-// app.use(cors(corsOptions));
-
-app.use(cors({
-  origin: true,
-  credentials: true
-}));
-app.options('*', cors());
+app.use(cors(corsOptions));
 
 // טיפול מפורש בבקשות OPTIONS
 app.options('*', cors(corsOptions), (req, res) => {
@@ -64,14 +57,7 @@ app.options('*', cors(corsOptions), (req, res) => {
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
-// ✅ 3. Debug middleware (אופציונלי - להסיר בproduction)
-app.use((req, res, next) => {
-  console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
-  console.log(`📥 ${req.method} ${req.url}`);
-  console.log('Body:', req.body);
-  console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
-  next();
-});
+
 
 // ✅ 4. Auth routes - ללא הגנה! (login צריך להיות פתוח)
 app.use('/api/auth', authRoutes);
