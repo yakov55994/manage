@@ -2,9 +2,10 @@ import express from 'express';
 import mongoose from 'mongoose';
 import dotenv from 'dotenv';
 import cors from 'cors';
-import cookieParser from 'cookie-parser';
 import jwt from 'jsonwebtoken';
-import authenticate from './Auth/authMiddleware.js';
+import { protect } from './middleware/auth.js';
+import authRoutes from './routes/auth.js';
+import usersRoutes from './routes/UserRoutes.js';
 
 import projectRoutes from './routes/projectRoutes.js';
 import invoiceRoutes from './routes/InvoiceRoutes.js';
@@ -17,36 +18,24 @@ dotenv.config();
 const app = express();
 
 // ✅ רשימת הדומיינים המותרים
-// החלף את החלק הזה בקוד שלך:
-
 const allowedOrigins = [
   'http://localhost:5173',
   'https://management-server-owna.onrender.com',
-  'https://manage-2dkj.onrender.com',  // ← וודא שזה בדיוק ככה!
-  'https://manage-46b.pages.dev'  // ← וודא שזה בדיוק ככה!
+  'https://manage-2dkj.onrender.com',
+  'https://manage-46b.pages.dev'
 ];
 
 const corsOptions = {
   origin: function (origin, callback) {
-    // console.log('🔎 Origin received:', origin);
-    // console.log('📋 Allowed origins:', allowedOrigins); // הוסף את זה!
-    
-    // אפשר בקשות ללא origin
     if (!origin) {
-      // console.log('✅ No origin - allowing');
       return callback(null, true);
     }
-    
-    // בדיקה מדויקת
+
     const isAllowed = allowedOrigins.includes(origin);
-    // console.log('🔍 Is allowed:', isAllowed); // הוסף את זה!
-    
+
     if (isAllowed) {
-      // console.log('✅ Origin allowed:', origin);
       callback(null, true);
     } else {
-      // console.log('❌ Blocked Origin:', origin);
-      // console.log('📋 Available origins:', allowedOrigins); // עוד לוג
       callback(new Error('Not allowed by CORS'));
     }
   },
@@ -55,7 +44,8 @@ const corsOptions = {
   allowedHeaders: ['Origin', 'X-Requested-With', 'Content-Type', 'Accept', 'Authorization'],
   optionsSuccessStatus: 200
 };
-// ✅ Middleware חשובים לפי סדר
+
+// ✅ 1. CORS - ראשון!
 app.use(cors(corsOptions));
 
 // טיפול מפורש בבקשות OPTIONS
@@ -64,74 +54,48 @@ app.options('*', cors(corsOptions), (req, res) => {
   res.sendStatus(200);
 });
 
-app.use(cookieParser());
+// ✅ 2. Body parsers
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
-// ✅ אימות משתמש
-app.post('/api/authenticate', (req, res) => {
-  // console.log('🔐 Authentication attempt with body:', req.body); // לוג לאבחון
-  const { code } = req.body;
-
-  if (code === process.env.SECRET_CODE) {
-    const token = jwt.sign({ authenticated: true }, process.env.JWT_SECRET, { expiresIn: '12h' });
-    res.cookie('auth_token', token, {
-      httpOnly: true,
-      secure: process.env.NODE_ENV === 'production' ? true : false, // גמישות לסביבת פיתוח
-      sameSite: process.env.NODE_ENV === 'production' ? 'None' : 'Lax', // גמישות לסביבת פיתוח
-      maxAge: 12 * 60 * 60 * 1000,
-      path: '/'
-    });
-    // console.log('✅ Authentication successful, token set');
-    return res.json({ message: 'Authenticated', token });
-  } else {
-    // console.log('❌ Authentication failed: Invalid code');
-    return res.status(401).send('סיסמה שגויה, אנא נסה שנית');
-  }
+// ✅ 3. Debug middleware (אופציונלי - להסיר בproduction)
+app.use((req, res, next) => {
+  console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+  console.log(`📥 ${req.method} ${req.url}`);
+  console.log('Body:', req.body);
+  console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+  next();
 });
 
-app.post('/api/logout', (req, res) => {
-  res.clearCookie('auth_token', {
-    httpOnly: true,
-    secure: process.env.NODE_ENV === 'production' ? true : false,
-    sameSite: process.env.NODE_ENV === 'production' ? 'None' : 'Lax',
-    path: '/'
-  });
-  // console.log('✅ Logged out successfully');
-  res.json({ message: 'Logged out successfully' });
-});
+// ✅ 4. Auth routes - ללא הגנה! (login צריך להיות פתוח)
+app.use('/api/auth', authRoutes);
 
-app.get('/api/auth-status', authenticate, (req, res) => {
-  // console.log('🔍 Auth status checked for user:', req.user); // לוג לאבחון
-  res.json({ authenticated: true, user: req.user });
-});
+// ✅ 6. Protected routes - עם authenticate middleware
+// ❌ לא app.use(authenticate) על הכל! רק על routes ספציפיים:
+app.use('/api/users', protect, usersRoutes);
+app.use('/api/projects', protect, projectRoutes);
+app.use('/api/invoices', protect, invoiceRoutes);
+app.use('/api/orders', protect, orderRoutes);
+app.use('/api/notes', protect, notesRoutes);
+app.use('/api/upload', protect, uploadRoute);
+app.use('/api/suppliers', protect, suppliersRoutes);
 
-// ✅ שמירה על הגנת ראוטים
-app.use(authenticate);
-
-// ✅ ראוטים אחרים
-app.use("/api/projects", projectRoutes);
-app.use("/api/invoices", invoiceRoutes);
-app.use("/api/orders", orderRoutes);
-app.use('/api/notes', notesRoutes);
-app.use('/api/upload', uploadRoute);
-app.use('/api/suppliers', suppliersRoutes);
-
-// ✅ טיפול בשגיאות כללי
+// ✅ 7. טיפול בשגיאות כללי
 app.use((err, req, res, next) => {
-  console.error('❌ Server error:', err.stack); // לוג שגיאות מפורט
+  console.error('❌ Server error:', err.stack);
   res.status(500).json({ message: 'Internal Server Error', error: err.message });
 });
 
-// ✅ חיבור ל־MongoDB והרצת השרת
+// ✅ 8. חיבור ל־MongoDB והרצת השרת
 const connectDB = async () => {
   try {
     await mongoose.connect(process.env.MONGO_URL);
     console.log("✅ Connected to MongoDB...");
 
-    const port = process.env.PORT || 3000;
+    const port = process.env.PORT || 3000; // ✅ שונה ל-5000!
     app.listen(port, () => {
       console.log(`🚀 Server running on port ${port}`);
+      console.log(`🌐 API available at: http://localhost:${port}/api`);
     });
   } catch (err) {
     console.error("❌ Error connecting to MongoDB", err);

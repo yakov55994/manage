@@ -82,29 +82,23 @@ const projectSchema = new mongoose.Schema({
     invitingName: { type: String, required: true },
     createdAt: { type: Date, default: Date.now },
     Contact_person: { type: String, required: true },
-    supplierName: { type: String, default: "" },
+    // supplierName: { type: String, default: "" },
 
-    paymentStatus: {
-        type: String,
-        enum: ["שולם", "לא שולם", ""],
-        default: ""
-    },
+    // paymentStatus: {
+    //     type: String,
+    //     enum: ["שולם", "לא שולם", ""],
+    //     default: ""
+    // },
 
-    missingDocument: {
-        type: String,
-        enum: ["כן", "לא", ""],
-        default: ""
-    },
+    // missingDocument: {
+    //     type: String,
+    //     enum: ["כן", "לא", ""],
+    //     default: ""
+    // },
 
     invoices: [invoiceSubSchema],
     orders: [orderSubSchema],
 
-    supplierId: {
-        type: mongoose.Schema.Types.ObjectId,
-        ref: "Supplier",
-        required: false,
-        default: undefined,
-    },
 });
 
 // remainingBudget auto-init

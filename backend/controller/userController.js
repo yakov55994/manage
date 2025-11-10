@@ -1,181 +1,150 @@
-import userRoutes from '../routes/UserRoutes.js';
-import bcrypt from 'bcrypt'
-import User from '../models/userSchema.js/'
+import User from '../models/userSchema.js';
 
-const userControllers = {
-// קבלת כל המשתמשים
-getAllUsers : async (req, res) => {
+// קבלת כל המשתמשים (Admin only)
+export const getAllUsers = async (req, res) => {
   try {
-    const users = await User.find({}, '-password');
-    res.json(users);
+    const users = await User.find()
+      .select('-password')
+      .populate('permissions.projects', 'name')
+      .sort('-createdAt');
+
+    res.json({
+      success: true,
+      data: users
+    });
   } catch (error) {
-    console.error('Error fetching users:', error);
-    res.status(500).json({ message: 'שגיאה בקבלת המשתמשים' });
+    res.status(500).json({
+      success: false,
+      message: 'שגיאה בטעינת משתמשים'
+    });
   }
-},
+};
 
-// קבלת משתמש ספציפי
-getUserById : async (req, res) => {
+// יצירת משתמש חדש (Admin only)
+export const createUser = async (req, res) => {
   try {
-    const user = await User.findById(req.params.id, '-password');
-    if (!user) {
-      return res.status(404).json({ message: 'משתמש לא נמצא' });
-    }
-    res.json(user);
-  } catch (error) {
-    console.error('Error fetching user:', error);
-    res.status(500).json({ message: 'שגיאה בקבלת המשתמש' });
-  }
-},
+    const { username, password, email, role, permissions } = req.body;
 
-// יצירת משתמש חדש
-createUser : async (req, res) => {
-  try {
-    const { name, email, password, role, phone, permissions } = req.body;
-
-    if (!name || !email || !password || !role) {
-      return res.status(400).json({ 
-        message: 'שם, אימייל, סיסמה ותפקיד הם שדות חובה' 
+    // בדיקות
+    if (!username || !password) {
+      return res.status(400).json({
+        success: false,
+        message: 'שם משתמש וסיסמה הם שדות חובה'
       });
     }
 
-    const existingUser = await User.findOne({ email });
+    // בדוק אם שם המשתמש כבר קיים
+    const existingUser = await User.findOne({ username });
     if (existingUser) {
-      return res.status(400).json({ 
-        message: 'משתמש עם המייל הזה כבר קיים במערכת' 
+      return res.status(400).json({
+        success: false,
+        message: 'שם משתמש כבר קיים'
       });
     }
 
-    const saltRounds = 10;
-    const hashedPassword = await bcrypt.hash(password, saltRounds);
-
-    const newUser = new User({
-      name,
+    const user = await User.create({
+      username,
+      password,
       email,
-      password: hashedPassword,
-      role,
-      phone: phone || '',
-      permissions: permissions || {
-        projects: false,
-        invoices: false,
-        suppliers: false,
-        orders: false,
-        reports: false
-      },
-      status: 'פעיל',
-      createdAt: new Date(),
-      createdBy: req.user.id
+      role: role || 'user',
+      permissions: permissions || { projects: [], suppliers: [] }
     });
 
-    await newUser.save();
+    // החזר בלי הסיסמה
+    const userResponse = await User.findById(user._id)
+      .select('-password')
+      .populate('permissions.projects', 'name')
 
-    const userResponse = newUser.toObject();
-    delete userResponse.password;
+    res.status(201).json({
+      success: true,
+      data: userResponse
+    });
 
-    res.status(201).json(userResponse);
   } catch (error) {
-    console.error('Error creating user:', error);
-    res.status(500).json({ message: 'שגיאה ביצירת המשתמש' });
+    console.error('Create user error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'שגיאה ביצירת משתמש'
+    });
   }
-},
+};
 
-// עדכון משתמש
-updateUser : async (req, res) => {
+// עדכון משתמש (Admin only)
+export const updateUser = async (req, res) => {
   try {
-    const { name, email, password, role, phone, permissions } = req.body;
-    const userId = req.params.id;
+    const { id } = req.params;
+    const { username, email, role, permissions, isActive, password } = req.body;
 
-    const user = await User.findById(userId);
+    const user = await User.findById(id);
     if (!user) {
-      return res.status(404).json({ message: 'משתמש לא נמצא' });
-    }
-
-    if (!name || !email || !role) {
-      return res.status(400).json({ 
-        message: 'שם, אימייל ותפקיד הם שדות חובה' 
+      return res.status(404).json({
+        success: false,
+        message: 'משתמש לא נמצא'
       });
     }
 
-    const existingUser = await User.findOne({ email, _id: { $ne: userId } });
-    if (existingUser) {
-      return res.status(400).json({ 
-        message: 'משתמש עם המייל הזה כבר קיים במערכת' 
+    // עדכן שדות
+    if (username) user.username = username;
+    if (email !== undefined) user.email = email;
+    if (role) user.role = role;
+    if (permissions) user.permissions = permissions;
+    if (isActive !== undefined) user.isActive = isActive;
+    if (password) user.password = password; // יעבור hash אוטומטי
+
+    await user.save();
+
+    const updatedUser = await User.findById(id)
+      .select('-password')
+      .populate('permissions.projects', 'name')
+
+    res.json({
+      success: true,
+      data: updatedUser
+    });
+
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: 'שגיאה בעדכון משתמש'
+    });
+  }
+};
+
+// מחיקת משתמש (Admin only)
+export const deleteUser = async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    const user = await User.findById(id);
+    if (!user) {
+      return res.status(404).json({
+        success: false,
+        message: 'משתמש לא נמצא'
       });
     }
 
-    user.name = name;
-    user.email = email;
-    user.role = role;
-    user.phone = phone || '';
-    user.permissions = permissions || {
-      projects: false,
-      invoices: false,
-      suppliers: false,
-      orders: false,
-      reports: false
-    };
-
-    if (password) {
-      const saltRounds = 10;
-      user.password = await bcrypt.hash(password, saltRounds);
+    // מנע מחיקת admin אחרון
+    if (user.role === 'admin') {
+      const adminCount = await User.countDocuments({ role: 'admin' });
+      if (adminCount <= 1) {
+        return res.status(400).json({
+          success: false,
+          message: 'לא ניתן למחוק את ה-Admin האחרון'
+        });
+      }
     }
 
-    await user.save();
+    await User.findByIdAndDelete(id);
 
-    const userResponse = user.toObject();
-    delete userResponse.password;
+    res.json({
+      success: true,
+      message: 'משתמש נמחק בהצלחה'
+    });
 
-    res.json(userResponse);
   } catch (error) {
-    console.error('Error updating user:', error);
-    res.status(500).json({ message: 'שגיאה בעדכון המשתמש' });
+    res.status(500).json({
+      success: false,
+      message: 'שגיאה במחיקת משתמש'
+    });
   }
-},
-
-// מחיקת משתמש
-deleteUser : async (req, res) => {
-  try {
-    const user = await User.findById(req.params.id);
-    if (!user) {
-      return res.status(404).json({ message: 'משתמש לא נמצא' });
-    }
-
-    await user.deleteOne();
-    res.json({ message: 'המשתמש נמחק בהצלחה' });
-  } catch (error) {
-    console.error('Error deleting user:', error);
-    res.status(500).json({ message: 'שגיאה במחיקת המשתמש' });
-  }
-},
-
-// עדכון סטטוס משתמש
-updateUserStatus : async (req, res) => {
-  try {
-    const { status } = req.body;
-    const userId = req.params.id;
-
-    const user = await User.findById(userId);
-    if (!user) {
-      return res.status(404).json({ message: 'משתמש לא נמצא' });
-    }
-
-    if (!['פעיל', 'לא פעיל'].includes(status)) {
-      return res.status(400).json({ message: 'סטטוס לא תקין' });
-    }
-
-    user.status = status;
-    await user.save();
-
-    const userResponse = user.toObject();
-    delete userResponse.password;
-
-    res.json(userResponse);
-  } catch (error) {
-    console.error('Error updating user status:', error);
-    res.status(500).json({ message: 'שגיאה בעדכון סטטוס המשתמש' });
-  }
-},
-
-}
-export default userControllers  
-
+};

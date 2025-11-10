@@ -7,7 +7,7 @@ const projectController = {
 
   createProject: async (req, res) => {
   try {
-    const { name, invitingName, Contact_person, supplierId } = req.body; // ✅ הוסף supplierId
+    const { name, invitingName, Contact_person } = req.body; 
 
     const existingProject = await Project.findOne({ name });
     if (existingProject) {
@@ -18,16 +18,7 @@ const projectController = {
       name, 
       invitingName, 
       Contact_person,
-      supplierId // ✅ העבר את supplierId לסרוויס
     });
-
-    // ✅ עדכון הספק - הוספת הפרויקט אליו
-    if (supplierId) {
-      await Supplier.findByIdAndUpdate(supplierId, {
-        $push: { projects: newProject._id }
-      });
-    }
-
     res.status(201).json(newProject);
   } catch (error) {
     console.error('Error creating project:', error);

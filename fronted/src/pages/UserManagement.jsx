@@ -1,349 +1,384 @@
 import React, { useState, useEffect } from 'react';
-import { 
-  Users, Plus, Edit3, Trash2, Save, X, 
-  Eye, EyeOff, Shield, UserPlus, Settings,
-  CheckCircle, AlertCircle, User, Mail, Phone, Lock
-} from 'lucide-react';
-import api from '../api/api.jsx';
+import { useAuth } from '../context/AuthContext';
+import api from '../api/api';
 import { toast } from 'sonner';
+import { ClipLoader } from 'react-spinners';
+import {
+  Users,
+  Plus,
+  Edit2,
+  Trash2,
+  Shield,
+  User,
+  Lock,
+  Mail,
+  CheckCircle,
+  XCircle,
+  Eye,
+  EyeOff,
+  Save,
+  X,
+  FolderKanban,
+  Building2
+} from 'lucide-react';
 
 const UserManagement = () => {
+  const { user: currentUser, isAdmin } = useAuth();
   const [users, setUsers] = useState([]);
-  const [showForm, setShowForm] = useState(false);
-  const [editingUser, setEditingUser] = useState(null);
+  const [projects, setProjects] = useState([]);
+  const [suppliers, setSuppliers] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [showPassword, setShowPassword] = useState(false);
+  const [showModal, setShowModal] = useState(false);
+  const [editingUser, setEditingUser] = useState(null);
+  const [deleteModal, setDeleteModal] = useState({ show: false, user: null });
+
+  // Form state
   const [formData, setFormData] = useState({
-    name: '',
-    email: '',
+    username: '',
     password: '',
-    role: '',
-    phone: '',
+    email: '',
+    role: 'user',
+    isActive: true,
     permissions: {
-      projects: false,
-      invoices: false,
-      suppliers: false,
-      orders: false,
-      reports: false
+      projects: [],
+      suppliers: []
     }
   });
 
-  // טעינת משתמשים מהשרת
+  const [showPassword, setShowPassword] = useState(false);
+
   useEffect(() => {
-    fetchUsers();
+    if (!isAdmin) {
+      toast.error('אין לך הרשאה לעמוד זה', {
+        className: "sonner-toast error rtl"
+      });
+      return;
+    }
+    fetchData();
   }, []);
 
-  const fetchUsers = async () => {
+  const fetchData = async () => {
     try {
       setLoading(true);
-      const response = await api.get('/users');
-      setUsers(response.data);
+      const [usersRes, projectsRes, suppliersRes] = await Promise.all([
+        api.get('/users'),
+        api.get('/projects'),
+        api.get('/suppliers/getAllSuppliers')
+      ]);
+
+      setUsers(usersRes.data.data || []);
+      setProjects(projectsRes.data || []);
+      
+      if (suppliersRes.data && suppliersRes.data.success) {
+        setSuppliers(suppliersRes.data.data || []);
+      }
     } catch (error) {
-      console.error('Error fetching users:', error);
-      toast.error('שגיאה בטעינת המשתמשים', {
+      console.error('Error fetching data:', error);
+      toast.error('שגיאה בטעינת נתונים', {
         className: "sonner-toast error rtl"
       });
     } finally {
       setLoading(false);
     }
+  };
+
+  const openCreateModal = () => {
+    setEditingUser(null);
+    setFormData({
+      username: '',
+      password: '',
+      email: '',
+      role: 'user',
+      isActive: true,
+      permissions: {
+        projects: [],
+        suppliers: []
+      }
+    });
+    setShowModal(true);
+  };
+
+  const openEditModal = (user) => {
+    setEditingUser(user);
+    setFormData({
+      username: user.username,
+      password: '', // לא ממלאים סיסמה בעריכה
+      email: user.email || '',
+      role: user.role,
+      isActive: user.isActive,
+      permissions: {
+        projects: user.permissions?.projects?.map(p => p._id || p) || [],
+        suppliers: user.permissions?.suppliers?.map(s => s._id || s) || []
+      }
+    });
+    setShowModal(true);
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    
-    if (!formData.name || !formData.email || (!editingUser && !formData.password)) {
-      toast.error('אנא מלא את כל השדות הנדרשים', {
+
+    // ולידציות
+    if (!formData.username) {
+      toast.error('שם משתמש הוא שדה חובה', {
+        className: "sonner-toast error rtl"
+      });
+      return;
+    }
+
+    if (!editingUser && !formData.password) {
+      toast.error('סיסמה היא שדה חובה', {
         className: "sonner-toast error rtl"
       });
       return;
     }
 
     try {
-      setLoading(true);
-      
       if (editingUser) {
         // עדכון משתמש קיים
-        const response = await api.put(`/users/${editingUser._id}`, formData);
-        
-        setUsers(users.map(user => 
-          user.id === editingUser.id ? response.data : user
-        ));
-        
-        toast.success('המשתמש עודכן בהצלחה! ✨', {
+        const updateData = {
+          username: formData.username,
+          email: formData.email,
+          role: formData.role,
+          isActive: formData.isActive,
+          permissions: formData.permissions
+        };
+
+        // הוסף סיסמה רק אם הוזנה
+        if (formData.password) {
+          updateData.password = formData.password;
+        }
+
+        await api.put(`/users/${editingUser._id}`, updateData);
+        toast.success('המשתמש עודכן בהצלחה', {
           className: "sonner-toast success rtl"
         });
       } else {
         // יצירת משתמש חדש
-        const response = await api.post('/users', formData);
-        
-        setUsers([...users, response.data]);
-        
-        toast.success('המשתמש נוצר בהצלחה! 🎉', {
+        await api.post('/users', formData);
+        toast.success('המשתמש נוצר בהצלחה', {
           className: "sonner-toast success rtl"
         });
       }
-      
-      handleCloseForm();
+
+      setShowModal(false);
+      fetchData();
     } catch (error) {
       console.error('Error saving user:', error);
-      const errorMessage = error.response?.data?.message || 'שגיאה בשמירת המשתמש';
-      toast.error(errorMessage, {
+      toast.error(error.response?.data?.message || 'שגיאה בשמירת המשתמש', {
         className: "sonner-toast error rtl"
       });
-    } finally {
-      setLoading(false);
     }
   };
 
-  const handleEdit = (user) => {
-    setEditingUser(user);
-    setFormData({
-      name: user.name,
-      email: user.email,
-      password: '',
-      role: user.role,
-      phone: user.phone || '',
-      permissions: user.permissions || {
-        projects: false,
-        invoices: false,
-        suppliers: false,
-        orders: false,
-        reports: false
-      }
-    });
-    setShowForm(true);
-  };
-
-  const handleDelete = async (userId) => {
-    if (!window.confirm('האם אתה בטוח שברצונך למחוק את המשתמש?')) {
-      return;
-    }
-
+  const handleDelete = async () => {
     try {
-      await api.delete(`/users/${userId}`);
-      setUsers(users.filter(user => user.id !== userId));
-      
-      toast.success('המשתמש נמחק בהצלחה! 🗑️', {
+      await api.delete(`/users/${deleteModal.user._id}`);
+      toast.success('המשתמש נמחק בהצלחה', {
         className: "sonner-toast success rtl"
       });
+      setDeleteModal({ show: false, user: null });
+      fetchData();
     } catch (error) {
       console.error('Error deleting user:', error);
-      toast.error('שגיאה במחיקת המשתמש', {
+      toast.error(error.response?.data?.message || 'שגיאה במחיקת המשתמש', {
         className: "sonner-toast error rtl"
       });
     }
   };
 
-  const handleToggleStatus = async (userId, currentStatus) => {
-    const newStatus = currentStatus === 'פעיל' ? 'לא פעיל' : 'פעיל';
-    
-    try {
-      await api.patch(`/users/${userId}/status`, { status: newStatus });
+  const toggleProjectPermission = (projectId) => {
+    setFormData(prev => {
+      const projects = prev.permissions.projects.includes(projectId)
+        ? prev.permissions.projects.filter(id => id !== projectId)
+        : [...prev.permissions.projects, projectId];
       
-      setUsers(users.map(user => 
-        user.id === userId ? { ...user, status: newStatus } : user
-      ));
-      
-      toast.success(`סטטוס המשתמש שונה ל-${newStatus}`, {
-        className: "sonner-toast success rtl"
-      });
-    } catch (error) {
-      console.error('Error updating user status:', error);
-      toast.error('שגיאה בעדכון סטטוס המשתמש', {
-        className: "sonner-toast error rtl"
-      });
-    }
-  };
-
-  const handleCloseForm = () => {
-    setShowForm(false);
-    setEditingUser(null);
-    setFormData({
-      name: '',
-      email: '',
-      password: '',
-      role: '',
-      phone: '',
-      permissions: {
-        projects: false,
-        invoices: false,
-        suppliers: false,
-        orders: false,
-        reports: false
-      }
+      return {
+        ...prev,
+        permissions: {
+          ...prev.permissions,
+          projects
+        }
+      };
     });
-    setShowPassword(false);
   };
 
-  const handlePermissionChange = (permission) => {
+
+
+  const selectAllProjects = () => {
     setFormData(prev => ({
       ...prev,
       permissions: {
         ...prev.permissions,
-        [permission]: !prev.permissions[permission]
+        projects: projects.map(p => p._id)
       }
     }));
   };
 
-  const getPermissionCount = (permissions) => {
-    if (!permissions) return 0;
-    return Object.values(permissions).filter(Boolean).length;
+  const clearAllProjects = () => {
+    setFormData(prev => ({
+      ...prev,
+      permissions: {
+        ...prev.permissions,
+        projects: []
+      }
+    }));
   };
 
-  const getRoleBadgeColor = (role) => {
-    const colors = {
-      'מנהל': 'bg-red-100 text-red-800',
-      'רכש': 'bg-blue-100 text-blue-800',
-      'פרויקטים': 'bg-green-100 text-green-800',
-      'חשבות': 'bg-yellow-100 text-yellow-800',
-      'משאבי אנוש': 'bg-purple-100 text-purple-800'
-    };
-    return colors[role] || 'bg-gray-100 text-gray-800';
+  const selectAllSuppliers = () => {
+    setFormData(prev => ({
+      ...prev,
+      permissions: {
+        ...prev.permissions,
+        suppliers: suppliers.map(s => s._id)
+      }
+    }));
   };
 
-  if (loading && users.length === 0) {
+  const clearAllSuppliers = () => {
+    setFormData(prev => ({
+      ...prev,
+      permissions: {
+        ...prev.permissions,
+        suppliers: []
+      }
+    }));
+  };
+
+  if (!isAdmin) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 flex items-center justify-center">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-16 w-16 border-b-2 border-blue-600 mx-auto mb-4"></div>
-          <p className="text-xl font-semibold text-gray-700">טוען משתמשים...</p>
+      <div className="min-h-screen bg-gradient-to-br from-orange-50 via-amber-50 to-orange-100 flex items-center justify-center">
+        <div className="bg-white rounded-2xl shadow-xl p-8 text-center">
+          <Shield className="w-16 h-16 text-red-500 mx-auto mb-4" />
+          <h1 className="text-2xl font-bold text-gray-900 mb-2">אין הרשאה</h1>
+          <p className="text-gray-600">עמוד זה מיועד למנהלי מערכת בלבד</p>
         </div>
       </div>
     );
   }
 
+  if (loading) {
+    return (
+      <div className="flex flex-col justify-center items-center min-h-screen bg-gradient-to-br from-orange-50 via-amber-50 to-orange-100">
+        <div className="relative">
+          <div className="absolute inset-0 bg-orange-500/20 blur-3xl rounded-full"></div>
+          <ClipLoader size={80} color="#f97316" />
+        </div>
+        <h1 className="mt-6 font-bold text-2xl text-orange-900">טוען משתמשים...</h1>
+      </div>
+    );
+  }
+
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 p-6">
+    <div className="min-h-screen bg-gradient-to-br from-orange-50 via-amber-50 to-orange-100 py-8 px-4">
       <div className="max-w-7xl mx-auto">
         {/* Header */}
-        <div className="mb-8">
-          <div className="bg-white rounded-2xl shadow-xl p-8">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-4">
-                <div className="w-16 h-16 bg-gradient-to-r from-blue-500 to-indigo-600 rounded-2xl flex items-center justify-center">
-                  <Users className="w-8 h-8 text-white" />
-                </div>
-                <div>
-                  <h1 className="text-3xl font-bold text-gray-800">ניהול משתמשים</h1>
-                  <p className="text-gray-600 mt-1">נהל משתמשים והרשאות במערכת</p>
-                </div>
+        <div className="bg-white rounded-2xl shadow-xl p-6 mb-8">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <div className="bg-gradient-to-br from-orange-500 to-amber-500 p-3 rounded-xl shadow-lg">
+                <Users className="text-white w-8 h-8" />
               </div>
-              
-              <button
-                onClick={() => setShowForm(true)}
-                className="bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700 text-white px-6 py-3 rounded-xl font-semibold transition-all duration-200 transform hover:scale-105 shadow-lg flex items-center gap-2"
-              >
-                <UserPlus className="w-5 h-5" />
-                הוסף משתמש חדש
-              </button>
-            </div>
-            
-            {/* סטטיסטיקות */}
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mt-8">
-              <div className="bg-gradient-to-r from-blue-400 to-blue-600 rounded-xl p-6 text-white">
-                <div className="text-3xl font-bold">{users.length}</div>
-                <div className="text-blue-100">סה״כ משתמשים</div>
-              </div>
-              <div className="bg-gradient-to-r from-green-400 to-green-600 rounded-xl p-6 text-white">
-                <div className="text-3xl font-bold">{users.filter(u => u.status === 'פעיל').length}</div>
-                <div className="text-green-100">משתמשים פעילים</div>
-              </div>
-              <div className="bg-gradient-to-r from-purple-400 to-purple-600 rounded-xl p-6 text-white">
-                <div className="text-3xl font-bold">{users.filter(u => u.role === 'מנהל').length}</div>
-                <div className="text-purple-100">מנהלים</div>
+              <div>
+                <h1 className="text-4xl font-bold text-gray-900">ניהול משתמשים</h1>
+                <p className="text-gray-600 mt-1">הוספה, עריכה והגדרת הרשאות</p>
               </div>
             </div>
+
+            <button
+              onClick={openCreateModal}
+              className="flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-green-500 to-emerald-500 text-white rounded-xl hover:from-green-600 hover:to-emerald-600 transition-all duration-300 shadow-lg hover:shadow-xl font-medium"
+            >
+              <Plus className="w-5 h-5" />
+              <span>הוסף משתמש</span>
+            </button>
           </div>
         </div>
 
-        {/* רשימת משתמשים */}
+        {/* Users Table */}
         <div className="bg-white rounded-2xl shadow-xl overflow-hidden">
-          <div className="p-6 border-b border-gray-200">
-            <h2 className="text-xl font-semibold text-gray-800">רשימת המשתמשים</h2>
-          </div>
-          
           <div className="overflow-x-auto">
             <table className="w-full">
-              <thead className="bg-gray-50">
-                <tr>
-                  <th className="px-6 py-4 text-right text-sm font-semibold text-gray-700">משתמש</th>
-                  <th className="px-6 py-4 text-right text-sm font-semibold text-gray-700">תפקיד</th>
-                  <th className="px-6 py-4 text-right text-sm font-semibold text-gray-700">הרשאות</th>
-                  <th className="px-6 py-4 text-right text-sm font-semibold text-gray-700">סטטוס</th>
-                  <th className="px-6 py-4 text-right text-sm font-semibold text-gray-700">פעולות</th>
+              <thead>
+                <tr className="bg-gradient-to-r from-orange-500 to-amber-500 text-white">
+                  <th className="px-6 py-4 text-right font-bold">שם משתמש</th>
+                  <th className="px-6 py-4 text-right font-bold">אימייל</th>
+                  <th className="px-6 py-4 text-center font-bold">תפקיד</th>
+                  <th className="px-6 py-4 text-center font-bold">סטטוס</th>
+                  <th className="px-6 py-4 text-center font-bold">פרויקטים</th>
+                  <th className="px-6 py-4 text-center font-bold">ספקים</th>
+                  <th className="px-6 py-4 text-center font-bold">פעולות</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-gray-200">
-                {users.map((user) => (
-                  <tr key={user.id} className="hover:bg-gray-50 transition-colors">
-                    <td className="px-6 py-4">
-                      <div className="flex items-center gap-3">
-                        <div className="w-10 h-10 bg-gradient-to-r from-blue-400 to-indigo-500 rounded-full flex items-center justify-center">
-                          <User className="w-5 h-5 text-white" />
-                        </div>
-                        <div>
-                          <div className="font-semibold text-gray-800">{user.name}</div>
-                          <div className="text-sm text-gray-500 flex items-center gap-1">
-                            <Mail className="w-3 h-3" />
-                            {user.email}
-                          </div>
-                          {user.phone && (
-                            <div className="text-sm text-gray-500 flex items-center gap-1">
-                              <Phone className="w-3 h-3" />
-                              {user.phone}
-                            </div>
-                          )}
-                        </div>
+              <tbody>
+                {users.map((user, index) => (
+                  <tr
+                    key={user._id}
+                    className={`border-b border-gray-200 transition-all duration-200 ${
+                      index % 2 === 0 
+                        ? 'bg-gradient-to-r from-orange-50/30 to-amber-50/30 hover:from-orange-100 hover:to-amber-100' 
+                        : 'bg-white hover:bg-gradient-to-r hover:from-orange-50 hover:to-amber-50'
+                    }`}
+                  >
+                    <td className="px-6 py-4 font-semibold text-gray-900">
+                      <div className="flex items-center gap-2">
+                        <User className="w-4 h-4 text-orange-600" />
+                        {user.username}
+                        {user._id === currentUser?.id && (
+                          <span className="text-xs bg-blue-100 text-blue-700 px-2 py-1 rounded-full">אתה</span>
+                        )}
                       </div>
                     </td>
-                    
-                    <td className="px-6 py-4">
-                      <span className={`inline-flex items-center px-3 py-1 rounded-full text-sm font-medium ${getRoleBadgeColor(user.role)}`}>
-                        {user.role}
+                    <td className="px-6 py-4 text-gray-700">
+                      {user.email || <span className="text-gray-400 italic">לא הוזן</span>}
+                    </td>
+                    <td className="px-6 py-4 text-center">
+                      <span className={`px-3 py-1 rounded-full text-xs font-bold ${
+                        user.role === 'admin' 
+                          ? 'bg-purple-100 text-purple-700 border border-purple-200' 
+                          : 'bg-blue-100 text-blue-700 border border-blue-200'
+                      }`}>
+                        {user.role === 'admin' ? 'מנהל' : 'משתמש'}
                       </span>
                     </td>
-                    
-                    <td className="px-6 py-4">
-                      <div className="flex items-center gap-2">
-                        <Shield className="w-4 h-4 text-gray-400" />
-                        <span className="text-sm text-gray-600">
-                          {getPermissionCount(user.permissions)}/5 הרשאות
+                    <td className="px-6 py-4 text-center">
+                      {user.isActive ? (
+                        <span className="inline-flex items-center gap-1 px-3 py-1 rounded-full text-xs font-bold bg-green-100 text-green-700 border border-green-200">
+                          <CheckCircle className="w-3 h-3" />
+                          פעיל
                         </span>
-                      </div>
+                      ) : (
+                        <span className="inline-flex items-center gap-1 px-3 py-1 rounded-full text-xs font-bold bg-red-100 text-red-700 border border-red-200">
+                          <XCircle className="w-3 h-3" />
+                          חסום
+                        </span>
+                      )}
                     </td>
-                    
-                    <td className="px-6 py-4">
-                      <button
-                        onClick={() => handleToggleStatus(user.id, user.status)}
-                        className={`inline-flex items-center gap-2 px-3 py-1 rounded-full text-sm font-medium transition-colors ${
-                          user.status === 'פעיל' 
-                            ? 'bg-green-100 text-green-800 hover:bg-green-200' 
-                            : 'bg-red-100 text-red-800 hover:bg-red-200'
-                        }`}
-                      >
-                        <div className={`w-2 h-2 rounded-full ${
-                          user.status === 'פעיל' ? 'bg-green-500' : 'bg-red-500'
-                        }`}></div>
-                        {user.status}
-                      </button>
+                    <td className="px-6 py-4 text-center font-medium">
+                      {user.role === 'admin' ? (
+                        <span className="text-purple-600 font-bold">הכל</span>
+                      ) : user.permissions?.projects?.length > 0 ? (
+                        <span className="text-green-600 font-bold">{user.permissions.projects.length}</span>
+                      ) : (
+                        <span className="text-blue-600 font-bold">הכל</span>
+                      )}
                     </td>
-                    
+                  
                     <td className="px-6 py-4">
-                      <div className="flex items-center gap-2">
+                      <div className="flex justify-center gap-2">
                         <button
-                          onClick={() => handleEdit(user)}
-                          className="bg-blue-500 hover:bg-blue-600 text-white p-2 rounded-lg transition-colors"
-                          title="עריכה"
+                          onClick={() => openEditModal(user)}
+                          className="p-2 bg-orange-100 text-orange-600 hover:bg-orange-200 rounded-lg transition-all"
+                          title="ערוך משתמש"
                         >
-                          <Edit3 className="w-4 h-4" />
+                          <Edit2 className="w-5 h-5" />
                         </button>
-                        
                         <button
-                          onClick={() => handleDelete(user.id)}
-                          className="bg-red-500 hover:bg-red-600 text-white p-2 rounded-lg transition-colors"
-                          title="מחיקה"
+                          onClick={() => setDeleteModal({ show: true, user })}
+                          disabled={user._id === currentUser?.id}
+                          className="p-2 bg-red-100 text-red-600 hover:bg-red-200 rounded-lg transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                          title="מחק משתמש"
                         >
-                          <Trash2 className="w-4 h-4" />
+                          <Trash2 className="w-5 h-5" />
                         </button>
                       </div>
                     </td>
@@ -352,189 +387,294 @@ const UserManagement = () => {
               </tbody>
             </table>
           </div>
-          
-          {users.length === 0 && (
-            <div className="text-center py-12">
-              <Users className="w-16 h-16 text-gray-300 mx-auto mb-4" />
-              <h3 className="text-lg font-semibold text-gray-600 mb-2">אין משתמשים במערכת</h3>
-              <p className="text-gray-500">הוסף את המשתמש הראשון כדי להתחיל</p>
-            </div>
-          )}
         </div>
 
-        {/* Modal טופס */}
-        {showForm && (
-          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-            <div className="bg-white rounded-2xl shadow-2xl w-full max-w-2xl max-h-[90vh] overflow-y-auto">
-              <div className="p-6 border-b border-gray-200">
+        {/* Create/Edit Modal */}
+        {showModal && (
+          <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4 overflow-y-auto">
+            <div className="bg-white rounded-2xl shadow-2xl max-w-4xl w-full my-8 max-h-[90vh] overflow-y-auto">
+              {/* Modal Header */}
+              <div className="bg-gradient-to-r from-orange-500 to-amber-500 text-white p-6 rounded-t-2xl sticky top-0 z-10">
                 <div className="flex items-center justify-between">
-                  <h2 className="text-2xl font-bold text-gray-800">
-                    {editingUser ? 'עריכת משתמש' : 'הוספת משתמש חדש'}
-                  </h2>
+                  <div className="flex items-center gap-3">
+                    <div className="bg-white/20 p-2 rounded-lg">
+                      <User className="w-6 h-6" />
+                    </div>
+                    <h2 className="text-2xl font-bold">
+                      {editingUser ? 'עריכת משתמש' : 'יצירת משתמש חדש'}
+                    </h2>
+                  </div>
                   <button
-                    onClick={handleCloseForm}
-                    className="text-gray-400 hover:text-gray-600 transition-colors"
+                    onClick={() => setShowModal(false)}
+                    className="text-white hover:bg-white/20 rounded-lg p-2 transition-colors"
                   >
                     <X className="w-6 h-6" />
                   </button>
                 </div>
               </div>
-              
-              <form onSubmit={handleSubmit} className="p-6 space-y-6">
-                {/* פרטים אישיים */}
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div>
-                    <label className="block text-sm font-semibold text-gray-700 mb-2">
-                      שם מלא *
-                    </label>
-                    <div className="relative">
-                      <User className="absolute right-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
-                      <input
-                        type="text"
-                        value={formData.name}
-                        onChange={(e) => setFormData({...formData, name: e.target.value})}
-                        className="w-full pr-10 pl-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                        placeholder="הזן שם מלא"
-                        required
-                      />
-                    </div>
-                  </div>
-                  
-                  <div>
-                    <label className="block text-sm font-semibold text-gray-700 mb-2">
-                      אימייל *
-                    </label>
-                    <div className="relative">
-                      <Mail className="absolute right-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
-                      <input
-                        type="email"
-                        value={formData.email}
-                        onChange={(e) => setFormData({...formData, email: e.target.value})}
-                        className="w-full pr-10 pl-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                        placeholder="user@company.com"
-                        required
-                      />
-                    </div>
-                  </div>
-                </div>
 
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {/* Modal Body */}
+              <form onSubmit={handleSubmit} className="p-6 space-y-6">
+                {/* Basic Info */}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  {/* Username */}
                   <div>
-                    <label className="block text-sm font-semibold text-gray-700 mb-2">
-                      טלפון
+                    <label className="flex items-center gap-2 text-sm font-semibold text-gray-700 mb-2">
+                      <User className="w-4 h-4 text-orange-600" />
+                      שם משתמש
+                      <span className="text-red-500">*</span>
+                    </label>
+                    <input
+                      type="text"
+                      value={formData.username}
+                      onChange={(e) => setFormData({ ...formData, username: e.target.value })}
+                      className="w-full px-4 py-3 bg-gradient-to-br from-orange-50 to-amber-50 border-2 border-orange-200 rounded-xl font-medium focus:border-orange-400 focus:outline-none focus:ring-2 focus:ring-orange-200 transition-all"
+                      placeholder="הזן שם משתמש"
+                      required
+                    />
+                  </div>
+
+                  {/* Password */}
+                  <div>
+                    <label className="flex items-center gap-2 text-sm font-semibold text-gray-700 mb-2">
+                      <Lock className="w-4 h-4 text-blue-600" />
+                      סיסמה
+                      {!editingUser && <span className="text-red-500">*</span>}
+                      {editingUser && <span className="text-gray-500 text-xs">(השאר ריק אם לא משנה)</span>}
                     </label>
                     <div className="relative">
-                      <Phone className="absolute right-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
                       <input
-                        type="tel"
-                        value={formData.phone}
-                        onChange={(e) => setFormData({...formData, phone: e.target.value})}
-                        className="w-full pr-10 pl-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                        placeholder="050-1234567"
+                        type={showPassword ? "text" : "password"}
+                        value={formData.password}
+                        onChange={(e) => setFormData({ ...formData, password: e.target.value })}
+                        className="w-full px-4 py-3 bg-gradient-to-br from-blue-50 to-cyan-50 border-2 border-blue-200 rounded-xl font-medium focus:border-blue-400 focus:outline-none focus:ring-2 focus:ring-blue-200 transition-all"
+                        placeholder={editingUser ? "השאר ריק לשמירת סיסמה קיימת" : "הזן סיסמה"}
+                        required={!editingUser}
                       />
+                      <button
+                        type="button"
+                        onClick={() => setShowPassword(!showPassword)}
+                        className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-500 hover:text-blue-600"
+                      >
+                        {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
+                      </button>
                     </div>
                   </div>
-                  
+
+                  {/* Email */}
                   <div>
-                    <label className="block text-sm font-semibold text-gray-700 mb-2">
-                      תפקיד *
+                    <label className="flex items-center gap-2 text-sm font-semibold text-gray-700 mb-2">
+                      <Mail className="w-4 h-4 text-purple-600" />
+                      אימייל
+                    </label>
+                    <input
+                      type="email"
+                      value={formData.email}
+                      onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                      className="w-full px-4 py-3 bg-gradient-to-br from-purple-50 to-pink-50 border-2 border-purple-200 rounded-xl font-medium focus:border-purple-400 focus:outline-none focus:ring-2 focus:ring-purple-200 transition-all"
+                      placeholder="הזן אימייל (אופציונלי)"
+                    />
+                  </div>
+
+                  {/* Role */}
+                  <div>
+                    <label className="flex items-center gap-2 text-sm font-semibold text-gray-700 mb-2">
+                      <Shield className="w-4 h-4 text-indigo-600" />
+                      תפקיד
                     </label>
                     <select
                       value={formData.role}
-                      onChange={(e) => setFormData({...formData, role: e.target.value})}
-                      className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                      required
+                      onChange={(e) => setFormData({ ...formData, role: e.target.value })}
+                      className="w-full px-4 py-3 bg-gradient-to-br from-indigo-50 to-blue-50 border-2 border-indigo-200 rounded-xl font-medium focus:border-indigo-400 focus:outline-none focus:ring-2 focus:ring-indigo-200 transition-all cursor-pointer"
                     >
-                      <option value="">בחר תפקיד</option>
-                      <option value="מנהל">מנהל</option>
-                      <option value="רכש">רכש</option>
-                      <option value="פרויקטים">פרויקטים</option>
-                      <option value="חשבות">חשבות</option>
-                      <option value="משאבי אנוש">משאבי אנוש</option>
+                      <option value="user">משתמש</option>
+                      <option value="admin">מנהל</option>
                     </select>
                   </div>
                 </div>
 
-                {/* סיסמה */}
-                <div>
-                  <label className="block text-sm font-semibold text-gray-700 mb-2">
-                    סיסמה {editingUser ? '(השאר ריק אם לא רוצה לשנות)' : '*'}
+                {/* Active Status */}
+                <div className="flex items-center gap-3 p-4 bg-gradient-to-br from-gray-50 to-gray-100 rounded-xl border-2 border-gray-200">
+                  <input
+                    type="checkbox"
+                    id="isActive"
+                    checked={formData.isActive}
+                    onChange={(e) => setFormData({ ...formData, isActive: e.target.checked })}
+                    className="w-5 h-5 text-green-600 rounded focus:ring-2 focus:ring-green-500"
+                  />
+                  <label htmlFor="isActive" className="text-sm font-semibold text-gray-700 cursor-pointer">
+                    משתמש פעיל (ביטול סימון חוסם את המשתמש)
                   </label>
-                  <div className="relative">
-                    <Lock className="absolute right-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
-                    <input
-                      type={showPassword ? 'text' : 'password'}
-                      value={formData.password}
-                      onChange={(e) => setFormData({...formData, password: e.target.value})}
-                      className="w-full pr-10 pl-10 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                      placeholder="הזן סיסמה"
-                      required={!editingUser}
-                    />
-                    <button
-                      type="button"
-                      onClick={() => setShowPassword(!showPassword)}
-                      className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600"
-                    >
-                      {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
-                    </button>
-                  </div>
                 </div>
 
-                {/* הרשאות */}
-                <div>
-                  <label className="block text-sm font-semibold text-gray-700 mb-4">הרשאות במערכת</label>
-                  <div className="bg-gray-50 rounded-lg p-4">
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                      {[
-                        { key: 'projects', label: 'פרויקטים', icon: '📁' },
-                        { key: 'invoices', label: 'חשבוניות', icon: '📄' },
-                        { key: 'suppliers', label: 'ספקים', icon: '🏢' },
-                        { key: 'orders', label: 'הזמנות', icon: '📦' },
-                        { key: 'reports', label: 'דוחות', icon: '📊' }
-                      ].map(permission => (
-                        <label key={permission.key} className="flex items-center gap-3 p-3 bg-white rounded-lg cursor-pointer hover:bg-blue-50 transition-colors">
-                          <input
-                            type="checkbox"
-                            checked={formData.permissions[permission.key]}
-                            onChange={() => handlePermissionChange(permission.key)}
-                            className="w-5 h-5 text-blue-600 rounded focus:ring-blue-500"
-                          />
-                          <span className="text-lg">{permission.icon}</span>
-                          <span className="font-medium text-gray-700">{permission.label}</span>
+                {/* Permissions Section - Only for non-admin users */}
+                {formData.role !== 'admin' && (
+                  <div className="space-y-6">
+                    <div className="bg-gradient-to-br from-amber-50 to-orange-50 p-4 rounded-xl border-2 border-amber-200">
+                      <p className="text-sm text-gray-700 font-medium flex items-start gap-2">
+                        <span className="text-amber-600 text-xl">💡</span>
+                        <span>
+                          <strong>שים לב:</strong> אם לא תבחר שום פרויקט/ספק, המשתמש יוכל לראות הכל.
+                          בחר פרויקטים/ספקים ספציפיים כדי להגביל גישה.
+                        </span>
+                      </p>
+                    </div>
+
+                    {/* Projects Permissions */}
+                    <div>
+                      <div className="flex items-center justify-between mb-4">
+                        <label className="flex items-center gap-2 text-lg font-bold text-gray-900">
+                          <FolderKanban className="w-5 h-5 text-blue-600" />
+                          הרשאות פרויקטים
+                          <span className="text-sm font-normal text-gray-600">
+                            ({formData.permissions.projects.length} נבחרו)
+                          </span>
                         </label>
-                      ))}
+                        <div className="flex gap-2">
+                          <button
+                            type="button"
+                            onClick={selectAllProjects}
+                            className="px-3 py-1 bg-green-100 text-green-700 rounded-lg hover:bg-green-200 transition-colors text-sm font-medium"
+                          >
+                            בחר הכל
+                          </button>
+                          <button
+                            type="button"
+                            onClick={clearAllProjects}
+                            className="px-3 py-1 bg-red-100 text-red-700 rounded-lg hover:bg-red-200 transition-colors text-sm font-medium"
+                          >
+                            נקה הכל
+                          </button>
+                        </div>
+                      </div>
+
+                      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3 max-h-60 overflow-y-auto p-2 bg-gray-50 rounded-xl border-2 border-gray-200">
+                        {projects.length > 0 ? (
+                          projects.map((project) => (
+                            <label
+                              key={project._id}
+                              className={`flex items-center gap-3 p-3 rounded-lg border-2 cursor-pointer transition-all ${
+                                formData.permissions.projects.includes(project._id)
+                                  ? 'bg-blue-100 border-blue-400'
+                                  : 'bg-white border-gray-200 hover:border-blue-300'
+                              }`}
+                            >
+                              <input
+                                type="checkbox"
+                                checked={formData.permissions.projects.includes(project._id)}
+                                onChange={() => toggleProjectPermission(project._id)}
+                                className="w-4 h-4 text-blue-600 rounded focus:ring-2 focus:ring-blue-500"
+                              />
+                              <span className="text-sm font-medium text-gray-900">{project.name}</span>
+                            </label>
+                          ))
+                        ) : (
+                          <p className="col-span-3 text-center text-gray-500 py-4">אין פרויקטים במערכת</p>
+                        )}
+                      </div>
+                    </div>
+
+                    {/* Suppliers Permissions */}
+                    <div>
+                      <div className="flex items-center justify-between mb-4">
+                 
+                        <div className="flex gap-2">
+                          <button
+                            type="button"
+                            onClick={selectAllSuppliers}
+                            className="px-3 py-1 bg-green-100 text-green-700 rounded-lg hover:bg-green-200 transition-colors text-sm font-medium"
+                          >
+                            בחר הכל
+                          </button>
+                          <button
+                            type="button"
+                            onClick={clearAllSuppliers}
+                            className="px-3 py-1 bg-red-100 text-red-700 rounded-lg hover:bg-red-200 transition-colors text-sm font-medium"
+                          >
+                            נקה הכל
+                          </button>
+                        </div>
+                      </div>
+
+                      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3 max-h-60 overflow-y-auto p-2 bg-gray-50 rounded-xl border-2 border-gray-200">
+             
+                      </div>
                     </div>
                   </div>
-                </div>
+                )}
 
-                {/* כפתורים */}
-                <div className="flex justify-end gap-4 pt-4 border-t border-gray-200">
+                {/* Admin Note */}
+                {formData.role === 'admin' && (
+                  <div className="bg-gradient-to-br from-purple-50 to-pink-50 p-4 rounded-xl border-2 border-purple-200">
+                    <p className="text-sm text-purple-900 font-medium flex items-center gap-2">
+                      <Shield className="w-5 h-5 text-purple-600" />
+                      <span>מנהלים מקבלים גישה מלאה לכל הפרויקטים והספקים אוטומטית</span>
+                    </p>
+                  </div>
+                )}
+
+                {/* Action Buttons */}
+                <div className="flex gap-4 pt-4 border-t-2 border-gray-200">
+                  <button
+                    type="submit"
+                    className="flex-1 flex items-center justify-center gap-2 px-6 py-3 bg-gradient-to-r from-orange-500 to-amber-500 text-white rounded-xl hover:from-orange-600 hover:to-amber-600 transition-all duration-300 shadow-lg hover:shadow-xl font-bold"
+                  >
+                    <Save className="w-5 h-5" />
+                    <span>{editingUser ? 'עדכן משתמש' : 'צור משתמש'}</span>
+                  </button>
+
                   <button
                     type="button"
-                    onClick={handleCloseForm}
-                    className="px-6 py-3 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors"
+                    onClick={() => setShowModal(false)}
+                    className="px-6 py-3 bg-gray-200 text-gray-700 rounded-xl hover:bg-gray-300 transition-all duration-300 font-bold"
                   >
                     ביטול
                   </button>
-                  <button
-                    type="submit"
-                    disabled={loading}
-                    className="bg-gradient-to-r from-blue-500 to-indigo-600 hover:from-blue-600 hover:to-indigo-700 text-white px-6 py-3 rounded-lg font-semibold transition-all duration-200 flex items-center gap-2 disabled:opacity-50"
-                  >
-                    {loading ? (
-                      <>
-                        <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
-                        שומר...
-                      </>
-                    ) : (
-                      <>
-                        <Save className="w-4 h-4" />
-                        {editingUser ? 'עדכן משתמש' : 'צור משתמש'}
-                      </>
-                    )}
-                  </button>
                 </div>
               </form>
+            </div>
+          </div>
+        )}
+
+        {/* Delete Confirmation Modal */}
+        {deleteModal.show && (
+          <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+            <div className="bg-white rounded-2xl shadow-2xl max-w-md w-full">
+              <div className="bg-gradient-to-r from-red-500 to-rose-500 text-white p-6 rounded-t-2xl">
+                <div className="flex items-center gap-3">
+                  <div className="bg-white/20 p-2 rounded-lg">
+                    <Trash2 className="w-6 h-6" />
+                  </div>
+                  <h2 className="text-2xl font-bold">אישור מחיקה</h2>
+                </div>
+              </div>
+
+              <div className="p-6">
+                <p className="text-lg text-gray-700 text-center mb-2">
+                  האם אתה בטוח שברצונך למחוק את המשתמש
+                </p>
+                <p className="text-xl font-bold text-center text-gray-900 mb-4">
+                  {deleteModal.user?.username}?
+                </p>
+                <p className="text-red-600 text-center font-semibold mb-6">
+                  פעולה זו אינה ניתנת לביטול!
+                </p>
+
+                <div className="flex gap-3">
+                  <button
+                    onClick={handleDelete}
+                    className="flex-1 px-6 py-3 bg-gradient-to-r from-red-500 to-rose-500 text-white rounded-xl hover:from-red-600 hover:to-rose-600 transition-all duration-300 shadow-lg hover:shadow-xl font-bold"
+                  >
+                    מחק משתמש
+                  </button>
+                  <button
+                    onClick={() => setDeleteModal({ show: false, user: null })}
+                    className="flex-1 px-6 py-3 bg-gray-200 text-gray-700 rounded-xl hover:bg-gray-300 transition-all duration-300 font-bold"
+                  >
+                    ביטול
+                  </button>
+                </div>
+              </div>
             </div>
           </div>
         )}

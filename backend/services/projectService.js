@@ -10,7 +10,6 @@ const projectService = {
     const cleanedData = {
       ...data,
       name: data.name.trim(), // ניקוי רווחים בזמן היצירה
-      supplierId: data.supplierId || null // ✅ הוספת supplierId
     };
     const newProject = new Project(cleanedData);
     await newProject.save();

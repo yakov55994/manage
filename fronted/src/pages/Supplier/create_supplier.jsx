@@ -154,7 +154,7 @@ const CreateSupplier = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-orange-50 via-amber-50 to-yellow-50 relative overflow-hidden py-12">
+    <div className="min-h-screen bg-gradient-to-br from-orange-50 via-amber-50 to-yellow-50 relative overflow-visible py-12">
       {/* Animated Background Elements */}
       <div className="absolute inset-0 overflow-hidden pointer-events-none">
         <div className="absolute top-0 left-1/4 w-96 h-96 bg-gradient-to-br from-orange-400/20 to-amber-400/20 rounded-full blur-3xl animate-pulse"></div>
@@ -196,7 +196,7 @@ const CreateSupplier = () => {
             <div className="relative">
               <div className="absolute -inset-2 bg-gradient-to-r from-orange-500 via-amber-500 to-yellow-500 rounded-3xl opacity-10 blur-xl"></div>
 
-              <div className="relative bg-white/90 backdrop-blur-xl rounded-3xl shadow-xl shadow-orange-500/10 border border-white/50 overflow-hidden">
+              <div className="relative bg-white/90 backdrop-blur-xl rounded-3xl shadow-xl border border-white/50 overflow-visible">
                 {/* Section Header */}
                 <div className="bg-gradient-to-r from-orange-500 via-amber-500 to-yellow-500 p-1">
                   <div className="bg-white/95 backdrop-blur-xl p-4">
@@ -421,7 +421,8 @@ const CreateSupplier = () => {
                                   borderRadius: "12px",
                                   "&:focus-within": {
                                     borderColor: "#f59e0b",
-                                    boxShadow: "0 0 0 4px rgba(245, 158, 11, 0.2)",
+                                    boxShadow:
+                                      "0 0 0 4px rgba(245, 158, 11, 0.2)",
                                   },
                                 }),
                                 menu: (provided) => ({
@@ -439,12 +440,18 @@ const CreateSupplier = () => {
                                     : "white",
                                   color: "#334155",
                                 }),
+                                menuPortal: (base) => ({
+                                  ...base,
+                                  zIndex: 9999,
+                                }),
                               }}
                               noOptionsMessage={({ inputValue }) =>
                                 inputValue
                                   ? `לא נמצאו סניפים עבור "${inputValue}"`
                                   : "לא נמצאו סניפים"
                               }
+                              menuPortalTarget={document.body}
+                              menuPosition="fixed"
                             />
                           </div>
                         </div>

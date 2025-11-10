@@ -1,25 +1,20 @@
-import express from 'express'
-import userController from '../controller/userController.js';
-import { authenticate, requireAdmin  } from '../middleware/auth.js';
+import express from 'express';
+import {
+  getAllUsers,
+  createUser,
+  updateUser,
+  deleteUser
+} from '../controller/userController.js';
+import { protect, requireAdmin } from '../middleware/auth.js';
 
 const router = express.Router();
 
-// קבלת כל המשתמשים
-router.get('/', authenticate, requireAdmin, userController.getAllUsers);
+// כל הנתיבים דורשים admin
+router.use(protect, requireAdmin);
 
-// קבלת משתמש ספציפי
-router.get('/:id', authenticate, requireAdmin, userController.getUserById);
+router.get('/', getAllUsers);
+router.post('/', createUser);
+router.put('/:id', updateUser);
+router.delete('/:id', deleteUser);
 
-// יצירת משתמש חדש
-router.post('/', userController.createUser);
-
-// עדכון משתמש
-router.put('/:id', userController.updateUser);
-
-// מחיקת משתמש
-router.delete('/:id', authenticate, requireAdmin, userController.deleteUser);
-
-// עדכון סטטוס משתמש
-router.patch('/:id/status', authenticate, requireAdmin, userController.updateUserStatus);
-
-export default router
+export default router;
