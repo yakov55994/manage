@@ -4,7 +4,7 @@ import dotenv from 'dotenv';
 import cors from 'cors';
 import jwt from 'jsonwebtoken';
 import { protect } from './middleware/auth.js';
-import authRoutes from './routes/auth.js';
+import authRoutes from './routes/Auth.js';
 import usersRoutes from './routes/UserRoutes.js';
 
 import projectRoutes from './routes/projectRoutes.js';
