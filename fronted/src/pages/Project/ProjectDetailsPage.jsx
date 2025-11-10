@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import api from "../../api/api";
 import { ClipLoader } from "react-spinners";
@@ -76,6 +76,59 @@ const ProjectDetailsPage = () => {
 
     fetchData();
   }, []);
+  const INTERIM_ALIASES = new Set([
+  'ח. עסקה',
+  'ה. עבודה',
+  'ד. תשלום',
+]);
+
+const FINAL_ALIASES = new Set([
+  'חשבונית מס/קבלה',
+  'חשבונית מס / קבלה',
+  'חשבונית מס-קבלה',
+  'חשבונית מס קבלה',
+]);
+
+const normalizeType = (t) => {
+  if (!t) return '';
+  // ממיר לאותיות רגילות, מוחק רווחים כפולים, ומסיר רווחים סביב "/" 
+  return String(t)
+    .replace(/\s+/g, ' ')
+    .replace(/\s*\/\s*/g, '/')
+    .trim();
+};
+
+const extractDocTypes = (invoice) => {
+  // תומך גם ב-invoice.documents וגם ב-invoice.documentType
+  let raw = invoice?.documents ?? invoice?.documentType ?? [];
+  // אם זה סטרינג בודד – נהפוך למערך
+  if (typeof raw === 'string') raw = [raw];
+  // אם זה לא מערך – נחזיר ריק
+  if (!Array.isArray(raw)) return [];
+  // נחלץ מכל איבר את המחרוזת (אם אובייקט – ניקח d.type, אם כבר סטרינג – נשאיר)
+  return raw.map(d => normalizeType(typeof d === 'object' ? d?.type : d)).filter(Boolean);
+};
+
+const getActionState = (invoice) => {
+  const types = extractDocTypes(invoice);
+
+  const hasFinal = types.some(t => FINAL_ALIASES.has(t));
+  const hasInterim = types.some(t => INTERIM_ALIASES.has(t));
+
+  const status = hasFinal ? 'הושלם' : 'חסר';
+
+  // תווית: אם הושלם – נציג את הצורה הקנונית של ה-final, אחרת את הביניים הראשון אם יש
+  const label = hasFinal
+    ? 'חשבונית מס/קבלה'
+    : (types.find(t => INTERIM_ALIASES.has(t)) || '');
+
+  const color = hasFinal
+    ? 'bg-emerald-100 text-emerald-700 border-emerald-200 '
+    : 'bg-amber-100 text-amber-700 border-amber-200 ';
+
+  return { status, label, color };
+};
+
 
   const filteredOrders = orders
     .filter((order) => order.projectId === project?._id)
@@ -168,6 +221,11 @@ const ProjectDetailsPage = () => {
     navigate(`/update-project/${id}`);
   };
 
+  const handleAddInvoiceForProject = () => {
+  if (!project?._id) return;
+  navigate(`/create-invoice?projectId=${project._id}`);
+};
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-orange-50 via-amber-50 to-yellow-50 relative overflow-hidden py-12">
       {/* Animated Background */}
@@ -214,6 +272,14 @@ const ProjectDetailsPage = () => {
                   <Edit2 className="w-4 h-4" />
                   <span>עריכת פרויקט</span>
                 </button>
+             <button
+  onClick={handleAddInvoiceForProject}
+  className="flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-orange-600 to-amber-600 text-white font-bold rounded-xl hover:from-orange-700 hover:to-amber-700 transition-all shadow-xl shadow-orange-500/30"
+>
+  <Edit2 className="w-4 h-4" />
+  <span>הוספת חשבונית</span>
+</button>
+
                 <button
                   onClick={() => setConfirmOpen(true)}
                   className="flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-red-500 to-rose-500 text-white font-bold rounded-xl hover:from-red-600 hover:to-rose-600 transition-all shadow-xl shadow-red-500/30"
@@ -430,7 +496,7 @@ const ProjectDetailsPage = () => {
                           סכום
                         </th>
                         <th className="px-4 py-3 text-xs font-bold text-blue-900">
-                          סטטוס
+                          סטטוס 
                         </th>
                       </tr>
                     </thead>
@@ -500,38 +566,68 @@ const ProjectDetailsPage = () => {
                   <table className="min-w-full text-right">
                     <thead className="bg-gradient-to-r from-emerald-100 to-teal-100">
                       <tr>
-                        <th className="px-4 py-3 text-xs font-bold text-emerald-900">
+                        <th className="px-4 py-3 text-xs font-bold text-emerald-900 text-center">
                           מספר חשבונית
                         </th>
-                        <th className="px-4 py-3 text-xs font-bold text-emerald-900">
+                        <th className="px-4 py-3 text-xs font-bold text-emerald-900 text-center ">
                           פרויקט
                         </th>
-                        <th className="px-4 py-3 text-xs font-bold text-emerald-900">
+                        <th className="px-4 py-3 text-xs font-bold text-emerald-900 text-center">
                           סכום
                         </th>
-                        <th className="px-4 py-3 text-xs font-bold text-emerald-900">
+                       
+                        <th className="px-12 py-3 text-xs font-bold text-emerald-900 text-center">
                           סטטוס
+                        </th>
+                        <th className="px-12 py-3 text-xs font-bold text-emerald-900 text-center">
+                          שם הספק
+                        </th>
+                        <th className="px-12 py-3 text-xs font-bold text-emerald-900 text-center">
+                          מצב תשלום
+                        </th>
+                        <th className="px-12 py-3 text-xs font-bold text-emerald-900 text-center">
+                          חוסר מסמך
                         </th>
                       </tr>
                     </thead>
                     <tbody className="bg-white">
                       {filteredInvoices.map((invoice) => (
                         <tr
-                          key={invoice._id}
-                          onClick={() => moveToInvoiceDetails(invoice)}
-                          className="cursor-pointer border-t border-emerald-100 hover:bg-emerald-50/50 transition-colors"
+                        key={invoice._id}
+                        onClick={() => moveToInvoiceDetails(invoice)}
+                        className="cursor-pointer border-t border-emerald-100 hover:bg-emerald-50/50 transition-colors"
                         >
-                          <td className="px-4 py-3 text-sm font-bold">
+                          {console.log(invoice)}
+                          <td className="px-4 py-3 text-sm font-bold text-center">
                             {invoice.invoiceNumber}
                           </td>
-                          <td className="px-4 py-3 text-sm font-bold">
+                          <td className="px-4 py-3 text-sm font-bold text-center">
                             {invoice.projectName}
                           </td>
-                          <td className="px-4 py-3">
+                          <td className="px-4 py-3 text-center">
                             {formatCurrencyWithAlert(invoice.sum)}
                           </td>
-                          <td className="px-4 py-3 text-sm font-bold">
+                          <td className="px-4 py-3 text-sm font-bold text-center">
                             {invoice.status}
+                          </td>
+                        
+                            <td className="px-4 py-3 text-sm font-bold text-center">
+                            {invoice.supplierId?.name}
+                          </td>
+                            <td className="px-4 py-3 text-sm font-bold text-center">
+                            {invoice.paid === "כן" ? "שולם" : "לא שולם"}
+                          </td>
+                            <td className="px-8 py-3 text-sm font-bold text-center">
+                            {(() => {
+    const a = getActionState(invoice);
+    return (
+      <span className={`text-center gap-2 px-3 py-1 rounded-full text-xs font-bold border ${a.color}`}>
+        <span>{a.status} | </span>
+        <span className="opacity-70"></span>
+        <span>{a.label}</span>
+      </span>
+    );
+  })()}
                           </td>
                         </tr>
                       ))}

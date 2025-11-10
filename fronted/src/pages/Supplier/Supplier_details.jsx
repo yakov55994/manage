@@ -74,6 +74,35 @@ const SupplierDetailsPage = () => {
     })();
   }, [id]);
 
+  const INTERIM_TYPES = new Set(['ח. עסקה', 'ה. עבודה', 'ד. תשלום']);
+const FINAL_TYPES   = new Set([
+  'חשבונית מס/קבלה',
+  'חשבונית מס / קבלה', // עם רווחים – נתמוך גם בזה
+  'חשבונית מס-קבלה',
+  'חשבונית מס קבלה',
+]);
+
+const normalizeType = (t) =>
+  String(t || '')
+    .replace(/\s+/g, ' ')     // רווחים כפולים
+    .replace(/\s*\/\s*/g, '/')// רווחים סביב "/"
+    .trim();
+
+const getActionState = (invoice) => {
+  const t   = normalizeType(invoice?.documentType);
+  const okF = FINAL_TYPES.has(t);
+  const okI = INTERIM_TYPES.has(t);
+
+  const status = okF ? 'הושלם' : 'חסר';
+  const label  = okF ? 'חשבונית מס/קבלה' : (okI ? t : '');
+  const color  = okF
+    ? 'bg-emerald-100 text-emerald-700 border-emerald-200'
+    : 'bg-amber-100 text-amber-700 border-amber-200';
+
+  return { status, label, color };
+};
+
+
   if (loading) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-orange-50 via-amber-50 to-yellow-50 flex flex-col justify-center items-center">
@@ -489,6 +518,9 @@ const SupplierDetailsPage = () => {
                             סכום
                           </th>
                           <th className="px-4 py-3 text-xs font-bold text-purple-900">
+                            הוגש ?
+                          </th>
+                          <th className="px-4 py-3 text-xs font-bold text-purple-900">
                             סטטוס
                           </th>
                           <th className="px-4 py-3 text-xs font-bold text-purple-900">
@@ -512,74 +544,84 @@ const SupplierDetailsPage = () => {
                         </tr>
                       </thead>
                       <tbody className="bg-white">
-                        {invoices.map((inv, i) => (
-                          <tr
-                            key={inv._id || i}
-                            className="border-t border-purple-100 hover:bg-purple-50/50 transition-colors"
-                            // onClick={}
-                          >
-                            <td className="px-4 py-3 text-sm">{i + 1}</td>
-                            <td className="px-4 py-3 text-sm">
-                              {inv.projectName || "—"}
-                              {inv.projectId && (
-                                <button
-                                  onClick={() =>
-                                    navigate(`/projects/${inv.projectId}`)
-                                  }
-                                  className="mr-2 text-purple-600 hover:text-purple-800 inline-flex items-center gap-1"
-                                >
-                                  <ExternalLink className="w-3 h-3" />
-                                </button>
-                              )}
-                            </td>
-                            <td className="px-4 py-3 text-sm font-bold">
-                              {inv.invoiceNumber || "—"}
-                            </td>
-                            <td className="px-4 py-3 text-sm font-bold">
-                              {formatILS(inv.sum)}
-                            </td>
-                            <td className="px-4 py-3 text-sm">
-                              {inv.status || "—"}
-                            </td>
-                            <td className="px-4 py-3">{paidBadge(inv.paid)}</td>
-                            <td className="px-4 py-3 text-sm">
-                              {pmHebrew(inv.paymentMethod)}
-                            </td>
-                            <td className="px-4 py-3 text-sm">
-                              {formatDate(inv.createdAt)}
-                            </td>
-                            <td className="px-4 py-3 text-sm">
-                              {formatDate(inv.paymentDate)}
-                            </td>
-                            <td className="px-4 py-3 text-sm">
-                              {Array.isArray(inv.files) ? inv.files.length : 0}
-                            </td>
-                            <td className="px-4 py-3">
-                              <div className="flex gap-2">
-                                {"_id" in inv && (
-                                  <button
-                                    className="px-3 py-1 text-xs rounded-lg bg-purple-100 text-purple-700 hover:bg-purple-200 font-bold transition-all"
-                                    onClick={() =>
-                                      navigate(`/invoices/${inv._id}`)
-                                    }
-                                  >
-                                    פרטים
-                                  </button>
-                                )}
-                                {"_id" in inv && (
-                                  <button
-                                    className="px-3 py-1 text-xs rounded-lg bg-purple-700 text-white hover:bg-purple-800 font-bold transition-all"
-                                    onClick={() =>
-                                      navigate(`/update-invoice/${inv._id}`)
-                                    }
-                                  >
-                                    עריכה
-                                  </button>
-                                )}
-                              </div>
-                            </td>
-                          </tr>
-                        ))}
+                       {invoices.map((inv, i) => (
+  <tr
+    key={inv._id || i}
+    role="button"                // נגישות
+    tabIndex={0}                 // פוקוס עם מקלדת
+    aria-label={`פרטי חשבונית ${inv.invoiceNumber || ''}`}
+    className="group border-t border-purple-100 hover:bg-purple-50/50 transition-colors cursor-pointer"
+    onClick={() => navigate(`/invoices/${inv._id}`)}
+    onKeyDown={(e) => {
+      if (e.key === 'Enter' || e.key === ' ') {
+        e.preventDefault();
+        navigate(`/invoices/${inv._id}`);
+      }
+    }}
+  >
+    <td className="px-4 py-3 text-sm">{i + 1}</td>
+
+    <td className="px-4 py-3 text-sm">
+      {inv.projectName || "—"}
+      {inv.projectId && (
+        <button
+          type="button"
+          onClick={(e) => {
+            e.stopPropagation(); // חשוב כדי לא להפעיל את onClick של השורה
+            navigate(`/projects/${typeof inv.projectId === 'object' ? inv.projectId._id : inv.projectId}`);
+          }}
+          className="mr-2 text-purple-600 hover:text-purple-800 inline-flex items-center gap-1"
+          title="פתח פרויקט"
+        >
+          <ExternalLink className="w-3 h-3" />
+        </button>
+      )}
+    </td>
+
+    <td className="px-4 py-3 text-sm font-bold">{inv.invoiceNumber || "—"}</td>
+    <td className="px-4 py-3 text-sm font-bold">{formatILS(inv.sum)}</td>
+    <td className="px-4 py-3 text-sm">{inv.status || "—"}</td>
+
+    <td className="px-4 py-3 text-sm">
+      {(() => {
+        const a = getActionState(inv);
+        return (
+          <span className={`inline-flex items-center gap-1 px-2 py-1 rounded-full text-[11px] font-bold border ${a.color}`}>
+            {a.status} • {a.label}
+          </span>
+        );
+      })()}
+    </td>
+
+    <td className="px-4 py-3">{paidBadge(inv.paid)}</td>
+    <td className="px-4 py-3 text-sm">{pmHebrew(inv.paymentMethod)}</td>
+    <td className="px-4 py-3 text-sm">{formatDate(inv.createdAt)}</td>
+    <td className="px-4 py-3 text-sm">{formatDate(inv.paymentDate)}</td>
+    <td className="px-4 py-3 text-sm">{Array.isArray(inv.files) ? inv.files.length : 0}</td>
+
+    <td className="px-4 py-3">
+      <div className="flex gap-2">
+        <button
+          type="button"
+          onClick={(e) => { e.stopPropagation(); navigate(`/invoices/${inv._id}`); }}
+          className="px-3 py-1 text-xs rounded-lg bg-purple-100 text-purple-700 hover:bg-purple-200 font-bold transition-all"
+          title="פרטים"
+        >
+          פרטים
+        </button>
+        <button
+          type="button"
+          onClick={(e) => { e.stopPropagation(); navigate(`/update-invoice/${inv._id}`); }}
+          className="px-3 py-1 text-xs rounded-lg bg-purple-700 text-white hover:bg-purple-800 font-bold transition-all"
+          title="עריכה"
+        >
+          עריכה
+        </button>
+      </div>
+    </td>
+  </tr>
+))}
+
                       </tbody>
                     </table>
                   </div>

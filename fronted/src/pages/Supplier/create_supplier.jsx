@@ -255,7 +255,7 @@ const CreateSupplier = () => {
                       <label className="text-sm font-bold text-slate-700 mb-2 flex items-center gap-2">
                         <Phone className="w-4 h-4 text-orange-500" />
                         טלפון
-                        <span className="text-red-500">*</span>
+                        {/* <span className="text-red-500">*</span> */}
                       </label>
                       <input
                         type="tel"

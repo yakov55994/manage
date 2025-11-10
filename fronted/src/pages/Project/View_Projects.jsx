@@ -416,7 +416,7 @@ const ProjectsPage = ({ initialProjects = [] }) => {
   };
 
   const handleView = (id) => {
-    navigate(`/project/${id}`);
+    navigate(`/projects/${id}`);
   };
 
   if (loading) {
@@ -556,9 +556,6 @@ const ProjectsPage = ({ initialProjects = [] }) => {
                     <th className="px-4 py-4 text-sm font-bold text-white">תקציב</th>
                     <th className="px-4 py-4 text-sm font-bold text-white">תקציב שנותר</th>
                     <th className="px-4 py-4 text-sm font-bold text-white">שם המזמין</th>
-                    <th className="px-4 py-4 text-sm font-bold text-white">שם הספק</th>
-                    <th className="px-4 py-4 text-sm font-bold text-white">מצב תשלום</th>
-                    <th className="px-4 py-4 text-sm font-bold text-white">חוסר מסמך</th>
                     <th className="px-4 py-4 text-sm font-bold text-white">תאריך יצירה</th>
                     <th className="px-4 py-4 text-sm font-bold text-white">איש קשר</th>
                     <th className="px-4 py-4 text-sm font-bold text-white">פעולות</th>
@@ -593,15 +590,6 @@ const ProjectsPage = ({ initialProjects = [] }) => {
                       </td>
                       <td className="px-4 py-4 text-sm font-medium text-center text-slate-900">
                         {project.invitingName}
-                      </td>
-                      <td className="px-4 py-4 text-sm text-center text-slate-600">
-                        {project.supplierName || "—"}
-                      </td>
-                      <td className="px-4 py-4 text-sm text-center text-slate-600">
-                        {project.paymentStatus || "—"}
-                      </td>
-                      <td className="px-4 py-4 text-sm text-center text-slate-600">
-                        {project.missingDocument || "—"}
                       </td>
                       <td className="px-4 py-4 text-sm text-center text-slate-600">
                         {formatDate(project.createdAt)}

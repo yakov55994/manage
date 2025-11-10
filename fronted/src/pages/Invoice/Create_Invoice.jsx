@@ -22,6 +22,8 @@ import {
   Building2,
   AlertCircle,
 } from "lucide-react";
+import { useSearchParams } from "react-router-dom";
+
 
 const PAYMENT_METHODS = [
   { value: "bank_transfer", label: "העברה בנקאית" },
@@ -36,6 +38,8 @@ const CreateInvoice = () => {
   const [invoiceIndexToDelete, setInvoiceIndexToDelete] = useState(null);
   const [showModal, setShowModal] = useState(false);
   const [suppliers, setSuppliers] = useState([]);
+  const [searchParams] = useSearchParams();
+
 
   const navigate = useNavigate();
 
@@ -107,6 +111,35 @@ const CreateInvoice = () => {
       }
     }
   }, []);
+
+useEffect(() => {
+  if (!projects.length) return;
+
+  const projectIdFromQuery = searchParams.get("projectId");
+  if (!projectIdFromQuery) return;
+
+  const p = projects.find(pr => String(pr._id) === String(projectIdFromQuery));
+  if (!p) return;
+
+  setSelectedProject(p);
+
+  // אם אין עדיין שורות חשבונית – ליצור אחת ריקה קשורה לפרויקט
+  setInvoices(prev => prev.length ? prev : [{
+    projectName: p.name,
+    invoiceNumber: "",
+    detail: "",
+    sum: "",
+    status: "לא הוגש",
+    paid: "לא",
+    invitingName: "",
+    files: [],
+    paymentDate: "",
+    supplierId: "",
+    documentType: "",
+    paymentMethod: "",
+  }]);
+}, [projects, searchParams]);
+
 
   const handleProjectChange = (e) => {
     const projectId = e.target.value;
@@ -402,12 +435,12 @@ const CreateInvoice = () => {
             paymentDate:
               invoice.paid === "כן"
                 ? formatHebrewDate(invoice.paymentDate)
-                : null,
+                : "",
             createdAt: invoice.createdAt,
             supplierId: invoice.supplierId,
             documentType: invoice.documentType,
             paymentMethod:
-              invoice.paid === "כן" ? invoice.paymentMethod || null : null,
+              invoice.paid === "כן" ? invoice.paymentMethod : "" ,
           };
         })
       );
@@ -421,7 +454,9 @@ const CreateInvoice = () => {
       toast.success("החשבונית/ות נוצרו בהצלחה!", {
         className: "sonner-toast success rtl",
       });
-      navigate("/invoices");
+      const projectIdFromQuery = searchParams.get("projectId");
+      navigate(projectIdFromQuery ? `/projects/${projectIdFromQuery}` : "/invoices");
+
     } catch (err) {
       console.error("שגיאה במהלך יצירת החשבונית/יות:", err);
 
@@ -580,6 +615,7 @@ const CreateInvoice = () => {
                   בחר פרויקט
                 </label>
                 <select
+                 value={selectedProject?._id || ""} 
                   onChange={handleProjectChange}
                   className="w-full p-4 border-2 border-orange-200 rounded-xl bg-white font-bold text-slate-900 focus:border-orange-500 focus:outline-none focus:ring-4 focus:ring-orange-500/20 transition-all"
                 >
@@ -811,8 +847,11 @@ const CreateInvoice = () => {
                         <option value="">בחר סוג מסמך…</option>
                         <option value="ח. עסקה">ח. עסקה</option>
                         <option value="ה. עבודה">ה. עבודה</option>
-                        <option value="ד. תשלום, חשבונית מס / קבלה">
-                          ד. תשלום, חשבונית מס / קבלה
+                        <option value="ד. תשלום">
+                          ד. תשלום
+                        </option>
+                        <option value="חשבונית מס / קבלה">
+                          חשבונית מס / קבלה
                         </option>
                       </select>
                     </div>

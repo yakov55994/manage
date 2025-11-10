@@ -571,8 +571,11 @@ const InvoiceEditPage = () => {
                       <option value="">בחר סוג מסמך…</option>
                       <option value="ח. עסקה">ח. עסקה</option>
                       <option value="ה. עבודה">ה. עבודה</option>
-                      <option value="ד. תשלום, חשבונית מס / קבלה">
-                        ד. תשלום, חשבונית מס / קבלה
+                      <option value="ד. תשלום">
+                        ד. תשלום
+                      </option>
+                      <option value="חשבונית מס / קבלה">
+                        חשבונית מס / קבלה
                       </option>
                     </select>
                   </div>

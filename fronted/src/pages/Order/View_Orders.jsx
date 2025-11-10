@@ -338,7 +338,7 @@ const OrdersPage = () => {
   };
 
   const handleView = (id) => {
-    navigate(`/order/${id}`);
+    navigate(`/orders/${id}`);
   };
 
   if (loading) {

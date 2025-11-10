@@ -90,23 +90,35 @@ const InvoicesPage = () => {
     });
   };
 
-  const availableColumns = [
-    { key: "invoiceNumber", label: "מספר חשבונית" },
-    { key: "projectName", label: "שם פרויקט" },
-    { key: "supplierName", label: "שם ספק" },
-    { key: "invitingName", label: "שם מזמין" },
-    { key: "sum", label: "סכום" },
-    { key: "status", label: "סטטוס הגשה" },
-    { key: "paid", label: "סטטוס תשלום" },
-    { key: "createdAt", label: "תאריך יצירה" },
-    { key: "paymentDate", label: "תאריך תשלום" },
-    { key: "detail", label: "פירוט" },
-    { key: "supplierPhone", label: "טלפון ספק" },
-    { key: "supplierEmail", label: "אימייל ספק" },
-    { key: "supplierBankName", label: "שם בנק ספק" },
-    { key: "supplierBranchNumber", label: "מספר סניף ספק" },
-    { key: "supplierAccountNumber", label: "מספר חשבון ספק" },
-  ];
+const INTERIM_TYPES = new Set(['ח. עסקה', 'ה. עבודה', 'ד. תשלום']);
+const FINAL_TYPES   = new Set([
+  'חשבונית מס/קבלה',
+  'חשבונית מס / קבלה', // עם רווחים – נתמוך גם בזה
+  'חשבונית מס-קבלה',
+  'חשבונית מס קבלה',
+]);
+
+const normalizeType = (t) =>
+  String(t || '')
+    .replace(/\s+/g, ' ')     // רווחים כפולים
+    .replace(/\s*\/\s*/g, '/')// רווחים סביב "/"
+    .trim();
+
+const getActionState = (invoice) => {
+  const t   = normalizeType(invoice?.documentType);
+  const okF = FINAL_TYPES.has(t);
+  const okI = INTERIM_TYPES.has(t);
+
+  const status = okF ? 'הושלם' : 'חסר';
+  const label  = okF ? 'חשבונית מס/קבלה' : (okI ? t : '—');
+  const color  = okF
+    ? 'bg-emerald-100 text-emerald-700 border-emerald-200'
+    : 'bg-amber-100 text-amber-700 border-amber-200';
+
+  return { status, label, color };
+};
+
+
 
   const getFilteredInvoices = () => {
     let filtered = [...allInvoices];
@@ -610,7 +622,7 @@ const InvoicesPage = () => {
   };
 
   const handleView = (id) => {
-    navigate(`/invoice/${id}`);
+    navigate(`/invoices/${id}`);
   };
 
   const togglePaymentStatus = async (invoice) => {
@@ -933,35 +945,22 @@ const InvoicesPage = () => {
         }}
       >
         {/* עמודת סטטוס - חדש */}
-        <td className="px-4 py-4 text-center">
-          {hasMissingData ? (
-            <div className="relative group">
-              <div className="flex items-center justify-center">
-                <AlertTriangle className="w-6 h-6 text-red-500 animate-pulse" />
-              </div>
-              
-              {/* Tooltip שמראה מה חסר */}
-              <div className="-ml-5 absolute z-50 invisible group-hover:visible bg-red-600 text-white text-xs rounded-lg py-2 px-3 -top-2 left-1/2 transform -translate-x-1/2 -translate-y-full whitespace-nowrap shadow-xl border-2 border-red-700">
-                <div className="font-bold mb-1">חסרים פרטים:</div>
-                <ul className="text-right space-y-1">
-                  {missingFields.map((field, idx) => (
-                    <li key={idx}>• {field}</li>
-                  ))}
-                </ul>
-                <div className="absolute top-full left-1/2 transform -translate-x-1/2 -mt-1">
-                  <div className="border-8 border-transparent border-t-red-700"></div>
-                </div>
-              </div>
-            </div>
-          ) : (
-            <div className="flex items-center justify-center">
-              <CheckCircle2 className="w-6 h-6 text-green-500" />
-            </div>
-          )}
-        </td>
+<td className="px-4 py-4 text-center">
+  {(() => {
+    const a = getActionState(invoice);
+    return (
+      <span className={`inline-flex items-center gap-2 px-3 py-1 rounded-full text-xs font-bold border ${a.color}`}>
+        <span>{a.status}</span>
+        <span className="opacity-70">•</span>
+        <span>{a.label}</span>
+      </span>
+    );
+  })()}
+</td>
+
 
         <td className="px-4 py-4 text-sm font-bold text-center text-slate-900">
-          {invoice.supplier?.name || (
+          {invoice.invitingName || (
             <span className="text-red-500 italic flex items-center justify-center gap-1">
               <AlertTriangle className="w-3 h-3" />
               חסר

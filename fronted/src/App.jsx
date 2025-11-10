@@ -150,7 +150,7 @@ const AppContent = () => {
               }
             />
             <Route
-              path="/project/:id"
+              path="/projects/:id"
               element={
                 <ProtectedRoute>
                   <ProjectDetailsPage />
@@ -158,7 +158,7 @@ const AppContent = () => {
               }
             />
             <Route
-              path="/invoice/:id"
+              path="/invoices/:id"
               element={
                 <ProtectedRoute>
                   <InvoiceDetailsPage />
@@ -166,7 +166,7 @@ const AppContent = () => {
               }
             />
             <Route
-              path="/order/:id"
+              path="/orders/:id"
               element={
                 <ProtectedRoute>
                   <Order_Detail_Page />
@@ -260,7 +260,7 @@ const AppContent = () => {
             />
           </Routes>
 
-{console.log('Current user:', localStorage.getItem('auth_token'))}
+{/* {console.log('Current user:', localStorage.getItem('auth_token'))} */}
         </div>
       </div>
       

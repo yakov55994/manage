@@ -303,7 +303,7 @@ const SuppliersPage = () => {
   };
 
   const handleView = (id) => {
-    navigate(`/supplier/${id}`);
+    navigate(`/suppliers/${id}`);
   };
 
   if (loading) {
