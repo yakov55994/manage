@@ -46,7 +46,13 @@ const corsOptions = {
 };
 
 // ✅ 1. CORS - ראשון!
-app.use(cors(corsOptions));
+// app.use(cors(corsOptions));
+
+app.use(cors({
+  origin: true,
+  credentials: true
+}));
+app.options('*', cors());
 
 // טיפול מפורש בבקשות OPTIONS
 app.options('*', cors(corsOptions), (req, res) => {
