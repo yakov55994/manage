@@ -55,14 +55,10 @@ const projectController = {
 
   // 📄 פרויקט לפי ID
   getProjectById: async (req, res) => {
-    const { projectId } = req.params;
-
-    if (!mongoose.Types.ObjectId.isValid(projectId)) {
-      return res.status(400).json({ message: "ה-ID לא תקין" });
-    }
-
+   
     try {
-      const project = await projectService.getProjectById(projectId);
+      const { id } = req.params;
+      const project = await projectService.getProjectById(id);
       if (!project) {
         return res.status(404).json({ message: 'הפרויקט לא נמצא' });
       }

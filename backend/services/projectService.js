@@ -93,16 +93,23 @@ const projectService = {
   },
 
   // 📄 פרויקט לפי ID
-  async getProjectById(id, { populate = false, lean = true } = {}) {
-    if (!isValidId(id)) throw new Error('ID לא תקין');
-    let q = Project.findById(id);
-    if (populate) {
-      q = q
-        .populate({ path: 'invoices', select: 'invoiceNumber sum status paid paymentDate createdAt' })
-        .populate({ path: 'orders', select: 'orderNumber sum status createdAt' });
-    }
-    if (lean) q.lean();
-    return q.exec();
+  async getProjectById(id) {
+    // שליפת הפרויקט עצמו
+    const projectDoc = await Project.findById(id).lean();
+    if (!projectDoc) return null;
+
+    // שים לב: במסמכי ההזמנה/חשבונית השדה הוא projectId (לא id)
+    const [orders, invoices] = await Promise.all([
+      Order.find({ projectId: id }).sort({ createdAt: -1 }).lean(),
+      Invoice.find({ projectId: id }).sort({ createdAt: -1 }).lean(),
+    ]);
+
+    // מחזירים אובייקט מאוחד, לא return ריק :)
+    return {
+      ...projectDoc,
+      orders: Array.isArray(orders) ? orders : [],
+      invoices: Array.isArray(invoices) ? invoices : [],
+    };
   },
 
   // ✏️ עדכון פרויקט (מינימלי; משאיר שליטה למה לעדכן)

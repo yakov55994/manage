@@ -96,28 +96,38 @@ const OrdersPage = () => {
     if (showReportModal) {
       if (advancedFilters.dateFrom) {
         filtered = filtered.filter(
-          (order) => new Date(order.createdAt) >= new Date(advancedFilters.dateFrom)
+          (order) =>
+            new Date(order.createdAt) >= new Date(advancedFilters.dateFrom)
         );
       }
       if (advancedFilters.dateTo) {
         filtered = filtered.filter(
-          (order) => new Date(order.createdAt) <= new Date(advancedFilters.dateTo)
+          (order) =>
+            new Date(order.createdAt) <= new Date(advancedFilters.dateTo)
         );
       }
       if (advancedFilters.sumMin) {
-        filtered = filtered.filter((order) => order.sum >= parseInt(advancedFilters.sumMin));
+        filtered = filtered.filter(
+          (order) => order.sum >= parseInt(advancedFilters.sumMin)
+        );
       }
       if (advancedFilters.sumMax) {
-        filtered = filtered.filter((order) => order.sum <= parseInt(advancedFilters.sumMax));
+        filtered = filtered.filter(
+          (order) => order.sum <= parseInt(advancedFilters.sumMax)
+        );
       }
       if (advancedFilters.projectName) {
         filtered = filtered.filter((order) =>
-          order.projectName?.toLowerCase().includes(advancedFilters.projectName.toLowerCase())
+          order.projectName
+            ?.toLowerCase()
+            .includes(advancedFilters.projectName.toLowerCase())
         );
       }
       if (advancedFilters.invitingName) {
         filtered = filtered.filter((order) =>
-          order.invitingName?.toLowerCase().includes(advancedFilters.invitingName.toLowerCase())
+          order.invitingName
+            ?.toLowerCase()
+            .includes(advancedFilters.invitingName.toLowerCase())
         );
       }
       if (advancedFilters.orderNumber) {
@@ -126,11 +136,15 @@ const OrdersPage = () => {
         );
       }
       if (advancedFilters.status) {
-        filtered = filtered.filter((order) => order.status === advancedFilters.status);
+        filtered = filtered.filter(
+          (order) => order.status === advancedFilters.status
+        );
       }
       if (advancedFilters.detail) {
         filtered = filtered.filter((order) =>
-          order.detail?.toLowerCase().includes(advancedFilters.detail.toLowerCase())
+          order.detail
+            ?.toLowerCase()
+            .includes(advancedFilters.detail.toLowerCase())
         );
       }
     } else {
@@ -193,7 +207,9 @@ const OrdersPage = () => {
       return;
     }
 
-    const selectedColumns = Object.keys(exportColumns).filter((key) => exportColumns[key]);
+    const selectedColumns = Object.keys(exportColumns).filter(
+      (key) => exportColumns[key]
+    );
 
     if (selectedColumns.length === 0) {
       toast.error("יש לבחור לפחות עמודה אחת לייצוא", {
@@ -260,7 +276,9 @@ const OrdersPage = () => {
     });
   };
 
-  const filteredOrders = searchTerm ? getFilteredOrders() : selectedStatus
+  const filteredOrders = searchTerm
+    ? getFilteredOrders()
+    : selectedStatus
     ? orders.filter((order) => order.status === selectedStatus)
     : orders;
 
@@ -292,20 +310,34 @@ const OrdersPage = () => {
     XLSX.utils.book_append_sheet(workbook, worksheet, "הזמנות");
 
     const wbout = XLSX.write(workbook, { bookType: "xlsx", type: "array" });
-    saveAs(new Blob([wbout], { type: "application/octet-stream" }), "הזמנות.xlsx");
+    saveAs(
+      new Blob([wbout], { type: "application/octet-stream" }),
+      "הזמנות.xlsx"
+    );
   };
+
+  const arr = (res) =>
+    Array.isArray(res?.data?.data)
+      ? res.data.data
+      : Array.isArray(res?.data)
+      ? res.data
+      : Array.isArray(res)
+      ? res
+      : [];
 
   useEffect(() => {
     const fetchOrders = async () => {
       try {
-        setLoading(true);
-        const response = await api.get(`/orders`);
-        setOrders(response.data);
-        setAllOrders(response.data);
-        setLoading(false);
+        setLoading(true)
+        const res = await api.get("/orders"); // או הנתיב שלך
+        setAllOrders(arr(res.data));
+        setOrders(arr(res.data));
+        setLoading(false)
       } catch (error) {
         console.error("Error fetching orders:", error);
-        toast.error("שגיאה בטעינת הזמנות", { className: "sonner-toast error rtl" });
+        toast.error("שגיאה בטעינת הזמנות", {
+          className: "sonner-toast error rtl",
+        });
         setLoading(false);
       }
     };
@@ -322,12 +354,20 @@ const OrdersPage = () => {
 
     try {
       await api.delete(`/orders/${orderToDelete}`);
-      setOrders((prevOrders) => prevOrders.filter((order) => order._id !== orderToDelete));
-      setAllOrders((prevOrders) => prevOrders.filter((order) => order._id !== orderToDelete));
+      setOrders((prevOrders) =>
+        prevOrders.filter((order) => order._id !== orderToDelete)
+      );
+      setAllOrders((prevOrders) =>
+        prevOrders.filter((order) => order._id !== orderToDelete)
+      );
       setShowModal(false);
-      toast.success("ההזמנה נמחקה בהצלחה", { className: "sonner-toast success rtl" });
+      toast.success("ההזמנה נמחקה בהצלחה", {
+        className: "sonner-toast success rtl",
+      });
     } catch (error) {
-      toast.error("שגיאה במחיקת הזמנה", { className: "sonner-toast error rtl" });
+      toast.error("שגיאה במחיקת הזמנה", {
+        className: "sonner-toast error rtl",
+      });
     } finally {
       setLoading(false);
     }
@@ -348,7 +388,9 @@ const OrdersPage = () => {
           <div className="absolute inset-0 bg-gradient-to-r from-orange-500 to-amber-500 blur-3xl opacity-20 animate-pulse"></div>
           <ClipLoader size={100} color="#f97316" loading />
         </div>
-        <h1 className="mt-8 font-bold text-3xl text-slate-900">טוען רשימת הזמנות...</h1>
+        <h1 className="mt-8 font-bold text-3xl text-slate-900">
+          טוען רשימת הזמנות...
+        </h1>
       </div>
     );
   }
@@ -373,7 +415,9 @@ const OrdersPage = () => {
                   <ShoppingCart className="w-10 h-10 text-white" />
                 </div>
                 <div className="text-center">
-                  <h1 className="text-4xl font-black text-slate-900">רשימת הזמנות</h1>
+                  <h1 className="text-4xl font-black text-slate-900">
+                    רשימת הזמנות
+                  </h1>
                   <div className="flex items-center justify-center gap-2 mt-2">
                     <Sparkles className="w-4 h-4 text-orange-500" />
                     <span className="text-sm font-medium text-slate-600">
@@ -495,11 +539,21 @@ const OrdersPage = () => {
               <table className="w-full">
                 <thead>
                   <tr className="bg-gradient-to-r from-orange-500 via-amber-500 to-yellow-500">
-                    <th className="px-6 py-4 text-sm font-bold text-white">מספר הזמנה</th>
-                    <th className="px-6 py-4 text-sm font-bold text-white">סכום</th>
-                    <th className="px-6 py-4 text-sm font-bold text-white">סטטוס</th>
-                    <th className="px-6 py-4 text-sm font-bold text-white">שם פרויקט</th>
-                    <th className="px-6 py-4 text-sm font-bold text-white">פעולות</th>
+                    <th className="px-6 py-4 text-sm font-bold text-white">
+                      מספר הזמנה
+                    </th>
+                    <th className="px-6 py-4 text-sm font-bold text-white">
+                      סכום
+                    </th>
+                    <th className="px-6 py-4 text-sm font-bold text-white">
+                      סטטוס
+                    </th>
+                    <th className="px-6 py-4 text-sm font-bold text-white">
+                      שם פרויקט
+                    </th>
+                    <th className="px-6 py-4 text-sm font-bold text-white">
+                      פעולות
+                    </th>
                   </tr>
                 </thead>
                 <tbody>
@@ -554,7 +608,9 @@ const OrdersPage = () => {
           <div className="bg-white/90 backdrop-blur-xl rounded-2xl shadow-xl border border-white/50 p-12 text-center">
             <ShoppingCart className="w-16 h-16 text-slate-300 mx-auto mb-4" />
             <h2 className="text-2xl font-bold text-slate-600">
-              {searchTerm || selectedStatus ? "לא נמצאו תוצאות" : "אין הזמנות להציג"}
+              {searchTerm || selectedStatus
+                ? "לא נמצאו תוצאות"
+                : "אין הזמנות להציג"}
             </h2>
           </div>
         )}
@@ -569,8 +625,12 @@ const OrdersPage = () => {
                   <div className="mx-auto w-16 h-16 rounded-full bg-gradient-to-br from-red-500 to-rose-500 flex items-center justify-center mb-4">
                     <AlertCircle className="w-8 h-8 text-white" />
                   </div>
-                  <h3 className="text-3xl font-bold text-slate-900 mb-2">האם אתה בטוח?</h3>
-                  <p className="text-slate-600">שים לב! פעולה זו תמחק את ההזמנה לצמיתות.</p>
+                  <h3 className="text-3xl font-bold text-slate-900 mb-2">
+                    האם אתה בטוח?
+                  </h3>
+                  <p className="text-slate-600">
+                    שים לב! פעולה זו תמחק את ההזמנה לצמיתות.
+                  </p>
                 </div>
                 <div className="flex gap-3">
                   <button

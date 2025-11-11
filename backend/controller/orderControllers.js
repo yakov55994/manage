@@ -49,40 +49,30 @@ const orderController = {
   // 📃 כל ההזמנות בפרויקט (עם עמודים)
   getAllOrders: async (req, res) => {
     try {
-      const { projectId } = req.params;
-      const { page = 1, limit = 50, q } = req.query;
-
-      const { items, total, pages } = await orderService.listByProject(projectId, {
-        page: Number(page),
-        limit: Number(limit),
-        q
-      });
-
-      return res.status(200).json({
-        data: items || [],
-        meta: { total: total || 0, page: Number(page), pages: pages || 0 }
-      });
+      const orders = await orderService.getAllOrders();
+      return res.status(200).json(orders);
     } catch (error) {
-      console.error("getAllOrders error:", error);
-      return res.status(500).json({ error: error.message });
+      console.error('Error fetching orders:', error);
+      return res.status(500).json({ message: 'שגיאה בשליפת הזמנות', error: error.message });
     }
   },
 
   // 📄 הזמנה לפי ID בפרויקט
-  getOrderById: async (req, res) => {
-    try {
-      const { projectId, id } = req.params;
-      if (!mongoose.Types.ObjectId.isValid(id)) {
-        return res.status(400).json({ error: 'Invalid order id' });
-      }
-      const order = await orderService.getById(projectId, id);
-      if (!order) return res.status(404).json({ error: 'Order not found' });
-      return res.status(200).json(order);
-    } catch (error) {
-      console.error("getOrderById error:", error);
-      return res.status(500).json({ error: error.message });
+// controller
+getOrderById: async (req, res) => {
+  try {
+    const { id } = req.params;
+    if (!mongoose.Types.ObjectId.isValid(id)) {
+      return res.status(400).json({ error: 'Invalid order id' });
     }
-  },
+    const order = await orderService.getById(null, id);
+    if (!order) return res.status(404).json({ error: 'Order not found' });
+    return res.status(200).json(order);
+  } catch (err) {
+    console.error('getOrderById error:', err);
+    return res.status(500).json({ error: err.message });
+  }
+},
 
   // 🗑️ מחיקת הזמנה בפרויקט
   deleteOrder: async (req, res) => {

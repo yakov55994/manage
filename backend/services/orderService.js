@@ -3,9 +3,7 @@ import mongoose from 'mongoose';
 import Order from '../models/Order.js';
 import Project from '../models/Project.js';
 
-function assertProject(projectId) {
-  if (!projectId) throw new Error('projectId is required');
-}
+
 
 function normalizeFiles(arr) {
   if (!Array.isArray(arr)) return [];
@@ -23,7 +21,7 @@ const orderService = {
    * מגדיל budget ו־remainingBudget של הפרויקט לפי סכומי ההזמנות
    */
   async create(projectId, ordersData) {
-    assertProject(projectId);
+    (projectId);
     if (!ordersData || (Array.isArray(ordersData) && ordersData.length === 0)) {
       throw new Error('Invalid orders data');
     }
@@ -77,7 +75,7 @@ const orderService = {
    * 📃 רשימת הזמנות בפרויקט (עם עמודים וחיפוש חופשי q)
    */
   async listByProject(projectId, { page = 1, limit = 50, q } = {}) {
-    assertProject(projectId);
+    (projectId);
     const filter = { projectId };
 
     if (q != null && q !== '') {
@@ -110,17 +108,22 @@ const orderService = {
   /**
    * 📄 הזמנה בודדת בפרויקט
    */
-  async getById(projectId, id) {
-    assertProject(projectId);
-    return Order.findOne({ _id: id, projectId });
-  },
+
+async getById(projectId, id) {
+  const query = { _id: id };
+  // אם בכל זאת יגיע projectId – נוסיף לפילטר
+  if (projectId && mongoose.Types.ObjectId.isValid(projectId)) {
+    query.projectId = new mongoose.Types.ObjectId(projectId);
+  }
+  return Order.findOne(query); // או Order.findById(id) אם לא צריך projectId בכלל
+},
 
   /**
    * ✏️ עדכון הזמנה בפרויקט
    * (אין שינוי בתקציב כאן; אם תרצה להשפיע כאשר sum משתנה — ראה הערה בהמשך)
    */
   async update(projectId, id, updateData) {
-    assertProject(projectId);
+    (projectId);
     // אופציונלי: מניעת שינוי projectId מבחוץ
     // delete updateData.projectId;
     if (updateData?.files) {
@@ -139,7 +142,7 @@ const orderService = {
    * מקטין budget ו־remainingBudget לפי sum של ההזמנה
    */
   async remove(projectId, id) {
-    assertProject(projectId);
+    (projectId);
 
     const session = await mongoose.startSession();
     try {
@@ -172,7 +175,7 @@ const orderService = {
    * 🔎 חיפוש חופשי בפרויקט (מחרוזת query חובה)
    */
   async search(projectId, query) {
-    assertProject(projectId);
+    (projectId);
     if (query == null || query === '') {
       throw new Error('מילת חיפוש לא נמצאה');
     }
@@ -198,10 +201,16 @@ const orderService = {
   },
 
   // קוד ישן: קבלת כל ההזמנות (לא מסונן)
-  async getAllOrders() {
-    return Order.find().sort({ createdAt: -1 });
-  },
+  async getAllInvoices() {
+    const orders = await Order.find()
+      .populate({ path: 'invitingName', select: 'orderNumber, projectName, projectId, sum, status,' })
+      .sort({ createdAt: -1 });
 
+    return orders.map(obj => {
+      const ord = obj.toObject();
+      return { ...ord, inviting: ord.invitingName || null };
+    });
+  },
   // קוד ישן: getById ללא projectId
   async getOrderById(id) {
     return Order.findById(id);

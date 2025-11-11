@@ -37,108 +37,100 @@ const ProjectDetailsPage = () => {
 
   const navigate = useNavigate();
 
-  useEffect(() => {
-    const fetchProjectDetails = async () => {
-      try {
-        const response = await api.get(`/projects/${id}`);
-        setProject(response.data);
-        setLoadingProject(false);
-      } catch (error) {
-        console.error("Error fetching project details:", error);
-        toast.error("שגיאה בשליפת פרטי הפרויקט", {
-          className: "sonner-toast error rtl",
-        });
-        setLoadingProject(false);
-      }
-    };
+useEffect(() => {
+  const fetchProjectDetails = async () => {
+    try {
+      setLoadingProject(true);
+      setLoadingOrders(true);
+      setLoadingInvoices(true);
 
-    fetchProjectDetails();
-  }, [id]);
+      const { data: p } = await api.get(`/projects/${id}`);
+      setProject(p);
+      setOrders(Array.isArray(p?.orders) ? p.orders : []);
+      setInvoices(Array.isArray(p?.invoices) ? p.invoices : []);
+    } catch (error) {
+      console.error("Error fetching project details:", error);
+      toast.error("שגיאה בשליפת פרטי הפרויקט", { className: "sonner-toast error rtl" });
+    } finally {
+      setLoadingProject(false);
+      setLoadingOrders(false);
+      setLoadingInvoices(false);
+    }
+  };
 
-  useEffect(() => {
-    const fetchData = async () => {
-      try {
-        const orderResponse = await api.get("/orders");
-        const invoiceResponse = await api.get("/invoices");
+  fetchProjectDetails();
+}, [id]);
 
-        setOrders(orderResponse.data);
-        setInvoices(invoiceResponse.data);
-      } catch (error) {
-        console.error("Error fetching data:", error);
-        toast.error("שגיאה בטעינת הנתונים. נסה שנית מאוחר יותר.", {
-          className: "sonner-toast error rtl",
-        });
-      } finally {
-        setLoadingOrders(false);
-        setLoadingInvoices(false);
-      }
-    };
+// עכשיו אין צורך בסינון לפי projectId:
+const filteredOrders = orders
+  ?.filter(o => !statusFilter || o.status === statusFilter)
+  ?.sort((a, b) => (sortOrder === "desc" ? b.sum - a.sum : a.sum - b.sum));
 
-    fetchData();
-  }, []);
-  const INTERIM_ALIASES = new Set([
-  'ח. עסקה',
-  'ה. עבודה',
-  'ד. תשלום',
-]);
-
-const FINAL_ALIASES = new Set([
-  'חשבונית מס/קבלה',
-  'חשבונית מס / קבלה',
-  'חשבונית מס-קבלה',
-  'חשבונית מס קבלה',
-]);
-
-const normalizeType = (t) => {
-  if (!t) return '';
-  // ממיר לאותיות רגילות, מוחק רווחים כפולים, ומסיר רווחים סביב "/" 
-  return String(t)
-    .replace(/\s+/g, ' ')
-    .replace(/\s*\/\s*/g, '/')
-    .trim();
-};
-
-const extractDocTypes = (invoice) => {
-  // תומך גם ב-invoice.documents וגם ב-invoice.documentType
-  let raw = invoice?.documents ?? invoice?.documentType ?? [];
-  // אם זה סטרינג בודד – נהפוך למערך
-  if (typeof raw === 'string') raw = [raw];
-  // אם זה לא מערך – נחזיר ריק
-  if (!Array.isArray(raw)) return [];
-  // נחלץ מכל איבר את המחרוזת (אם אובייקט – ניקח d.type, אם כבר סטרינג – נשאיר)
-  return raw.map(d => normalizeType(typeof d === 'object' ? d?.type : d)).filter(Boolean);
-};
-
-const getActionState = (invoice) => {
-  const types = extractDocTypes(invoice);
-
-  const hasFinal = types.some(t => FINAL_ALIASES.has(t));
-  const hasInterim = types.some(t => INTERIM_ALIASES.has(t));
-
-  const status = hasFinal ? 'הושלם' : 'חסר';
-
-  // תווית: אם הושלם – נציג את הצורה הקנונית של ה-final, אחרת את הביניים הראשון אם יש
-  const label = hasFinal
-    ? 'חשבונית מס/קבלה'
-    : (types.find(t => INTERIM_ALIASES.has(t)) || '');
-
-  const color = hasFinal
-    ? 'bg-emerald-100 text-emerald-700 border-emerald-200 '
-    : 'bg-amber-100 text-amber-700 border-amber-200 ';
-
-  return { status, label, color };
-};
+const filteredInvoices = invoices
+  ?.filter(inv => !statusFilter || inv.status === statusFilter)
+  ?.sort((a, b) => (sortOrder === "desc" ? b.sum - a.sum : a.sum - b.sum));
 
 
-  const filteredOrders = orders
-    .filter((order) => order.projectId === project?._id)
-    .filter((order) => !statusFilter || order.status === statusFilter)
-    .sort((a, b) => (sortOrder === "desc" ? b.sum - a.sum : a.sum - b.sum));
 
-  const filteredInvoices = invoices
-    .filter((invoice) => invoice.projectId === project?._id)
-    .filter((invoice) => !statusFilter || invoice.status === statusFilter)
-    .sort((a, b) => (sortOrder === "desc" ? b.sum - a.sum : a.sum - b.sum));
+  const INTERIM_ALIASES = new Set(["ח. עסקה", "ה. עבודה", "ד. תשלום"]);
+
+  const FINAL_ALIASES = new Set([
+    "חשבונית מס/קבלה",
+    "חשבונית מס / קבלה",
+    "חשבונית מס-קבלה",
+    "חשבונית מס קבלה",
+  ]);
+
+  const normalizeType = (t) => {
+    if (!t) return "";
+    // ממיר לאותיות רגילות, מוחק רווחים כפולים, ומסיר רווחים סביב "/"
+    return String(t)
+      .replace(/\s+/g, " ")
+      .replace(/\s*\/\s*/g, "/")
+      .trim();
+  };
+
+  const extractDocTypes = (invoice) => {
+    // תומך גם ב-invoice.documents וגם ב-invoice.documentType
+    let raw = invoice?.documents ?? invoice?.documentType ?? [];
+    // אם זה סטרינג בודד – נהפוך למערך
+    if (typeof raw === "string") raw = [raw];
+    // אם זה לא מערך – נחזיר ריק
+    if (!Array.isArray(raw)) return [];
+    // נחלץ מכל איבר את המחרוזת (אם אובייקט – ניקח d.type, אם כבר סטרינג – נשאיר)
+    return raw
+      .map((d) => normalizeType(typeof d === "object" ? d?.type : d))
+      .filter(Boolean);
+  };
+
+  const arr = (res) =>
+    Array.isArray(res?.data?.data)
+      ? res.data.data
+      : Array.isArray(res?.data)
+      ? res.data
+      : Array.isArray(res)
+      ? res
+      : [];
+
+  const getActionState = (invoice) => {
+    const types = extractDocTypes(invoice);
+
+    const hasFinal = types.some((t) => FINAL_ALIASES.has(t));
+    const hasInterim = types.some((t) => INTERIM_ALIASES.has(t));
+
+    const status = hasFinal ? "הושלם" : "חסר";
+
+    // תווית: אם הושלם – נציג את הצורה הקנונית של ה-final, אחרת את הביניים הראשון אם יש
+    const label = hasFinal
+      ? "חשבונית מס/קבלה"
+      : types.find((t) => INTERIM_ALIASES.has(t)) || "";
+
+    const color = hasFinal
+      ? "bg-emerald-100 text-emerald-700 border-emerald-200 "
+      : "bg-amber-100 text-amber-700 border-amber-200 ";
+
+    return { status, label, color };
+  };
 
   if (loadingProject || loadingInvoices || loadingOrders) {
     return (
@@ -184,9 +176,12 @@ const getActionState = (invoice) => {
 
     if (number < 0) {
       return (
-        <span className="text-sm font-bold text-red-600 flex items-center gap-1" dir="ltr">
-          <AlertCircle className="w-4 h-4" />
-          ₪ -{Math.abs(number).toLocaleString("he-IL")}
+        <span
+          className="text-sm font-bold text-red-600 flex items-center gap-1"
+          dir="ltr"
+        >
+          <AlertCircle className="w-4 h-4" />₪ -
+          {Math.abs(number).toLocaleString("he-IL")}
         </span>
       );
     } else {
@@ -222,9 +217,9 @@ const getActionState = (invoice) => {
   };
 
   const handleAddInvoiceForProject = () => {
-  if (!project?._id) return;
-  navigate(`/create-invoice?projectId=${project._id}`);
-};
+    if (!project?._id) return;
+    navigate(`/create-invoice?projectId=${project._id}`);
+  };
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-orange-50 via-amber-50 to-yellow-50 relative overflow-hidden py-12">
@@ -246,7 +241,9 @@ const getActionState = (invoice) => {
                   <Building2 className="w-10 h-10 text-white" />
                 </div>
                 <div className="text-center">
-                  <h1 className="text-4xl font-black text-slate-900">פרטי פרויקט</h1>
+                  <h1 className="text-4xl font-black text-slate-900">
+                    פרטי פרויקט
+                  </h1>
                   <div className="flex items-center justify-center gap-2 mt-2">
                     <Sparkles className="w-4 h-4 text-orange-500" />
                     <span className="text-sm font-medium text-slate-600">
@@ -272,13 +269,13 @@ const getActionState = (invoice) => {
                   <Edit2 className="w-4 h-4" />
                   <span>עריכת פרויקט</span>
                 </button>
-             <button
-  onClick={handleAddInvoiceForProject}
-  className="flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-orange-600 to-amber-600 text-white font-bold rounded-xl hover:from-orange-700 hover:to-amber-700 transition-all shadow-xl shadow-orange-500/30"
->
-  <Edit2 className="w-4 h-4" />
-  <span>הוספת חשבונית</span>
-</button>
+                <button
+                  onClick={handleAddInvoiceForProject}
+                  className="flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-orange-600 to-amber-600 text-white font-bold rounded-xl hover:from-orange-700 hover:to-amber-700 transition-all shadow-xl shadow-orange-500/30"
+                >
+                  <Edit2 className="w-4 h-4" />
+                  <span>הוספת חשבונית</span>
+                </button>
 
                 <button
                   onClick={() => setConfirmOpen(true)}
@@ -304,7 +301,9 @@ const getActionState = (invoice) => {
                   <div className="p-2 rounded-xl bg-gradient-to-br from-orange-100 to-amber-100">
                     <FileText className="w-5 h-5 text-orange-600" />
                   </div>
-                  <h2 className="text-2xl font-bold text-slate-900">פרטי הפרויקט</h2>
+                  <h2 className="text-2xl font-bold text-slate-900">
+                    פרטי הפרויקט
+                  </h2>
                 </div>
               </div>
             </div>
@@ -323,6 +322,7 @@ const getActionState = (invoice) => {
                         שם הפרויקט
                       </p>
                       <p className="text-sm font-bold text-slate-900">
+                        {console.log(project)}
                         {project.name}
                       </p>
                     </div>
@@ -496,7 +496,7 @@ const getActionState = (invoice) => {
                           סכום
                         </th>
                         <th className="px-4 py-3 text-xs font-bold text-blue-900">
-                          סטטוס 
+                          סטטוס
                         </th>
                       </tr>
                     </thead>
@@ -575,7 +575,7 @@ const getActionState = (invoice) => {
                         <th className="px-4 py-3 text-xs font-bold text-emerald-900 text-center">
                           סכום
                         </th>
-                       
+
                         <th className="px-12 py-3 text-xs font-bold text-emerald-900 text-center">
                           סטטוס
                         </th>
@@ -593,9 +593,9 @@ const getActionState = (invoice) => {
                     <tbody className="bg-white">
                       {filteredInvoices.map((invoice) => (
                         <tr
-                        key={invoice._id}
-                        onClick={() => moveToInvoiceDetails(invoice)}
-                        className="cursor-pointer border-t border-emerald-100 hover:bg-emerald-50/50 transition-colors"
+                          key={invoice._id}
+                          onClick={() => moveToInvoiceDetails(invoice)}
+                          className="cursor-pointer border-t border-emerald-100 hover:bg-emerald-50/50 transition-colors"
                         >
                           {console.log(invoice)}
                           <td className="px-4 py-3 text-sm font-bold text-center">
@@ -610,24 +610,26 @@ const getActionState = (invoice) => {
                           <td className="px-4 py-3 text-sm font-bold text-center">
                             {invoice.status}
                           </td>
-                        
-                            <td className="px-4 py-3 text-sm font-bold text-center">
+
+                          <td className="px-4 py-3 text-sm font-bold text-center">
                             {invoice.supplierId?.name}
                           </td>
-                            <td className="px-4 py-3 text-sm font-bold text-center">
+                          <td className="px-4 py-3 text-sm font-bold text-center">
                             {invoice.paid === "כן" ? "שולם" : "לא שולם"}
                           </td>
-                            <td className="px-8 py-3 text-sm font-bold text-center">
+                          <td className="px-8 py-3 text-sm font-bold text-center">
                             {(() => {
-    const a = getActionState(invoice);
-    return (
-      <span className={`text-center gap-2 px-3 py-1 rounded-full text-xs font-bold border ${a.color}`}>
-        <span>{a.status} | </span>
-        <span className="opacity-70"></span>
-        <span>{a.label}</span>
-      </span>
-    );
-  })()}
+                              const a = getActionState(invoice);
+                              return (
+                                <span
+                                  className={`text-center gap-2 px-3 py-1 rounded-full text-xs font-bold border ${a.color}`}
+                                >
+                                  <span>{a.status} | </span>
+                                  <span className="opacity-70"></span>
+                                  <span>{a.label}</span>
+                                </span>
+                              );
+                            })()}
                           </td>
                         </tr>
                       ))}

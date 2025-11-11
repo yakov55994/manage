@@ -112,10 +112,9 @@ const invoiceControllers = {
   // ✅ רשימת חשבוניות בפרויקט (עם עמודים)
   fetchInvoices: async (req, res) => {
     try {
-      const { projectId } = req.params;
       const { page = 1, limit = 50, q } = req.query;
 
-      const { items, total, pages } = await invoiceService.getInvoicesByProject(projectId, {
+      const { items, total, pages } = await invoiceService.getInvoicesByProject({
         page: Number(page),
         limit: Number(limit),
         q
@@ -144,14 +143,14 @@ const invoiceControllers = {
 
   // ✅ חשבונית לפי ID בפרויקט
   getInvoiceById: async (req, res) => {
-    const { projectId, id } = req.params;
+    const { id } = req.params;
 
     if (!mongoose.Types.ObjectId.isValid(id)) {
       return res.status(400).json({ message: "ה-ID לא תקין" });
     }
 
     try {
-      const invoice = await invoiceService.getInvoiceById(projectId, id);
+      const invoice = await invoiceService.getInvoiceById(id);
       if (!invoice) {
         return res.status(404).json({ message: 'החשבונית לא נמצאה' });
       }

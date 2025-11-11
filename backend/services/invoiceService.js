@@ -160,7 +160,6 @@ const invoiceService = {
 
   // 📃 חשבוניות בפרויקט (עם עמודים)
   async getInvoicesByProject(projectId, { page = 1, limit = 50, q } = {}) {
-    if (!projectId) throw new Error('projectId is required');
 
     const filter = { projectId };
     if (q) {
