@@ -1,32 +1,4 @@
-// import express from 'express';
-// import projectControllers from '../controller/projectControllers.js'
-// import { protect, checkProjectPermission } from '../middleware/auth.js';
-// import { withScope, requireOp, applyProjectListFilter, ensureProjectAccess } from '../middleware/scope.js';
-
-
-
-// const router = express.Router();
-
-// router.use(protect);
-
-// router.get('/search', projectControllers.search);
-
-// router.post("/", projectControllers.createProject);
-
-// router.post('/:id/invoices', checkProjectPermission, projectControllers.addInvoiceToProject);
-
-// router.get('/', projectControllers.getAllProjects);
-
-// router.get('/:id', projectControllers.getProjectById); 
-
-// router.put('/:id', checkProjectPermission,  projectControllers.updateProject);
-
-// router.delete('/:id', checkProjectPermission, projectControllers.deleteProject);
-
-
-// export default router;
-
-
+// routes/project.routes.js
 import express from 'express';
 import projectControllers from '../controller/projectControllers.js';
 import { protect } from '../middleware/auth.js';
@@ -34,64 +6,83 @@ import {
   withScope,
   requireOp,
   applyProjectListFilter,
-  ensureProjectAccess
+  ensureProjectAccess,
 } from '../middleware/scope.js';
 
-const router = express.Router();
+// אם בעתיד תחבר ראוטרי־בן (למשל /projects/:projectId/invoices/*) — כדאי mergeParams:true
+const router = express.Router({ mergeParams: true });
 
-// כל המסלול בפרויקטים מוגן ונטען לו scope של המשתמש
+// כל מסלולי הפרויקטים מוגנים ונטען scope של המשתמש
 router.use(protect, withScope);
 
-// 🔎 חיפוש פרויקטים (קריאה) — חשוב להחיל סינון לפי הרשאות
+/**
+ * 🔎 חיפוש פרויקטים (קריאה)
+ * מוחל סינון לפי הרשאות דרך applyProjectListFilter -> ממלא req.queryFilter
+ */
 router.get(
   '/search',
   requireOp('projects', 'read'),
-  applyProjectListFilter(),            // ימלא req.queryFilter
+  applyProjectListFilter(),
   projectControllers.search
 );
 
-// ➕ יצירת פרויקט (כתיבה)
+/**
+ * ➕ יצירת פרויקט (כתיבה)
+ */
 router.post(
   '/',
   requireOp('projects', 'write'),
   projectControllers.createProject
 );
 
-// 🧾 הוספת חשבונית לפרויקט קיים (כתיבה על פרויקט מסוים)
+/**
+ * 🧾 הוספת חשבונית לפרויקט קיים (כתיבה)
+ * שים לב: אם יש לך ראוטר ייעודי לחשבוניות (/projects/:projectId/invoices)
+ * עדיף לרכז שם יצירה; זה נשאר כנתיב נוחות.
+ */
 router.post(
-  '/:id/invoices',
+  '/:projectId/invoices',
   requireOp('projects', 'write'),
-  ensureProjectAccess,                 // בודק שלמשתמש מותר לגשת ל-:id
+  ensureProjectAccess, // יוודא גישה לפרויקט :projectId
   projectControllers.addInvoiceToProject
 );
 
-// 📃 רשימת פרויקטים (קריאה) — סינון לפי הרשאות
+/**
+ * 📃 רשימת פרויקטים (קריאה)
+ */
 router.get(
   '/',
   requireOp('projects', 'read'),
-  applyProjectListFilter(),            // ימלא req.queryFilter לרשימה
+  applyProjectListFilter(),
   projectControllers.getAllProjects
 );
 
-// 📄 פרויקט לפי ID (קריאה) — בדיקת גישה
+/**
+ * 📄 פרויקט לפי ID (קריאה)
+ */
 router.get(
-  '/:id',
+  '/:projectId',
   requireOp('projects', 'read'),
   ensureProjectAccess,
   projectControllers.getProjectById
 );
 
-// ✏️ עדכון פרויקט (כתיבה) — בדיקת גישה
+/**
+ * ✏️ עדכון פרויקט (כתיבה)
+ */
 router.put(
-  '/:id',
+  '/:projectId',
   requireOp('projects', 'write'),
   ensureProjectAccess,
   projectControllers.updateProject
 );
 
-// 🗑️ מחיקת פרויקט (מחיקה) — בדיקת גישה
+/**
+ * 🗑️ מחיקת פרויקט (מחיקה)
+ * נשאר עם 'del' כדי להיות עקבי עם שאר הראוטרים אצלך.
+ */
 router.delete(
-  '/:id',
+  '/:projectId',
   requireOp('projects', 'del'),
   ensureProjectAccess,
   projectControllers.deleteProject

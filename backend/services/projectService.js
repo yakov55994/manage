@@ -1,202 +1,170 @@
+// services/projectService.js
 import mongoose from 'mongoose';
+import Project from '../models/Project.js';
 import Invoice from '../models/Invoice.js';
-import Project from '../models/Project.js'
-import Order from '../models/Order.js'
+import Order from '../models/Order.js';
+
+function isValidId(id) {
+  return mongoose.Types.ObjectId.isValid(id);
+}
 
 const projectService = {
-
- createProject: async (data) => {
-  try {
-    const cleanedData = {
-      ...data,
-      name: data.name.trim(), // ניקוי רווחים בזמן היצירה
-    };
-    const newProject = new Project(cleanedData);
-    await newProject.save();
-    return newProject;
-  } catch (error) {
-    throw new Error('Error creating project');
-  }
-},
-
-  addInvoiceToProject: async (projectId, invoiceData) => {
+  // ➕ יצירת פרויקט
+  async createProject(data) {
     try {
-      // בדיקת תקינות ה-ID
-      if (!mongoose.Types.ObjectId.isValid(projectId)) {
-        throw new Error("ה-ID של הפרויקט לא תקין");
-      }
-
-      // שליפת הפרויקט
-      const project = await Project.findById(projectId).populate('invoices');
-      if (!project) throw new Error("פרויקט לא נמצא");
-
-
-      const existingInvoice = await Invoice.findOne({
-        invoiceNumber: invoiceData.invoiceNumber,
-        invitingName: invoiceData.invitingName
-      });
-
-      if (existingInvoice) {
-        throw new Error(`חשבונית מספר "${invoiceData.invoiceNumber}" כבר קיימת עבור המזמין "${invoiceData.invitingName}"`);
-      }
-
-      // יצירת חשבונית חדשה
-      const newInvoice = new Invoice({
-        invoiceNumber: invoiceData.invoiceNumber,
-        projectName: project.name,
-        projectId: project._id,
-        sum: invoiceData.sum,
-        status: invoiceData.status,
-        invitingName: invoiceData.invitingName,
-        detail: invoiceData.detail,
-        paid: invoiceData.paid,
-        paymentDate: invoiceData.paymentDate,
-        createdAt: invoiceData.createdAt,
-        file: invoiceData.file,
-      });
-
-      // שמירת החשבונית במסד הנתונים
-      await newInvoice.save();
-
-
-      if (typeof project.remainingBudget !== "number" || isNaN(project.remainingBudget)) {
-        project.remainingBudget = 0;  // אם remainingBudget לא מוגדר או לא תקין, נגדיר אותו כ- 0
-      }
-      // עדכון התקציב הנותר בפרויקט
-      project.remainingBudget -= invoiceData.sum;
-
-      // הוספת אובייקט החשבונית למערך ה-invoices של הפרויקט
-      project.invoices.push({
-        _id: newInvoice._id,
-        invoiceNumber: newInvoice.invoiceNumber,
-        projectName: newInvoice.projectName,
-        sum: newInvoice.sum,
-        status: newInvoice.status,
-        invitingName: newInvoice.invitingName,
-        detail: newInvoice.detail,
-        paid: newInvoice.paid,
-        paymentDate: newInvoice.paymentDate,
-        createdAt: newInvoice.createdAt,
-        file: newInvoice.file,
-      });
-
-      // שמירת השינויים בפרויקט
+      const cleaned = {
+        ...data,
+        name: String(data?.name || '').trim(),
+      };
+      const project = new Project(cleaned);
       await project.save();
+      return project;
+    } catch (err) {
+      throw new Error('Error creating project');
+    }
+  },
+
+  // 🧾 הוספת חשבונית לפרויקט (מומלץ בדרך כלל לבצע דרך invoiceService.createInvoices)
+  async addInvoiceToProject(projectId, invoiceData) {
+    if (!isValidId(projectId)) throw new Error('ה-ID של הפרויקט לא תקין');
+
+    const session = await mongoose.startSession();
+    try {
+      let newInvoice;
+
+      await session.withTransaction(async () => {
+        const project = await Project.findById(projectId).session(session);
+        if (!project) throw new Error('פרויקט לא נמצא');
+
+        // בדיקת כפילות (אופציונלי להוסיף גם projectId לסקופ הכפילות)
+        const dup = await Invoice.findOne({
+          invoiceNumber: invoiceData.invoiceNumber,
+          invitingName: invoiceData.invitingName,
+          projectId, // ← כפילות בתוך אותו פרויקט בלבד
+        }).session(session);
+        if (dup) {
+          throw new Error(`חשבונית מספר "${invoiceData.invoiceNumber}" כבר קיימת עבור "${invoiceData.invitingName}" בפרויקט זה`);
+        }
+
+        // יצירת חשבונית
+        newInvoice = await Invoice.create(
+          [{
+            invoiceNumber: invoiceData.invoiceNumber,
+            projectName: project.name,  // לשימוש UI בלבד
+            projectId: project._id,     // מקור האמת
+            sum: invoiceData.sum,
+            status: invoiceData.status,
+            invitingName: invoiceData.invitingName,
+            detail: invoiceData.detail,
+            paid: invoiceData.paid,
+            paymentDate: invoiceData.paymentDate || null,
+            createdAt: invoiceData.createdAt || new Date(),
+            files: Array.isArray(invoiceData.files) ? invoiceData.files : [],
+            documentType: invoiceData.documentType || undefined,
+            paymentMethod: invoiceData.paymentMethod || '',
+            supplierId: invoiceData.supplierId || undefined,
+          }],
+          { session }
+        ).then(arr => arr[0]);
+
+        // עדכון תקציב + קישור החשבונית (ObjectId)
+        const delta = Number(newInvoice.sum || 0);
+        await Project.findByIdAndUpdate(
+          project._id,
+          {
+            $addToSet: { invoices: newInvoice._id },
+            $inc: { remainingBudget: -delta },
+          },
+          { new: true, session }
+        );
+      });
 
       return newInvoice;
-    } catch (error) {
-      throw new Error(error.message || "שגיאה כללית בהוספת חשבונית");
+    } finally {
+      session.endSession();
     }
   },
 
-  getAllProjects: async () => {
-    try {
-      const projects = await Project.find();
-      return projects;
-    } catch (error) {
-      console.error('Error fetching projects from DB:', error);
-      throw new Error('שגיאה בשליפת פרויקטים מבסיס הנתונים');
-    }
+  // 📃 כל הפרויקטים (ניתן להעביר filter מבחוץ – למשל req.queryFilter)
+  async getAllProjects(filter = {}, { sort = { createdAt: -1 }, lean = true } = {}) {
+    const q = Project.find(filter).sort(sort);
+    if (lean) q.lean();
+    return q.exec();
   },
 
-  getProjectById: async (id) => {
-    try {
-      const project = await Project.findById(id);
-      return project;
-    } catch (error) {
-      console.error('Error fetching project by ID:', error);
-      throw new Error('שגיאה בשליפת פרויקט');
+  // 📄 פרויקט לפי ID
+  async getProjectById(id, { populate = false, lean = true } = {}) {
+    if (!isValidId(id)) throw new Error('ID לא תקין');
+    let q = Project.findById(id);
+    if (populate) {
+      q = q
+        .populate({ path: 'invoices', select: 'invoiceNumber sum status paid paymentDate createdAt' })
+        .populate({ path: 'orders', select: 'orderNumber sum status createdAt' });
     }
+    if (lean) q.lean();
+    return q.exec();
   },
 
-  updateProject: async (id, projectData) => {
-    try {
-      // עדכון נתוני הפרויקט כולל התקציב הנותר
-      const updatedProject = await Project.findByIdAndUpdate(
-        id,
-        {
-          remainingBudget: projectData.remainingBudget, // עדכון התקציב הנותר
-        },
-        { new: true, runValidators: true }
-      );
+  // ✏️ עדכון פרויקט (מינימלי; משאיר שליטה למה לעדכן)
+  async updateProject(id, projectData = {}) {
+    if (!isValidId(id)) throw new Error('ID לא תקין');
 
-      return updatedProject;
-    } catch (error) {
-      console.error('Service update error:', error);
-      throw new Error('שגיאה בעדכון הפרויקט');
-    }
+    // הגנה רכה: לא מאפשרים לשנות _id/שדות מערכת
+    const disallow = ['_id', 'createdAt', 'updatedAt'];
+    disallow.forEach(k => delete projectData[k]);
+
+    // אם רוצים לעדכן רק remainingBudget (כמו בקוד הישן) זה עדיין נתמך
+    const updated = await Project.findByIdAndUpdate(
+      id,
+      { $set: projectData },
+      { new: true, runValidators: true }
+    );
+    return updated;
   },
-  deleteProjectById: async (id) => {
+
+  // 🗑️ מחיקת פרויקט (מוחק גם חשבוניות/הזמנות ע"פ projectId)
+  async deleteProjectById(id) {
+    if (!isValidId(id)) throw new Error('❌ ID של הפרויקט לא תקין');
+
+    const session = await mongoose.startSession();
     try {
-      // בדיקת תקינות ה-ID
-      if (!id) {
-        throw new Error("❌ ID של הפרויקט לא סופק");
-      }
+      await session.withTransaction(async () => {
+        const proj = await Project.findById(id).session(session);
+        if (!proj) throw new Error('⚠️ פרויקט לא נמצא בבסיס הנתונים');
 
-      // חיפוש הפרויקט
-      const project = await Project.findById(id);
-      if (!project) {
-        throw new Error("⚠️ פרויקט לא נמצא בבסיס הנתונים");
-      }
+        // מחיקת חשבוניות והזמנות לפי projectId (לא לפי projectName)
+        await Invoice.deleteMany({ projectId: id }).session(session);
+        await Order.deleteMany({ projectId: id }).session(session);
 
-      // מחיקת כל החשבוניות שקשורות לפרויקט לפי projectName
-      const invoicesToDelete = await Invoice.deleteMany({ projectName: project.name });
-      // console.log(`✅ נמחקו ${invoicesToDelete.deletedCount} חשבוניות`);
-
-      // מחיקת כל ההזמנות שקשורות לפרויקט לפי projectName
-      const ordersToDelete = await Order.deleteMany({ projectName: project.name });
-      // console.log(`✅ נמחקו ${ordersToDelete.deletedCount} הזמנות`);
-
-      // מחיקת הפרויקט
-      const deletedProject = await Project.findByIdAndDelete(id);
-      if (!deletedProject) {
-        throw new Error("❌ שגיאה במחיקת הפרויקט");
-      }
-
-      return { message: "✅ הפרויקט, כל ההזמנות וכל החשבוניות המשויכות אליו נמחקו בהצלחה" };
-
-    } catch (error) {
-      console.error("❌ שגיאה במחיקת הפרויקט:", error.message);
-      throw new Error(error.message || "❌ שגיאה לא ידועה במחיקת הפרויקט");
-    }
-  },
-  search: async (query) => {
-    try {
-      if (query === undefined || query === null) {
-        throw new Error('מילת חיפוש לא נמצאה');
-      }
-
-      let regexQuery;
-
-      // אם ה-query הוא מספר או '0', מתייחסים אליו כמספר
-      if (query === '0' || !isNaN(query)) {
-        regexQuery = query; // חיפוש לפי מספר
-      } else {
-        // חיפוש לפי שם – מאפשר התאמה חלקית גם לאותיות וגם למספרים
-        regexQuery = new RegExp(query, 'i'); // 'i' - לא מתחשב באותיות רישיות
-      }
-
-      const projects = await Project.find({
-        name: { $regex: regexQuery }  // חיפוש לפי שם בלבד
+        // מחיקת הפרויקט
+        const del = await Project.findByIdAndDelete(id).session(session);
+        if (!del) throw new Error('❌ שגיאה במחיקת הפרויקט');
       });
 
-      return { projects };
-    } catch (error) {
-      console.error('שגיאה במהלך החיפוש:', error.message);
-      throw new Error('שגיאה בזמן החיפוש');
+      return { message: '✅ הפרויקט וכל המסמכים המשויכים נמחקו בהצלחה' };
+    } catch (err) {
+      console.error('❌ שגיאה במחיקת הפרויקט:', err.message);
+      throw new Error(err.message || '❌ שגיאה לא ידועה במחיקת הפרויקט');
+    } finally {
+      session.endSession();
     }
   },
 
-  getOrdersByProjectId: async (projectId) => {
-    try {
-      const project = await Project.findById(projectId);
-      if (!project) throw new Error("Project not found");
-      return project.orders;  // מחזיר את כל פרטי ההזמנות מתוך הפרויקט
-    } catch (error) {
-      throw new Error(error.message || "Error fetching orders");
+  // 🔎 חיפוש פרויקטים לפי שם
+  async search(query) {
+    if (query === undefined || query === null) {
+      throw new Error('מילת חיפוש לא נמצאה');
     }
+    const regex = query === '0' || !isNaN(query) ? String(query) : new RegExp(String(query), 'i');
+    return Project.find({ name: { $regex: regex } }).sort({ createdAt: -1 }).lean();
   },
-  
-}
+
+  // 📦 הזמנות לפי projectId
+  async getOrdersByProjectId(projectId) {
+    if (!isValidId(projectId)) throw new Error('ID לא תקין');
+    // עדיף לא להסתמך על project.orders אם הוא מערך מוטמע; נשלוף מהקולקציה
+    return Order.find({ projectId }).sort({ createdAt: -1 }).lean();
+  },
+};
 
 export default projectService;

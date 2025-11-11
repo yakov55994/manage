@@ -1,139 +1,233 @@
+// services/orderService.js
+import mongoose from 'mongoose';
 import Order from '../models/Order.js';
 import Project from '../models/Project.js';
+
+function assertProject(projectId) {
+  if (!projectId) throw new Error('projectId is required');
+}
+
+function normalizeFiles(arr) {
+  if (!Array.isArray(arr)) return [];
+  return arr.map(file => ({
+    name: file?.name || file?.fileName || 'unknown',
+    url:  file?.url  || file?.fileUrl  || '',
+    type: file?.type || file?.fileType || 'application/octet-stream',
+    size: file?.size || 0,
+  }));
+}
+
 const orderService = {
-  // יצירת הזמנה חדשה עם כל הפרטים הנדרשים מהסכמה
-  createOrders: async (ordersData) => {
+  /**
+   * ➕ יצירת הזמנות עבור projectId
+   * מגדיל budget ו־remainingBudget של הפרויקט לפי סכומי ההזמנות
+   */
+  async create(projectId, ordersData) {
+    assertProject(projectId);
+    if (!ordersData || (Array.isArray(ordersData) && ordersData.length === 0)) {
+      throw new Error('Invalid orders data');
+    }
+    const payload = Array.isArray(ordersData) ? ordersData : [ordersData];
+
+    // ולידציה בסיסית + כפילות לפי orderNumber
+    for (const o of payload) {
+      const required = ['orderNumber','invitingName','detail','sum','status','Contact_person','createdAt'];
+      const missing = required.filter(k => !o?.[k]);
+      if (missing.length) {
+        throw new Error(`יש למלא את כל השדות להזמנה: חסר ${missing.join(', ')}`);
+      }
+      const dup = await Order.findOne({ orderNumber: o.orderNumber, projectId });
+      if (dup) {
+        throw new Error(`הזמנה עם מספר ${o.orderNumber} כבר קיימת בפרויקט`);
+      }
+    }
+
+    // Normalize + קיבוע projectId
+    const docs = payload.map(o => ({
+      ...o,
+      projectId,
+      files: normalizeFiles(o.files),
+    }));
+
+    // טרנזקציה: יצירה + עדכון פרויקט
+    const session = await mongoose.startSession();
     try {
-      // בדוק אם כל שם של מזמין כבר קיים בהזמנות קיימות
-      for (let orderData of ordersData) {
-        // בדיקת שדות ריקים (האם כל שדה נדרש מולא)
-        if (!orderData.orderNumber || !orderData.invitingName || !orderData.detail || !orderData.projectName
-          || !orderData.sum || !orderData.status || !orderData.Contact_person || ! orderData.createdAt ) {
-          console.error(`הזמנה חסרה שדות חובה: ${JSON.stringify(orderData)}`);
-          throw new Error(`יש למלא את כל השדות להזמנה.`);
-        }
-      }
-      for (let orderData of ordersData) {
-        const existingOrder = await Order.findOne({ orderNumber: orderData.orderNumber });
-        if (existingOrder) {
-          console.error(`מספר הזמנה עבור לקוח ${orderData.invitingName} כבר קיימת`);
-throw new Error(`הזמנה עם מספר ${orderData.orderNumber} עבור הלקוח ${orderData.invitingName} כבר קיימת`);
-        }
-      }
+      let created = [];
+      await session.withTransaction(async () => {
+        created = await Order.insertMany(docs, { session });
 
-      // יצירת כל ההזמנות במכה אחת
-      const newOrders = await Order.insertMany(ordersData);
+        const totalSum = created.reduce((s, x) => s + Number(x.sum || 0), 0);
 
-      // עדכון פרויקטים במקביל
-      const updates = newOrders.map(order => ({
-        updateOne: {
-          filter: { _id: order.projectId },
-          update: {
-            $push: { orders: order },
-            $inc: { budget: order.sum, remainingBudget: order.sum }
-          }
-        }
-      }));
-
-      await Project.bulkWrite(updates);
-
-      return newOrders;
-    } catch (err) {
-      console.error('שגיאה ביצירת הזמנות:', err);
-      throw new Error(`${err.message}`);
+        await Project.findByIdAndUpdate(
+          projectId,
+          {
+            $push: { orders: { $each: created.map(x => x._id) } },
+            $inc: { budget: totalSum, remainingBudget: totalSum },
+          },
+          { new: true, session }
+        );
+      });
+      return created;
+    } finally {
+      session.endSession();
     }
   },
 
+  /**
+   * 📃 רשימת הזמנות בפרויקט (עם עמודים וחיפוש חופשי q)
+   */
+  async listByProject(projectId, { page = 1, limit = 50, q } = {}) {
+    assertProject(projectId);
+    const filter = { projectId };
 
-deleteOrder: async (id) => {
-  // 1) הבא את ההזמנה
-  const order = await Order.findById(id);
-  if (!order) throw new Error("Order not found");
+    if (q != null && q !== '') {
+      const or = [
+        { projectName: { $regex: q, $options: 'i' } },
+        { invitingName: { $regex: q, $options: 'i' } },
+        { detail: { $regex: q, $options: 'i' } },
+      ];
+      if (!isNaN(q)) {
+        or.push({ orderNumber: parseInt(q, 10) });
+        or.push({ sum: parseFloat(q) });
+      }
+      Object.assign(filter, { $or: or });
+    }
 
-  // 2) ודא שיש projectId
-  if (!order.projectId) throw new Error("Order has no projectId");
+    const skip = (Number(page) - 1) * Number(limit);
+    const [items, total] = await Promise.all([
+      Order.find(filter).sort({ createdAt: -1 }).skip(skip).limit(Number(limit)),
+      Order.countDocuments(filter),
+    ]);
 
-  // 3) חשב דלתא לתקציב (מספר בטוח)
-  const delta = Number(order.sum) || 0;
+    return {
+      items,
+      total,
+      page: Number(page),
+      pages: Math.ceil(total / Number(limit || 1)) || 1,
+    };
+  },
 
-  // 4) עדכן את הפרויקט בצורה אטומית: הוצא את ההזמנה מהמארך ועדכן תקציבים
-  const project = await Project.findByIdAndUpdate(
-    order.projectId,
-    {
-      $pull: { orders: order._id },          // מסיר את ה־ObjectId מהמערך
-      $inc:  { remainingBudget: -delta, budget: -delta }
-    },
-    { new: true }
-  );
-  if (!project) throw new Error("Project not found");
+  /**
+   * 📄 הזמנה בודדת בפרויקט
+   */
+  async getById(projectId, id) {
+    assertProject(projectId);
+    return Order.findOne({ _id: id, projectId });
+  },
 
-  // 5) מחק את ההזמנה
-  await Order.findByIdAndDelete(id);
+  /**
+   * ✏️ עדכון הזמנה בפרויקט
+   * (אין שינוי בתקציב כאן; אם תרצה להשפיע כאשר sum משתנה — ראה הערה בהמשך)
+   */
+  async update(projectId, id, updateData) {
+    assertProject(projectId);
+    // אופציונלי: מניעת שינוי projectId מבחוץ
+    // delete updateData.projectId;
+    if (updateData?.files) {
+      updateData.files = normalizeFiles(updateData.files);
+    }
+    const updated = await Order.findOneAndUpdate(
+      { _id: id, projectId },
+      updateData,
+      { new: true, runValidators: true }
+    );
+    return updated; // יכול להיות null
+  },
 
-  return { order, project };
-},
+  /**
+   * 🗑️ מחיקה אטומית של הזמנה מהפרויקט
+   * מקטין budget ו־remainingBudget לפי sum של ההזמנה
+   */
+  async remove(projectId, id) {
+    assertProject(projectId);
 
-
-  // עדכון הזמנה – מאפשר לעדכן שדות לפי מה שנשלח ב-body (מעודכן גם את runValidators)
-  updateOrder: async (id, updateData) => {
+    const session = await mongoose.startSession();
     try {
-      const updatedOrder = await Order.findByIdAndUpdate(
-        id,
-        updateData,
-        { new: true, runValidators: true }
-      );
-      if (!updatedOrder) throw new Error('Order not found');
-      return updatedOrder;
-    } catch (error) {
-      console.error('שגיאה בעדכון הזמנה:', error);
-      throw error;
+      let removed = null;
+      await session.withTransaction(async () => {
+        const order = await Order.findOne({ _id: id, projectId }).session(session);
+        if (!order) return; // נשאר null
+
+        const delta = Number(order.sum || 0);
+
+        await Project.findByIdAndUpdate(
+          projectId,
+          {
+            $pull: { orders: order._id },
+            $inc:  { budget: -delta, remainingBudget: -delta },
+          },
+          { new: true, session }
+        );
+
+        await Order.deleteOne({ _id: id, projectId }).session(session);
+        removed = order;
+      });
+      return removed; // null אם לא נמצא
+    } finally {
+      session.endSession();
     }
   },
-  // קבלת כל ההזמנות
-  getAllOrders: async () => {
-    const orders = await Order.find();
-    return orders;
-  },
 
-  // חיפוש – לדוגמה, ניתן להרחיב חיפוש לפי פרמטרים עתידיים
-  search: async (query) => {
-  try {
-    if (!query && query !== '0') {
+  /**
+   * 🔎 חיפוש חופשי בפרויקט (מחרוזת query חובה)
+   */
+  async search(projectId, query) {
+    assertProject(projectId);
+    if (query == null || query === '') {
       throw new Error('מילת חיפוש לא נמצאה');
     }
 
-    // ✅ בנה את מערך התנאים בצורה ברורה
-    const searchConditions = [
-      // חיפוש בשדות טקסט
-      { projectName: { $regex: query, $options: 'i' } },
-      { invitingName: { $regex: query, $options: 'i' } },
-      { detail: { $regex: query, $options: 'i' } }
+    const or = [
+      { projectName:   { $regex: query, $options: 'i' } },
+      { invitingName:  { $regex: query, $options: 'i' } },
+      { detail:        { $regex: query, $options: 'i' } },
     ];
-
-    // ✅ אם query הוא מספר, הוסף תנאי מספרים
     if (!isNaN(query)) {
-      searchConditions.push({ orderNumber: parseInt(query) });
-      searchConditions.push({ sum: parseFloat(query) });
+      or.push({ orderNumber: parseInt(query, 10) });
+      or.push({ sum: parseFloat(query) });
     }
 
-    const orders = await Order.find({
-      $or: searchConditions
-    });
+    return Order.find({ projectId, $or: or }).sort({ createdAt: -1 });
+  },
 
-    console.log('✅ Found orders:', orders.length); // דיבוג
+  // ==== שמרתי למקרה שאתה עדיין קורא מהקוד הישן ====
 
-    return orders;
-    
-  } catch (error) {
-    console.error("❌ שגיאה במהלך החיפוש:", error.message);
-    throw new Error("שגיאה בזמן החיפוש");
-  }
-},
-  // קבלת הזמנה לפי ה-ID
-  getOrderById: async (id) => {
+  // קוד ישן: יצירה בלי projectId (לא בשימוש אחרי היישור)
+  async createOrders(_) {
+    throw new Error('use orderService.create(projectId, data) instead');
+  },
+
+  // קוד ישן: קבלת כל ההזמנות (לא מסונן)
+  async getAllOrders() {
+    return Order.find().sort({ createdAt: -1 });
+  },
+
+  // קוד ישן: getById ללא projectId
+  async getOrderById(id) {
+    return Order.findById(id);
+  },
+
+  // קוד ישן: updateById ללא projectId
+  async updateOrder(id, updateData) {
+    return Order.findByIdAndUpdate(id, updateData, { new: true, runValidators: true });
+  },
+
+  // קוד ישן: deleteById ללא projectId
+  async deleteOrder(id) {
+    // נשמר לתאימות אחורה – עדיף remove(projectId, id)
     const order = await Order.findById(id);
     if (!order) throw new Error('Order not found');
-    return order;
+    if (!order.projectId) throw new Error('Order has no projectId');
+
+    // מעדכן פרויקט כמו בקוד הישן שלך
+    const delta = Number(order.sum) || 0;
+    await Project.findByIdAndUpdate(
+      order.projectId,
+      { $pull: { orders: order._id }, $inc: { remainingBudget: -delta, budget: -delta } },
+      { new: true }
+    );
+    await Order.findByIdAndDelete(id);
+    return { order };
   },
 };
 

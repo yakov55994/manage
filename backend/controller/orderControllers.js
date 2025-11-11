@@ -1,115 +1,136 @@
+// controllers/orderController.js
 import orderService from '../services/orderService.js';
 import mongoose from 'mongoose';
-const ObjectId = mongoose.Types.ObjectId.createFromTime(Date.now());
 
 const orderController = {
+  // ➕ יצירת הזמנות לפרויקט
   createOrders: async (req, res) => {
     try {
+      const { projectId } = req.params;
       let { orders } = req.body;
-  
+
+      if (!projectId) {
+        return res.status(400).json({ message: "projectId is required" });
+      }
       if (!orders || (Array.isArray(orders) && orders.length === 0)) {
         return res.status(400).json({ message: "Invalid orders data" });
       }
-  
-      if (!Array.isArray(orders)) {
-        orders = [orders]; // עוטפים את האובייקט במערך
-      }
-  
-      const processedOrders = orders.map(order => {
-        if (!order.orderNumber) {
-          console.error("Missing orderNumber:", order);
-          return null;
-        }
-  
-        let files = [];
-        if (Array.isArray(order.files) && order.files.length > 0) {
-          files = order.files.map(file => ({
-            name: file?.name || file?.fileName || 'unknown',
-            url: file?.url || file?.fileUrl || '',
-            type: file?.type || file?.fileType || 'application/octet-stream',
-            size: file?.size || 0
-          }));
-        }
-  
-        console.log(`Processing order ${order.orderNumber} with ${files.length} files.`);
-        return { ...order, files };
-      }).filter(order => order !== null); // מסננים הזמנות לא תקינות
-  
-      if (processedOrders.length === 0) {
+      if (!Array.isArray(orders)) orders = [orders];
+
+      const processed = orders
+        .map(order => {
+          if (!order.orderNumber) return null;
+
+          const files = Array.isArray(order.files)
+            ? order.files.map(file => ({
+                name: file?.name || file?.fileName || 'unknown',
+                url:  file?.url  || file?.fileUrl  || '',
+                type: file?.type || file?.fileType || 'application/octet-stream',
+                size: file?.size || 0,
+              }))
+            : [];
+
+          return { ...order, project: projectId, files };
+        })
+        .filter(Boolean);
+
+      if (processed.length === 0) {
         return res.status(400).json({ message: "No valid orders to process" });
       }
-  
-      const newOrders = await orderService.createOrders(processedOrders);
-      res.status(201).json(newOrders);
+
+      const newOrders = await orderService.create(projectId, processed); // insertMany בתוך ה-service
+      return res.status(201).json(newOrders);
     } catch (error) {
       console.error("Error in createOrders:", error);
-      res.status(500).json({ error: error.message });
+      return res.status(500).json({ error: error.message });
     }
   },
 
-  // קבלת כל ההזמנות
+  // 📃 כל ההזמנות בפרויקט (עם עמודים)
   getAllOrders: async (req, res) => {
     try {
-      const orders = await orderService.getAllOrders();
-      res.status(200).json(orders);
+      const { projectId } = req.params;
+      const { page = 1, limit = 50, q } = req.query;
+
+      const { items, total, pages } = await orderService.listByProject(projectId, {
+        page: Number(page),
+        limit: Number(limit),
+        q
+      });
+
+      return res.status(200).json({
+        data: items || [],
+        meta: { total: total || 0, page: Number(page), pages: pages || 0 }
+      });
     } catch (error) {
-      res.status(500).json({ error: error.message });
+      console.error("getAllOrders error:", error);
+      return res.status(500).json({ error: error.message });
     }
   },
 
-  // קבלת הזמנה לפי ID
+  // 📄 הזמנה לפי ID בפרויקט
   getOrderById: async (req, res) => {
     try {
-      const order = await orderService.getOrderById(req.params.id);
+      const { projectId, id } = req.params;
+      if (!mongoose.Types.ObjectId.isValid(id)) {
+        return res.status(400).json({ error: 'Invalid order id' });
+      }
+      const order = await orderService.getById(projectId, id);
       if (!order) return res.status(404).json({ error: 'Order not found' });
-      res.status(200).json(order);
+      return res.status(200).json(order);
     } catch (error) {
-      res.status(500).json({ error: error.message });
+      console.error("getOrderById error:", error);
+      return res.status(500).json({ error: error.message });
     }
   },
 
-  // מחיקת הזמנה לפי ID
+  // 🗑️ מחיקת הזמנה בפרויקט
   deleteOrder: async (req, res) => {
     try {
-      const deletedOrder = await orderService.deleteOrder(req.params.id);
-      if (!deletedOrder) return res.status(404).json({ error: 'Order not found' });
-
-      // שליחת תשובה ללקוח
-      res.status(204).send();
+      const { projectId, id } = req.params;
+      if (!mongoose.Types.ObjectId.isValid(id)) {
+        return res.status(400).json({ error: 'Invalid order id' });
+      }
+      const deleted = await orderService.remove(projectId, id);
+      if (!deleted) return res.status(404).json({ error: 'Order not found' });
+      return res.status(200).json({ message: 'ההזמנה נמחקה בהצלחה' });
     } catch (error) {
-      res.status(500).json({ error: error.message });
+      console.error("deleteOrder error:", error);
+      return res.status(500).json({ error: error.message });
     }
   },
 
-
-  // עדכון הזמנה – מצפים לקבל ב-body את השדות שברצונך לעדכן (למשל: status, invitingName, detail וכו')
+  // ✏️ עדכון הזמנה בפרויקט
   updateOrder: async (req, res) => {
     try {
-      const updatedOrder = await orderService.updateOrder(req.body._id, req.body);
-      if (!updatedOrder) return res.status(404).json({ error: 'Order not found' });
-      res.status(200).json(updatedOrder);
+      const { projectId, id } = req.params;
+      if (!mongoose.Types.ObjectId.isValid(id)) {
+        return res.status(400).json({ error: 'Invalid order id' });
+      }
+      const updated = await orderService.update(projectId, id, req.body);
+      if (!updated) return res.status(404).json({ error: 'Order not found' });
+      return res.status(200).json(updated);
     } catch (error) {
-      res.status(500).json({ error: error.message });
+      console.error("updateOrder error:", error);
+      return res.status(500).json({ error: error.message });
     }
   },
 
-  // חיפוש הזמנות – ניתן להעביר פרמטרים לחיפוש דרך req.query
+  // 🔎 חיפוש הזמנות בפרויקט
   search: async (req, res) => {
     try {
-      const searchQuery = req.query.query; // קבלת המחרוזת הנכונה מהבקשה
-
+      const { projectId } = req.params;
+      const searchQuery = req.query.query;
       if (!searchQuery) {
         return res.status(400).json({ error: "מילת חיפוש לא נמצאה" });
       }
-
-      const orders = await orderService.search(searchQuery);
-      res.status(200).json(orders);
+      const orders = await orderService.search(projectId, searchQuery);
+      return res.status(200).json(orders);
     } catch (error) {
       console.error("שגיאה במהלך החיפוש:", error.message);
-      res.status(500).json({ error: error.message });
+      return res.status(500).json({ error: error.message });
     }
   }
-
 };
 
 export default orderController;

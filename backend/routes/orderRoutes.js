@@ -1,26 +1,11 @@
-// import express from 'express';
-// import orderControllers from '../controller/orderControllers.js';
-
-// const router = express.Router();
-
-// router.post('/', orderControllers.createOrders);
-
-// router.get('/search', orderControllers.search);
-
-// router.get('/', orderControllers.getAllOrders);
-
-// router.get('/:id', orderControllers.getOrderById);
-
-// router.put('/:id', orderControllers.updateOrder);
-
-// router.delete('/:id', orderControllers.deleteOrder);
-
-
-// export default router;
-
+// routes/order.routes.js
 import express from 'express';
 import orderControllers from '../controller/orderControllers.js';
+
+// אימות
 import { protect } from '../middleware/auth.js';
+
+// סקופ והרשאות לפי מודולים
 import {
   withScope,
   requireOp,
@@ -30,41 +15,45 @@ import {
 
 const router = express.Router();
 
-// כל מסלולי ההזמנות מוגנים ונטען scope של המשתמש
+// כל המסלולים כאן מוגנים + טוענים scope למשתמש
 router.use(protect, withScope);
 
-// יצירת הזמנה (כתיבה)
+// ---- קריאה (READ) ----
+
+// רשימת הזמנות (מסונן לפי הרשאות/סקופ)
+router.get(
+  '/',
+  requireOp('orders', 'read'),
+  applyOrderListFilter(),          // ימלא req.queryFilter לשימוש בקונטרולר
+  orderControllers.getAllOrders    // דאג שהקונטרולר יקרא מ-req.queryFilter אם קיים
+);
+
+// חיפוש הזמנות (עדיין קריאה) — מסונן ע"י applyOrderListFilter
+router.get(
+  '/search',
+  requireOp('orders', 'read'),
+  applyOrderListFilter(),
+  orderControllers.search
+);
+
+// הזמנה לפי ID (בדיקת גישה ישירה לישות)
+router.get(
+  '/:id',
+  requireOp('orders', 'read'),
+  ensureOrderAccess,               // יוודא שההזמנה שייכת לסקופ של המשתמש
+  orderControllers.getOrderById
+);
+
+// ---- כתיבה/עדכון/מחיקה ----
+
+// יצירת הזמנה
 router.post(
   '/',
   requireOp('orders', 'write'),
   orderControllers.createOrders
 );
 
-// חיפוש הזמנות (קריאה) — סינון לפי הרשאות
-router.get(
-  '/search',
-  requireOp('orders', 'read'),
-  applyOrderListFilter(),   // ימלא req.queryFilter
-  orderControllers.search
-);
-
-// כל ההזמנות (קריאה) — סינון לפי הרשאות
-router.get(
-  '/',
-  requireOp('orders', 'read'),
-  applyOrderListFilter(),   // ימלא req.queryFilter
-  orderControllers.getAllOrders
-);
-
-// הזמנה לפי ID (קריאה) — בדיקת גישה לפי פרויקט/ספק של ההזמנה
-router.get(
-  '/:id',
-  requireOp('orders', 'read'),
-  ensureOrderAccess,
-  orderControllers.getOrderById
-);
-
-// עדכון הזמנה (כתיבה) — בדיקת גישה
+// עדכון הזמנה
 router.put(
   '/:id',
   requireOp('orders', 'write'),
@@ -72,7 +61,7 @@ router.put(
   orderControllers.updateOrder
 );
 
-// מחיקת הזמנה (מחיקה) — בדיקת גישה
+// מחיקת הזמנה
 router.delete(
   '/:id',
   requireOp('orders', 'del'),

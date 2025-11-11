@@ -33,17 +33,74 @@ const UserManagement = () => {
   const [deleteModal, setDeleteModal] = useState({ show: false, user: null });
 
   // Form state
-  const [formData, setFormData] = useState({
-    username: '',
-    password: '',
-    email: '',
-    role: 'user',
-    isActive: true,
-    permissions: {
-      projects: [],
-      suppliers: []
+const [formData, setFormData] = useState({
+  username: '',
+  password: '',
+  email: '',
+  role: 'user',
+  isActive: true,
+  permissions: {
+    projects: [] // [{ project, access, modules: {...}}]
+  }
+});
+
+
+const defaultProjPerm = (projectId) => ({
+  project: projectId,
+  access: 'view',
+  modules: { invoices: 'view', orders: 'view', suppliers: 'view', files: 'view' }
+});
+
+const getProjIndex = (projectId, list) =>
+  list.findIndex(p => String(p.project) === String(projectId));
+
+const toggleProjectSelection = (projectId) => {
+  setFormData(prev => {
+    const list = [...(prev.permissions.projects || [])];
+    const idx = getProjIndex(projectId, list);
+    if (idx >= 0) {
+      // הורד הרשאות לפרויקט זה
+      list.splice(idx, 1);
+    } else {
+      // הוסף עם ברירת מחדל
+      list.push(defaultProjPerm(projectId));
     }
+    return { ...prev, permissions: { ...prev.permissions, projects: list } };
   });
+};
+
+const setProjectAccess = (projectId, access) => {
+  setFormData(prev => {
+    const list = [...(prev.permissions.projects || [])];
+    const idx = getProjIndex(projectId, list);
+    if (idx < 0) return prev;
+    // עדכן את access; אם תרצה שגם המודולים יירשו אוטומטית — עדכן גם אותם
+    list[idx] = {
+      ...list[idx],
+      access,
+      // אם תרצה להחיל על המודולים:
+      // modules: Object.fromEntries(Object.keys(list[idx].modules).map(k => [k, access]))
+    };
+    return { ...prev, permissions: { ...prev.permissions, projects: list } };
+  });
+};
+
+const setModuleAccess = (projectId, moduleKey, value) => {
+  setFormData(prev => {
+    const list = [...(prev.permissions.projects || [])];
+    const idx = getProjIndex(projectId, list);
+    if (idx < 0) return prev;
+    list[idx] = {
+      ...list[idx],
+      modules: { ...(list[idx].modules || {}), [moduleKey]: value }
+    };
+    return { ...prev, permissions: { ...prev.permissions, projects: list } };
+  });
+};
+
+const isProjectSelected = (projectId) =>
+  getProjIndex(projectId, formData.permissions.projects || []) >= 0;
+
 
   const [showPassword, setShowPassword] = useState(false);
 
@@ -61,10 +118,10 @@ const UserManagement = () => {
     try {
       setLoading(true);
       const [usersRes, projectsRes, suppliersRes] = await Promise.all([
-        api.get('/users'),
-        api.get('/projects'),
-        api.get('/suppliers/getAllSuppliers')
-      ]);
+   api.get('/users'),
+   api.get('/projects'),
+   api.get('/suppliers') // ✅ הנתיב הנכון
+ ]);
 
       setUsers(usersRes.data.data || []);
       setProjects(projectsRes.data || []);
@@ -82,93 +139,100 @@ const UserManagement = () => {
     }
   };
 
-  const openCreateModal = () => {
-    setEditingUser(null);
-    setFormData({
-      username: '',
-      password: '',
-      email: '',
-      role: 'user',
-      isActive: true,
+const openCreateModal = () => {
+  setEditingUser(null);
+  setFormData({
+    username: '',
+    password: '',
+    email: '',
+    role: 'user',
+    isActive: true,
+    permissions: { projects: [] }
+  });
+  setShowModal(true);
+};
+
+
+const openEditModal = (user) => {
+  // נורמליזציה להרשאות קיימות
+  const normalizedProjects = (() => {
+    const raw = user?.permissions?.projects || [];
+    // אם ישן (מערך IDs)
+    if (raw.length && typeof raw[0] === 'string') {
+      return raw.map(pid => defaultProjPerm(pid));
+    }
+    // חדש
+    return raw.map(p => ({
+      project: p.project?._id || p.project || p._id || p, // לכסות פופולציות שונות
+      access: p.access || 'view',
+      modules: {
+        invoices: p.modules?.invoices || (p.access || 'view'),
+        orders:   p.modules?.orders   || (p.access || 'view'),
+        suppliers:p.modules?.suppliers|| (p.access || 'view'),
+        files:    p.modules?.files    || (p.access || 'view'),
+      }
+    }));
+  })();
+
+  setEditingUser(user);
+  setFormData({
+    username: user.username,
+    password: '',
+    email: user.email || '',
+    role: user.role,
+    isActive: user.isActive,
+    permissions: {
+      projects: normalizedProjects
+    }
+  });
+  setShowModal(true);
+};
+
+
+ const handleSubmit = async (e) => {
+  e.preventDefault();
+  if (!formData.username) { /* ... */ }
+  if (!editingUser && !formData.password) { /* ... */ }
+
+  try {
+    const payload = {
+      username: formData.username,
+      email: formData.email,
+      role: formData.role,
+      isActive: formData.isActive,
       permissions: {
-        projects: [],
-        suppliers: []
+        projects: (formData.permissions.projects || []).map(p => ({
+          project: p.project,
+          access: p.access || 'view',
+          modules: {
+            invoices: p.modules?.invoices || (p.access || 'view'),
+            orders:   p.modules?.orders   || (p.access || 'view'),
+            suppliers:p.modules?.suppliers|| (p.access || 'view'),
+            files:    p.modules?.files    || (p.access || 'view'),
+          }
+        }))
       }
+    };
+    if (!editingUser && formData.password) payload.password = formData.password;
+    if (editingUser && formData.password) payload.password = formData.password;
+
+    if (editingUser) {
+      await api.put(`/users/${editingUser._id}`, payload);
+      toast.success('המשתמש עודכן בהצלחה', { className: "sonner-toast success rtl" });
+    } else {
+      await api.post('/users', payload);
+      toast.success('המשתמש נוצר בהצלחה', { className: "sonner-toast success rtl" });
+    }
+    setShowModal(false);
+    fetchData();
+  } catch (error) {
+    console.error('Error saving user:', error);
+    toast.error(error.response?.data?.message || 'שגיאה בשמירת המשתמש', {
+      className: "sonner-toast error rtl"
     });
-    setShowModal(true);
-  };
+  }
+};
 
-  const openEditModal = (user) => {
-    setEditingUser(user);
-    setFormData({
-      username: user.username,
-      password: '', // לא ממלאים סיסמה בעריכה
-      email: user.email || '',
-      role: user.role,
-      isActive: user.isActive,
-      permissions: {
-        projects: user.permissions?.projects?.map(p => p._id || p) || [],
-        suppliers: user.permissions?.suppliers?.map(s => s._id || s) || []
-      }
-    });
-    setShowModal(true);
-  };
-
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-
-    // ולידציות
-    if (!formData.username) {
-      toast.error('שם משתמש הוא שדה חובה', {
-        className: "sonner-toast error rtl"
-      });
-      return;
-    }
-
-    if (!editingUser && !formData.password) {
-      toast.error('סיסמה היא שדה חובה', {
-        className: "sonner-toast error rtl"
-      });
-      return;
-    }
-
-    try {
-      if (editingUser) {
-        // עדכון משתמש קיים
-        const updateData = {
-          username: formData.username,
-          email: formData.email,
-          role: formData.role,
-          isActive: formData.isActive,
-          permissions: formData.permissions
-        };
-
-        // הוסף סיסמה רק אם הוזנה
-        if (formData.password) {
-          updateData.password = formData.password;
-        }
-
-        await api.put(`/users/${editingUser._id}`, updateData);
-        toast.success('המשתמש עודכן בהצלחה', {
-          className: "sonner-toast success rtl"
-        });
-      } else {
-        // יצירת משתמש חדש
-        await api.post('/users', formData);
-        toast.success('המשתמש נוצר בהצלחה', {
-          className: "sonner-toast success rtl"
-        });
-      }
-
-      setShowModal(false);
-      fetchData();
-    } catch (error) {
-      console.error('Error saving user:', error);
-      toast.error(error.response?.data?.message || 'שגיאה בשמירת המשתמש', {
-        className: "sonner-toast error rtl"
-      });
-    }
-  };
 
   const handleDelete = async () => {
     try {
@@ -184,22 +248,6 @@ const UserManagement = () => {
         className: "sonner-toast error rtl"
       });
     }
-  };
-
-  const toggleProjectPermission = (projectId) => {
-    setFormData(prev => {
-      const projects = prev.permissions.projects.includes(projectId)
-        ? prev.permissions.projects.filter(id => id !== projectId)
-        : [...prev.permissions.projects, projectId];
-      
-      return {
-        ...prev,
-        permissions: {
-          ...prev.permissions,
-          projects
-        }
-      };
-    });
   };
 
 
@@ -224,15 +272,7 @@ const UserManagement = () => {
     }));
   };
 
-  const selectAllSuppliers = () => {
-    setFormData(prev => ({
-      ...prev,
-      permissions: {
-        ...prev.permissions,
-        suppliers: suppliers.map(s => s._id)
-      }
-    }));
-  };
+
 
   const clearAllSuppliers = () => {
     setFormData(prev => ({
@@ -521,58 +561,89 @@ const UserManagement = () => {
                     </div>
 
                     {/* Projects Permissions */}
-                    <div>
-                      <div className="flex items-center justify-between mb-4">
-                        <label className="flex items-center gap-2 text-lg font-bold text-gray-900">
-                          <FolderKanban className="w-5 h-5 text-blue-600" />
-                          הרשאות פרויקטים
-                          <span className="text-sm font-normal text-gray-600">
-                            ({formData.permissions.projects.length} נבחרו)
-                          </span>
-                        </label>
-                        <div className="flex gap-2">
-                          <button
-                            type="button"
-                            onClick={selectAllProjects}
-                            className="px-3 py-1 bg-green-100 text-green-700 rounded-lg hover:bg-green-200 transition-colors text-sm font-medium"
-                          >
-                            בחר הכל
-                          </button>
-                          <button
-                            type="button"
-                            onClick={clearAllProjects}
-                            className="px-3 py-1 bg-red-100 text-red-700 rounded-lg hover:bg-red-200 transition-colors text-sm font-medium"
-                          >
-                            נקה הכל
-                          </button>
-                        </div>
-                      </div>
+             <div>
+  <div className="flex items-center justify-between mb-4">
+    <label className="flex items-center gap-2 text-lg font-bold text-gray-900">
+      <FolderKanban className="w-5 h-5 text-blue-600" />
+      הרשאות פרויקטים
+      <span className="text-sm font-normal text-gray-600">
+        ({formData.permissions.projects.length} נבחרו)
+      </span>
+    </label>
+  </div>
 
-                      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3 max-h-60 overflow-y-auto p-2 bg-gray-50 rounded-xl border-2 border-gray-200">
-                        {projects.length > 0 ? (
-                          projects.map((project) => (
-                            <label
-                              key={project._id}
-                              className={`flex items-center gap-3 p-3 rounded-lg border-2 cursor-pointer transition-all ${
-                                formData.permissions.projects.includes(project._id)
-                                  ? 'bg-blue-100 border-blue-400'
-                                  : 'bg-white border-gray-200 hover:border-blue-300'
-                              }`}
-                            >
-                              <input
-                                type="checkbox"
-                                checked={formData.permissions.projects.includes(project._id)}
-                                onChange={() => toggleProjectPermission(project._id)}
-                                className="w-4 h-4 text-blue-600 rounded focus:ring-2 focus:ring-blue-500"
-                              />
-                              <span className="text-sm font-medium text-gray-900">{project.name}</span>
-                            </label>
-                          ))
-                        ) : (
-                          <p className="col-span-3 text-center text-gray-500 py-4">אין פרויקטים במערכת</p>
-                        )}
-                      </div>
-                    </div>
+  <div className="grid grid-cols-1 gap-3 max-h-[60vh] overflow-y-auto p-2">
+    {projects.length > 0 ? projects.map((project) => {
+      const selected = isProjectSelected(project._id);
+      const proj = (formData.permissions.projects || [])
+        .find(p => String(p.project) === String(project._id));
+
+      return (
+        <div key={project._id} className={`rounded-xl border-2 p-3 ${selected ? 'border-blue-400 bg-blue-50' : 'border-gray-200 bg-white'}`}>
+          <div className="flex items-center justify-between">
+            <label className="flex items-center gap-3 cursor-pointer">
+              <input
+                type="checkbox"
+                checked={selected}
+                onChange={() => toggleProjectSelection(project._id)}
+                className="w-4 h-4 text-blue-600"
+              />
+              <span className="text-sm font-semibold text-gray-900">{project.name}</span>
+            </label>
+
+            {/* Project-level access */}
+            <div className="flex items-center gap-4">
+              <label className="flex items-center gap-1 text-sm">
+                <input
+                  type="radio"
+                  disabled={!selected}
+                  checked={selected && (proj?.access || 'view') === 'view'}
+                  onChange={() => setProjectAccess(project._id, 'view')}
+                />
+                צפייה
+              </label>
+              <label className="flex items-center gap-1 text-sm">
+                <input
+                  type="radio"
+                  disabled={!selected}
+                  checked={selected && (proj?.access || 'view') === 'edit'}
+                  onChange={() => setProjectAccess(project._id, 'edit')}
+                />
+                עריכה
+              </label>
+            </div>
+          </div>
+
+          {/* Module-level access */}
+          <div className={`mt-3 grid grid-cols-2 md:grid-cols-4 gap-2 ${!selected ? 'opacity-50 pointer-events-none' : ''}`}>
+            {[
+              { key: 'invoices', label: 'חשבוניות' },
+              { key: 'orders',   label: 'הזמנות' },
+              { key: 'suppliers',label: 'ספקים' },
+              { key: 'files',    label: 'קבצים' },
+            ].map(m => (
+              <div key={m.key} className="flex items-center justify-between bg-white border rounded-lg px-2 py-1">
+                <span className="text-sm font-medium">{m.label}</span>
+                <select
+                  className="text-sm border rounded px-2 py-1"
+                  value={proj?.modules?.[m.key] || proj?.access || 'view'}
+                  onChange={e => setModuleAccess(project._id, m.key, e.target.value)}
+                  disabled={!selected}
+                >
+                  <option value="view">צפייה</option>
+                  <option value="edit">עריכה</option>
+                </select>
+              </div>
+            ))}
+          </div>
+        </div>
+      );
+    }) : (
+      <p className="text-center text-gray-500 py-4">אין פרויקטים במערכת</p>
+    )}
+  </div>
+</div>
+
 
                     {/* Suppliers Permissions */}
                     <div>
