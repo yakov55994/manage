@@ -64,6 +64,7 @@ const [exportColumns, setExportColumns] = useState({
   invoiceSumUnpaid: true,
   lastPaymentDate: false,
   projectPaymentStatus: true,
+  fileCount: true,
 });
 
 
@@ -94,6 +95,7 @@ const availableColumns = [
   { key: 'invoiceSumUnpaid', label: 'סכום שטרם שולם' },
   { key: 'lastPaymentDate', label: 'תשלום אחרון' },
   { key: 'projectPaymentStatus', label: 'סטטוס תשלום בפרויקט' }, // למשל: "יש לא משולם" / "הכל שולם" / "ללא חשבוניות"
+ { key: 'fileCount', label: 'מס׳ קבצים בחשבוניות' }, 
 ];
 
 
@@ -278,6 +280,7 @@ if (advancedFilters.paymentStatus) {
   let sumPaid = 0;
   let sumUnpaid = 0;
   let lastPaid = null;
+   let fileCount = 0; 
 
   invoices.forEach((inv) => {
     const paid = (inv.paid || '').trim() === 'כן';
@@ -292,6 +295,9 @@ if (advancedFilters.paymentStatus) {
       // גם כששדה paid חסר / "לא" – נספור כלא משולם
       unpaidCount += 1;
       sumUnpaid += sum;
+    }
+     if (inv.file && inv.file.trim() !== '') {
+      fileCount += 1;
     }
   });
 
@@ -308,6 +314,7 @@ if (advancedFilters.paymentStatus) {
     invoiceSumUnpaid: sumUnpaid,
     lastPaymentDate: lastPaid,
     projectPaymentStatus,
+     fileCount,
   };
 };
 
@@ -335,6 +342,7 @@ const exportCustomReport = () => {
     invoiceSumUnpaid: "סכום שטרם שולם",
     lastPaymentDate: "תשלום אחרון",
     projectPaymentStatus: "סטטוס תשלום בפרויקט",
+    fileCount: "מס׳ קבצים בחשבוניות",
   };
 
   const selectedColumns = Object.keys(exportColumns).filter((key) => exportColumns[key]);
@@ -394,6 +402,9 @@ const exportCustomReport = () => {
         case 'projectPaymentStatus':
           row[columnMapping.projectPaymentStatus] = inv.projectPaymentStatus;
           break;
+  case 'fileCount':
+    row[columnMapping.fileCount] = inv.fileCount;
+    break;
 
         default:
           break;
@@ -480,6 +491,8 @@ const exportCustomReport = () => {
     fetchProjects();
   }, []);
 
+
+  console.log(allProjects);
   useEffect(() => {
   if (!showReportModal) return;
   const onKeyDown = (e) => {
@@ -657,11 +670,13 @@ const exportCustomReport = () => {
                     <th className="px-4 py-4 text-sm font-bold text-white">שם המזמין</th>
                     <th className="px-4 py-4 text-sm font-bold text-white">תאריך יצירה</th>
                     <th className="px-4 py-4 text-sm font-bold text-white">איש קשר</th>
+                    <th className="px-4 py-4 text-sm font-bold text-white">מס' קבצים</th>
                     <th className="px-4 py-4 text-sm font-bold text-white">פעולות</th>
                   </tr>
                 </thead>
                 <tbody>
                   {sortedProjects.map((project) => (
+                    const stats = invoiceStats(project);
                     <tr
                       key={project._id}
                       onClick={() => handleView(project._id)}
@@ -696,6 +711,14 @@ const exportCustomReport = () => {
                       <td className="px-4 py-4 text-sm text-center text-slate-600">
                         {project.Contact_person || "—"}
                       </td>
+                       <td className="px-4 py-4 text-sm font-bold text-center text-slate-900">
+          <span className="inline-flex items-center gap-1">
+            {stats.fileCount}
+            {stats.fileCount > 0 && (
+              <FileSpreadsheet className="w-4 h-4 text-orange-500" />
+            )}
+          </span>
+        </td>
                       <td className="px-4 py-4">
                         <div className="flex justify-center gap-2">
                           <button
