@@ -19,6 +19,8 @@ import {
   XCircle,
   ArrowLeftRight,
   AlertTriangle,
+  CheckSquare,
+  Square,
 } from "lucide-react";
 import { toast } from "sonner";
 import MoveInvoiceModal from "../../Components/MoveInvoiceModal.jsx";
@@ -1159,46 +1161,47 @@ const getFilteredInvoices = () => {
       onClick={() => setShowReportModal(false)}
     />
 
-    {/* מעטפת עם גלילה על כל המסך, מיושרת למעלה */}
-    <div className="relative flex min-h-full items-start justify-center p-4 overflow-y-auto">
+    {/* מעטפת עם גלילה */}
+    <div className="fixed inset-0 flex items-center justify-center p-4 overflow-y-auto">
       {/* קופסת המודאל */}
       <div
-        className="relative w-full max-w-3xl mt-20"
+        className="relative w-full max-w-4xl mt-20"
         onClick={(e) => e.stopPropagation()}
         role="dialog"
         aria-modal="true"
       >
-        {/* זוהר עדין שלא דוחף את התוכן */}
-        <div className="pointer-events-none absolute -inset-2 bg-gradient-to-r from-purple-500 to-indigo-500 rounded-3xl opacity-20 blur-xl"></div>
+        {/* זוהר עדין */}
+        <div className="pointer-events-none absolute -inset-2 bg-gradient-to-r from-orange-500 to-amber-500 rounded-3xl opacity-20 blur-xl"></div>
 
         <div className="relative bg-white rounded-3xl shadow-2xl overflow-hidden">
-          {/* איקס סגירה */}
-          <button
-            type="button"
-            onClick={() => setShowReportModal(false)}
-            className="absolute top-3 left-3 p-2 rounded-full hover:bg-slate-100 focus:outline-none focus:ring-2 focus:ring-purple-300"
-            aria-label="סגור"
-            title="סגור"
-          >
-            <X className="w-6 h-6 text-slate-700" />
-          </button>
-
-          {/* תוכן עם גלילה פנימית – לא נחתך */}
-          <div className="max-h-[88vh] overflow-y-auto p-6">
-            {/* Header */}
-            <div className="text-center mb-8">
-              <div className="mx-auto w-16 h-16 rounded-full bg-gradient-to-br from-purple-500 to-indigo-500 flex items-center justify-center mb-4">
-                <FileSpreadsheet className="w-8 h-8 text-white" />
+          {/* כותרת + כפתור סגירה */}
+          <div className="bg-gradient-to-r from-orange-500 to-amber-500 text-white p-6">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <div className="bg-white/20 p-2 rounded-lg">
+                  <FileSpreadsheet className="w-6 h-6" />
+                </div>
+                <h3 className="text-2xl font-bold">מחולל דוחות חשבוניות</h3>
               </div>
-              <h3 className="text-3xl font-bold text-slate-900 mb-2">מחולל דוחות חשבוניות</h3>
-              <p className="text-slate-600">סנן את החשבוניות ובחר עמודות לייצוא</p>
+              <button
+                onClick={() => setShowReportModal(false)}
+                className="text-white hover:bg-white/20 rounded-lg p-2 transition-colors"
+                aria-label="סגור"
+                title="סגור"
+              >
+                <X className="w-6 h-6" />
+              </button>
             </div>
+            <p className="text-white/90 text-sm mt-2">סנן את החשבוניות ובחר עמודות לייצוא</p>
+          </div>
 
+          {/* תוכן המודאל */}
+          <div className="max-h-[calc(85vh-8rem)] overflow-y-auto p-6">
             {/* Advanced Filters Section */}
-            <div className="mb-8">
+            <div className="mb-6">
               <div className="flex items-center justify-between mb-4">
-                <h4 className="text-xl font-bold text-slate-900 flex items-center gap-2">
-                  <Filter className="w-5 h-5 text-purple-500" />
+                <h4 className="text-lg font-bold text-gray-900 flex items-center gap-2">
+                  <Filter className="w-5 h-5 text-orange-500" />
                   סינון מתקדם
                 </h4>
                 <button
@@ -1221,7 +1224,7 @@ const getFilteredInvoices = () => {
                       paymentMethod: "",
                     })
                   }
-                  className="text-sm text-red-600 hover:text-red-700 font-medium"
+                  className="text-sm text-red-600 hover:text-red-700 font-bold"
                 >
                   נקה סינונים
                 </button>
@@ -1230,115 +1233,115 @@ const getFilteredInvoices = () => {
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                 {/* יצירה מ/עד */}
                 <div>
-                  <label className="block text-sm font-bold text-slate-700 mb-2">תאריך יצירה מ־</label>
+                  <label className="block text-sm font-semibold text-gray-700 mb-2">תאריך יצירה מ־</label>
                   <input
                     type="date"
                     value={advancedFilters.dateFrom}
                     onChange={(e) => setAdvancedFilters({ ...advancedFilters, dateFrom: e.target.value })}
-                    className="w-full px-4 py-2 border-2 border-slate-200 rounded-xl focus:border-purple-500 focus:outline-none focus:ring-2 focus:ring-purple-200"
+                    className="w-full px-4 py-2 border-2 border-gray-200 rounded-xl focus:border-orange-500 focus:outline-none focus:ring-2 focus:ring-orange-200"
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-bold text-slate-700 mb-2">תאריך יצירה עד־</label>
+                  <label className="block text-sm font-semibold text-gray-700 mb-2">תאריך יצירה עד־</label>
                   <input
                     type="date"
                     value={advancedFilters.dateTo}
                     onChange={(e) => setAdvancedFilters({ ...advancedFilters, dateTo: e.target.value })}
-                    className="w-full px-4 py-2 border-2 border-slate-200 rounded-xl focus:border-purple-500 focus:outline-none focus:ring-2 focus:ring-purple-200"
+                    className="w-full px-4 py-2 border-2 border-gray-200 rounded-xl focus:border-orange-500 focus:outline-none focus:ring-2 focus:ring-orange-200"
                   />
                 </div>
 
                 {/* תשלום מ/עד */}
                 <div>
-                  <label className="block text-sm font-bold text-slate-700 mb-2">תאריך תשלום מ־</label>
+                  <label className="block text-sm font-semibold text-gray-700 mb-2">תאריך תשלום מ־</label>
                   <input
                     type="date"
                     value={advancedFilters.paymentDateFrom}
                     onChange={(e) => setAdvancedFilters({ ...advancedFilters, paymentDateFrom: e.target.value })}
-                    className="w-full px-4 py-2 border-2 border-slate-200 rounded-xl focus:border-purple-500 focus:outline-none focus:ring-2 focus:ring-purple-200"
+                    className="w-full px-4 py-2 border-2 border-gray-200 rounded-xl focus:border-orange-500 focus:outline-none focus:ring-2 focus:ring-orange-200"
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-bold text-slate-700 mb-2">תאריך תשלום עד־</label>
+                  <label className="block text-sm font-semibold text-gray-700 mb-2">תאריך תשלום עד־</label>
                   <input
                     type="date"
                     value={advancedFilters.paymentDateTo}
                     onChange={(e) => setAdvancedFilters({ ...advancedFilters, paymentDateTo: e.target.value })}
-                    className="w-full px-4 py-2 border-2 border-slate-200 rounded-xl focus:border-purple-500 focus:outline-none focus:ring-2 focus:ring-purple-200"
+                    className="w-full px-4 py-2 border-2 border-gray-200 rounded-xl focus:border-orange-500 focus:outline-none focus:ring-2 focus:ring-orange-200"
                   />
                 </div>
 
                 {/* סכום */}
                 <div>
-                  <label className="block text-sm font-bold text-slate-700 mb-2">סכום מינימום</label>
+                  <label className="block text-sm font-semibold text-gray-700 mb-2">סכום מינימום</label>
                   <input
                     type="number"
                     value={advancedFilters.amountMin}
                     onChange={(e) => setAdvancedFilters({ ...advancedFilters, amountMin: e.target.value })}
                     placeholder="₪"
-                    className="w-full px-4 py-2 border-2 border-slate-200 rounded-xl focus:border-purple-500 focus:outline-none focus:ring-2 focus:ring-purple-200"
+                    className="w-full px-4 py-2 border-2 border-gray-200 rounded-xl focus:border-orange-500 focus:outline-none focus:ring-2 focus:ring-orange-200"
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-bold text-slate-700 mb-2">סכום מקסימום</label>
+                  <label className="block text-sm font-semibold text-gray-700 mb-2">סכום מקסימום</label>
                   <input
                     type="number"
                     value={advancedFilters.amountMax}
                     onChange={(e) => setAdvancedFilters({ ...advancedFilters, amountMax: e.target.value })}
                     placeholder="₪"
-                    className="w-full px-4 py-2 border-2 border-slate-200 rounded-xl focus:border-purple-500 focus:outline-none focus:ring-2 focus:ring-purple-200"
+                    className="w-full px-4 py-2 border-2 border-gray-200 rounded-xl focus:border-orange-500 focus:outline-none focus:ring-2 focus:ring-orange-200"
                   />
                 </div>
 
                 {/* שמות */}
                 <div>
-                  <label className="block text-sm font-bold text-slate-700 mb-2">שם פרויקט</label>
+                  <label className="block text-sm font-semibold text-gray-700 mb-2">שם פרויקט</label>
                   <input
                     type="text"
                     value={advancedFilters.projectName}
                     onChange={(e) => setAdvancedFilters({ ...advancedFilters, projectName: e.target.value })}
                     placeholder="חפש שם פרויקט"
-                    className="w-full px-4 py-2 border-2 border-slate-200 rounded-xl focus:border-purple-500 focus:outline-none focus:ring-2 focus:ring-purple-200"
+                    className="w-full px-4 py-2 border-2 border-gray-200 rounded-xl focus:border-orange-500 focus:outline-none focus:ring-2 focus:ring-orange-200"
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-bold text-slate-700 mb-2">שם ספק / מזמין</label>
+                  <label className="block text-sm font-semibold text-gray-700 mb-2">שם ספק / מזמין</label>
                   <input
                     type="text"
                     value={advancedFilters.supplierName}
                     onChange={(e) => setAdvancedFilters({ ...advancedFilters, supplierName: e.target.value })}
                     placeholder="חפש ספק או מזמין"
-                    className="w-full px-4 py-2 border-2 border-slate-200 rounded-xl focus:border-purple-500 focus:outline-none focus:ring-2 focus:ring-purple-200"
+                    className="w-full px-4 py-2 border-2 border-gray-200 rounded-xl focus:border-orange-500 focus:outline-none focus:ring-2 focus:ring-orange-200"
                   />
                 </div>
 
                 {/* טווח מספר חשבונית */}
                 <div>
-                  <label className="block text-sm font-bold text-slate-700 mb-2">מס׳ חשבונית מ־</label>
+                  <label className="block text-sm font-semibold text-gray-700 mb-2">מס׳ חשבונית מ־</label>
                   <input
                     type="number"
                     value={advancedFilters.invoiceNumberFrom}
                     onChange={(e) => setAdvancedFilters({ ...advancedFilters, invoiceNumberFrom: e.target.value })}
-                    className="w-full px-4 py-2 border-2 border-slate-200 rounded-xl focus:border-purple-500 focus:outline-none focus:ring-2 focus:ring-purple-200"
+                    className="w-full px-4 py-2 border-2 border-gray-200 rounded-xl focus:border-orange-500 focus:outline-none focus:ring-2 focus:ring-orange-200"
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-bold text-slate-700 mb-2">מס׳ חשבונית עד־</label>
+                  <label className="block text-sm font-semibold text-gray-700 mb-2">מס׳ חשבונית עד־</label>
                   <input
                     type="number"
                     value={advancedFilters.invoiceNumberTo}
                     onChange={(e) => setAdvancedFilters({ ...advancedFilters, invoiceNumberTo: e.target.value })}
-                    className="w-full px-4 py-2 border-2 border-slate-200 rounded-xl focus:border-purple-500 focus:outline-none focus:ring-2 focus:ring-purple-200"
+                    className="w-full px-4 py-2 border-2 border-gray-200 rounded-xl focus:border-orange-500 focus:outline-none focus:ring-2 focus:ring-orange-200"
                   />
                 </div>
 
                 {/* יש/אין ספק */}
                 <div>
-                  <label className="block text-sm font-bold text-slate-700 mb-2">ספק</label>
+                  <label className="block text-sm font-semibold text-gray-700 mb-2">ספק</label>
                   <select
                     value={advancedFilters.hasSupplier}
                     onChange={(e) => setAdvancedFilters({ ...advancedFilters, hasSupplier: e.target.value })}
-                    className="w-full px-4 py-2 border-2 border-slate-200 rounded-xl focus:border-purple-500 focus:outline-none focus:ring-2 focus:ring-purple-200"
+                    className="w-full px-4 py-2 border-2 border-gray-200 rounded-xl focus:border-orange-500 focus:outline-none focus:ring-2 focus:ring-orange-200"
                   >
                     <option value="all">הכל</option>
                     <option value="yes">קיים ספק</option>
@@ -1348,11 +1351,11 @@ const getFilteredInvoices = () => {
 
                 {/* סטטוסי תשלום/הגשה */}
                 <div>
-                  <label className="block text-sm font-bold text-slate-700 mb-2">סטטוס תשלום</label>
+                  <label className="block text-sm font-semibold text-gray-700 mb-2">סטטוס תשלום</label>
                   <select
                     value={advancedFilters.paymentStatus}
                     onChange={(e) => setAdvancedFilters({ ...advancedFilters, paymentStatus: e.target.value })}
-                    className="w-full px-4 py-2 border-2 border-slate-200 rounded-xl focus:border-purple-500 focus:outline-none focus:ring-2 focus:ring-purple-200"
+                    className="w-full px-4 py-2 border-2 border-gray-200 rounded-xl focus:border-orange-500 focus:outline-none focus:ring-2 focus:ring-orange-200"
                   >
                     <option value="all">הכל</option>
                     <option value="paid">שולם</option>
@@ -1361,11 +1364,11 @@ const getFilteredInvoices = () => {
                 </div>
 
                 <div>
-                  <label className="block text-sm font-bold text-slate-700 mb-2">סטטוס הגשה</label>
+                  <label className="block text-sm font-semibold text-gray-700 mb-2">סטטוס הגשה</label>
                   <select
                     value={advancedFilters.submissionStatus}
                     onChange={(e) => setAdvancedFilters({ ...advancedFilters, submissionStatus: e.target.value })}
-                    className="w-full px-4 py-2 border-2 border-slate-200 rounded-xl focus:border-purple-500 focus:outline-none focus:ring-2 focus:ring-purple-200"
+                    className="w-full px-4 py-2 border-2 border-gray-200 rounded-xl focus:border-orange-500 focus:outline-none focus:ring-2 focus:ring-orange-200"
                   >
                     <option value="all">הכל</option>
                     <option value="submitted">הוגש</option>
@@ -1376,21 +1379,21 @@ const getFilteredInvoices = () => {
 
                 {/* סוג מסמך / אמצעי תשלום */}
                 <div>
-                  <label className="block text-sm font-bold text-slate-700 mb-2">סוג מסמך</label>
+                  <label className="block text-sm font-semibold text-gray-700 mb-2">סוג מסמך</label>
                   <input
                     type="text"
                     value={advancedFilters.documentType || ""}
                     onChange={(e) => setAdvancedFilters({ ...advancedFilters, documentType: e.target.value })}
                     placeholder='למשל: "חשבונית מס/קבלה", "ח. עסקה"'
-                    className="w-full px-4 py-2 border-2 border-slate-200 rounded-xl focus:border-purple-500 focus:outline-none focus:ring-2 focus:ring-purple-200"
+                    className="w-full px-4 py-2 border-2 border-gray-200 rounded-xl focus:border-orange-500 focus:outline-none focus:ring-2 focus:ring-orange-200"
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-bold text-slate-700 mb-2">אמצעי תשלום</label>
+                  <label className="block text-sm font-semibold text-gray-700 mb-2">אמצעי תשלום</label>
                   <select
                     value={advancedFilters.paymentMethod || ""}
                     onChange={(e) => setAdvancedFilters({ ...advancedFilters, paymentMethod: e.target.value })}
-                    className="w-full px-4 py-2 border-2 border-slate-200 rounded-xl focus:border-purple-500 focus:outline-none focus:ring-2 focus:ring-purple-200"
+                    className="w-full px-4 py-2 border-2 border-gray-200 rounded-xl focus:border-orange-500 focus:outline-none focus:ring-2 focus:ring-orange-200"
                   >
                     <option value="">הכל</option>
                     <option value="bank_transfer">העברה בנקאית</option>
@@ -1400,26 +1403,30 @@ const getFilteredInvoices = () => {
               </div>
 
               {/* Filter Summary */}
-              <div className="mt-4 p-4 bg-purple-50 rounded-xl">
-                <p className="text-sm font-bold text-slate-700">
+              <div className="mt-4 p-4 bg-gradient-to-br from-blue-50 to-cyan-50 rounded-xl border-2 border-blue-200">
+                <p className="text-sm font-bold text-gray-700">
                   מסננים: {filteredInvoices.length} חשבוניות מתוך {allInvoices.length}
                 </p>
               </div>
             </div>
 
             {/* Column Selection Section */}
-            <div className="mb-8">
+            <div className="mb-6">
               <div className="flex items-center justify-between mb-4">
-                <h4 className="text-xl font-bold text-slate-900 flex items-center gap-2">
-                  <FileSpreadsheet className="w-5 h-5 text-purple-500" />
-                  בחירת עמודות לייצוא
-                </h4>
+                <h4 className="text-lg font-bold text-gray-900">בחר עמודות לייצוא</h4>
                 <div className="flex gap-2">
-                  <button onClick={selectAllColumns} className="text-sm text-purple-600 hover:text-purple-700 font-medium">
+                  <button
+                    onClick={selectAllColumns}
+                    className="flex items-center gap-2 px-3 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700"
+                  >
+                    <CheckSquare className="w-4 h-4" />
                     בחר הכל
                   </button>
-                  <span className="text-slate-400">|</span>
-                  <button onClick={deselectAllColumns} className="text-sm text-purple-600 hover:text-purple-700 font-medium">
+                  <button
+                    onClick={deselectAllColumns}
+                    className="flex items-center gap-2 px-3 py-2 bg-rose-600 text-white rounded-lg hover:bg-rose-700"
+                  >
+                    <Square className="w-4 h-4" />
                     בטל הכל
                   </button>
                 </div>
@@ -1429,34 +1436,42 @@ const getFilteredInvoices = () => {
                 {availableColumns.map((column) => (
                   <label
                     key={column.key}
-                    className="flex items-center gap-2 p-3 border-2 border-slate-200 rounded-xl cursor-pointer hover:border-purple-300 transition-all"
+                    className={`flex items-center gap-3 p-3 rounded-xl border-2 cursor-pointer transition-all ${
+                      exportColumns[column.key]
+                        ? 'bg-gradient-to-br from-orange-50 to-amber-50 border-orange-400'
+                        : 'bg-gray-50 border-gray-200 hover:border-gray-300'
+                    }`}
                   >
                     <input
                       type="checkbox"
                       checked={!!exportColumns[column.key]}
                       onChange={() => toggleColumn(column.key)}
-                      className="w-4 h-4 text-purple-600 rounded focus:ring-2 focus:ring-purple-500"
+                      className="w-5 h-5 text-orange-600 rounded focus:ring-2 focus:ring-orange-500"
                     />
-                    <span className="text-sm font-medium text-slate-700">{column.label}</span>
+                    <span className={`text-sm font-medium ${
+                      exportColumns[column.key] ? 'text-gray-900' : 'text-gray-600'
+                    }`}>
+                      {column.label}
+                    </span>
                   </label>
                 ))}
               </div>
             </div>
 
-            {/* Action Buttons */}
+            {/* כפתורי פעולה */}
             <div className="flex gap-3">
               <button
+                onClick={() => setShowReportModal(false)}
+                className="flex-1 px-6 py-3 bg-gray-200 text-gray-700 rounded-xl hover:bg-gray-300 transition-all"
+              >
+                ביטול
+              </button>
+              <button
                 onClick={exportCustomReport}
-                className="flex-1 px-6 py-3 rounded-xl font-bold text-white bg-gradient-to-r from-purple-500 to-indigo-500 hover:from-purple-600 hover:to-indigo-600 transition-all shadow-lg flex items-center justify-center gap-2"
+                className="flex-1 flex items-center justify-center gap-2 px-6 py-3 bg-gradient-to-r from-orange-500 to-amber-500 text-white rounded-xl hover:from-orange-600 hover:to-amber-600 transition-all shadow-lg"
               >
                 <DownloadCloud className="w-5 h-5" />
                 ייצא דוח
-              </button>
-              <button
-                onClick={() => setShowReportModal(false)}
-                className="px-6 py-3 rounded-xl font-bold text-slate-700 bg-slate-100 hover:bg-slate-200 transition-all"
-              >
-                סגור
               </button>
             </div>
           </div>
