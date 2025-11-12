@@ -347,11 +347,10 @@ const invoiceControllers = {
 
   // ✅ חשבוניות של ספק בתוך פרויקט
   getSupplierInvoices: async (req, res) => {
-    const { projectId, id } = req.params; // id = supplierId
+    const { id } = req.params; // id = supplierId
     const { page = 1, limit = 50, populate } = req.query;
 
     const { data, total, pages } = await invoiceService.listInvoicesBySupplier(
-      projectId,
       id,
       { page, limit, withPopulate: String(populate) === "true" }
     );

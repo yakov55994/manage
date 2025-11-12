@@ -18,18 +18,15 @@ const SupplierSelector = ({
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedSupplier, setSelectedSupplier] = useState(null);
 
+
+  
   // טעינת ספקים
   useEffect(() => {
     const fetchSuppliers = async () => {
       try {
         setLoading(true);
-        const response = await api.get('/suppliers/getAllSuppliers');
-        
-        if (response.data && response.data.success && Array.isArray(response.data.data)) {
-          setSuppliers(response.data.data);
-        } else {
-          setSuppliers([]);
-        }
+        const response = await api.get('/suppliers');
+        setSuppliers(response.data)
       } catch (error) {
         console.error('Error fetching suppliers:', error);
         toast.error('שגיאה בטעינת רשימת ספקים', {

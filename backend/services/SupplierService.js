@@ -62,22 +62,30 @@ export const supplierService = {
   },
 
   // 📃 כל הספקים עם פילטר חופשי (ה־controller מעביר { project: projectId, ... })
-  async getAllSuppliers(filter = {}) {
-    try {
-      if (!filter.project) throw new Error('projectId is required');
-      return await Supplier.find(filter).sort({ name: 1 });
-    } catch (error) {
-      throw new Error(`שגיאה בקבלת ספקים: ${error.message}`);
-    }
-  },
+async  getAllSuppliers() {
+  const suppliers = await Supplier.aggregate([
+    { $sort: { createdAt: -1 } },
+    {
+      $lookup: {
+        from: 'invoices',
+        localField: 'invoices',
+        foreignField: '_id',
+        as: 'invoices'
+      }
+    },
+    { $addFields: { invoicesCount: { $size: '$invoices' } } },
+    { $project: { invoices: 0 } } // לא להחזיר את הרשימה הכבדה, רק ספירה
+  ]);
+  return suppliers;
+},
+
 
   // 📄 ספק לפי ID בפרויקט
-  async getSupplierById(projectId, id) {
+  async getSupplierById(id) {
     try {
-      assertProject(projectId);
       if (!mongoose.Types.ObjectId.isValid(id)) throw new Error('Invalid supplier id');
 
-      const supplier = await Supplier.findOne({ _id: id, project: projectId });
+      const supplier = await Supplier.findOne({ _id: id });
       if (!supplier) throw new Error('ספק לא נמצא');
       return supplier;
     } catch (error) {

@@ -153,9 +153,8 @@ const invoiceService = {
   },
 
   // 📄 חשבונית לפי ID בפרויקט
-  async getInvoiceById(projectId, id) {
-    if (!projectId) throw new Error('projectId is required');
-    return Invoice.findOne({ _id: id, projectId }).populate('files');
+  async getInvoiceById(id) {
+    return Invoice.findOne({ _id: id }).populate('files');
   },
 
   // 📃 חשבוניות בפרויקט (עם עמודים)
@@ -339,7 +338,7 @@ const invoiceService = {
   },
 
   // 📑 חשבוניות לפי ספק בתוך פרויקט
-  async listInvoicesBySupplier(projectId, supplierId, {
+  async listInvoicesBySupplier(supplierId, {
     page = 1,
     limit = 50,
     withPopulate = false,
@@ -347,11 +346,9 @@ const invoiceService = {
     sort = { createdAt: -1 },
     lean = true,
   } = {}) {
-    if (!projectId) throw new Error('projectId is required');
     if (!supplierId) throw new Error('supplierId is required');
 
     const filter = {
-      projectId,
       supplierId: mongoose.isValidObjectId(supplierId)
         ? new mongoose.Types.ObjectId(supplierId)
         : supplierId,
@@ -360,9 +357,7 @@ const invoiceService = {
     const skip = (Number(page) - 1) * Number(limit);
     const query = Invoice.find(filter).select(fields).sort(sort).skip(skip).limit(Number(limit));
 
-    if (withPopulate) {
-      query.populate({ path: 'projectId', select: 'name', model: 'Project' });
-    }
+
     if (lean) query.lean();
 
     const [data, total] = await Promise.all([
@@ -371,12 +366,6 @@ const invoiceService = {
     ]);
 
     let normalized = data;
-    if (withPopulate && data?.length) {
-      normalized = data.map(inv => ({
-        ...inv,
-        projectName: inv.projectName || inv?.projectId?.name || null,
-      }));
-    }
 
     return {
       data: normalized,

@@ -27,26 +27,22 @@ export const supplierController = {
   // 📃 כל הספקים בפרויקט (תומך ב-filter מה־middleware אם יש)
   async getAllSuppliers(req, res) {
     try {
-      const { projectId } = req.params;
-      const { queryFilter = {} } = req; // applySupplierListFilter ממלא את זה
-      const filter = { project: projectId, ...queryFilter };
-
-      const suppliers = await supplierService.getAllSuppliers(filter);
-      res.status(200).json({ success: true, data: suppliers });
+       const suppliers = await supplierService.getAllSuppliers();
+       return res.status(200).json(suppliers)
     } catch (error) {
-      res.status(500).json({ success: false, message: error.message });
+      res.status(500).json({ message: 'שגיאה בשליפת הספקים', error: error.message  });
     }
   },
 
   // 📄 ספק לפי ID בתוך פרויקט
   async getSupplierById(req, res) {
     try {
-      const { projectId, id } = req.params;
+      const { id } = req.params;
       if (!mongoose.Types.ObjectId.isValid(id)) {
         return res.status(400).json({ success: false, message: 'Invalid supplier id' });
       }
 
-      const supplier = await supplierService.getSupplierById(projectId, id);
+      const supplier = await supplierService.getSupplierById(id);
       if (!supplier) {
         return res.status(404).json({ success: false, message: 'ספק לא נמצא' });
       }

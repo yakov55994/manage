@@ -28,6 +28,7 @@ import { toast } from "sonner";
 
 const SuppliersPage = () => {
   const [suppliers, setSuppliers] = useState([]);
+  const [allSuppliers, setAllSuppliers] = useState([]);
   const [loading, setLoading] = useState(false);
   const [sortBy, setSortBy] = useState("name");
   const [sortOrder, setSortOrder] = useState("asc");
@@ -70,6 +71,17 @@ const SuppliersPage = () => {
     { key: 'createdAt', label: 'תאריך יצירה', selected: exportColumns.createdAt }
   ];
 
+  // תאריך תקני מהספק (תומך גם ב-createdAt וגם ב-date)
+const getSupplierDate = (supplier) => {
+  const d = supplier?.createdAt || supplier?.date;
+  return d ? new Date(d) : null;
+};
+
+const formatSupplierDate = (supplier) => {
+  const d = getSupplierDate(supplier);
+  return d ? d.toLocaleDateString('he-IL') : '';
+};
+
   const filteredSuppliers = React.useMemo(() => {
     if (!Array.isArray(suppliers)) return [];
     
@@ -85,12 +97,18 @@ const SuppliersPage = () => {
 
     if (advancedFilters.dateFrom) {
       filtered = filtered.filter(supplier => 
-        new Date(supplier.createdAt) >= new Date(advancedFilters.dateFrom)
+        (() => {
+  const d = getSupplierDate(supplier);
+  return d && d >= new Date(advancedFilters.dateFrom);
+})()
       );
     }
     if (advancedFilters.dateTo) {
       filtered = filtered.filter(supplier => 
-        new Date(supplier.createdAt) <= new Date(advancedFilters.dateTo)
+(() => {
+  const d = getSupplierDate(supplier);
+  return d && d <= new Date(advancedFilters.dateTo);
+})()
       );
     }
 
@@ -141,6 +159,12 @@ const SuppliersPage = () => {
           ? new Date(a.createdAt || 0) - new Date(b.createdAt || 0)
           : new Date(b.createdAt || 0) - new Date(a.createdAt || 0);
       }
+      if (sortBy === "createdAt") {
+  const da = getSupplierDate(a)?.getTime() ?? 0;
+  const db = getSupplierDate(b)?.getTime() ?? 0;
+  return sortOrder === "asc" ? da - db : db - da;
+}
+
       return 0;
     });
   }, [filteredSuppliers, sortBy, sortOrder]);
@@ -200,8 +224,9 @@ const SuppliersPage = () => {
             row[columnMapping.accountNumber] = supplier.bankDetails?.accountNumber || '';
             break;
           case 'createdAt':
-            row[columnMapping.createdAt] = new Date(supplier.createdAt).toLocaleDateString('he-IL');
-            break;
+  row[columnMapping.createdAt] = formatSupplierDate(supplier);
+  break;
+
         }
       });
       
@@ -254,23 +279,33 @@ const SuppliersPage = () => {
     setExportColumns(newState);
   };
 
+    const arr = (res) =>
+    Array.isArray(res?.data?.data)
+      ? res.data.data
+      : Array.isArray(res?.data)
+      ? res.data
+      : Array.isArray(res)
+      ? res
+      : [];
+
+      useEffect(() => {
+  if (!showReportModal) return;
+  const onKeyDown = (e) => e.key === "Escape" && setShowReportModal(false);
+  window.addEventListener("keydown", onKeyDown);
+  return () => window.removeEventListener("keydown", onKeyDown);
+}, [showReportModal]);
+
+
   useEffect(() => {
     const fetchSuppliers = async () => {
       try {
-        setLoading(true);
-        const response = await api.get(`/suppliers/getAllSuppliers`);
-        
-        if (response.data && response.data.success && Array.isArray(response.data.data)) {
-          setSuppliers(response.data.data);
-        } else {
-          setSuppliers([]);
-        }
-        
+        const res = await api.get("/suppliers"); // או הנתיב שלך
+        setAllSuppliers(arr(res.data));
+        setSuppliers(arr(res.data));
       } catch (error) {
         console.error("Error fetching suppliers:", error);
-        setSuppliers([]);
         toast.error("שגיאה בטעינת הנתונים. נסה שנית מאוחר יותר.", {
-          className: "sonner-toast error rtl"
+          className: "sonner-toast error rtl",
         });
       } finally {
         setLoading(false);
@@ -623,122 +658,142 @@ const SuppliersPage = () => {
         )}
 
         {/* מודל מחולל דוחות */}
-        {showReportModal && (
-          <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-            <div className="bg-white rounded-2xl shadow-2xl max-w-3xl w-full max-h-[90vh] overflow-y-auto">
-              <div className="bg-gradient-to-r from-orange-500 to-amber-500 text-white p-6 rounded-t-2xl sticky top-0 z-10">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-3">
-                    <div className="bg-white/20 p-2 rounded-lg">
-                      <FileSpreadsheet className="w-6 h-6" />
-                    </div>
-                    <h3 className="text-2xl font-bold">מחולל דוחות ספקים</h3>
-                  </div>
-                  <button
-                    onClick={() => setShowReportModal(false)}
-                    className="text-white hover:bg-white/20 rounded-lg p-2 transition-colors"
-                  >
-                    <X className="w-6 h-6" />
-                  </button>
+      {/* Report Generator Modal */}
+{showReportModal && (
+  <div className="fixed inset-0 z-50">
+    {/* רקע + סגירה בלחיצה בחוץ */}
+    <div
+      className="absolute inset-0 bg-black/60 backdrop-blur-sm"
+      onClick={() => setShowReportModal(false)}
+    />
+
+    {/* מעטפת עם גלילה על כל המסך, מיושרת למעלה */}
+    <div className="relative flex min-h-full items-start justify-center p-4 overflow-y-auto">
+      {/* קופסת המודאל */}
+      <div
+        className="relative w-full max-w-3xl mt-20"
+        onClick={(e) => e.stopPropagation()}
+        role="dialog"
+        aria-modal="true"
+      >
+        {/* זוהר עדין */}
+        <div className="pointer-events-none absolute -inset-2 bg-gradient-to-r from-orange-500 to-amber-500 rounded-3xl opacity-20 blur-xl"></div>
+
+        <div className="relative bg-white rounded-3xl shadow-2xl overflow-hidden">
+          {/* כותרת + כפתור סגירה */}
+          <div className="bg-gradient-to-r from-orange-500 to-amber-500 text-white p-6">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <div className="bg-white/20 p-2 rounded-lg">
+                  <FileSpreadsheet className="w-6 h-6" />
                 </div>
+                <h3 className="text-2xl font-bold">מחולל דוחות ספקים</h3>
               </div>
-
-              <div className="p-6">
-                <div className="mb-6">
-                  <h4 className="text-lg font-bold mb-4 text-gray-900">בחר עמודות לייצוא:</h4>
-                  
-                  <div className="flex gap-3 mb-4">
-                    <button
-                      onClick={selectAllColumns}
-                      className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-green-500 to-emerald-500 text-white rounded-lg hover:from-green-600 hover:to-emerald-600 transition-all duration-300 shadow-md font-medium"
-                    >
-                      <CheckSquare className="w-4 h-4" />
-                      בחר הכל
-                    </button>
-                    <button
-                      onClick={deselectAllColumns}
-                      className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-red-500 to-rose-500 text-white rounded-lg hover:from-red-600 hover:to-rose-600 transition-all duration-300 shadow-md font-medium"
-                    >
-                      <Square className="w-4 h-4" />
-                      בטל הכל
-                    </button>
-                  </div>
-
-                  <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
-                    {availableColumns.map(column => (
-                      <label 
-                        key={column.key} 
-                        className={`flex items-center gap-3 p-3 rounded-xl border-2 cursor-pointer transition-all duration-200 ${
-                          exportColumns[column.key]
-                            ? 'bg-gradient-to-br from-orange-50 to-amber-50 border-orange-400'
-                            : 'bg-gray-50 border-gray-200 hover:border-gray-300'
-                        }`}
-                      >
-                        <input
-                          type="checkbox"
-                          checked={exportColumns[column.key]}
-                          onChange={() => toggleColumn(column.key)}
-                          className="w-5 h-5 text-orange-600 rounded focus:ring-2 focus:ring-orange-500"
-                        />
-                        <span className={`text-sm font-medium ${
-                          exportColumns[column.key] ? 'text-gray-900' : 'text-gray-600'
-                        }`}>
-                          {column.label}
-                        </span>
-                      </label>
-                    ))}
-                  </div>
-                </div>
-
-                <div className="bg-gradient-to-br from-blue-50 to-cyan-50 p-5 rounded-xl border-2 border-blue-200 mb-6">
-                  <h4 className="font-bold text-lg mb-3 text-gray-900 flex items-center gap-2">
-                    <AlertCircle className="w-5 h-5 text-blue-600" />
-                    סיכום הדוח
-                  </h4>
-                  <div className="space-y-2 text-gray-700">
-                    <p className="flex items-center gap-2">
-                      <span className="font-semibold">מספר ספקים:</span>
-                      <span className="text-orange-600 font-bold">{sortedSuppliers.length}</span>
-                    </p>
-                    <p className="flex items-center gap-2">
-                      <span className="font-semibold">עמודות נבחרות:</span>
-                      <span className="text-green-600 font-bold">{Object.values(exportColumns).filter(v => v).length}</span>
-                    </p>
-                    <p className="flex items-start gap-2">
-                      <span className="font-semibold whitespace-nowrap">פילטרים פעילים:</span>
-                      <span className="text-purple-600 font-medium">
-                        {[
-                          searchTerm && "חיפוש טקסט",
-                          advancedFilters.dateFrom && "תאריך התחלה", 
-                          advancedFilters.dateTo && "תאריך סיום",
-                          advancedFilters.hasBankDetails !== "all" && "פרטי בנק",
-                          advancedFilters.hasEmail !== "all" && "אימייל",
-                          (advancedFilters.businessTaxRange.min || advancedFilters.businessTaxRange.max) && "טווח מספר עוסק"
-                        ].filter(Boolean).join(", ") || "ללא פילטרים"}
-                      </span>
-                    </p>
-                  </div>
-                </div>
-
-                <div className="flex gap-4">
-                  <button
-                    onClick={() => setShowReportModal(false)}
-                    className="flex-1 px-6 py-3 bg-gray-200 text-gray-700 rounded-xl hover:bg-gray-300 transition-all duration-300 font-medium"
-                  >
-                    ביטול
-                  </button>
-                  <button
-                    onClick={exportCustomReport}
-                    className="flex-1 flex items-center justify-center gap-2 px-6 py-3 bg-gradient-to-r from-orange-500 to-amber-500 text-white rounded-xl hover:from-orange-600 hover:to-amber-600 transition-all duration-300 shadow-lg hover:shadow-xl font-medium"
-                  >
-                    <DownloadCloud className="w-5 h-5" />
-                    ייצא דוח
-                  </button>
-                </div>
-              </div>
+              <button
+                onClick={() => setShowReportModal(false)}
+                className="text-white hover:bg-white/20 rounded-lg p-2 transition-colors"
+                aria-label="סגור"
+                title="סגור"
+              >
+                <X className="w-6 h-6" />
+              </button>
             </div>
           </div>
-        )}
+
+          {/* תוכן עם גלילה פנימית */}
+          <div className="max-h-[75vh] overflow-y-auto p-6">
+            {/* בחירת עמודות */}
+            <div className="mb-6">
+              <div className="flex items-center justify-between mb-4">
+                <h4 className="text-lg font-bold text-gray-900">בחר עמודות לייצוא</h4>
+                <div className="flex gap-2">
+                  <button
+                    onClick={selectAllColumns}
+                    className="flex items-center gap-2 px-3 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700"
+                  >
+                    <CheckSquare className="w-4 h-4" />
+                    בחר הכל
+                  </button>
+                  <button
+                    onClick={deselectAllColumns}
+                    className="flex items-center gap-2 px-3 py-2 bg-rose-600 text-white rounded-lg hover:bg-rose-700"
+                  >
+                    <Square className="w-4 h-4" />
+                    בטל הכל
+                  </button>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+                {availableColumns.map((column) => (
+                  <label
+                    key={column.key}
+                    className={`flex items-center gap-3 p-3 rounded-xl border-2 cursor-pointer transition-all ${
+                      exportColumns[column.key]
+                        ? 'bg-gradient-to-br from-orange-50 to-amber-50 border-orange-400'
+                        : 'bg-gray-50 border-gray-200 hover:border-gray-300'
+                    }`}
+                  >
+                    <input
+                      type="checkbox"
+                      checked={!!exportColumns[column.key]}
+                      onChange={() => toggleColumn(column.key)}
+                      className="w-5 h-5 text-orange-600 rounded focus:ring-2 focus:ring-orange-500"
+                    />
+                    <span className={`text-sm font-medium ${
+                      exportColumns[column.key] ? 'text-gray-900' : 'text-gray-600'
+                    }`}>
+                      {column.label}
+                    </span>
+                  </label>
+                ))}
+              </div>
+            </div>
+
+            {/* סיכום הדוח */}
+            <div className="bg-gradient-to-br from-blue-50 to-cyan-50 p-5 rounded-xl border-2 border-blue-200 mb-6">
+              <h4 className="font-bold text-lg mb-3 text-gray-900 flex items-center gap-2">
+                <AlertCircle className="w-5 h-5 text-blue-600" />
+                סיכום הדוח
+              </h4>
+              <div className="space-y-2 text-gray-700">
+                <p className="flex items-center gap-2">
+                  <span className="font-semibold">מספר ספקים לייצוא:</span>
+                  <span className="text-orange-600 font-bold">
+                    {sortedSuppliers.length}
+                  </span>
+                </p>
+                <p className="flex items-center gap-2">
+                  <span className="font-semibold">עמודות נבחרות:</span>
+                  <span className="text-green-600 font-bold">
+                    {Object.values(exportColumns).filter(Boolean).length}
+                  </span>
+                </p>
+              </div>
+            </div>
+
+            {/* כפתורי פעולה */}
+            <div className="flex gap-3">
+              <button
+                onClick={() => setShowReportModal(false)}
+                className="flex-1 px-6 py-3 bg-gray-200 text-gray-700 rounded-xl hover:bg-gray-300 transition-all"
+              >
+                ביטול
+              </button>
+              <button
+                onClick={exportCustomReport}
+                className="flex-1 flex items-center justify-center gap-2 px-6 py-3 bg-gradient-to-r from-orange-500 to-amber-500 text-white rounded-xl hover:from-orange-600 hover:to-amber-600 transition-all shadow-lg"
+              >
+                <DownloadCloud className="w-5 h-5" />
+                ייצא דוח
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+)}
+
 
         {/* מודל מחיקה */}
         {showModal && (

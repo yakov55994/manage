@@ -46,20 +46,24 @@ const ProjectsPage = ({ initialProjects = [] }) => {
     missingDocument: "",
   });
 
-  const [exportColumns, setExportColumns] = useState({
-    name: true,
-    invitingName: true,
-    budget: true,
-    remainingBudget: true,
-    createdAt: true,
-    contactPerson: true,
-    budgetUsage: false,
-    budgetPercentage: false,
-    projectStatus: false,
-    supplierName: false,
-    paymentStatus: false,
-    missingDocument: false,
-  });
+const [exportColumns, setExportColumns] = useState({
+  name: true,
+  invitingName: true,
+  budget: true,
+  remainingBudget: true,
+  createdAt: true,
+  contactPerson: true,
+
+  // 🆕 חשבוניות
+  invoiceCount: true,
+  invoicePaidCount: false,
+  invoiceUnpaidCount: true,
+  invoiceSumPaid: true,
+  invoiceSumUnpaid: true,
+  lastPaymentDate: false,
+  projectPaymentStatus: true,
+});
+
 
   const navigate = useNavigate();
 
@@ -72,20 +76,24 @@ const ProjectsPage = ({ initialProjects = [] }) => {
     });
   };
 
-  const availableColumns = [
-    { key: 'name', label: 'שם הפרויקט' },
-    { key: 'invitingName', label: 'שם המזמין' },
-    { key: 'budget', label: 'תקציב' },
-    { key: 'remainingBudget', label: 'תקציב שנותר' },
-    { key: 'createdAt', label: 'תאריך יצירה' },
-    { key: 'contactPerson', label: 'איש קשר' },
-    { key: 'supplierName', label: 'שם ספק' },
-    { key: 'paymentStatus', label: 'מצב תשלום' },
-    { key: 'missingDocument', label: 'חוסר מסמך' },
-    { key: 'budgetUsage', label: 'תקציב שנוצל' },
-    { key: 'budgetPercentage', label: 'אחוז ניצול תקציב' },
-    { key: 'projectStatus', label: 'סטטוס פרויקט' },
-  ];
+const availableColumns = [
+  { key: 'name', label: 'שם הפרויקט' },
+  { key: 'invitingName', label: 'שם המזמין' },
+  { key: 'budget', label: 'תקציב' },
+  { key: 'remainingBudget', label: 'תקציב שנותר' },
+  { key: 'createdAt', label: 'תאריך יצירה' },
+  { key: 'contactPerson', label: 'איש קשר' },
+
+  // 🆕 עמודות מסיכום חשבוניות
+  { key: 'invoiceCount', label: 'מס׳ חשבוניות' },
+  { key: 'invoicePaidCount', label: 'מס׳ חשבוניות ששולמו' },
+  { key: 'invoiceUnpaidCount', label: 'מס׳ חשבוניות שלא שולמו' },
+  { key: 'invoiceSumPaid', label: 'סך תשלומים ששולמו' },
+  { key: 'invoiceSumUnpaid', label: 'סכום שטרם שולם' },
+  { key: 'lastPaymentDate', label: 'תשלום אחרון' },
+  { key: 'projectPaymentStatus', label: 'סטטוס תשלום בפרויקט' }, // למשל: "יש לא משולם" / "הכל שולם" / "ללא חשבוניות"
+];
+
 
   const getFilteredProjects = () => {
     let filtered = [...allProjects];
@@ -161,6 +169,23 @@ const ProjectsPage = ({ initialProjects = [] }) => {
           !project.budget || project.remainingBudget === undefined
         );
       }
+      // סינון לפי סטטוס תשלום מצטבר בפרויקט (מבוסס חשבוניות)
+if (advancedFilters.paymentStatus) {
+  filtered = filtered.filter((project) => {
+    const s = invoiceStats(project);
+    if (advancedFilters.paymentStatus === 'paid') {
+      return s.invoiceCount > 0 && s.invoiceUnpaidCount === 0;
+    }
+    if (advancedFilters.paymentStatus === 'unpaid') {
+      return s.invoiceUnpaidCount > 0;
+    }
+    if (advancedFilters.paymentStatus === 'none') {
+      return s.invoiceCount === 0;
+    }
+    return true;
+  });
+}
+
     }
 
     return filtered;
@@ -235,97 +260,159 @@ const ProjectsPage = ({ initialProjects = [] }) => {
     return { budgetUsed, budgetPercentage, projectStatus };
   };
 
-  const exportCustomReport = () => {
-    const dataToExport = filteredProjects;
+  const invoiceStats = (project) => {
+  const invoices = Array.isArray(project.invoices) ? project.invoices : [];
 
-    if (!dataToExport || dataToExport.length === 0) {
-      toast.error("אין נתונים לייצוא", { className: "sonner-toast error rtl" });
-      return;
+  const normalizeDate = (d) => {
+    if (!d) return null;
+    // ייתכן שמגיע בפורמט { $date: '...' }
+    const raw = d?.$date || d;
+    const dt = new Date(raw);
+    return isNaN(dt.getTime()) ? null : dt;
+  };
+
+  let paidCount = 0;
+  let unpaidCount = 0;
+  let sumPaid = 0;
+  let sumUnpaid = 0;
+  let lastPaid = null;
+
+  invoices.forEach((inv) => {
+    const paid = (inv.paid || '').trim() === 'כן';
+    const sum = Number(inv.sum || 0);
+
+    if (paid) {
+      paidCount += 1;
+      sumPaid += sum;
+      const pd = normalizeDate(inv.paymentDate);
+      if (pd && (!lastPaid || pd > lastPaid)) lastPaid = pd;
+    } else {
+      // גם כששדה paid חסר / "לא" – נספור כלא משולם
+      unpaidCount += 1;
+      sumUnpaid += sum;
     }
+  });
 
-    const columnMapping = {
-      name: "שם הפרויקט",
-      invitingName: "שם המזמין",
-      budget: "תקציב",
-      remainingBudget: "תקציב שנותר",
-      createdAt: "תאריך יצירה",
-      contactPerson: "איש קשר",
-      budgetUsage: "תקציב שנוצל",
-      budgetPercentage: "אחוז ניצול תקציב",
-      projectStatus: "סטטוס פרויקט",
-      supplierName: "שם ספק",
-      paymentStatus: "מצב תשלום",
-      missingDocument: "חוסר מסמך",
-    };
+  let projectPaymentStatus = 'ללא חשבוניות';
+  if (invoices.length > 0) {
+    projectPaymentStatus = unpaidCount > 0 ? 'יש לא משולם' : 'הכל שולם';
+  }
 
-    const selectedColumns = Object.keys(exportColumns).filter(key => exportColumns[key]);
+  return {
+    invoiceCount: invoices.length,
+    invoicePaidCount: paidCount,
+    invoiceUnpaidCount: unpaidCount,
+    invoiceSumPaid: sumPaid,
+    invoiceSumUnpaid: sumUnpaid,
+    lastPaymentDate: lastPaid,
+    projectPaymentStatus,
+  };
+};
 
-    if (selectedColumns.length === 0) {
-      toast.error("יש לבחור לפחות עמודה אחת לייצוא", { className: "sonner-toast error rtl" });
-      return;
-    }
+const exportCustomReport = () => {
+  const dataToExport = filteredProjects;
 
-    const projectsData = dataToExport.map((project) => {
-      const stats = calculateProjectStats(project);
-      const row = {};
+  if (!dataToExport || dataToExport.length === 0) {
+    toast.error("אין נתונים לייצוא", { className: "sonner-toast error rtl" });
+    return;
+  }
 
-      selectedColumns.forEach(col => {
-        switch (col) {
-          case 'name':
-            row[columnMapping.name] = project.name || '';
-            break;
-          case 'invitingName':
-            row[columnMapping.invitingName] = project.invitingName || '';
-            break;
-          case 'budget':
-            row[columnMapping.budget] = project.budget || 'אין תקציב';
-            break;
-          case 'remainingBudget':
-            row[columnMapping.remainingBudget] = project.remainingBudget !== undefined ? project.remainingBudget : 'לא זמין';
-            break;
-          case 'createdAt':
-            row[columnMapping.createdAt] = formatDate(project.createdAt);
-            break;
-          case 'contactPerson':
-            row[columnMapping.contactPerson] = project.Contact_person || 'לא זמין';
-            break;
-          case 'budgetUsage':
-            row[columnMapping.budgetUsage] = stats.budgetUsed;
-            break;
-          case 'budgetPercentage':
-            row[columnMapping.budgetPercentage] = stats.budgetPercentage + '%';
-            break;
-          case 'projectStatus':
-            row[columnMapping.projectStatus] = stats.projectStatus;
-            break;
-          case 'supplierName':
-            row[columnMapping.supplierName] = project.supplierName || 'לא זמין';
-            break;
-          case 'paymentStatus':
-            row[columnMapping.paymentStatus] = project.paymentStatus || 'לא זמין';
-            break;
-          case 'missingDocument':
-            row[columnMapping.missingDocument] = project.missingDocument || 'לא זמין';
-            break;
-          default:
-            break;
-        }
-      });
+  const columnMapping = {
+    name: "שם הפרויקט",
+    invitingName: "שם המזמין",
+    budget: "תקציב",
+    remainingBudget: "תקציב שנותר",
+    createdAt: "תאריך יצירה",
+    contactPerson: "איש קשר",
 
-      return row;
+    // 🆕 חשבוניות
+    invoiceCount: "מס׳ חשבוניות",
+    invoicePaidCount: "מס׳ חשבוניות ששולמו",
+    invoiceUnpaidCount: "מס׳ חשבוניות שלא שולמו",
+    invoiceSumPaid: "סך תשלומים ששולמו",
+    invoiceSumUnpaid: "סכום שטרם שולם",
+    lastPaymentDate: "תשלום אחרון",
+    projectPaymentStatus: "סטטוס תשלום בפרויקט",
+  };
+
+  const selectedColumns = Object.keys(exportColumns).filter((key) => exportColumns[key]);
+
+  if (selectedColumns.length === 0) {
+    toast.error("יש לבחור לפחות עמודה אחת לייצוא", { className: "sonner-toast error rtl" });
+    return;
+  }
+
+  const rows = dataToExport.map((project) => {
+    const { budgetUsed, budgetPercentage, projectStatus } = calculateProjectStats(project);
+    const inv = invoiceStats(project);
+
+    const row = {};
+
+    selectedColumns.forEach((col) => {
+      switch (col) {
+        case 'name':
+          row[columnMapping.name] = project.name || '';
+          break;
+        case 'invitingName':
+          row[columnMapping.invitingName] = project.invitingName || '';
+          break;
+        case 'budget':
+          row[columnMapping.budget] = project.budget != null ? formatNumber(project.budget) : 'אין תקציב';
+          break;
+        case 'remainingBudget':
+          row[columnMapping.remainingBudget] =
+            project.remainingBudget != null ? formatNumber(project.remainingBudget) : 'לא זמין';
+          break;
+        case 'createdAt':
+          row[columnMapping.createdAt] = formatDate(project.createdAt);
+          break;
+        case 'contactPerson':
+          row[columnMapping.contactPerson] = project.Contact_person || 'לא זמין';
+          break;
+
+        // 🆕 חשבוניות
+        case 'invoiceCount':
+          row[columnMapping.invoiceCount] = inv.invoiceCount;
+          break;
+        case 'invoicePaidCount':
+          row[columnMapping.invoicePaidCount] = inv.invoicePaidCount;
+          break;
+        case 'invoiceUnpaidCount':
+          row[columnMapping.invoiceUnpaidCount] = inv.invoiceUnpaidCount;
+          break;
+        case 'invoiceSumPaid':
+          row[columnMapping.invoiceSumPaid] = formatNumber(inv.invoiceSumPaid);
+          break;
+        case 'invoiceSumUnpaid':
+          row[columnMapping.invoiceSumUnpaid] = formatNumber(inv.invoiceSumUnpaid);
+          break;
+        case 'lastPaymentDate':
+          row[columnMapping.lastPaymentDate] = inv.lastPaymentDate ? formatDate(inv.lastPaymentDate) : '—';
+          break;
+        case 'projectPaymentStatus':
+          row[columnMapping.projectPaymentStatus] = inv.projectPaymentStatus;
+          break;
+
+        default:
+          break;
+      }
     });
 
-    const worksheet = XLSX.utils.json_to_sheet(projectsData);
-    const workbook = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(workbook, worksheet, "דוח פרויקטים");
+    return row;
+  });
 
-    const fileName = `דוח_פרויקטים_${new Date().toLocaleDateString('he-IL').replace(/\//g, '-')}.xlsx`;
-    const wbout = XLSX.write(workbook, { bookType: "xlsx", type: "array" });
-    saveAs(new Blob([wbout], { type: "application/octet-stream" }), fileName);
+  const worksheet = XLSX.utils.json_to_sheet(rows);
+  const workbook = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(workbook, worksheet, "דוח פרויקטים");
 
-    setShowReportModal(false);
-    toast.success(`הדוח יוצא בהצלחה עם ${projectsData.length} פרויקטים`, { className: "sonner-toast success rtl" });
-  };
+  const fileName = `דוח_פרויקטים_${new Date().toLocaleDateString('he-IL').replace(/\//g, '-')}.xlsx`;
+  const wbout = XLSX.write(workbook, { bookType: "xlsx", type: "array" });
+  saveAs(new Blob([wbout], { type: "application/octet-stream" }), fileName);
+
+  setShowReportModal(false);
+  toast.success(`הדוח יוצא בהצלחה עם ${rows.length} פרויקטים`, { className: "sonner-toast success rtl" });
+};
+
 
   const toggleColumn = (columnKey) => {
     setExportColumns(prev => ({
@@ -390,6 +477,16 @@ const ProjectsPage = ({ initialProjects = [] }) => {
 
     fetchProjects();
   }, []);
+
+  useEffect(() => {
+  if (!showReportModal) return;
+  const onKeyDown = (e) => {
+    if (e.key === "Escape") setShowReportModal(false);
+  };
+  window.addEventListener("keydown", onKeyDown);
+  return () => window.removeEventListener("keydown", onKeyDown);
+}, [showReportModal]);
+
 
   const handleDelete = async () => {
     try {
@@ -635,11 +732,248 @@ const ProjectsPage = ({ initialProjects = [] }) => {
           </div>
         )}
 
+        {/* Report Generation Modal */}
+{showReportModal && (
+  <div className="fixed inset-0 z-50">
+    {/* רקע + סגירה בלחיצה בחוץ */}
+    <div
+      className="absolute inset-0 bg-black/60 backdrop-blur-sm"
+      onClick={() => setShowReportModal(false)}
+    />
+
+    {/* מעטפת עם גלילה על כל המסך, מיושרת למעלה */}
+    <div className="relative flex min-h-full items-start justify-center p-4 overflow-y-auto">
+      {/* קופסת המודאל */}
+      <div
+        className="relative w-full max-w-3xl mt-20"
+        onClick={(e) => e.stopPropagation()}
+        role="dialog"
+        aria-modal="true"
+      >
+        {/* זוהר עדין שלא דוחף את התוכן */}
+        <div className="pointer-events-none absolute -inset-2 bg-gradient-to-r from-purple-500 to-indigo-500 rounded-3xl opacity-20 blur-xl"></div>
+
+        <div className="relative bg-white rounded-3xl shadow-2xl overflow-hidden">
+          {/* איקס סגירה */}
+          <button
+            type="button"
+            onClick={() => setShowReportModal(false)}
+            className="absolute top-3 left-3 p-2 rounded-full hover:bg-slate-100 focus:outline-none focus:ring-2 focus:ring-purple-300"
+            aria-label="סגור"
+            title="סגור"
+          >
+            <X className="w-6 h-6 text-slate-700" />
+          </button>
+
+          {/* תוכן עם גלילה פנימית – לא נחתך */}
+          <div className="max-h-[88vh] overflow-y-auto p-6">
+            {/* Header */}
+            <div className="text-center mb-8">
+              <div className="mx-auto w-16 h-16 rounded-full bg-gradient-to-br from-purple-500 to-indigo-500 flex items-center justify-center mb-4">
+                <FileSpreadsheet className="w-8 h-8 text-white" />
+              </div>
+              <h3 className="text-3xl font-bold text-slate-900 mb-2">מחולל דוחות מתקדם</h3>
+              <p className="text-slate-600">סנן את הפרויקטים ובחר עמודות לייצוא</p>
+            </div>
+
+            {/* Advanced Filters Section */}
+            <div className="mb-8">
+              <div className="flex items-center justify-between mb-4">
+                <h4 className="text-xl font-bold text-slate-900 flex items-center gap-2">
+                  <Filter className="w-5 h-5 text-purple-500" />
+                  סינון מתקדם
+                </h4>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                {/* Date From */}
+                <div>
+                  <label className="block text-sm font-bold text-slate-700 mb-2">תאריך מ-</label>
+                  <input
+                    type="date"
+                    value={advancedFilters.dateFrom}
+                    onChange={(e) => setAdvancedFilters({ ...advancedFilters, dateFrom: e.target.value })}
+                    className="w-full px-4 py-2 border-2 border-slate-200 rounded-xl focus:border-purple-500 focus:outline-none focus:ring-2 focus:ring-purple-200"
+                  />
+                </div>
+
+                {/* Date To */}
+                <div>
+                  <label className="block text-sm font-bold text-slate-700 mb-2">תאריך עד-</label>
+                  <input
+                    type="date"
+                    value={advancedFilters.dateTo}
+                    onChange={(e) => setAdvancedFilters({ ...advancedFilters, dateTo: e.target.value })}
+                    className="w-full px-4 py-2 border-2 border-slate-200 rounded-xl focus:border-purple-500 focus:outline-none focus:ring-2 focus:ring-purple-200"
+                  />
+                </div>
+
+                {/* Budget Min */}
+                <div>
+                  <label className="block text-sm font-bold text-slate-700 mb-2">תקציב מינימום</label>
+                  <input
+                    type="number"
+                    value={advancedFilters.budgetMin}
+                    onChange={(e) => setAdvancedFilters({ ...advancedFilters, budgetMin: e.target.value })}
+                    placeholder="הזן סכום מינימום"
+                    className="w-full px-4 py-2 border-2 border-slate-200 rounded-xl focus:border-purple-500 focus:outline-none focus:ring-2 focus:ring-purple-200"
+                  />
+                </div>
+
+                {/* Budget Max */}
+                <div>
+                  <label className="block text-sm font-bold text-slate-700 mb-2">תקציב מקסימום</label>
+                  <input
+                    type="number"
+                    value={advancedFilters.budgetMax}
+                    onChange={(e) => setAdvancedFilters({ ...advancedFilters, budgetMax: e.target.value })}
+                    placeholder="הזן סכום מקסימום"
+                    className="w-full px-4 py-2 border-2 border-slate-200 rounded-xl focus:border-purple-500 focus:outline-none focus:ring-2 focus:ring-purple-200"
+                  />
+                </div>
+
+                {/* Remaining Budget Min */}
+                <div>
+                  <label className="block text-sm font-bold text-slate-700 mb-2">תקציב נותר מינימום</label>
+                  <input
+                    type="number"
+                    value={advancedFilters.remainingBudgetMin}
+                    onChange={(e) => setAdvancedFilters({ ...advancedFilters, remainingBudgetMin: e.target.value })}
+                    placeholder="הזן סכום מינימום"
+                    className="w-full px-4 py-2 border-2 border-slate-200 rounded-xl focus:border-purple-500 focus:outline-none focus:ring-2 focus:ring-purple-200"
+                  />
+                </div>
+
+                {/* Remaining Budget Max */}
+                <div>
+                  <label className="block text-sm font-bold text-slate-700 mb-2">תקציב נותר מקסימום</label>
+                  <input
+                    type="number"
+                    value={advancedFilters.remainingBudgetMax}
+                    onChange={(e) => setAdvancedFilters({ ...advancedFilters, remainingBudgetMax: e.target.value })}
+                    placeholder="הזן סכום מקסימום"
+                    className="w-full px-4 py-2 border-2 border-slate-200 rounded-xl focus:border-purple-500 focus:outline-none focus:ring-2 focus:ring-purple-200"
+                  />
+                </div>
+
+                {/* Project Name */}
+                <div>
+                  <label className="block text-sm font-bold text-slate-700 mb-2">שם פרויקט</label>
+                  <input
+                    type="text"
+                    value={advancedFilters.projectName}
+                    onChange={(e) => setAdvancedFilters({ ...advancedFilters, projectName: e.target.value })}
+                    placeholder="חפש שם פרויקט"
+                    className="w-full px-4 py-2 border-2 border-slate-200 rounded-xl focus:border-purple-500 focus:outline-none focus:ring-2 focus:ring-purple-200"
+                  />
+                </div>
+
+                {/* Inviting Name */}
+                <div>
+                  <label className="block text-sm font-bold text-slate-700 mb-2">שם מזמין</label>
+                  <input
+                    type="text"
+                    value={advancedFilters.invitingName}
+                    onChange={(e) => setAdvancedFilters({ ...advancedFilters, invitingName: e.target.value })}
+                    placeholder="חפש שם מזמין"
+                    className="w-full px-4 py-2 border-2 border-slate-200 rounded-xl focus:border-purple-500 focus:outline-none focus:ring-2 focus:ring-purple-200"
+                  />
+                </div>
+
+                {/* Contact Person */}
+                <div>
+                  <label className="block text-sm font-bold text-slate-700 mb-2">איש קשר</label>
+                  <input
+                    type="text"
+                    value={advancedFilters.contactPerson}
+                    onChange={(e) => setAdvancedFilters({ ...advancedFilters, contactPerson: e.target.value })}
+                    placeholder="חפש איש קשר"
+                    className="w-full px-4 py-2 border-2 border-slate-200 rounded-xl focus:border-purple-500 focus:outline-none focus:ring-2 focus:ring-purple-200"
+                  />
+                </div>
+
+  
+              </div>
+
+              {/* Filter Summary */}
+              <div className="mt-4 p-4 bg-purple-50 rounded-xl">
+                <p className="text-sm font-bold text-slate-700">
+                  מסננים: {filteredProjects.length} פרויקטים מתוך {allProjects.length}
+                </p>
+              </div>
+            </div>
+
+            {/* Column Selection Section */}
+            <div className="mb-8">
+              <div className="flex items-center justify-between mb-4">
+                <h4 className="text-xl font-bold text-slate-900 flex items-center gap-2">
+                  <FileSpreadsheet className="w-5 h-5 text-purple-500" />
+                  בחירת עמודות לייצוא
+                </h4>
+                <div className="flex gap-2">
+                  <button onClick={selectAllColumns} className="text-sm text-purple-600 hover:text-purple-700 font-medium">
+                    בחר הכל
+                  </button>
+                  <span className="text-slate-400">|</span>
+                  <button onClick={deselectAllColumns} className="text-sm text-purple-600 hover:text-purple-700 font-medium">
+                    בטל הכל
+                  </button>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
+                {availableColumns.map((column) => (
+                  <label
+                    key={column.key}
+                    className="flex items-center gap-2 p-3 border-2 border-slate-200 rounded-xl cursor-pointer hover:border-purple-300 transition-all"
+                  >
+                    <input
+                      type="checkbox"
+                      checked={exportColumns[column.key]}
+                      onChange={() => toggleColumn(column.key)}
+                      className="w-4 h-4 text-purple-600 rounded focus:ring-2 focus:ring-purple-500"
+                    />
+                    <span className="text-sm font-medium text-slate-700">{column.label}</span>
+                  </label>
+                ))}
+              </div>
+            </div>
+
+            {/* Action Buttons */}
+            <div className="flex gap-3">
+              <button
+                onClick={exportCustomReport}
+                className="flex-1 px-6 py-3 rounded-xl font-bold text-white bg-gradient-to-r from-purple-500 to-indigo-500 hover:from-purple-600 hover:to-indigo-600 transition-all shadow-lg flex items-center justify-center gap-2"
+              >
+                <DownloadCloud className="w-5 h-5" />
+                ייצא דוח
+              </button>
+              <button
+                onClick={() => setShowReportModal(false)}
+                className="px-6 py-3 rounded-xl font-bold text-slate-700 bg-slate-100 hover:bg-slate-200 transition-all"
+              >
+                סגור
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+)}
+
         {/* Delete Modal */}
         {showModal && (
           <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4">
             <div className="relative">
               <div className="absolute -inset-4 bg-gradient-to-r from-red-500 to-rose-500 rounded-3xl opacity-20 blur-2xl"></div>
+<button
+  onClick={() => setShowReportModal(false)}
+  className="absolute top-4 left-4 p-2 rounded-full hover:bg-slate-100 transition"
+  aria-label="סגור"
+>
+  <X className="w-6 h-6 text-slate-600" />
+</button>
 
               <div className="relative bg-white rounded-3xl shadow-2xl p-8 max-w-md w-full">
                 <div className="text-center mb-6">
@@ -673,6 +1007,7 @@ const ProjectsPage = ({ initialProjects = [] }) => {
           </div>
         )}
       </div>
+      
     </div>
   );
 };

@@ -71,7 +71,7 @@ const projectController = {
 
   // ✏️ עדכון פרויקט
   updateProject: async (req, res) => {
-    const { projectId } = req.params;
+    const { id } = req.params;
     const projectData = req.body;
 
     try {
@@ -80,7 +80,7 @@ const projectController = {
         projectData.orders = projectData.orders.map(order => order.toString());
       }
 
-      const updatedProject = await Project.findByIdAndUpdate(projectId, projectData, {
+      const updatedProject = await Project.findByIdAndUpdate(id, projectData, {
         new: true,
         runValidators: true
       }).populate('orders');

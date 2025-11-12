@@ -382,57 +382,8 @@ const filteredInvoices = invoices
                   </div>
                 </div>
 
-                {/* Supplier Name */}
-                <div className="group p-4 rounded-xl bg-gradient-to-br from-orange-50 to-amber-50 border-2 border-orange-200 hover:border-orange-400 transition-all">
-                  <div className="flex items-start gap-3">
-                    <div className="p-2 rounded-lg bg-orange-100">
-                      <Truck className="w-4 h-4 text-orange-600" />
-                    </div>
-                    <div className="flex-1">
-                      <p className="text-xs font-bold text-orange-600 mb-1">
-                        שם הספק
-                      </p>
-                      <p className="text-sm font-bold text-slate-900">
-                        {project.supplierName || "לא הוזן"}
-                      </p>
-                    </div>
-                  </div>
-                </div>
 
-                {/* Payment Status */}
-                <div className="group p-4 rounded-xl bg-gradient-to-br from-orange-50 to-amber-50 border-2 border-orange-200 hover:border-orange-400 transition-all">
-                  <div className="flex items-start gap-3">
-                    <div className="p-2 rounded-lg bg-orange-100">
-                      <Receipt className="w-4 h-4 text-orange-600" />
-                    </div>
-                    <div className="flex-1">
-                      <p className="text-xs font-bold text-orange-600 mb-1">
-                        סטטוס תשלום
-                      </p>
-                      <p className="text-sm font-bold text-slate-900">
-                        {project.paymentStatus || "לא הוזן"}
-                      </p>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Missing Document */}
-                <div className="group p-4 rounded-xl bg-gradient-to-br from-orange-50 to-amber-50 border-2 border-orange-200 hover:border-orange-400 transition-all">
-                  <div className="flex items-start gap-3">
-                    <div className="p-2 rounded-lg bg-orange-100">
-                      <FileText className="w-4 h-4 text-orange-600" />
-                    </div>
-                    <div className="flex-1">
-                      <p className="text-xs font-bold text-orange-600 mb-1">
-                        חסר מסמך?
-                      </p>
-                      <p className="text-sm font-bold text-slate-900">
-                        {project.missingDocument || "לא הוזן"}
-                      </p>
-                    </div>
-                  </div>
-                </div>
-
+        
                 {/* Created Date */}
                 <div className="group p-4 rounded-xl bg-gradient-to-br from-orange-50 to-amber-50 border-2 border-orange-200 hover:border-orange-400 transition-all">
                   <div className="flex items-start gap-3">

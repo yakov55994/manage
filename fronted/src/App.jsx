@@ -1,10 +1,8 @@
-import { useState, useEffect } from "react";
 import {
   BrowserRouter as Router,
   Route,
   Routes,
   useNavigate,
-  useLocation,
 } from "react-router-dom";
 import Sidebar from "./pages/NavBar";
 import CreateProject from "./pages/Project/Create_Project";
@@ -40,7 +38,6 @@ import { AuthProvider, useAuth } from "./context/AuthContext.jsx"; // ✅ הוס
 const AppContent = () => {
   const { user, isAuthenticated, logout } = useAuth(); // ✅ השתמש ב-context
   const navigate = useNavigate();
-  const location = useLocation();
 
   // פונקציה להתנתקות
   const handleLogout = async () => {
@@ -233,7 +230,7 @@ const AppContent = () => {
             />
 
             <Route
-              path="/supplier/:id"
+              path="/suppliers/:id"
               element={
                 <ProtectedRoute>
                   <SupplierDetailsPage />
@@ -260,7 +257,6 @@ const AppContent = () => {
             />
           </Routes>
 
-{/* {console.log('Current user:', localStorage.getItem('auth_token'))} */}
         </div>
       </div>
       

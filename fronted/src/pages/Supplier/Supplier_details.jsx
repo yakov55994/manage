@@ -32,11 +32,21 @@ const SupplierDetailsPage = () => {
   const [invoicesLoading, setInvoicesLoading] = useState(true);
   const [loading, setLoading] = useState(true);
 
+  const arr = (res) =>
+    Array.isArray(res?.data?.data)
+      ? res.data.data
+      : Array.isArray(res?.data)
+      ? res.data
+      : Array.isArray(res)
+      ? res
+      : [];
+
   useEffect(() => {
     const fetchSupplierDetails = async () => {
       try {
-        const response = await api.get(`/suppliers/${id}`);
-        setSupplier(response.data.data);
+        const res = await api.get(`/suppliers/${id}`);
+        console.log(res.data.data);
+      setSupplier(res?.data?.data ?? res?.data ?? res);
       } catch (error) {
         console.error("Error fetching supplier details:", error);
         toast.error("שגיאה בטעינת פרטי הספק", {
@@ -210,6 +220,7 @@ const getActionState = (invoice) => {
                     <Sparkles className="w-4 h-4 text-orange-500" />
                     <span className="text-sm font-medium text-slate-600">
                       {supplier.name}
+                      {console.log(supplier)}
                     </span>
                   </div>
                 </div>

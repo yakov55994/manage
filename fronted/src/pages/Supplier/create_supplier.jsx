@@ -310,8 +310,7 @@ const CreateSupplier = () => {
             <div className="relative">
               <div className="absolute -inset-2 bg-gradient-to-r from-amber-500 via-yellow-500 to-orange-500 rounded-3xl opacity-10 blur-xl"></div>
 
-              <div className="relative bg-white/90 backdrop-blur-xl rounded-3xl shadow-xl shadow-orange-500/10 border border-white/50 overflow-hidden">
-                {/* Section Header */}
+    <div className="relative bg-white/90 backdrop-blur-xl rounded-3xl shadow-xl shadow-orange-500/10 border border-white/50 overflow-visible">                {/* Section Header */}
                 <div className="bg-gradient-to-r from-amber-500 via-yellow-500 to-orange-500 p-1">
                   <div className="bg-white/95 backdrop-blur-xl p-4">
                     <div className="flex items-center gap-3">

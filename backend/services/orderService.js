@@ -201,7 +201,7 @@ async getById(projectId, id) {
   },
 
   // קוד ישן: קבלת כל ההזמנות (לא מסונן)
-  async getAllInvoices() {
+  async getAllOrders() {
     const orders = await Order.find()
       .populate({ path: 'invitingName', select: 'orderNumber, projectName, projectId, sum, status,' })
       .sort({ createdAt: -1 });

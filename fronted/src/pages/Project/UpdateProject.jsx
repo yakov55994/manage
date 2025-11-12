@@ -30,10 +30,6 @@ const UpdateProjectPage = () => {
   const [loading, setLoading] = useState(true);
   const [showAnimation, setShowAnimation] = useState(false);
 
-  const [supplierName, setSupplierName] = useState('');
-  const [paymentStatus, setPaymentStatus] = useState('');
-  const [missingDocument, setMissingDocument] = useState('');
-
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -46,11 +42,6 @@ const UpdateProjectPage = () => {
         setInvitingName(data.invitingName || '');
         setRemainingBudget(data.remainingBudget ?? 0);
         setContact_Person(data.Contact_person || '');
-
-        setSupplierName(data.supplierName ?? '');
-        setPaymentStatus(data.paymentStatus ?? '');
-        setMissingDocument(data.missingDocument ?? '');
-
         setLoading(false);
       } catch (error) {
         toast.error('שגיאה בשליפת פרויקט', { className: 'sonner-toast error rtl' });
@@ -85,16 +76,13 @@ const UpdateProjectPage = () => {
         invitingName,
         remainingBudget: Number(remainingBudget),
         Contact_person,
-        supplierName,
-        paymentStatus,
-        missingDocument,
       });
 
       toast.success('הפרוייקט עודכן בהצלחה!', { className: 'sonner-toast success rtl' });
       setShowAnimation(true);
       setTimeout(() => {
         setShowAnimation(false);
-        navigate(`/project/${id}`);
+        navigate(`/projects/${id}`);
       }, 1500);
     } catch (err) {
       toast.error('נכשל ביצוע העדכון', { className: 'sonner-toast error rtl' });
@@ -252,54 +240,7 @@ const UpdateProjectPage = () => {
                   />
                 </div>
 
-                {/* Supplier Name */}
-                <div>
-                  <label className="flex items-center gap-2 text-sm font-bold text-slate-700 mb-2">
-                    <Truck className="w-4 h-4 text-orange-500" />
-                    שם הספק
-                  </label>
-                  <input
-                    type="text"
-                    value={supplierName}
-                    onChange={(e) => setSupplierName(e.target.value)}
-                    className="w-full px-4 py-3 border-2 border-orange-200 rounded-xl bg-white font-medium focus:border-orange-500 focus:outline-none focus:ring-4 focus:ring-orange-500/20 transition-all"
-                    placeholder="לדוגמה: חברת בנייה בע״מ"
-                  />
-                </div>
-
-                {/* Payment Status */}
-                <div>
-                  <label className="flex items-center gap-2 text-sm font-bold text-slate-700 mb-2">
-                    <CreditCard className="w-4 h-4 text-orange-500" />
-                    מצב תשלום
-                  </label>
-                  <select
-                    value={paymentStatus}
-                    onChange={(e) => setPaymentStatus(e.target.value)}
-                    className="w-full px-4 py-3 border-2 border-orange-200 rounded-xl bg-white font-bold text-slate-900 focus:border-orange-500 focus:outline-none focus:ring-4 focus:ring-orange-500/20 transition-all"
-                  >
-                    <option value="">— בחר —</option>
-                    <option value="שולם">שולם</option>
-                    <option value="לא שולם">לא שולם</option>
-                  </select>
-                </div>
-
-                {/* Missing Document */}
-                <div>
-                  <label className="flex items-center gap-2 text-sm font-bold text-slate-700 mb-2">
-                    <FileText className="w-4 h-4 text-orange-500" />
-                    חוסר מסמך
-                  </label>
-                  <select
-                    value={missingDocument}
-                    onChange={(e) => setMissingDocument(e.target.value)}
-                    className="w-full px-4 py-3 border-2 border-orange-200 rounded-xl bg-white font-bold text-slate-900 focus:border-orange-500 focus:outline-none focus:ring-4 focus:ring-orange-500/20 transition-all"
-                  >
-                    <option value="">— בחר —</option>
-                    <option value="כן">כן</option>
-                    <option value="לא">לא</option>
-                  </select>
-                </div>
+ 
               </div>
 
               {/* Submit Button */}
