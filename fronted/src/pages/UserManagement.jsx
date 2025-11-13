@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { useAuth } from '../context/AuthContext';
 import api from '../api/api';
 import { toast } from 'sonner';
@@ -19,11 +19,10 @@ import {
   Save,
   X,
   FolderKanban,
-  Building2
 } from 'lucide-react';
 
 const UserManagement = () => {
-  const { user: currentUser, isAdmin } = useAuth();
+  const { user: currentUser, isAdmin, loading: authLoading } = useAuth(); // 🆕 הוסף loading
   const [users, setUsers] = useState([]);
   const [projects, setProjects] = useState([]);
   const [suppliers, setSuppliers] = useState([]);
@@ -105,14 +104,18 @@ const isProjectSelected = (projectId) =>
   const [showPassword, setShowPassword] = useState(false);
 
   useEffect(() => {
-    if (!isAdmin) {
+      if (authLoading) {
+      return; // עדיין טוען
+    }
+ if (!isAdmin) {
       toast.error('אין לך הרשאה לעמוד זה', {
         className: "sonner-toast error rtl"
       });
+      setLoading(false);
       return;
     }
     fetchData();
-  }, []);
+  },  [isAdmin, authLoading]);
 
   const fetchData = async () => {
     try {
@@ -284,6 +287,18 @@ const openEditModal = (user) => {
     }));
   };
 
+  if (authLoading) {
+    return (
+      <div className="flex flex-col justify-center items-center min-h-screen bg-gradient-to-br from-orange-50 via-amber-50 to-orange-100">
+        <div className="relative">
+          <div className="absolute inset-0 bg-orange-500/20 blur-3xl rounded-full"></div>
+          <ClipLoader size={80} color="#f97316" />
+        </div>
+        <h1 className="mt-6 font-bold text-2xl text-orange-900">מאמת הרשאות...</h1>
+      </div>
+    );
+  }
+
   if (!isAdmin) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-orange-50 via-amber-50 to-orange-100 flex items-center justify-center">
@@ -295,6 +310,7 @@ const openEditModal = (user) => {
       </div>
     );
   }
+
 
   if (loading) {
     return (

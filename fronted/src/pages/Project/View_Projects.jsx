@@ -282,7 +282,6 @@ const invoiceStats = (project) => {
   let fileCount = 0;
 
   invoices.forEach((inv) => {
-    console.log('Invoice:', inv.invoiceNumber, 'ID:', inv._id, 'Files:', inv.files);
 
     const isEmptyInvoice = !inv.invoiceNumber && !inv.sum && !inv._id;
     if (isEmptyInvoice) {
@@ -305,7 +304,6 @@ const invoiceStats = (project) => {
     // 🆕 בדיקה של מערך files (לא file יחיד!)
     if (Array.isArray(inv.files) && inv.files.length > 0) {
       fileCount += inv.files.length; // ספור כמה קבצים יש במערך
-      console.log(`Found ${inv.files.length} files in invoice ${inv.invoiceNumber}`);
     }
     
     // 🔄 גם לבדוק אם יש file יחיד (למקרה של חשבוניות ישנות)
@@ -315,7 +313,6 @@ const invoiceStats = (project) => {
       inv.file.trim() !== '' && 
       inv.file.startsWith('http')
     ) {
-      console.log('Found single file for invoice:', inv.invoiceNumber);
       fileCount += 1;
     }
   });
@@ -511,7 +508,6 @@ const exportCustomReport = () => {
   }, []);
 
 
-  console.log(allProjects);
   useEffect(() => {
   if (!showReportModal) return;
   const onKeyDown = (e) => {
@@ -696,7 +692,6 @@ const exportCustomReport = () => {
              <tbody>
   {sortedProjects.map((project) => {
     const stats = invoiceStats(project); // 🔥 חשוב מאוד! קרא לפונקציה כאן
-        console.log(`Project: ${project.name}, Files: ${stats.fileCount}`); // 🔍 בדיקה
 
     return (
       <tr

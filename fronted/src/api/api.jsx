@@ -15,8 +15,11 @@ const api = axios.create({
 api.interceptors.request.use(
   (config) => {
     const token = localStorage.getItem('token');
+    console.log('📤 Request:', config.url, 'Token:', token ? '✅' : '❌');
+    
     if (token) {
       config.headers.Authorization = `Bearer ${token}`;
+      console.log('🔑 Authorization header set');
     }
     return config;
   },
@@ -25,19 +28,22 @@ api.interceptors.request.use(
   }
 );
 
-// 🔥 חשוב! Interceptor לטיפול בשגיאות 401
 api.interceptors.response.use(
-  (response) => response,
+  (response) => {
+    console.log('✅ Response:', response.config.url, 'Status:', response.status);
+    return response;
+  },
   (error) => {
+    console.error('❌ Response error:', error.config?.url, 'Status:', error.response?.status);
+    
     if (error.response?.status === 401) {
-      // אם קיבלנו 401 - נקה את ה-token ונתב ללוגין
-      localStorage.removeItem('token');
-      localStorage.removeItem('user');
-      window.location.href = '/login';
+      console.warn('🚫 401 - Triggering logout event');
+      
+      // 🆕 במקום למחוק ישירות - שלח אירוע
+      window.dispatchEvent(new CustomEvent('auth:logout'));
     }
     return Promise.reject(error);
   }
 );
-
 
 export default api;

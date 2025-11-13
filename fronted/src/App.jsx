@@ -90,7 +90,6 @@ const AppContent = () => {
               <span>{isAuthenticated ? "התנתק" : "התחברות"}</span>
             </button>
           </div>
-          <AuthProvider>
           <Routes>
             <Route path="*" element={<Home />} />
             <Route path="/home" element={<Home />} />
@@ -256,7 +255,6 @@ const AppContent = () => {
               }
             />
           </Routes>
-</AuthProvider>
         </div>
       </div>
       
