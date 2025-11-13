@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { ClipLoader } from 'react-spinners';
 import * as XLSX from 'xlsx';
 import { saveAs } from 'file-saver';
@@ -11,8 +11,6 @@ import {
   Filter,
   TrendingUp,
   TrendingDown,
-  Calendar,
-  DollarSign,
   BarChart3,
   Eye
 } from 'lucide-react';
@@ -39,7 +37,7 @@ const SummaryPage = () => {
           api.get('/projects'),
           api.get('/orders'),
           api.get('/invoices'),
-          api.get('/suppliers/getAllSuppliers')
+          api.get('/suppliers')
         ]);
         
         setProjects(projectResponse.data);

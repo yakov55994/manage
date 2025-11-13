@@ -291,7 +291,7 @@ const OrderEditPage = () => {
       toast.success("הזמנה עודכנה בהצלחה", {
         className: "sonner-toast success rtl"
       });
-      navigate(`/order/${id}`);
+      navigate(`/orders/${id}`);
     } catch (error) {
       toast.error(error.message, {
         className: "sonner-toast error rtl"
@@ -548,7 +548,7 @@ const OrderEditPage = () => {
 
               <button
                 type="button"
-                onClick={() => navigate(`/order/${id}`)}
+                onClick={() => navigate(`/orders/${id}`)}
                 disabled={loading}
                 className="px-8 py-4 bg-gray-200 text-gray-700 rounded-xl hover:bg-gray-300 transition-all duration-300 font-bold text-lg disabled:opacity-50"
               >

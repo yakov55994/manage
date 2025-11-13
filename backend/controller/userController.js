@@ -1,150 +1,139 @@
-import User from '../models/userSchema.js';
+import jwt from 'jsonwebtoken';
+import * as userService from '../services/userservice.js'
 
-// קבלת כל המשתמשים (Admin only)
-export const getAllUsers = async (req, res) => {
+const JWT_SECRET = process.env.JWT_SECRET || 'your-secret-key';
+
+// Login
+export const login = async (req, res) => {
   try {
-    const users = await User.find()
-      .select('-password')
-      .populate('permissions.projects', 'name')
-      .sort('-createdAt');
-
+    const { username, password } = req.body;
+    
+    if (!username || !password) {
+      return res.status(400).json({ message: 'נא למלא שם משתמש וסיסמה' });
+    }
+    
+    // 🆕 כל הלוגיקה בסרוויס
+    const result = await userService.authenticateUser(username, password);
+    
+    if (!result.success) {
+      return res.status(401).json({ message: result.message });
+    }
+    
+    // יצירת token
+    const token = jwt.sign(
+      { id: result.user._id, role: result.user.role },
+      JWT_SECRET,
+      { expiresIn: '7d' }
+    );
+    
     res.json({
-      success: true,
-      data: users
+      token,
+      user: {
+        id: result.user._id,
+        username: result.user.username,
+        email: result.user.email,
+        role: result.user.role
+      }
     });
   } catch (error) {
-    res.status(500).json({
-      success: false,
-      message: 'שגיאה בטעינת משתמשים'
-    });
+    console.error('❌ Login error:', error);
+    res.status(500).json({ message: 'שגיאת שרת', error: error.message });
   }
 };
 
-// יצירת משתמש חדש (Admin only)
+// Create first admin (temporary)
+export const createFirstAdmin = async (req, res) => {
+  try {
+    const result = await userService.createFirstAdmin();
+    
+    if (!result.success) {
+      return res.json({ message: result.message });
+    }
+    
+    res.json({ 
+      success: true,
+      message: 'Admin created! username: admin, password: 123456',
+      data: result.admin
+    });
+  } catch (error) {
+    console.error('❌ Create admin error:', error);
+    res.status(500).json({ message: error.message });
+  }
+};
+
+// Get all users
+export const getAllUsers = async (req, res) => {
+  try {
+    const users = await userService.getAllUsers();
+    res.json({ success: true, data: users });
+  } catch (error) {
+    console.error('❌ Get users error:', error);
+    res.status(500).json({ message: 'שגיאה בשליפת משתמשים', error: error.message });
+  }
+};
+
+// Create user
 export const createUser = async (req, res) => {
   try {
-    const { username, password, email, role, permissions } = req.body;
-
-    // בדיקות
+    const { username, password, email, role, isActive, permissions } = req.body;
+    
     if (!username || !password) {
-      return res.status(400).json({
-        success: false,
-        message: 'שם משתמש וסיסמה הם שדות חובה'
-      });
+      return res.status(400).json({ message: 'שם משתמש וסיסמה הם שדות חובה' });
     }
-
-    // בדוק אם שם המשתמש כבר קיים
-    const existingUser = await User.findOne({ username });
-    if (existingUser) {
-      return res.status(400).json({
-        success: false,
-        message: 'שם משתמש כבר קיים'
-      });
-    }
-
-    const user = await User.create({
+    
+    const result = await userService.createNewUser({
       username,
       password,
       email,
-      role: role || 'user',
-      permissions: permissions || { projects: [], suppliers: [] }
+      role,
+      isActive,
+      permissions
     });
-
-    // החזר בלי הסיסמה
-    const userResponse = await User.findById(user._id)
-      .select('-password')
-      .populate('permissions.projects', 'name')
-
-    res.status(201).json({
-      success: true,
-      data: userResponse
-    });
-
+    
+    if (!result.success) {
+      return res.status(400).json({ message: result.message });
+    }
+    
+    res.status(201).json({ success: true, data: result.user });
   } catch (error) {
-    console.error('Create user error:', error);
-    res.status(500).json({
-      success: false,
-      message: 'שגיאה ביצירת משתמש'
-    });
+    console.error('❌ Create user error:', error);
+    res.status(500).json({ message: 'שגיאה ביצירת משתמש', error: error.message });
   }
 };
 
-// עדכון משתמש (Admin only)
+// Update user
 export const updateUser = async (req, res) => {
   try {
     const { id } = req.params;
-    const { username, email, role, permissions, isActive, password } = req.body;
-
-    const user = await User.findById(id);
+    const updateData = req.body;
+    
+    const user = await userService.updateUser(id, updateData);
+    
     if (!user) {
-      return res.status(404).json({
-        success: false,
-        message: 'משתמש לא נמצא'
-      });
+      return res.status(404).json({ message: 'משתמש לא נמצא' });
     }
-
-    // עדכן שדות
-    if (username) user.username = username;
-    if (email !== undefined) user.email = email;
-    if (role) user.role = role;
-    if (permissions) user.permissions = permissions;
-    if (isActive !== undefined) user.isActive = isActive;
-    if (password) user.password = password; // יעבור hash אוטומטי
-
-    await user.save();
-
-    const updatedUser = await User.findById(id)
-      .select('-password')
-      .populate('permissions.projects', 'name')
-
-    res.json({
-      success: true,
-      data: updatedUser
-    });
-
+    
+    res.json({ success: true, data: user });
   } catch (error) {
-    res.status(500).json({
-      success: false,
-      message: 'שגיאה בעדכון משתמש'
-    });
+    console.error('❌ Update user error:', error);
+    res.status(500).json({ message: 'שגיאה בעדכון משתמש', error: error.message });
   }
 };
 
-// מחיקת משתמש (Admin only)
+// Delete user
 export const deleteUser = async (req, res) => {
   try {
     const { id } = req.params;
-
-    const user = await User.findById(id);
-    if (!user) {
-      return res.status(404).json({
-        success: false,
-        message: 'משתמש לא נמצא'
-      });
+    
+    const result = await userService.deleteUser(id);
+    
+    if (!result.success) {
+      return res.status(result.status || 400).json({ message: result.message });
     }
-
-    // מנע מחיקת admin אחרון
-    if (user.role === 'admin') {
-      const adminCount = await User.countDocuments({ role: 'admin' });
-      if (adminCount <= 1) {
-        return res.status(400).json({
-          success: false,
-          message: 'לא ניתן למחוק את ה-Admin האחרון'
-        });
-      }
-    }
-
-    await User.findByIdAndDelete(id);
-
-    res.json({
-      success: true,
-      message: 'משתמש נמחק בהצלחה'
-    });
-
+    
+    res.json({ success: true, message: result.message });
   } catch (error) {
-    res.status(500).json({
-      success: false,
-      message: 'שגיאה במחיקת משתמש'
-    });
+    console.error('❌ Delete user error:', error);
+    res.status(500).json({ message: 'שגיאה במחיקת משתמש', error: error.message });
   }
 };

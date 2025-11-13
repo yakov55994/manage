@@ -96,19 +96,14 @@ export const supplierController = {
   },
 
   // 🔎 חיפוש ספקים בפרויקט
-  async search(req, res) {
+  search: async (req, res) => {
     try {
-      const { projectId } = req.params;
       const { query } = req.query;
-      if (!query) {
-        return res.status(400).json({ success: false, message: 'מילת חיפוש לא נמצאה' });
-      }
-
-      const results = await supplierService.search(projectId, query);
-      res.status(200).json(results);
+      const results = await supplierService.search(query);
+      return res.status(200).json(results);
     } catch (error) {
       console.error('שגיאה במהלך החיפוש: ', error);
-      res.status(500).json({ message: 'שגיאה במהלך החיפוש', error: error.message });
+      return res.status(500).json({ message: 'שגיאה במהלך החיפוש', error: error.message });
     }
   },
 };

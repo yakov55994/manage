@@ -99,13 +99,12 @@ const invoiceControllers = {
   // ✅ חיפוש בפרויקט
   search: async (req, res) => {
     try {
-      const { projectId } = req.params;
       const { query } = req.query;
-      const results = await invoiceService.search(projectId, query);
-      res.status(200).json(results);
+      const results = await invoiceService.search(query);
+      return res.status(200).json(results);
     } catch (error) {
       console.error('שגיאה במהלך החיפוש: ', error);
-      res.status(500).json({ message: 'שגיאה במהלך החיפוש', error: error.message });
+      return res.status(500).json({ message: 'שגיאה במהלך החיפוש', error: error.message });
     }
   },
 

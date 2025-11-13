@@ -1,27 +1,22 @@
 import express from 'express';
+import { protect, requireAdmin } from '../middleware/auth.js';
 import {
+  login,
   getAllUsers,
   createUser,
   updateUser,
   deleteUser
 } from '../controller/userController.js';
-import { protect, requireAdmin } from '../middleware/auth.js';
 
-const router = express.Router({ mergeParams: true });
+const router = express.Router();
 
-// רק אדמין יכול לנהל משתמשים
-router.use(protect, requireAdmin);
+// Public routes
+router.post('/login', login);
 
-// 📃 רשימת משתמשים
-router.get('/', getAllUsers);
-
-// ➕ יצירת משתמש
-router.post('/', createUser);
-
-// ✏️ עדכון משתמש
-router.put('/:id', updateUser);
-
-// 🗑️ מחיקת משתמש
-router.delete('/:id', deleteUser);
+// Protected routes (Admin only)
+router.get('/', protect, requireAdmin, getAllUsers);
+router.post('/', protect, requireAdmin, createUser);
+router.put('/:id', protect, requireAdmin, updateUser);
+router.delete('/:id', protect, requireAdmin, deleteUser);
 
 export default router;

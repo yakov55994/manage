@@ -548,7 +548,6 @@ const filteredInvoices = invoices
                           onClick={() => moveToInvoiceDetails(invoice)}
                           className="cursor-pointer border-t border-emerald-100 hover:bg-emerald-50/50 transition-colors"
                         >
-                          {console.log(invoice)}
                           <td className="px-4 py-3 text-sm font-bold text-center">
                             {invoice.invoiceNumber}
                           </td>
@@ -563,8 +562,8 @@ const filteredInvoices = invoices
                           </td>
 
                           <td className="px-4 py-3 text-sm font-bold text-center">
-                            {invoice.supplierId?.name}
-                          </td>
+                            {invoice.supplier?.name || "—"}
+                        </td>
                           <td className="px-4 py-3 text-sm font-bold text-center">
                             {invoice.paid === "כן" ? "שולם" : "לא שולם"}
                           </td>

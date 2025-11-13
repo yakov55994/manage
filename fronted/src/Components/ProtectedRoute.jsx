@@ -1,32 +1,33 @@
-// src/Components/ProtectedRoute.jsx
-import { Navigate, useLocation } from "react-router-dom";
-import { useAuth } from "../context/AuthContext.jsx";
+// components/ProtectedRoute.jsx
+import { Navigate, useLocation } from 'react-router-dom';
+import { useAuth } from '../context/AuthContext';
+import { ClipLoader } from 'react-spinners';
 
-export default function ProtectedRoute({ children, adminOnly = false }) {
-  const { loading, isAuthenticated, user } = useAuth();
+const ProtectedRoute = ({ children, adminOnly = false }) => {
+  const { user, loading, isAdmin } = useAuth();
   const location = useLocation();
 
-  // בזמן טעינה – הצג ספינר קצר/תצוגה מינימלית
   if (loading) {
     return (
-      <div className="h-[50vh] grid place-items-center text-slate-600">
-        <div className="animate-pulse text-center">
-          <div className="mb-2 font-bold">טוען הרשאות...</div>
-          <div className="w-12 h-12 rounded-full border-4 border-gray-300 border-t-transparent animate-spin mx-auto" />
+      <div className="flex flex-col justify-center items-center min-h-screen bg-gradient-to-br from-orange-50 via-amber-50 to-orange-100">
+        <div className="relative">
+          <div className="absolute inset-0 bg-orange-500/20 blur-3xl rounded-full"></div>
+          <ClipLoader size={80} color="#f97316" />
         </div>
+        <h1 className="mt-6 font-bold text-2xl text-orange-900">טוען...</h1>
       </div>
     );
   }
 
-  // לא מחובר
-  if (!isAuthenticated) {
-    return <Navigate to="/login" replace state={{ from: location }} />;
+  if (!user) {
+    return <Navigate to="/login" state={{ from: location }} replace />;
   }
 
-  // דרוש Admin
-  if (adminOnly && user?.role !== "admin") {
-    return <Navigate to="/home" replace />;
+  if (adminOnly && !isAdmin) {
+    return <Navigate to="/projects" replace />;
   }
 
   return children;
-}
+};
+
+export default ProtectedRoute;

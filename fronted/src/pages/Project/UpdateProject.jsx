@@ -135,7 +135,7 @@ const UpdateProjectPage = () => {
               {/* Back Button */}
               <div className="flex justify-center">
                 <button
-                  onClick={() => navigate(`/project/${id}`)}
+                  onClick={() => navigate(`/projects/${id}`)}
                   className="flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-slate-200 to-slate-300 text-slate-700 font-bold rounded-xl hover:from-slate-300 hover:to-slate-400 transition-all shadow-lg"
                 >
                   <ArrowRight className="w-4 h-4" />

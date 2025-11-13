@@ -1,32 +1,26 @@
-// scripts/add-paymentMethod-to-invoices.js
-import mongoose from "mongoose";
-import dotenv from "dotenv";
-dotenv.config();
+// יצירת קובץ זמני: createAdmin.js
+import mongoose from 'mongoose';
+import User from './models/User.js';
 
-const MONGODB_URI = process.env.MONGODB_URI || "mongodb://localhost:27017/yourdb";
+mongoose.connect('mongodb+srv://yakov1020:Yakov7470893@management-app.qrrmy.mongodb.net/?retryWrites=true&w=majority&appName=Management-App');
 
-const InvoiceSchema = new mongoose.Schema({}, { strict: false, collection: "invoices" });
-const Invoice = mongoose.model("Invoice", InvoiceSchema);
-
-(async () => {
+async function createAdmin() {
   try {
-    await mongoose.connect(MONGODB_URI, { autoIndex: false });
-    console.log("✅ Connected to MongoDB");
-
-    const filter = { $or: [ { paymentMethod: { $exists: false } }, { paymentMethod: null } ] };
-    const update = { $set: { paymentMethod: "" } };
-
-    const res = await Invoice.updateMany(filter, update);
-    console.log(`✅ Updated ${res.modifiedCount || res.nModified || 0} invoices`);
-
-    // אימות מהיר
-    const remaining = await Invoice.countDocuments({ paymentMethod: { $exists: false } });
-    console.log(`ℹ️  Remaining without paymentMethod: ${remaining}`);
-
-    await mongoose.disconnect();
-    console.log("🏁 Done.");
-  } catch (err) {
-    console.error("❌ Migration failed:", err);
+    const admin = new User({
+      username: 'admin',
+      password: '123456', // תשתנה אחרי ההתחברות הראשונה!
+      email: 'admin@example.com',
+      role: 'admin',
+      isActive: true
+    });
+    
+    await admin.save();
+    console.log('Admin created successfully!');
+    process.exit(0);
+  } catch (error) {
+    console.error('Error:', error);
     process.exit(1);
   }
-})();
+}
+
+createAdmin();

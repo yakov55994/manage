@@ -3,6 +3,7 @@ import projectControllers from "../controller/projectControllers.js";
 const router = express.Router();
 
 router.get("/", projectControllers.getAllProjects);
+router.get("/search", projectControllers.search);
 router.get("/:id", projectControllers.getProjectById);
 router.post("/", projectControllers.createProject);
 router.put("/:id", projectControllers.updateProject);

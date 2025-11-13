@@ -174,23 +174,12 @@ async getById(projectId, id) {
   /**
    * 🔎 חיפוש חופשי בפרויקט (מחרוזת query חובה)
    */
-  async search(projectId, query) {
-    (projectId);
-    if (query == null || query === '') {
+  async search(query) {
+    if (query === undefined || query === null) {
       throw new Error('מילת חיפוש לא נמצאה');
     }
-
-    const or = [
-      { projectName:   { $regex: query, $options: 'i' } },
-      { invitingName:  { $regex: query, $options: 'i' } },
-      { detail:        { $regex: query, $options: 'i' } },
-    ];
-    if (!isNaN(query)) {
-      or.push({ orderNumber: parseInt(query, 10) });
-      or.push({ sum: parseFloat(query) });
-    }
-
-    return Order.find({ projectId, $or: or }).sort({ createdAt: -1 });
+    const regex = query === '0' || !isNaN(query) ? String(query) : new RegExp(String(query), 'i');
+    return Order.find({ name: { $regex: regex } }).sort({ createdAt: -1 }).lean();
   },
 
   // ==== שמרתי למקרה שאתה עדיין קורא מהקוד הישן ====

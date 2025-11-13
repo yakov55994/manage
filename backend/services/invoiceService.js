@@ -120,24 +120,12 @@ const invoiceService = {
   },
 
   // 🔎 חיפוש בפרויקט
-  async search(projectId, query) {
-    if (!projectId) throw new Error('projectId is required');
-    const q = (query || '').trim();
-    const filter = { projectId };
-
-    if (q) {
-      Object.assign(filter, {
-        $or: [
-          { invoiceNumber: q },
-          { description: { $regex: q, $options: 'i' } },
-          { projectName: { $regex: q, $options: 'i' } },
-          { invitingName: { $regex: q, $options: 'i' } },
-        ],
-      });
+    async search(query) {
+    if (query === undefined || query === null) {
+      throw new Error('מילת חיפוש לא נמצאה');
     }
-
-    const invoices = await Invoice.find(filter).sort({ createdAt: -1 });
-    return { invoices };
+    const regex = query === '0' || !isNaN(query) ? String(query) : new RegExp(String(query), 'i');
+    return Invoice.find({ name: { $regex: regex } }).sort({ createdAt: -1 }).lean();
   },
 
   // ❗ אופציונלי (אדמין בלבד): רשימת כל החשבוניות

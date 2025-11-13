@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import  { useState } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { KeyRound, Loader2, ChevronLeft, Eye, EyeOff, User } from "lucide-react";
 import api from "../api/api.jsx";
@@ -16,16 +16,17 @@ const Login = () => {
   const location = useLocation();
   const { login } = useAuth();
 
-  const handleSubmit = async (e) => {
-    e?.preventDefault?.();
-    if (!username.trim() || !password) {
-      toast.error("נא להזין שם משתמש וסיסמה", { className: "sonner-toast error rtl" });
-      return;
-    }
-    setLoading(true);
-    try {
-      // שרת צריך להחזיר: { token, user: {_id, username, role} }
-      const { data } = await api.post("/auth/login", { username, password });
+const handleSubmit = async (e) => {
+  e?.preventDefault?.();
+  if (!username.trim() || !password) {
+    toast.error("נא להזין שם משתמש וסיסמה", { className: "sonner-toast error rtl" });
+    return;
+  }
+  setLoading(true);
+  try {
+    // שרת צריך להחזיר: { token, user: {_id, username, role} }
+  const { data } = await api.post("/users/login", { username, password });
+  console.log(data);
       if (!data?.token) throw new Error("לא התקבל טוקן מהשרת");
       await login({ token: data.token, user: data.user }); // עדכון ה־AuthContext
       toast.success("ברוך/ה הבא/ה 🙂", { className: "sonner-toast success rtl" });

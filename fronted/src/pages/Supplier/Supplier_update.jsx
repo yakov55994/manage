@@ -182,7 +182,7 @@ const SupplierEditPage = () => {
         className: "sonner-toast success rtl"
       });
       
-      navigate(`/supplier/${id}`);
+      navigate(`/suppliers/${id}`);
     } catch (error) {
       console.error('Update error:', error.response?.data);
       const errorMessage = error.response?.data?.message || 'שגיאה בעדכון הספק';
@@ -223,7 +223,7 @@ const SupplierEditPage = () => {
         {/* כפתור חזרה */}
         <div className="mb-6">
           <button
-            onClick={() => navigate(`/supplier/${id}`)}
+            onClick={() => navigate(`/suppliers/${id}`)}
             className="inline-flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-gray-500 to-gray-600 text-white rounded-xl hover:from-gray-600 hover:to-gray-700 transition-all duration-300 shadow-lg hover:shadow-xl font-medium"
           >
             <ArrowRight className="w-5 h-5" />
@@ -480,7 +480,7 @@ const SupplierEditPage = () => {
 
             <button
               type="button"
-              onClick={() => navigate(`/supplier/${id}`)}
+              onClick={() => navigate(`/suppliers/${id}`)}
               disabled={loading}
               className="px-8 py-4 bg-gray-200 text-gray-700 rounded-xl hover:bg-gray-300 transition-all duration-300 font-bold text-lg disabled:opacity-50 flex items-center justify-center gap-2"
             >

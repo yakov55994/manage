@@ -20,6 +20,7 @@ import {
   TrendingUp,
   ArrowRight,
 } from "lucide-react";
+import DateField from "../../Components/DateField";
 
 const InvoiceEditPage = () => {
   const [invoice, setInvoice] = useState(null);
@@ -653,30 +654,33 @@ const InvoiceEditPage = () => {
                     </select>
                   </div>
 
-                  <div className="group">
-                    <label className="text-sm font-bold text-slate-700 mb-2 block">
-                      תאריך התשלום
-                    </label>
-                    {paid === "כן" ? (
-                      <input
-                        type="date"
-                        value={paymentDate}
-                        onChange={(e) => setPaymentDate(e.target.value)}
-                        className={`mt-2 w-full rounded-xl border-2 px-4 py-3 text-sm font-medium focus:outline-none focus:ring-4 transition-all
-                          ${
-                            !paymentDate
-                              ? "border-rose-300 bg-rose-50 focus:border-rose-500 focus:ring-rose-500/20"
-                              : "border-slate-200 bg-white focus:border-emerald-500 focus:ring-emerald-500/20 group-hover:border-emerald-300"
-                          }`}
-                        onFocus={(e) => e.target.showPicker()}
-                        required={paid === "כן"}
-                      />
-                    ) : (
-                      <div className="mt-2 bg-gradient-to-br from-slate-100 to-slate-200 text-slate-500 rounded-xl px-4 py-3 text-center font-medium border-2 border-slate-200">
-                        החשבונית לא שולמה
-                      </div>
-                    )}
-                  </div>
+               <div className="group">
+  <label className="text-sm font-bold text-slate-700 mb-2 flex items-center gap-2">
+    <Calendar className="w-4 h-4 text-emerald-500" />
+    תאריך התשלום
+  </label>
+
+  {paid === "כן" ? (
+    <DateField
+      type="date"
+      value={paymentDate}
+      onChange={(val) => setPaymentDate(val)}
+      className={`w-full p-3 border-2 rounded-xl font-medium transition-all focus:outline-none focus:ring-4
+        ${
+          !paymentDate
+            ? "border-rose-300 bg-rose-50 focus:border-rose-500 focus:ring-rose-500/20"
+            : "border-slate-200 bg-white focus:border-emerald-500 focus:ring-emerald-500/20 group-hover:border-emerald-300"
+        }`}
+      placeholder="yyyy-mm-dd"
+      required={paid === "כן"}
+    />
+  ) : (
+    <div className="mt-2 bg-gradient-to-br from-slate-100 to-slate-200 text-slate-500 rounded-xl px-4 py-3 text-center font-medium border-2 border-slate-200">
+      החשבונית לא שולמה
+    </div>
+  )}
+</div>
+
 
                   <div className="group">
                     <label className="text-sm font-bold text-slate-700 mb-2 block">

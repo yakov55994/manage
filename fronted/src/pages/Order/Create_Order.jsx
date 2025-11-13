@@ -19,6 +19,7 @@ import {
   TrendingUp,
   Phone,
 } from 'lucide-react';
+import DateField from '../../Components/DateField';
 
 const CreateOrder = () => {
   const [projects, setProjects] = useState([]);
@@ -521,20 +522,20 @@ const CreateOrder = () => {
                     </div>
 
                     {/* Created At */}
-                    <div className="group">
+                 <div className="group">
                       <label className="text-sm font-bold text-slate-700 mb-2 flex items-center gap-2">
                         <Calendar className="w-4 h-4 text-orange-500" />
                         תאריך יצירת ההזמנה
                       </label>
-                      <input
+                      <DateField
                         type="date"
                         value={order.createdAt}
-                        onChange={(e) =>
-                          handleOrderChange(index, 'createdAt', e.target.value)
-                        }
-                        className="mt-2 w-full rounded-xl border-2 border-slate-200 bg-white px-4 py-3 text-sm font-medium focus:border-orange-500 focus:outline-none focus:ring-4 focus:ring-orange-500/20 transition-all group-hover:border-orange-300"
+                        className="w-full p-3 border-2 border-slate-200 rounded-xl bg-white font-medium focus:border-orange-500 focus:outline-none focus:ring-4 focus:ring-orange-500/20 transition-all group-hover:border-orange-300"
+                        placeholder="yyyy-mm-dd"
                         required
-                        onFocus={(e) => e.target.showPicker()}
+                        onChange={(val) =>
+                          handleOrderChange(index, "createdAt", val)
+                        }
                       />
                     </div>
 

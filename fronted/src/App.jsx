@@ -57,7 +57,7 @@ const AppContent = () => {
     <div className="min-h-screen flex flex-col">
       <div className="flex flex-1">
         <Sidebar />
-        <div className="flex-1 p-6 mt-20">
+        <div className="flex-1 p-6 mt-20 ml-10">
           {/* מציג כפתור התחברות או התנתקות */}
           <div className="mb-0 mr-auto max-w-60 top-1 z-50 flex items-center gap-4 text-white p-2">
             <div
@@ -90,7 +90,7 @@ const AppContent = () => {
               <span>{isAuthenticated ? "התנתק" : "התחברות"}</span>
             </button>
           </div>
-
+          <AuthProvider>
           <Routes>
             <Route path="*" element={<Home />} />
             <Route path="/home" element={<Home />} />
@@ -256,7 +256,7 @@ const AppContent = () => {
               }
             />
           </Routes>
-
+</AuthProvider>
         </div>
       </div>
       

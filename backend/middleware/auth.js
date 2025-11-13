@@ -1,6 +1,6 @@
 // middleware/auth.js
 import jwt from 'jsonwebtoken';
-import User from '../models/userSchema.js';
+import User from '../models/User.js';
 import { canUser } from '../services/userservice.js';
 
 const JWT_SECRET = process.env.JWT_SECRET || 'your-secret-key-change-in-production';
@@ -38,8 +38,6 @@ export const requireAdmin = (req, res, next) => {
   next();
 };
 
-// (לא הכרחי יותר אם אתה משתמש ב-scope.js)
-// שמתי כאן להשארת תאימות לאחור בלבד
 export const checkProjectPermission = (req, res, next) => {
   if (req.user?.role === "admin") return next();
   const projectId = req.params.id || req.body.projectId;
@@ -53,7 +51,40 @@ export const checkProjectPermission = (req, res, next) => {
   next();
 };
 
-// אופציונלי: מחלקת authorize כללית אם אתה עדיין קורא לה במקומות מסוימים
+// 🆕 בדיקת הרשאה למודול ספציפי בפרויקט
+export const checkModuleAccess = (moduleName, requiredAccess = 'view') => {
+  return (req, res, next) => {
+    // מנהלים רואים הכל
+    if (req.user?.role === 'admin') return next();
+    
+    const projectId = req.params.id || req.params.projectId || req.body.projectId;
+    if (!projectId) return res.status(400).json({ message: 'projectId is required' });
+    
+    // אם אין הרשאות ספציפיות - גישה לכל
+    const list = req.user?.permissions?.projects || [];
+    if (list.length === 0) return next();
+    
+    // מצא הרשאות לפרויקט
+    const projectPerm = list.find(p => 
+      String(p.project?._id || p.project || p) === String(projectId)
+    );
+    
+    if (!projectPerm) {
+      return res.status(403).json({ message: 'אין לך גישה לפרויקט זה' });
+    }
+    
+    // בדיקת הרשאה למודול
+    const moduleAccess = projectPerm.modules?.[moduleName] || projectPerm.access || 'view';
+    
+    if (requiredAccess === 'edit' && moduleAccess !== 'edit') {
+      return res.status(403).json({ message: `אין לך הרשאת עריכה ל${moduleName}` });
+    }
+    
+    req.moduleAccess = moduleAccess;
+    next();
+  };
+};
+
 export const authorize = ({ resource, action, getProjectId }) => {
   return (req, res, next) => {
     const projectId =

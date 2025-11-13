@@ -264,12 +264,11 @@ if (advancedFilters.paymentStatus) {
     return { budgetUsed, budgetPercentage, projectStatus };
   };
 
-  const invoiceStats = (project) => {
+const invoiceStats = (project) => {
   const invoices = Array.isArray(project.invoices) ? project.invoices : [];
 
   const normalizeDate = (d) => {
     if (!d) return null;
-    // ייתכן שמגיע בפורמט { $date: '...' }
     const raw = d?.$date || d;
     const dt = new Date(raw);
     return isNaN(dt.getTime()) ? null : dt;
@@ -280,9 +279,16 @@ if (advancedFilters.paymentStatus) {
   let sumPaid = 0;
   let sumUnpaid = 0;
   let lastPaid = null;
-   let fileCount = 0; 
+  let fileCount = 0;
 
   invoices.forEach((inv) => {
+    console.log('Invoice:', inv.invoiceNumber, 'ID:', inv._id, 'Files:', inv.files);
+
+    const isEmptyInvoice = !inv.invoiceNumber && !inv.sum && !inv._id;
+    if (isEmptyInvoice) {
+      return;
+    }
+
     const paid = (inv.paid || '').trim() === 'כן';
     const sum = Number(inv.sum || 0);
 
@@ -292,11 +298,24 @@ if (advancedFilters.paymentStatus) {
       const pd = normalizeDate(inv.paymentDate);
       if (pd && (!lastPaid || pd > lastPaid)) lastPaid = pd;
     } else {
-      // גם כששדה paid חסר / "לא" – נספור כלא משולם
       unpaidCount += 1;
       sumUnpaid += sum;
     }
-     if (inv.file && inv.file.trim() !== '') {
+
+    // 🆕 בדיקה של מערך files (לא file יחיד!)
+    if (Array.isArray(inv.files) && inv.files.length > 0) {
+      fileCount += inv.files.length; // ספור כמה קבצים יש במערך
+      console.log(`Found ${inv.files.length} files in invoice ${inv.invoiceNumber}`);
+    }
+    
+    // 🔄 גם לבדוק אם יש file יחיד (למקרה של חשבוניות ישנות)
+    if (
+      inv.file && 
+      typeof inv.file === 'string' && 
+      inv.file.trim() !== '' && 
+      inv.file.startsWith('http')
+    ) {
+      console.log('Found single file for invoice:', inv.invoiceNumber);
       fileCount += 1;
     }
   });
@@ -314,7 +333,7 @@ if (advancedFilters.paymentStatus) {
     invoiceSumUnpaid: sumUnpaid,
     lastPaymentDate: lastPaid,
     projectPaymentStatus,
-     fileCount,
+    fileCount,
   };
 };
 
@@ -674,77 +693,82 @@ const exportCustomReport = () => {
                     <th className="px-4 py-4 text-sm font-bold text-white">פעולות</th>
                   </tr>
                 </thead>
-                <tbody>
-                  {sortedProjects.map((project) => (
-                    const stats = invoiceStats(project);
-                    <tr
-                      key={project._id}
-                      onClick={() => handleView(project._id)}
-                      className="cursor-pointer border-t border-orange-100 hover:bg-orange-50 transition-colors"
-                    >
-                      <td className="px-4 py-4 text-sm font-bold text-center text-slate-900">
-                        {project.name}
-                      </td>
-                      <td className="px-4 py-4 text-sm font-bold text-center text-slate-900">
-                        {project.budget ? formatNumber(project.budget) + " ₪" : "אין תקציב"}
-                      </td>
-                      <td className="px-4 py-4 text-sm font-bold text-center">
-                        {project.remainingBudget !== undefined ? (
-                          project.remainingBudget < 0 ? (
-                            <span className="text-red-600 flex items-center justify-center gap-1">
-                              {formatNumber(project.remainingBudget)} ₪
-                              <AlertCircle className="w-4 h-4" />
-                            </span>
-                          ) : (
-                            <span className="text-emerald-600">{formatNumber(project.remainingBudget)} ₪</span>
-                          )
-                        ) : (
-                          "אין תקציב"
-                        )}
-                      </td>
-                      <td className="px-4 py-4 text-sm font-medium text-center text-slate-900">
-                        {project.invitingName}
-                      </td>
-                      <td className="px-4 py-4 text-sm text-center text-slate-600">
-                        {formatDate(project.createdAt)}
-                      </td>
-                      <td className="px-4 py-4 text-sm text-center text-slate-600">
-                        {project.Contact_person || "—"}
-                      </td>
-                       <td className="px-4 py-4 text-sm font-bold text-center text-slate-900">
-          <span className="inline-flex items-center gap-1">
-            {stats.fileCount}
-            {stats.fileCount > 0 && (
-              <FileSpreadsheet className="w-4 h-4 text-orange-500" />
-            )}
-          </span>
+             <tbody>
+  {sortedProjects.map((project) => {
+    const stats = invoiceStats(project); // 🔥 חשוב מאוד! קרא לפונקציה כאן
+        console.log(`Project: ${project.name}, Files: ${stats.fileCount}`); // 🔍 בדיקה
+
+    return (
+      <tr
+        key={project._id}
+        onClick={() => handleView(project._id)}
+        className="cursor-pointer border-t border-orange-100 hover:bg-orange-50 transition-colors"
+      >
+        <td className="px-4 py-4 text-sm font-bold text-center text-slate-900">
+          {project.name}
         </td>
-                      <td className="px-4 py-4">
-                        <div className="flex justify-center gap-2">
-                          <button
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              handleEdit(project._id);
-                            }}
-                            className="p-2 text-orange-600 hover:bg-orange-100 rounded-lg transition-all"
-                          >
-                            <Edit2 className="w-5 h-5" />
-                          </button>
-                          <button
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              setProjectToDelete(project._id);
-                              setShowModal(true);
-                            }}
-                            className="p-2 text-red-600 hover:bg-red-100 rounded-lg transition-all"
-                          >
-                            <Trash2 className="w-5 h-5" />
-                          </button>
-                        </div>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
+        <td className="px-4 py-4 text-sm font-bold text-center text-slate-900">
+          {project.budget ? formatNumber(project.budget) + " ₪" : "אין תקציב"}
+        </td>
+        <td className="px-4 py-4 text-sm font-bold text-center">
+          {project.remainingBudget !== undefined ? (
+            project.remainingBudget < 0 ? (
+              <span className="text-red-600 flex items-center justify-center gap-1">
+                {formatNumber(project.remainingBudget)} ₪
+                <AlertCircle className="w-4 h-4" />
+              </span>
+            ) : (
+              <span className="text-emerald-600">{formatNumber(project.remainingBudget)} ₪</span>
+            )
+          ) : (
+            "אין תקציב"
+          )}
+        </td>
+        <td className="px-4 py-4 text-sm font-medium text-center text-slate-900">
+          {project.invitingName}
+        </td>
+        <td className="px-4 py-4 text-sm text-center text-slate-600">
+          {formatDate(project.createdAt)}
+        </td>
+        <td className="px-4 py-4 text-sm text-center text-slate-600">
+          {project.Contact_person || "—"}
+        </td>
+        {/* 🔥 עמודת מספר קבצים - עכשיו עם החישוב הנכון */}
+      <td className="px-4 py-4 text-sm font-bold text-center text-slate-900">
+  <span className="inline-flex items-center justify-center gap-1">
+    {stats.fileCount}  {/* ⚠️ וודא שזה stats.fileCount ולא משהו אחר */}
+    {stats.fileCount > 0 && (
+      <FileSpreadsheet className="w-4 h-4 text-orange-500" />
+    )}
+  </span>
+</td>
+        <td className="px-4 py-4">
+          <div className="flex justify-center gap-2">
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                handleEdit(project._id);
+              }}
+              className="p-2 text-orange-600 hover:bg-orange-100 rounded-lg transition-all"
+            >
+              <Edit2 className="w-5 h-5" />
+            </button>
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                setProjectToDelete(project._id);
+                setShowModal(true);
+              }}
+              className="p-2 text-red-600 hover:bg-red-100 rounded-lg transition-all"
+            >
+              <Trash2 className="w-5 h-5" />
+            </button>
+          </div>
+        </td>
+      </tr>
+    );
+  })}
+</tbody>
               </table>
             </div>
           </div>

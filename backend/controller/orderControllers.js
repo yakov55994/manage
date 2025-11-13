@@ -109,16 +109,12 @@ getOrderById: async (req, res) => {
   // 🔎 חיפוש הזמנות בפרויקט
   search: async (req, res) => {
     try {
-      const { projectId } = req.params;
-      const searchQuery = req.query.query;
-      if (!searchQuery) {
-        return res.status(400).json({ error: "מילת חיפוש לא נמצאה" });
-      }
-      const orders = await orderService.search(projectId, searchQuery);
-      return res.status(200).json(orders);
+      const { query } = req.query;
+      const results = await orderService.search(query);
+      return res.status(200).json(results);
     } catch (error) {
-      console.error("שגיאה במהלך החיפוש:", error.message);
-      return res.status(500).json({ error: error.message });
+      console.error('שגיאה במהלך החיפוש: ', error);
+      return res.status(500).json({ message: 'שגיאה במהלך החיפוש', error: error.message });
     }
   }
 };

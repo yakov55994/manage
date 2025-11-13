@@ -85,32 +85,83 @@ const projectService = {
     }
   },
 
-  // 📃 כל הפרויקטים (ניתן להעביר filter מבחוץ – למשל req.queryFilter)
-  async getAllProjects(filter = {}, { sort = { createdAt: -1 }, lean = true } = {}) {
-    const q = Project.find(filter).sort(sort);
-    if (lean) q.lean();
-    return q.exec();
-  },
+// 📃 כל הפרויקטים עם קבצים מהחשבוניות
+async getAllProjects(filter = {}, { sort = { createdAt: -1 }, lean = true } = {}) {
+  // 1. שלוף את הפרויקטים
+  const projects = await Project.find(filter).sort(sort).lean().exec();
+  
+  // 2. אסוף את כל ה-IDs של החשבוניות
+  const allInvoiceIds = [];
+  projects.forEach(project => {
+    if (project.invoices) {
+      project.invoices.forEach(inv => {
+        if (inv._id) allInvoiceIds.push(inv._id);
+      });
+    }
+  });
+  
+  // 3. שלוף את כל החשבוניות המלאות (עם files וספק)
+  const Invoice = mongoose.model('Invoice'); // או require('./Invoice') תלוי באיך הקוד שלך מאורגן
+  const fullInvoices = await Invoice.find({ _id: { $in: allInvoiceIds } })
+    .populate({ path: 'supplierId', select: 'name phone bankDetails' })
+    .lean()
+    .exec();
+  
+  // 4. צור מפה של ID -> חשבונית מלאה
+  const invoiceMap = {};
+  fullInvoices.forEach(inv => {
+    invoiceMap[inv._id.toString()] = {
+      files: inv.files || [],
+      supplier: inv.supplierId || null
+    };
+  });
+  
+  // 5. הוסף את ה-files והספק לכל חשבונית בפרויקט
+  projects.forEach(project => {
+    if (project.invoices) {
+      project.invoices.forEach(inv => {
+        if (inv._id) {
+          const fullData = invoiceMap[inv._id.toString()];
+          if (fullData) {
+            inv.files = fullData.files;
+            inv.supplier = fullData.supplier;
+          }
+        }
+      });
+    }
+  });
+  
+  return projects;
+},
 
   // 📄 פרויקט לפי ID
   async getProjectById(id) {
-    // שליפת הפרויקט עצמו
-    const projectDoc = await Project.findById(id).lean();
-    if (!projectDoc) return null;
+  // שליפת הפרויקט עצמו
+  const projectDoc = await Project.findById(id).lean();
+  if (!projectDoc) return null;
 
-    // שים לב: במסמכי ההזמנה/חשבונית השדה הוא projectId (לא id)
-    const [orders, invoices] = await Promise.all([
-      Order.find({ projectId: id }).sort({ createdAt: -1 }).lean(),
-      Invoice.find({ projectId: id }).sort({ createdAt: -1 }).lean(),
-    ]);
+  // 1. שליפת ההזמנות והחשבוניות
+  const [orders, invoices] = await Promise.all([
+    Order.find({ projectId: id }).sort({ createdAt: -1 }).lean(),
+    Invoice.find({ projectId: id })
+      .populate({ path: 'supplierId', select: 'name phone bankDetails' }) // 🆕 populate הספק
+      .sort({ createdAt: -1 })
+      .lean(),
+  ]);
 
-    // מחזירים אובייקט מאוחד, לא return ריק :)
-    return {
-      ...projectDoc,
-      orders: Array.isArray(orders) ? orders : [],
-      invoices: Array.isArray(invoices) ? invoices : [],
-    };
-  },
+  // 2. המרה לפורמט עם supplier במקום supplierId
+  const invoicesWithSupplier = invoices.map(inv => ({
+    ...inv,
+    supplier: inv.supplierId || null, // 🆕 העתקת supplierId ל-supplier
+  }));
+
+  // מחזירים אובייקט מאוחד
+  return {
+    ...projectDoc,
+    orders: Array.isArray(orders) ? orders : [],
+    invoices: invoicesWithSupplier,
+  };
+},
 
   // ✏️ עדכון פרויקט (מינימלי; משאיר שליטה למה לעדכן)
   async updateProject(id, projectData = {}) {

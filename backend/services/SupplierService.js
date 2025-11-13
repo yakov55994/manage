@@ -30,35 +30,12 @@ export const supplierService = {
   },
 
   // 🔎 חיפוש ספקים בפרויקט
-  async search(projectId, query) {
-    try {
-      assertProject(projectId);
-
-      if (!query || String(query).trim() === '') {
-        return { suppliers: [] };
-      }
-      const q = String(query).trim();
-
-      const suppliers = await Supplier.find({
-        project: projectId,
-        $or: [
-          { name:        { $regex: q, $options: 'i' } },
-          { companyName: { $regex: q, $options: 'i' } },
-          { business_tax:{ $regex: q, $options: 'i' } },
-          { taxId:       { $regex: q, $options: 'i' } },
-          { phone:       { $regex: q, $options: 'i' } },
-          { email:       { $regex: q, $options: 'i' } },
-          { address:     { $regex: q, $options: 'i' } },
-        ],
-      })
-      .limit(50)
-      .sort({ name: 1 });
-
-      return { suppliers };
-    } catch (error) {
-      console.error('שגיאה במהלך החיפוש בספקים:', error.message);
-      throw new Error('שגיאה בזמן החיפוש בספקים');
+    async search(query) {
+    if (query === undefined || query === null) {
+      throw new Error('מילת חיפוש לא נמצאה');
     }
+    const regex = query === '0' || !isNaN(query) ? String(query) : new RegExp(String(query), 'i');
+    return Supplier.find({ name: { $regex: regex } }).sort({ createdAt: -1 }).lean();
   },
 
   // 📃 כל הספקים עם פילטר חופשי (ה־controller מעביר { project: projectId, ... })
@@ -85,7 +62,7 @@ async  getAllSuppliers() {
     try {
       if (!mongoose.Types.ObjectId.isValid(id)) throw new Error('Invalid supplier id');
 
-      const supplier = await Supplier.findOne({ _id: id });
+      const supplier = await Supplier.findOne({ _id: id }).populate("name");
       if (!supplier) throw new Error('ספק לא נמצא');
       return supplier;
     } catch (error) {
