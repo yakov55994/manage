@@ -1,43 +1,43 @@
-import React, { useEffect, useState } from 'react';
-import { useNavigate, useParams } from 'react-router-dom';
-import api from '../../api/api';
-import { ClipLoader } from 'react-spinners';
-import { toast } from 'sonner';
-import { 
-  ShoppingCart, 
-  Hash, 
-  DollarSign, 
-  FileText, 
-  User, 
-  Briefcase, 
-  Phone, 
-  Upload, 
-  X, 
+import React, { useEffect, useState } from "react";
+import { useNavigate, useParams } from "react-router-dom";
+import api from "../../api/api";
+import { ClipLoader } from "react-spinners";
+import { toast } from "sonner";
+import {
+  ShoppingCart,
+  Hash,
+  DollarSign,
+  FileText,
+  User,
+  Briefcase,
+  Phone,
+  Upload,
+  X,
   Save,
   AlertCircle,
-  CheckCircle
-} from 'lucide-react';
+  CheckCircle,
+} from "lucide-react";
 
 const OrderEditPage = () => {
-  const [projectName, setProjectName] = useState('');
+  const [projectName, setProjectName] = useState("");
   const [order, setOrder] = useState(null);
-  const [status, setStatus] = useState('');
-  const [detail, setDetail] = useState('');
-  const [invitingName, setInvitingName] = useState('');
-  const [Contact_person, setContact_Person] = useState('');
-  const [orderNumber, setOrderNumber] = useState('');
-  const [sum, setSum] = useState('');
+  const [status, setStatus] = useState("");
+  const [detail, setDetail] = useState("");
+  const [invitingName, setInvitingName] = useState("");
+  const [Contact_person, setContact_Person] = useState("");
+  const [orderNumber, setOrderNumber] = useState("");
+  const [sum, setSum] = useState("");
   const [files, setFiles] = useState([]);
   const [loading, setLoading] = useState(false);
 
-  const { id } = useParams();
+  const { projectId, id } = useParams();
   const navigate = useNavigate();
 
   useEffect(() => {
     const fetchOrder = async () => {
       setLoading(true);
       try {
-        const response = await api.get(`/orders/${id}`);
+        api.get(`/projects/${projectId}/orders/${id}`);
         const data = response.data;
         setProjectName(data.projectName);
         setOrder(data);
@@ -49,8 +49,8 @@ const OrderEditPage = () => {
         setContact_Person(data.Contact_person);
         setFiles(data.files || []);
       } catch (error) {
-        toast.error('שגיאה בטעינת פרטי הזמנה', {
-          className: "sonner-toast error rtl"
+        toast.error("שגיאה בטעינת פרטי הזמנה", {
+          className: "sonner-toast error rtl",
         });
       } finally {
         setLoading(false);
@@ -65,136 +65,139 @@ const OrderEditPage = () => {
 
     const newFiles = [
       ...files,
-      ...Array.from(selectedFiles).filter(file =>
-        !files.some(f => f.name === file.name)
-      ).map(file => ({
-        name: file.name,
-        file,
-        isLocal: true
-      }))
+      ...Array.from(selectedFiles)
+        .filter((file) => !files.some((f) => f.name === file.name))
+        .map((file) => ({
+          name: file.name,
+          file,
+          isLocal: true,
+        })),
     ];
 
     setFiles(newFiles);
     toast.success(`${selectedFiles.length} קבצים נוספו`, {
-      className: "sonner-toast success rtl"
+      className: "sonner-toast success rtl",
     });
   };
 
   const extractPublicIdFromUrl = (url, withExtension = true) => {
     try {
-      const urlParts = url.split('/');
-      const uploadIndex = urlParts.findIndex(part => part === 'upload');
-      
+      const urlParts = url.split("/");
+      const uploadIndex = urlParts.findIndex((part) => part === "upload");
+
       if (uploadIndex === -1) return null;
-      
+
       let pathAfterUpload = urlParts.slice(uploadIndex + 1);
-      
+
       if (pathAfterUpload[0] && pathAfterUpload[0].match(/^v\d+$/)) {
         pathAfterUpload = pathAfterUpload.slice(1);
       }
-      
-      let publicId = pathAfterUpload.join('/');
-      
+
+      let publicId = pathAfterUpload.join("/");
+
       if (!withExtension) {
-        const lastDotIndex = publicId.lastIndexOf('.');
+        const lastDotIndex = publicId.lastIndexOf(".");
         if (lastDotIndex > 0) {
           publicId = publicId.substring(0, lastDotIndex);
         }
       }
-      
+
       return publicId;
     } catch (error) {
-      console.error('Error extracting publicId from URL:', error);
+      console.error("Error extracting publicId from URL:", error);
       return null;
     }
   };
 
   const handleRemoveFile = async (fileIndex) => {
     const fileToDelete = files[fileIndex];
-    
+
     if (!fileToDelete) {
       toast.error("קובץ לא נמצא", {
-        className: "sonner-toast error rtl"
+        className: "sonner-toast error rtl",
       });
       return;
     }
-    
+
     console.log("=== DELETING FILE ===");
     console.log("File to delete:", fileToDelete);
-    
+
     if (fileToDelete.isLocal) {
       const newFiles = [...files];
       newFiles.splice(fileIndex, 1);
       setFiles(newFiles);
-      
+
       if (fileToDelete.tempUrl) {
         URL.revokeObjectURL(fileToDelete.tempUrl);
       }
-      
+
       toast.success("הקובץ הוסר מהרשימה", {
-        className: "sonner-toast success rtl"
+        className: "sonner-toast success rtl",
       });
       return;
     }
-    
+
     const newFiles = [...files];
     newFiles.splice(fileIndex, 1);
     setFiles(newFiles);
-    
+
     if (fileToDelete.url || fileToDelete.fileUrl) {
       const fileUrl = fileToDelete.url || fileToDelete.fileUrl;
       const publicId = extractPublicIdFromUrl(fileUrl, true);
-      
+
       if (publicId) {
         try {
           console.log(`מנסה למחוק עם publicId: ${publicId}`);
-          
+
           await api.delete("/upload/delete-cloudinary", {
             data: {
               publicId: publicId,
-              resourceType: 'raw',
+              resourceType: "raw",
             },
           });
-          
+
           toast.success("הקובץ נמחק בהצלחה מ-Cloudinary", {
-            className: "sonner-toast success rtl"
+            className: "sonner-toast success rtl",
           });
           console.log("✅ נמחק בהצלחה מ-Cloudinary");
         } catch (deleteError) {
-          console.error("מחיקה מ-Cloudinary נכשלה:", deleteError.response?.status);
+          console.error(
+            "מחיקה מ-Cloudinary נכשלה:",
+            deleteError.response?.status
+          );
           toast.warning("הקובץ הוסר מהרשימה. בדוק ידנית אם נמחק מ-Cloudinary", {
-            className: "sonner-toast warning rtl"
+            className: "sonner-toast warning rtl",
           });
         }
       } else {
         console.error("לא הצליח לחלץ publicId מ-URL:", fileUrl);
         toast.warning("הקובץ הוסר מהרשימה, אך לא ניתן לחלץ את פרטי הקובץ", {
-          className: "sonner-toast warning rtl"
+          className: "sonner-toast warning rtl",
         });
       }
     } else {
       toast.success("הקובץ הוסר", {
-        className: "sonner-toast success rtl"
+        className: "sonner-toast success rtl",
       });
     }
   };
 
   const renderFile = (file) => {
     const fileUrl = file?.url || file?.fileUrl;
-    const fileName = file.name || (fileUrl && fileUrl.split('/').pop());
+    const fileName = file.name || (fileUrl && fileUrl.split("/").pop());
 
     if (!fileUrl && file?.file) {
       return <span className="text-gray-700 font-medium">{file.name}</span>;
     }
 
-    const ext = fileUrl?.split('.').pop().toLowerCase();
+    const ext = fileUrl?.split(".").pop().toLowerCase();
 
-    if (ext === 'pdf') {
+    if (ext === "pdf") {
       return (
-        <a 
-          href={fileUrl} 
-          target="_blank" 
-          rel="noreferrer" 
+        <a
+          href={fileUrl}
+          target="_blank"
+          rel="noreferrer"
           className="inline-flex items-center gap-2 text-orange-600 hover:text-orange-700 font-medium hover:underline"
         >
           <FileText className="w-4 h-4" />
@@ -203,12 +206,12 @@ const OrderEditPage = () => {
       );
     }
 
-    if (['jpg', 'jpeg', 'png', 'gif'].includes(ext)) {
+    if (["jpg", "jpeg", "png", "gif"].includes(ext)) {
       return (
-        <a 
-          href={fileUrl} 
-          target="_blank" 
-          rel="noreferrer" 
+        <a
+          href={fileUrl}
+          target="_blank"
+          rel="noreferrer"
           className="inline-flex items-center gap-2 text-blue-600 hover:text-blue-700 font-medium hover:underline"
         >
           <FileText className="w-4 h-4" />
@@ -217,13 +220,15 @@ const OrderEditPage = () => {
       );
     }
 
-    if (ext === 'xlsx') {
-      const viewUrl = `https://view.officeapps.live.com/op/view.aspx?src=${encodeURIComponent(fileUrl)}`;
+    if (ext === "xlsx") {
+      const viewUrl = `https://view.officeapps.live.com/op/view.aspx?src=${encodeURIComponent(
+        fileUrl
+      )}`;
       return (
-        <a 
-          href={viewUrl} 
-          target="_blank" 
-          rel="noreferrer" 
+        <a
+          href={viewUrl}
+          target="_blank"
+          rel="noreferrer"
           className="inline-flex items-center gap-2 text-green-600 hover:text-green-700 font-medium hover:underline"
         >
           <FileText className="w-4 h-4" />
@@ -233,10 +238,10 @@ const OrderEditPage = () => {
     }
 
     return (
-      <a 
-        href={fileUrl} 
-        target="_blank" 
-        rel="noreferrer" 
+      <a
+        href={fileUrl}
+        target="_blank"
+        rel="noreferrer"
         className="inline-flex items-center gap-2 text-purple-600 hover:text-purple-700 font-medium hover:underline"
       >
         <FileText className="w-4 h-4" />
@@ -268,7 +273,7 @@ const OrderEditPage = () => {
             publicId: res.data.file.publicId,
             resourceType: res.data.file.resourceType,
             size: file.file.size,
-            type: file.file.type
+            type: file.file.type,
           });
         } else {
           uploadedFiles.push(file);
@@ -283,18 +288,19 @@ const OrderEditPage = () => {
         detail,
         invitingName,
         projectName,
+        projectId: selectedProjectId,
         Contact_person,
-        files: uploadedFiles
+        files: uploadedFiles,
       };
 
-      await api.put(`/orders/${id}`, formData);
+      await api.put(`/projects/${projectId}/orders/${id}`, formData);
       toast.success("הזמנה עודכנה בהצלחה", {
-        className: "sonner-toast success rtl"
+        className: "sonner-toast success rtl",
       });
-      navigate(`/orders/${id}`);
+      navigate(`/projects/${projectId}/orders/${id}`);
     } catch (error) {
       toast.error(error.message, {
-        className: "sonner-toast error rtl"
+        className: "sonner-toast error rtl",
       });
     } finally {
       setLoading(false);
@@ -308,7 +314,9 @@ const OrderEditPage = () => {
           <div className="absolute inset-0 bg-orange-500/20 blur-3xl rounded-full"></div>
           <ClipLoader size={80} color="#f97316" loading={loading} />
         </div>
-        <h1 className="mt-6 font-bold text-2xl text-orange-900">טוען נתונים...</h1>
+        <h1 className="mt-6 font-bold text-2xl text-orange-900">
+          טוען נתונים...
+        </h1>
       </div>
     );
   }
@@ -323,14 +331,19 @@ const OrderEditPage = () => {
               <ShoppingCart className="text-white w-8 h-8" />
             </div>
             <div>
-              <h1 className="text-3xl md:text-4xl font-bold text-gray-900">עריכת הזמנה</h1>
+              <h1 className="text-3xl md:text-4xl font-bold text-gray-900">
+                עריכת הזמנה
+              </h1>
               <p className="text-gray-600 mt-1">עדכון פרטי ההזמנה</p>
             </div>
           </div>
         </div>
 
         {order && (
-          <form onSubmit={handleSubmit} className="bg-white rounded-2xl shadow-xl p-8">
+          <form
+            onSubmit={handleSubmit}
+            className="bg-white rounded-2xl shadow-xl p-8"
+          >
             {/* Grid של שדות */}
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
               {/* מספר הזמנה */}
@@ -462,7 +475,7 @@ const OrderEditPage = () => {
                 </div>
                 העלאת קבצים נוספים
               </label>
-              
+
               <div className="relative">
                 <input
                   type="file"
@@ -520,8 +533,12 @@ const OrderEditPage = () => {
               ) : (
                 <div className="bg-gradient-to-br from-gray-50 to-gray-100 p-8 rounded-xl border-2 border-dashed border-gray-300 text-center">
                   <FileText className="w-12 h-12 text-gray-400 mx-auto mb-3" />
-                  <p className="text-lg font-semibold text-gray-600">אין קבצים מצורפים</p>
-                  <p className="text-sm text-gray-500 mt-1">העלה קבצים כדי להוסיף אותם להזמנה</p>
+                  <p className="text-lg font-semibold text-gray-600">
+                    אין קבצים מצורפים
+                  </p>
+                  <p className="text-sm text-gray-500 mt-1">
+                    העלה קבצים כדי להוסיף אותם להזמנה
+                  </p>
                 </div>
               )}
             </div>
@@ -548,7 +565,7 @@ const OrderEditPage = () => {
 
               <button
                 type="button"
-                onClick={() => navigate(`/orders/${id}`)}
+                onClick={() => navigate(`/projects/${projectId}/orders/${id}`)}
                 disabled={loading}
                 className="px-8 py-4 bg-gray-200 text-gray-700 rounded-xl hover:bg-gray-300 transition-all duration-300 font-bold text-lg disabled:opacity-50"
               >

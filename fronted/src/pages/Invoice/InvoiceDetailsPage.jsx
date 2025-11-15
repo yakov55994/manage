@@ -25,7 +25,7 @@ import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 
 const InvoiceDetailsPage = () => {
-  const { id } = useParams();
+  const { projectId, id } = useParams();
   const [invoice, setInvoice] = useState(null);
   const [confirmOpen, setConfirmOpen] = useState(false);
   const [deleting, setDeleting] = useState(false);
@@ -36,7 +36,7 @@ const InvoiceDetailsPage = () => {
   useEffect(() => {
     const fetchInvoiceDetails = async () => {
       try {
-        const response = await api.get(`/invoices/${id}`);
+        const response = await api.get(`/projects/${projectId}/invoices/${id}`);
         const invoiceData = response.data;
 
         if (!invoiceData) {
@@ -195,7 +195,9 @@ const InvoiceDetailsPage = () => {
         <div className="flex items-center justify-between gap-3 p-3 rounded-lg bg-red-50 border border-red-200 hover:bg-red-100 transition-all">
           <div className="flex items-center gap-2">
             <FileText className="w-5 h-5 text-red-600" />
-            <span className="text-sm font-medium text-slate-900">{fileName}</span>
+            <span className="text-sm font-medium text-slate-900">
+              {fileName}
+            </span>
           </div>
           <a
             href={fileUrl}
@@ -213,7 +215,9 @@ const InvoiceDetailsPage = () => {
         <div className="flex items-center justify-between gap-3 p-3 rounded-lg bg-green-50 border border-green-200 hover:bg-green-100 transition-all">
           <div className="flex items-center gap-2">
             <FileText className="w-5 h-5 text-green-600" />
-            <span className="text-sm font-medium text-slate-900">{fileName}</span>
+            <span className="text-sm font-medium text-slate-900">
+              {fileName}
+            </span>
           </div>
           <button
             onClick={() => openInExcelViewer(fileUrl)}
@@ -229,7 +233,9 @@ const InvoiceDetailsPage = () => {
         <div className="flex items-center justify-between gap-3 p-3 rounded-lg bg-blue-50 border border-blue-200 hover:bg-blue-100 transition-all">
           <div className="flex items-center gap-2">
             <FileText className="w-5 h-5 text-blue-600" />
-            <span className="text-sm font-medium text-slate-900">{fileName}</span>
+            <span className="text-sm font-medium text-slate-900">
+              {fileName}
+            </span>
           </div>
           <a
             href={fileUrl}
@@ -247,7 +253,9 @@ const InvoiceDetailsPage = () => {
         <div className="flex items-center justify-between gap-3 p-3 rounded-lg bg-slate-50 border border-slate-200 hover:bg-slate-100 transition-all">
           <div className="flex items-center gap-2">
             <Download className="w-5 h-5 text-slate-600" />
-            <span className="text-sm font-medium text-slate-900">{fileName}</span>
+            <span className="text-sm font-medium text-slate-900">
+              {fileName}
+            </span>
           </div>
           <a
             href={fileUrl}
@@ -264,18 +272,18 @@ const InvoiceDetailsPage = () => {
   };
 
   const handleEdit = (id) => {
-    navigate(`/update-invoice/${id}`);
+navigate(`/projects/${projectId}/invoices/${id}/edit`);
   };
 
   const handleDelete = async () => {
     try {
       if (!invoice?._id) return;
       setDeleting(true);
-      await api.delete(`/invoices/${invoice._id}`);
+await api.delete(`/projects/${invoice.projectId}/invoices/${invoice._id}`);
       toast.success("החשבונית נמחקה בהצלחה", {
         className: "sonner-toast success rtl",
       });
-      navigate("/invoices");
+navigate(`/projects/${invoice.projectId}/invoices`);
     } catch (error) {
       console.error("Error deleting invoice:", error);
       toast.error("שגיאה במחיקת החשבונית", {
@@ -358,7 +366,9 @@ const InvoiceDetailsPage = () => {
                   <div className="p-2 rounded-xl bg-gradient-to-br from-orange-100 to-amber-100">
                     <FileText className="w-5 h-5 text-orange-600" />
                   </div>
-                  <h2 className="text-2xl font-bold text-slate-900">פרטי החשבונית</h2>
+                  <h2 className="text-2xl font-bold text-slate-900">
+                    פרטי החשבונית
+                  </h2>
                 </div>
               </div>
             </div>
@@ -406,7 +416,9 @@ const InvoiceDetailsPage = () => {
                       <DollarSign className="w-4 h-4 text-orange-600" />
                     </div>
                     <div className="flex-1">
-                      <p className="text-xs font-bold text-orange-600 mb-1">סכום</p>
+                      <p className="text-xs font-bold text-orange-600 mb-1">
+                        סכום
+                      </p>
                       <p className="text-sm font-bold text-slate-900">
                         {formatNumber(invoice.sum)} ₪
                       </p>
@@ -438,7 +450,9 @@ const InvoiceDetailsPage = () => {
                       <FileText className="w-4 h-4 text-orange-600" />
                     </div>
                     <div className="flex-1">
-                      <p className="text-xs font-bold text-orange-600 mb-1">פירוט</p>
+                      <p className="text-xs font-bold text-orange-600 mb-1">
+                        פירוט
+                      </p>
                       <p className="text-sm font-bold text-slate-900">
                         {invoice.detail || "לא הוזן פירוט"}
                       </p>
@@ -453,7 +467,9 @@ const InvoiceDetailsPage = () => {
                       <Building2 className="w-4 h-4 text-orange-600" />
                     </div>
                     <div className="flex-1">
-                      <p className="text-xs font-bold text-orange-600 mb-1">פרויקט</p>
+                      <p className="text-xs font-bold text-orange-600 mb-1">
+                        פרויקט
+                      </p>
                       <p className="text-sm font-bold text-slate-900">
                         {invoice.projectName}
                       </p>

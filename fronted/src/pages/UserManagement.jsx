@@ -1,773 +1,492 @@
-import { useState, useEffect } from 'react';
-import { useAuth } from '../context/AuthContext';
-import api from '../api/api';
-import { toast } from 'sonner';
-import { ClipLoader } from 'react-spinners';
+import { useState, useEffect } from "react";
+import { useAuth } from "../context/AuthContext";
+import api from "../api/api";
+import { toast } from "sonner";
+import { ClipLoader } from "react-spinners";
 import {
-  Users,
-  Plus,
-  Edit2,
-  Trash2,
-  Shield,
-  User,
-  Lock,
-  Mail,
-  CheckCircle,
-  XCircle,
-  Eye,
-  EyeOff,
-  Save,
-  X,
-  FolderKanban,
-} from 'lucide-react';
+  Users, Plus, Edit2, Trash2, Shield, User, Lock, Mail,
+  CheckCircle, XCircle, Eye, EyeOff, Save, X, FolderKanban
+} from "lucide-react";
 
-const UserManagement = () => {
-  const { user: currentUser, isAdmin, loading: authLoading } = useAuth(); // 🆕 הוסף loading
+// =============================
+// DEFAULT PERMISSIONS TEMPLATE
+// =============================
+const defaultProjPerm = (projectId) => ({
+  project: projectId,
+  access: "view",
+  modules: {
+    invoices: "view",
+    orders: "view",
+    suppliers: "view",
+    files: "view",
+  },
+});
+
+export default function UserManagement() {
+  const { user: currentUser, isAdmin, loading: authLoading } = useAuth();
+
   const [users, setUsers] = useState([]);
   const [projects, setProjects] = useState([]);
-  const [suppliers, setSuppliers] = useState([]);
   const [loading, setLoading] = useState(true);
+
   const [showModal, setShowModal] = useState(false);
   const [editingUser, setEditingUser] = useState(null);
   const [deleteModal, setDeleteModal] = useState({ show: false, user: null });
-
-  // Form state
-const [formData, setFormData] = useState({
-  username: '',
-  password: '',
-  email: '',
-  role: 'user',
-  isActive: true,
-  permissions: {
-    projects: [] // [{ project, access, modules: {...}}]
-  }
-});
-
-
-const defaultProjPerm = (projectId) => ({
-  project: projectId,
-  access: 'view',
-  modules: { invoices: 'view', orders: 'view', suppliers: 'view', files: 'view' }
-});
-
-const getProjIndex = (projectId, list) =>
-  list.findIndex(p => String(p.project) === String(projectId));
-
-const toggleProjectSelection = (projectId) => {
-  setFormData(prev => {
-    const list = [...(prev.permissions.projects || [])];
-    const idx = getProjIndex(projectId, list);
-    if (idx >= 0) {
-      // הורד הרשאות לפרויקט זה
-      list.splice(idx, 1);
-    } else {
-      // הוסף עם ברירת מחדל
-      list.push(defaultProjPerm(projectId));
-    }
-    return { ...prev, permissions: { ...prev.permissions, projects: list } };
-  });
-};
-
-const setProjectAccess = (projectId, access) => {
-  setFormData(prev => {
-    const list = [...(prev.permissions.projects || [])];
-    const idx = getProjIndex(projectId, list);
-    if (idx < 0) return prev;
-    // עדכן את access; אם תרצה שגם המודולים יירשו אוטומטית — עדכן גם אותם
-    list[idx] = {
-      ...list[idx],
-      access,
-      // אם תרצה להחיל על המודולים:
-      // modules: Object.fromEntries(Object.keys(list[idx].modules).map(k => [k, access]))
-    };
-    return { ...prev, permissions: { ...prev.permissions, projects: list } };
-  });
-};
-
-const setModuleAccess = (projectId, moduleKey, value) => {
-  setFormData(prev => {
-    const list = [...(prev.permissions.projects || [])];
-    const idx = getProjIndex(projectId, list);
-    if (idx < 0) return prev;
-    list[idx] = {
-      ...list[idx],
-      modules: { ...(list[idx].modules || {}), [moduleKey]: value }
-    };
-    return { ...prev, permissions: { ...prev.permissions, projects: list } };
-  });
-};
-
-const isProjectSelected = (projectId) =>
-  getProjIndex(projectId, formData.permissions.projects || []) >= 0;
-
-
   const [showPassword, setShowPassword] = useState(false);
 
-  useEffect(() => {
-      if (authLoading) {
-      return; // עדיין טוען
+  // =============================
+  // FORM DATA
+  // =============================
+  const [formData, setFormData] = useState({
+    username: "",
+    password: "",
+    email: "",
+    role: "user",
+    isActive: true,
+    permissions: {
+      projects: [] // רק זה!
     }
- if (!isAdmin) {
-      toast.error('אין לך הרשאה לעמוד זה', {
-        className: "sonner-toast error rtl"
-      });
+  });
+
+  // =============================
+  // HELPERS
+  // =============================
+
+  const isProjectSelected = (projectId) =>
+    formData.permissions.projects.some(p => String(p.project) === String(projectId));
+
+  const toggleProject = (projectId) => {
+    setFormData(prev => {
+      const list = [...prev.permissions.projects];
+      const idx = list.findIndex(p => p.project === projectId);
+
+      if (idx >= 0) {
+        list.splice(idx, 1);
+      } else {
+        list.push(defaultProjPerm(projectId));
+      }
+
+      return { ...prev, permissions: { ...prev.permissions, projects: list } };
+    });
+  };
+
+  const setProjectAccess = (projectId, access) => {
+    setFormData(prev => {
+      const list = [...prev.permissions.projects];
+      const idx = list.findIndex(p => p.project === projectId);
+      if (idx < 0) return prev;
+
+      list[idx] = { ...list[idx], access };
+      return { ...prev, permissions: { ...prev.permissions, projects: list } };
+    });
+  };
+
+  const setModuleAccess = (projectId, moduleKey, value) => {
+    setFormData(prev => {
+      const list = [...prev.permissions.projects];
+      const idx = list.findIndex(p => p.project === projectId);
+      if (idx < 0) return prev;
+
+      list[idx] = {
+        ...list[idx],
+        modules: { ...list[idx].modules, [moduleKey]: value }
+      };
+      return { ...prev, permissions: { ...prev.permissions, projects: list } };
+    });
+  };
+
+  // =============================
+  // LOAD DATA
+  // =============================
+  useEffect(() => {
+    if (authLoading) return;
+    if (!isAdmin) {
+      toast.error("אין לך הרשאה לעמוד זה");
       setLoading(false);
       return;
     }
-    fetchData();
-  },  [isAdmin, authLoading]);
+    loadEverything();
+  }, [authLoading, isAdmin]);
 
-  const fetchData = async () => {
+  const loadEverything = async () => {
     try {
       setLoading(true);
-      const [usersRes, projectsRes, suppliersRes] = await Promise.all([
-   api.get('/users'),
-   api.get('/projects'),
-   api.get('/suppliers') // ✅ הנתיב הנכון
- ]);
-
+      const [usersRes, projectsRes] = await Promise.all([
+        api.get("/users"),
+        api.get("/projects"),
+      ]);
       setUsers(usersRes.data.data || []);
       setProjects(projectsRes.data || []);
-      
-      if (suppliersRes.data && suppliersRes.data.success) {
-        setSuppliers(suppliersRes.data.data || []);
-      }
     } catch (error) {
-      console.error('Error fetching data:', error);
-      toast.error('שגיאה בטעינת נתונים', {
-        className: "sonner-toast error rtl"
-      });
+      console.error(error);
+      toast.error("שגיאה בטעינת נתונים");
     } finally {
       setLoading(false);
     }
   };
 
-const openCreateModal = () => {
-  setEditingUser(null);
-  setFormData({
-    username: '',
-    password: '',
-    email: '',
-    role: 'user',
-    isActive: true,
-    permissions: { projects: [] }
-  });
-  setShowModal(true);
-};
+  // =============================
+  // MODALS
+  // =============================
+  const openCreate = () => {
+    setEditingUser(null);
+    setFormData({
+      username: "",
+      password: "",
+      email: "",
+      role: "user",
+      isActive: true,
+      permissions: { projects: [] },
+    });
+    setShowModal(true);
+  };
 
-
-const openEditModal = (user) => {
-  // נורמליזציה להרשאות קיימות
-  const normalizedProjects = (() => {
-    const raw = user?.permissions?.projects || [];
-    // אם ישן (מערך IDs)
-    if (raw.length && typeof raw[0] === 'string') {
-      return raw.map(pid => defaultProjPerm(pid));
-    }
-    // חדש
-    return raw.map(p => ({
-      project: p.project?._id || p.project || p._id || p, // לכסות פופולציות שונות
-      access: p.access || 'view',
+  const openEdit = (user) => {
+    const normalized = user.permissions?.projects?.map(p => ({
+      project: p.project?._id || p.project,
+      access: p.access || "view",
       modules: {
-        invoices: p.modules?.invoices || (p.access || 'view'),
-        orders:   p.modules?.orders   || (p.access || 'view'),
-        suppliers:p.modules?.suppliers|| (p.access || 'view'),
-        files:    p.modules?.files    || (p.access || 'view'),
-      }
-    }));
-  })();
+        invoices: p.modules?.invoices || "view",
+        orders: p.modules?.orders || "view",
+        suppliers: p.modules?.suppliers || "view",
+        files: p.modules?.files || "view",
+      },
+    })) || [];
 
-  setEditingUser(user);
-  setFormData({
-    username: user.username,
-    password: '',
-    email: user.email || '',
-    role: user.role,
-    isActive: user.isActive,
-    permissions: {
-      projects: normalizedProjects
-    }
-  });
-  setShowModal(true);
-};
+    setEditingUser(user);
+    setFormData({
+      username: user.username,
+      password: "",
+      email: user.email || "",
+      role: user.role,
+      isActive: user.isActive,
+      permissions: { projects: normalized }
+    });
 
+    setShowModal(true);
+  };
 
- const handleSubmit = async (e) => {
-  e.preventDefault();
-  if (!formData.username) { /* ... */ }
-  if (!editingUser && !formData.password) { /* ... */ }
+  const saveUser = async (e) => {
+    e.preventDefault();
 
-  try {
     const payload = {
       username: formData.username,
       email: formData.email,
       role: formData.role,
       isActive: formData.isActive,
       permissions: {
-        projects: (formData.permissions.projects || []).map(p => ({
-          project: p.project,
-          access: p.access || 'view',
-          modules: {
-            invoices: p.modules?.invoices || (p.access || 'view'),
-            orders:   p.modules?.orders   || (p.access || 'view'),
-            suppliers:p.modules?.suppliers|| (p.access || 'view'),
-            files:    p.modules?.files    || (p.access || 'view'),
-          }
-        }))
+        projects: formData.permissions.projects
       }
     };
-    if (!editingUser && formData.password) payload.password = formData.password;
-    if (editingUser && formData.password) payload.password = formData.password;
 
-    if (editingUser) {
-      await api.put(`/users/${editingUser._id}`, payload);
-      toast.success('המשתמש עודכן בהצלחה', { className: "sonner-toast success rtl" });
-    } else {
-      await api.post('/users', payload);
-      toast.success('המשתמש נוצר בהצלחה', { className: "sonner-toast success rtl" });
+    if (formData.password) payload.password = formData.password;
+
+    try {
+      if (editingUser) {
+        await api.put(`/users/${editingUser._id}`, payload);
+        toast.success("המשתמש עודכן בהצלחה");
+      } else {
+        await api.post(`/users`, payload);
+        toast.success("המשתמש נוצר בהצלחה");
+      }
+      setShowModal(false);
+      loadEverything();
+    } catch (error) {
+      toast.error(error.response?.data?.message || "שגיאה בשמירת המשתמש");
     }
-    setShowModal(false);
-    fetchData();
-  } catch (error) {
-    console.error('Error saving user:', error);
-    toast.error(error.response?.data?.message || 'שגיאה בשמירת המשתמש', {
-      className: "sonner-toast error rtl"
-    });
-  }
-};
+  };
 
-
-  const handleDelete = async () => {
+  const deleteUser = async () => {
     try {
       await api.delete(`/users/${deleteModal.user._id}`);
-      toast.success('המשתמש נמחק בהצלחה', {
-        className: "sonner-toast success rtl"
-      });
+      toast.success("המשתמש נמחק");
       setDeleteModal({ show: false, user: null });
-      fetchData();
+      loadEverything();
     } catch (error) {
-      console.error('Error deleting user:', error);
-      toast.error(error.response?.data?.message || 'שגיאה במחיקת המשתמש', {
-        className: "sonner-toast error rtl"
-      });
+      toast.error("שגיאה במחיקה");
     }
   };
 
+  // =============================
+  // RENDER
+  // =============================
 
-
-  const selectAllProjects = () => {
-    setFormData(prev => ({
-      ...prev,
-      permissions: {
-        ...prev.permissions,
-        projects: projects.map(p => p._id)
-      }
-    }));
-  };
-
-  const clearAllProjects = () => {
-    setFormData(prev => ({
-      ...prev,
-      permissions: {
-        ...prev.permissions,
-        projects: []
-      }
-    }));
-  };
-
-
-
-  const clearAllSuppliers = () => {
-    setFormData(prev => ({
-      ...prev,
-      permissions: {
-        ...prev.permissions,
-        suppliers: []
-      }
-    }));
-  };
-
-  if (authLoading) {
+  if (authLoading || loading) {
     return (
-      <div className="flex flex-col justify-center items-center min-h-screen bg-gradient-to-br from-orange-50 via-amber-50 to-orange-100">
-        <div className="relative">
-          <div className="absolute inset-0 bg-orange-500/20 blur-3xl rounded-full"></div>
-          <ClipLoader size={80} color="#f97316" />
-        </div>
-        <h1 className="mt-6 font-bold text-2xl text-orange-900">מאמת הרשאות...</h1>
+      <div className="flex justify-center items-center h-screen">
+        <ClipLoader size={80} color="#f97316" />
       </div>
     );
   }
 
   if (!isAdmin) {
-    return (
-      <div className="min-h-screen bg-gradient-to-br from-orange-50 via-amber-50 to-orange-100 flex items-center justify-center">
-        <div className="bg-white rounded-2xl shadow-xl p-8 text-center">
-          <Shield className="w-16 h-16 text-red-500 mx-auto mb-4" />
-          <h1 className="text-2xl font-bold text-gray-900 mb-2">אין הרשאה</h1>
-          <p className="text-gray-600">עמוד זה מיועד למנהלי מערכת בלבד</p>
-        </div>
-      </div>
-    );
-  }
-
-
-  if (loading) {
-    return (
-      <div className="flex flex-col justify-center items-center min-h-screen bg-gradient-to-br from-orange-50 via-amber-50 to-orange-100">
-        <div className="relative">
-          <div className="absolute inset-0 bg-orange-500/20 blur-3xl rounded-full"></div>
-          <ClipLoader size={80} color="#f97316" />
-        </div>
-        <h1 className="mt-6 font-bold text-2xl text-orange-900">טוען משתמשים...</h1>
-      </div>
-    );
+    return <div className="p-10 text-center text-red-600">אין הרשאה</div>;
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-orange-50 via-amber-50 to-orange-100 py-8 px-4">
-      <div className="max-w-7xl mx-auto">
-        {/* Header */}
-        <div className="bg-white rounded-2xl shadow-xl p-6 mb-8">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-3">
-              <div className="bg-gradient-to-br from-orange-500 to-amber-500 p-3 rounded-xl shadow-lg">
-                <Users className="text-white w-8 h-8" />
-              </div>
-              <div>
-                <h1 className="text-4xl font-bold text-gray-900">ניהול משתמשים</h1>
-                <p className="text-gray-600 mt-1">הוספה, עריכה והגדרת הרשאות</p>
-              </div>
-            </div>
+    <div className="p-6">
 
-            <button
-              onClick={openCreateModal}
-              className="flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-green-500 to-emerald-500 text-white rounded-xl hover:from-green-600 hover:to-emerald-600 transition-all duration-300 shadow-lg hover:shadow-xl font-medium"
-            >
-              <Plus className="w-5 h-5" />
-              <span>הוסף משתמש</span>
-            </button>
-          </div>
-        </div>
+      {/* HEADER */}
+      <div className="flex justify-between items-center mb-6">
+        <h1 className="text-3xl font-bold flex gap-3 items-center">
+          <Users className="text-orange-600" /> ניהול משתמשים
+        </h1>
 
-        {/* Users Table */}
-        <div className="bg-white rounded-2xl shadow-xl overflow-hidden">
-          <div className="overflow-x-auto">
-            <table className="w-full">
-              <thead>
-                <tr className="bg-gradient-to-r from-orange-500 to-amber-500 text-white">
-                  <th className="px-6 py-4 text-right font-bold">שם משתמש</th>
-                  <th className="px-6 py-4 text-right font-bold">אימייל</th>
-                  <th className="px-6 py-4 text-center font-bold">תפקיד</th>
-                  <th className="px-6 py-4 text-center font-bold">סטטוס</th>
-                  <th className="px-6 py-4 text-center font-bold">פרויקטים</th>
-                  <th className="px-6 py-4 text-center font-bold">ספקים</th>
-                  <th className="px-6 py-4 text-center font-bold">פעולות</th>
-                </tr>
-              </thead>
-              <tbody>
-                {users.map((user, index) => (
-                  <tr
-                    key={user._id}
-                    className={`border-b border-gray-200 transition-all duration-200 ${
-                      index % 2 === 0 
-                        ? 'bg-gradient-to-r from-orange-50/30 to-amber-50/30 hover:from-orange-100 hover:to-amber-100' 
-                        : 'bg-white hover:bg-gradient-to-r hover:from-orange-50 hover:to-amber-50'
-                    }`}
-                  >
-                    <td className="px-6 py-4 font-semibold text-gray-900">
-                      <div className="flex items-center gap-2">
-                        <User className="w-4 h-4 text-orange-600" />
-                        {user.username}
-                        {user._id === currentUser?.id && (
-                          <span className="text-xs bg-blue-100 text-blue-700 px-2 py-1 rounded-full">אתה</span>
-                        )}
-                      </div>
-                    </td>
-                    <td className="px-6 py-4 text-gray-700">
-                      {user.email || <span className="text-gray-400 italic">לא הוזן</span>}
-                    </td>
-                    <td className="px-6 py-4 text-center">
-                      <span className={`px-3 py-1 rounded-full text-xs font-bold ${
-                        user.role === 'admin' 
-                          ? 'bg-purple-100 text-purple-700 border border-purple-200' 
-                          : 'bg-blue-100 text-blue-700 border border-blue-200'
-                      }`}>
-                        {user.role === 'admin' ? 'מנהל' : 'משתמש'}
-                      </span>
-                    </td>
-                    <td className="px-6 py-4 text-center">
-                      {user.isActive ? (
-                        <span className="inline-flex items-center gap-1 px-3 py-1 rounded-full text-xs font-bold bg-green-100 text-green-700 border border-green-200">
-                          <CheckCircle className="w-3 h-3" />
-                          פעיל
-                        </span>
-                      ) : (
-                        <span className="inline-flex items-center gap-1 px-3 py-1 rounded-full text-xs font-bold bg-red-100 text-red-700 border border-red-200">
-                          <XCircle className="w-3 h-3" />
-                          חסום
-                        </span>
-                      )}
-                    </td>
-                    <td className="px-6 py-4 text-center font-medium">
-                      {user.role === 'admin' ? (
-                        <span className="text-purple-600 font-bold">הכל</span>
-                      ) : user.permissions?.projects?.length > 0 ? (
-                        <span className="text-green-600 font-bold">{user.permissions.projects.length}</span>
-                      ) : (
-                        <span className="text-blue-600 font-bold">הכל</span>
-                      )}
-                    </td>
-                  
-                    <td className="px-6 py-4">
-                      <div className="flex justify-center gap-2">
-                        <button
-                          onClick={() => openEditModal(user)}
-                          className="p-2 bg-orange-100 text-orange-600 hover:bg-orange-200 rounded-lg transition-all"
-                          title="ערוך משתמש"
-                        >
-                          <Edit2 className="w-5 h-5" />
-                        </button>
-                        <button
-                          onClick={() => setDeleteModal({ show: true, user })}
-                          disabled={user._id === currentUser?.id}
-                          className="p-2 bg-red-100 text-red-600 hover:bg-red-200 rounded-lg transition-all disabled:opacity-50 disabled:cursor-not-allowed"
-                          title="מחק משתמש"
-                        >
-                          <Trash2 className="w-5 h-5" />
-                        </button>
-                      </div>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        </div>
-
-        {/* Create/Edit Modal */}
-        {showModal && (
-          <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4 overflow-y-auto">
-            <div className="bg-white rounded-2xl shadow-2xl max-w-4xl w-full my-8 max-h-[90vh] overflow-y-auto">
-              {/* Modal Header */}
-              <div className="bg-gradient-to-r from-orange-500 to-amber-500 text-white p-6 rounded-t-2xl sticky top-0 z-10">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-3">
-                    <div className="bg-white/20 p-2 rounded-lg">
-                      <User className="w-6 h-6" />
-                    </div>
-                    <h2 className="text-2xl font-bold">
-                      {editingUser ? 'עריכת משתמש' : 'יצירת משתמש חדש'}
-                    </h2>
-                  </div>
-                  <button
-                    onClick={() => setShowModal(false)}
-                    className="text-white hover:bg-white/20 rounded-lg p-2 transition-colors"
-                  >
-                    <X className="w-6 h-6" />
-                  </button>
-                </div>
-              </div>
-
-              {/* Modal Body */}
-              <form onSubmit={handleSubmit} className="p-6 space-y-6">
-                {/* Basic Info */}
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  {/* Username */}
-                  <div>
-                    <label className="flex items-center gap-2 text-sm font-semibold text-gray-700 mb-2">
-                      <User className="w-4 h-4 text-orange-600" />
-                      שם משתמש
-                      <span className="text-red-500">*</span>
-                    </label>
-                    <input
-                      type="text"
-                      value={formData.username}
-                      onChange={(e) => setFormData({ ...formData, username: e.target.value })}
-                      className="w-full px-4 py-3 bg-gradient-to-br from-orange-50 to-amber-50 border-2 border-orange-200 rounded-xl font-medium focus:border-orange-400 focus:outline-none focus:ring-2 focus:ring-orange-200 transition-all"
-                      placeholder="הזן שם משתמש"
-                      required
-                    />
-                  </div>
-
-                  {/* Password */}
-                  <div>
-                    <label className="flex items-center gap-2 text-sm font-semibold text-gray-700 mb-2">
-                      <Lock className="w-4 h-4 text-blue-600" />
-                      סיסמה
-                      {!editingUser && <span className="text-red-500">*</span>}
-                      {editingUser && <span className="text-gray-500 text-xs">(השאר ריק אם לא משנה)</span>}
-                    </label>
-                    <div className="relative">
-                      <input
-                        type={showPassword ? "text" : "password"}
-                        value={formData.password}
-                        onChange={(e) => setFormData({ ...formData, password: e.target.value })}
-                        className="w-full px-4 py-3 bg-gradient-to-br from-blue-50 to-cyan-50 border-2 border-blue-200 rounded-xl font-medium focus:border-blue-400 focus:outline-none focus:ring-2 focus:ring-blue-200 transition-all"
-                        placeholder={editingUser ? "השאר ריק לשמירת סיסמה קיימת" : "הזן סיסמה"}
-                        required={!editingUser}
-                      />
-                      <button
-                        type="button"
-                        onClick={() => setShowPassword(!showPassword)}
-                        className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-500 hover:text-blue-600"
-                      >
-                        {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
-                      </button>
-                    </div>
-                  </div>
-
-                  {/* Email */}
-                  <div>
-                    <label className="flex items-center gap-2 text-sm font-semibold text-gray-700 mb-2">
-                      <Mail className="w-4 h-4 text-purple-600" />
-                      אימייל
-                    </label>
-                    <input
-                      type="email"
-                      value={formData.email}
-                      onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                      className="w-full px-4 py-3 bg-gradient-to-br from-purple-50 to-pink-50 border-2 border-purple-200 rounded-xl font-medium focus:border-purple-400 focus:outline-none focus:ring-2 focus:ring-purple-200 transition-all"
-                      placeholder="הזן אימייל (אופציונלי)"
-                    />
-                  </div>
-
-                  {/* Role */}
-                  <div>
-                    <label className="flex items-center gap-2 text-sm font-semibold text-gray-700 mb-2">
-                      <Shield className="w-4 h-4 text-indigo-600" />
-                      תפקיד
-                    </label>
-                    <select
-                      value={formData.role}
-                      onChange={(e) => setFormData({ ...formData, role: e.target.value })}
-                      className="w-full px-4 py-3 bg-gradient-to-br from-indigo-50 to-blue-50 border-2 border-indigo-200 rounded-xl font-medium focus:border-indigo-400 focus:outline-none focus:ring-2 focus:ring-indigo-200 transition-all cursor-pointer"
-                    >
-                      <option value="user">משתמש</option>
-                      <option value="admin">מנהל</option>
-                    </select>
-                  </div>
-                </div>
-
-                {/* Active Status */}
-                <div className="flex items-center gap-3 p-4 bg-gradient-to-br from-gray-50 to-gray-100 rounded-xl border-2 border-gray-200">
-                  <input
-                    type="checkbox"
-                    id="isActive"
-                    checked={formData.isActive}
-                    onChange={(e) => setFormData({ ...formData, isActive: e.target.checked })}
-                    className="w-5 h-5 text-green-600 rounded focus:ring-2 focus:ring-green-500"
-                  />
-                  <label htmlFor="isActive" className="text-sm font-semibold text-gray-700 cursor-pointer">
-                    משתמש פעיל (ביטול סימון חוסם את המשתמש)
-                  </label>
-                </div>
-
-                {/* Permissions Section - Only for non-admin users */}
-                {formData.role !== 'admin' && (
-                  <div className="space-y-6">
-                    <div className="bg-gradient-to-br from-amber-50 to-orange-50 p-4 rounded-xl border-2 border-amber-200">
-                      <p className="text-sm text-gray-700 font-medium flex items-start gap-2">
-                        <span className="text-amber-600 text-xl">💡</span>
-                        <span>
-                          <strong>שים לב:</strong> אם לא תבחר שום פרויקט/ספק, המשתמש יוכל לראות הכל.
-                          בחר פרויקטים/ספקים ספציפיים כדי להגביל גישה.
-                        </span>
-                      </p>
-                    </div>
-
-                    {/* Projects Permissions */}
-             <div>
-  <div className="flex items-center justify-between mb-4">
-    <label className="flex items-center gap-2 text-lg font-bold text-gray-900">
-      <FolderKanban className="w-5 h-5 text-blue-600" />
-      הרשאות פרויקטים
-      <span className="text-sm font-normal text-gray-600">
-        ({formData.permissions.projects.length} נבחרו)
-      </span>
-    </label>
-  </div>
-
-  <div className="grid grid-cols-1 gap-3 max-h-[60vh] overflow-y-auto p-2">
-    {projects.length > 0 ? projects.map((project) => {
-      const selected = isProjectSelected(project._id);
-      const proj = (formData.permissions.projects || [])
-        .find(p => String(p.project) === String(project._id));
-
-      return (
-        <div key={project._id} className={`rounded-xl border-2 p-3 ${selected ? 'border-blue-400 bg-blue-50' : 'border-gray-200 bg-white'}`}>
-          <div className="flex items-center justify-between">
-            <label className="flex items-center gap-3 cursor-pointer">
-              <input
-                type="checkbox"
-                checked={selected}
-                onChange={() => toggleProjectSelection(project._id)}
-                className="w-4 h-4 text-blue-600"
-              />
-              <span className="text-sm font-semibold text-gray-900">{project.name}</span>
-            </label>
-
-            {/* Project-level access */}
-            <div className="flex items-center gap-4">
-              <label className="flex items-center gap-1 text-sm">
-                <input
-                  type="radio"
-                  disabled={!selected}
-                  checked={selected && (proj?.access || 'view') === 'view'}
-                  onChange={() => setProjectAccess(project._id, 'view')}
-                />
-                צפייה
-              </label>
-              <label className="flex items-center gap-1 text-sm">
-                <input
-                  type="radio"
-                  disabled={!selected}
-                  checked={selected && (proj?.access || 'view') === 'edit'}
-                  onChange={() => setProjectAccess(project._id, 'edit')}
-                />
-                עריכה
-              </label>
-            </div>
-          </div>
-
-          {/* Module-level access */}
-          <div className={`mt-3 grid grid-cols-2 md:grid-cols-4 gap-2 ${!selected ? 'opacity-50 pointer-events-none' : ''}`}>
-            {[
-              { key: 'invoices', label: 'חשבוניות' },
-              { key: 'orders',   label: 'הזמנות' },
-              { key: 'suppliers',label: 'ספקים' },
-              { key: 'files',    label: 'קבצים' },
-            ].map(m => (
-              <div key={m.key} className="flex items-center justify-between bg-white border rounded-lg px-2 py-1">
-                <span className="text-sm font-medium">{m.label}</span>
-                <select
-                  className="text-sm border rounded px-2 py-1"
-                  value={proj?.modules?.[m.key] || proj?.access || 'view'}
-                  onChange={e => setModuleAccess(project._id, m.key, e.target.value)}
-                  disabled={!selected}
-                >
-                  <option value="view">צפייה</option>
-                  <option value="edit">עריכה</option>
-                </select>
-              </div>
-            ))}
-          </div>
-        </div>
-      );
-    }) : (
-      <p className="text-center text-gray-500 py-4">אין פרויקטים במערכת</p>
-    )}
-  </div>
-</div>
-
-
-                    {/* Suppliers Permissions */}
-                    <div>
-                      <div className="flex items-center justify-between mb-4">
-                 
-                        <div className="flex gap-2">
-                          <button
-                            type="button"
-                            onClick={selectAllSuppliers}
-                            className="px-3 py-1 bg-green-100 text-green-700 rounded-lg hover:bg-green-200 transition-colors text-sm font-medium"
-                          >
-                            בחר הכל
-                          </button>
-                          <button
-                            type="button"
-                            onClick={clearAllSuppliers}
-                            className="px-3 py-1 bg-red-100 text-red-700 rounded-lg hover:bg-red-200 transition-colors text-sm font-medium"
-                          >
-                            נקה הכל
-                          </button>
-                        </div>
-                      </div>
-
-                      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3 max-h-60 overflow-y-auto p-2 bg-gray-50 rounded-xl border-2 border-gray-200">
-             
-                      </div>
-                    </div>
-                  </div>
-                )}
-
-                {/* Admin Note */}
-                {formData.role === 'admin' && (
-                  <div className="bg-gradient-to-br from-purple-50 to-pink-50 p-4 rounded-xl border-2 border-purple-200">
-                    <p className="text-sm text-purple-900 font-medium flex items-center gap-2">
-                      <Shield className="w-5 h-5 text-purple-600" />
-                      <span>מנהלים מקבלים גישה מלאה לכל הפרויקטים והספקים אוטומטית</span>
-                    </p>
-                  </div>
-                )}
-
-                {/* Action Buttons */}
-                <div className="flex gap-4 pt-4 border-t-2 border-gray-200">
-                  <button
-                    type="submit"
-                    className="flex-1 flex items-center justify-center gap-2 px-6 py-3 bg-gradient-to-r from-orange-500 to-amber-500 text-white rounded-xl hover:from-orange-600 hover:to-amber-600 transition-all duration-300 shadow-lg hover:shadow-xl font-bold"
-                  >
-                    <Save className="w-5 h-5" />
-                    <span>{editingUser ? 'עדכן משתמש' : 'צור משתמש'}</span>
-                  </button>
-
-                  <button
-                    type="button"
-                    onClick={() => setShowModal(false)}
-                    className="px-6 py-3 bg-gray-200 text-gray-700 rounded-xl hover:bg-gray-300 transition-all duration-300 font-bold"
-                  >
-                    ביטול
-                  </button>
-                </div>
-              </form>
-            </div>
-          </div>
-        )}
-
-        {/* Delete Confirmation Modal */}
-        {deleteModal.show && (
-          <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-            <div className="bg-white rounded-2xl shadow-2xl max-w-md w-full">
-              <div className="bg-gradient-to-r from-red-500 to-rose-500 text-white p-6 rounded-t-2xl">
-                <div className="flex items-center gap-3">
-                  <div className="bg-white/20 p-2 rounded-lg">
-                    <Trash2 className="w-6 h-6" />
-                  </div>
-                  <h2 className="text-2xl font-bold">אישור מחיקה</h2>
-                </div>
-              </div>
-
-              <div className="p-6">
-                <p className="text-lg text-gray-700 text-center mb-2">
-                  האם אתה בטוח שברצונך למחוק את המשתמש
-                </p>
-                <p className="text-xl font-bold text-center text-gray-900 mb-4">
-                  {deleteModal.user?.username}?
-                </p>
-                <p className="text-red-600 text-center font-semibold mb-6">
-                  פעולה זו אינה ניתנת לביטול!
-                </p>
-
-                <div className="flex gap-3">
-                  <button
-                    onClick={handleDelete}
-                    className="flex-1 px-6 py-3 bg-gradient-to-r from-red-500 to-rose-500 text-white rounded-xl hover:from-red-600 hover:to-rose-600 transition-all duration-300 shadow-lg hover:shadow-xl font-bold"
-                  >
-                    מחק משתמש
-                  </button>
-                  <button
-                    onClick={() => setDeleteModal({ show: false, user: null })}
-                    className="flex-1 px-6 py-3 bg-gray-200 text-gray-700 rounded-xl hover:bg-gray-300 transition-all duration-300 font-bold"
-                  >
-                    ביטול
-                  </button>
-                </div>
-              </div>
-            </div>
-          </div>
-        )}
+        <button onClick={openCreate}
+          className="px-6 py-3 bg-green-600 text-white rounded-xl hover:bg-green-700 flex items-center gap-2">
+          <Plus /> משתמש חדש
+        </button>
       </div>
+
+      {/* TABLE */}
+      <div className="bg-white rounded-xl shadow p-4">
+        <table className="w-full">
+          <thead>
+            <tr className="bg-orange-500 text-white">
+              <th className="p-3 text-right">שם</th>
+              <th className="p-3 text-right">אימייל</th>
+              <th className="p-3 text-center">תפקיד</th>
+              <th className="p-3 text-center">פרויקטים</th>
+              <th className="p-3 text-center">פעולות</th>
+            </tr>
+          </thead>
+          <tbody>
+            {users.map(u => (
+              <tr key={u._id} className="border-b hover:bg-orange-50">
+                <td className="p-3">{u.username}</td>
+                <td className="p-3">{u.email || "-"}</td>
+                <td className="p-3 text-center">
+                  {u.role === "admin" ? "מנהל" : "משתמש"}
+                </td>
+                <td className="p-3 text-center">
+                  {u.role === "admin"
+                    ? "הכל"
+                    : u.permissions.projects.length}
+                </td>
+                <td className="p-3 text-center space-x-3">
+                  <button onClick={() => openEdit(u)}><Edit2 /></button>
+                  <button onClick={() => setDeleteModal({ show: true, user: u })}
+                    disabled={currentUser.id === u._id}>
+                    <Trash2 className="text-red-600" />
+                  </button>
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+
+      {/* EDIT/CREATE MODAL */}
+      {showModal && (
+        <div className="fixed inset-0 bg-black/50 flex justify-center items-center p-6 z-50">
+          <div className="bg-white max-w-3xl w-full p-6 rounded-xl shadow-xl max-h-[90vh] overflow-y-auto">
+
+            <h2 className="text-2xl font-bold mb-4 flex gap-2 items-center">
+              <User /> {editingUser ? "עריכת משתמש" : "משתמש חדש"}
+            </h2>
+
+            <form onSubmit={saveUser} className="space-y-6">
+
+              {/* BASIC FIELDS */}
+              <div className="grid grid-cols-2 gap-4">
+
+                <div>
+                  <label className="block mb-2 font-semibold">שם משתמש</label>
+                  <input
+                    required
+                    className="w-full p-2 border rounded"
+                    value={formData.username}
+                    onChange={e => setFormData({ ...formData, username: e.target.value })}
+                  />
+                </div>
+
+                <div>
+                  <label className="block mb-2 font-semibold">סיסמה {!editingUser && "*"}</label>
+                  <div className="relative">
+                    <input
+                      type={showPassword ? "text" : "password"}
+                      required={!editingUser}
+                      className="w-full p-2 border rounded"
+                      value={formData.password}
+                      onChange={e => setFormData({ ...formData, password: e.target.value })}
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setShowPassword(!showPassword)}
+                      className="absolute left-2 top-1/2 -translate-y-1/2"
+                    >
+                      {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+                    </button>
+                  </div>
+                </div>
+
+                <div>
+                  <label className="block mb-2 font-semibold">אימייל</label>
+                  <input
+                    type="email"
+                    className="w-full p-2 border rounded"
+                    value={formData.email}
+                    onChange={e => setFormData({ ...formData, email: e.target.value })}
+                  />
+                </div>
+
+                <div>
+                  <label className="block mb-2 font-semibold">תפקיד</label>
+                  <select
+                    className="w-full p-2 border rounded"
+                    value={formData.role}
+                    onChange={e => setFormData({ ...formData, role: e.target.value })}
+                  >
+                    <option value="user">משתמש</option>
+                    <option value="admin">מנהל</option>
+                  </select>
+                </div>
+
+              </div>
+
+              {/* PROJECT PERMISSIONS */}
+              {formData.role !== "admin" && (
+                <div className="mt-6">
+                  <h3 className="text-xl font-bold flex gap-2 items-center mb-4">
+                    <FolderKanban /> הרשאות פרויקטים
+                  </h3>
+
+                  <div className="grid gap-4">
+                    {projects.map(p => {
+                      const selected = isProjectSelected(p._id);
+                      const proj = formData.permissions.projects.find(x => x.project === p._id);
+
+                      return (
+                        <div key={p._id} className={`border p-4 rounded-xl ${selected ? "bg-blue-50 border-blue-400" : "bg-gray-50 border-gray-300"}`}>
+
+                          <div className="flex justify-between items-center">
+                            <label className="flex gap-3 items-center cursor-pointer">
+                              <input 
+                                type="checkbox"
+                                className="w-5 h-5"
+                                checked={selected}
+                                onChange={() => toggleProject(p._id)}
+                              />
+                              <span className="font-bold text-lg">{p.name}</span>
+                            </label>
+
+                            {/* PROJECT LEVEL ACCESS */}
+                            {selected && (
+                              <div className="flex gap-6">
+                                <label className="flex gap-2 items-center cursor-pointer">
+                                  <input 
+                                    type="radio"
+                                    name={`access-${p._id}`}
+                                    className="w-4 h-4"
+                                    checked={proj.access === "view"}
+                                    onChange={() => setProjectAccess(p._id, "view")}
+                                  /> 
+                                  <span>צפייה</span>
+                                </label>
+
+                                <label className="flex gap-2 items-center cursor-pointer">
+                                  <input 
+                                    type="radio"
+                                    name={`access-${p._id}`}
+                                    className="w-4 h-4"
+                                    checked={proj.access === "edit"}
+                                    onChange={() => setProjectAccess(p._id, "edit")}
+                                  /> 
+                                  <span>עריכה</span>
+                                </label>
+                              </div>
+                            )}
+                          </div>
+
+                          {/* MODULE LEVEL ACCESS */}
+                          {selected && (
+                            <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mt-4 p-3 bg-white border rounded-xl">
+                              {[
+                                { key: "invoices", label: "חשבוניות" },
+                                { key: "orders", label: "הזמנות" },
+                                { key: "suppliers", label: "ספקים" },
+                                { key: "files", label: "קבצים" },
+                              ].map(m => (
+                                <div key={m.key}>
+                                  <label className="block mb-1 font-semibold text-sm">{m.label}</label>
+                                  <select
+                                    className="w-full border p-2 rounded"
+                                    value={proj.modules[m.key]}
+                                    onChange={(e) =>
+                                      setModuleAccess(p._id, m.key, e.target.value)
+                                    }
+                                  >
+                                    <option value="view">צפייה</option>
+                                    <option value="edit">עריכה</option>
+                                  </select>
+                                </div>
+                              ))}
+                            </div>
+                          )}
+
+                        </div>
+                      );
+                    })}
+                  </div>
+
+                </div>
+              )}
+
+              {/* ACTION BUTTONS */}
+              <div className="flex gap-4 mt-6 sticky bottom-0 bg-white py-4">
+                <button 
+                  type="submit"
+                  className="flex-1 bg-orange-600 text-white p-3 rounded-xl hover:bg-orange-700 flex items-center justify-center gap-2"
+                >
+                  <Save size={20} />
+                  שמור
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => setShowModal(false)}
+                  className="flex-1 bg-gray-300 p-3 rounded-xl hover:bg-gray-400 flex items-center justify-center gap-2"
+                >
+                  <X size={20} />
+                  ביטול
+                </button>
+              </div>
+
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* DELETE MODAL */}
+      {deleteModal.show && (
+        <div className="fixed inset-0 bg-black/50 flex justify-center items-center p-6 z-50">
+          <div className="bg-white p-6 rounded-xl shadow-xl max-w-md w-full">
+            <h2 className="text-2xl font-bold text-red-600 mb-4 flex items-center gap-2">
+              <Trash2 size={28} />
+              מחיקת משתמש
+            </h2>
+            <p className="mb-6 text-lg">
+              האם אתה בטוח שברצונך למחוק את המשתמש
+              <strong> {deleteModal.user.username} </strong>?
+            </p>
+            <div className="flex gap-4">
+              <button
+                onClick={deleteUser}
+                className="flex-1 bg-red-600 text-white p-3 rounded-xl hover:bg-red-700"
+              >
+                מחק
+              </button>
+              <button
+                onClick={() => setDeleteModal({ show: false, user: null })}
+                className="flex-1 bg-gray-300 p-3 rounded-xl hover:bg-gray-400"
+              >
+                ביטול
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
     </div>
   );
-};
-
-export default UserManagement;
+}

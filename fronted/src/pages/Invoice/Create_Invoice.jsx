@@ -24,7 +24,6 @@ import {
 } from "lucide-react";
 import { useSearchParams } from "react-router-dom";
 
-
 const PAYMENT_METHODS = [
   { value: "bank_transfer", label: "העברה בנקאית" },
   { value: "check", label: "צ׳ק" },
@@ -40,19 +39,24 @@ const CreateInvoice = () => {
   const [suppliers, setSuppliers] = useState([]);
   const [searchParams] = useSearchParams();
 
-
   const navigate = useNavigate();
 
   useEffect(() => {
+    if (!selectedProject?._id) return;
+
     (async () => {
       try {
-        const res = await api.get("/suppliers");
+        const res = await api.get(`/projects/${selectedProject._id}/suppliers`);
         setSuppliers(res?.data || []);
-      } catch {
+      } catch (err) {
+        console.error(err);
+        toast.error("שגיאה בטעינת ספקים", {
+          className: "sonner-toast error rtl",
+        });
         setSuppliers([]);
       }
     })();
-  }, []);
+  }, [selectedProject]);
 
   useEffect(() => {
     const fetchProjects = async () => {
@@ -112,34 +116,41 @@ const CreateInvoice = () => {
     }
   }, []);
 
-useEffect(() => {
-  if (!projects.length) return;
+  useEffect(() => {
+    if (!projects.length) return;
 
-  const projectIdFromQuery = searchParams.get("projectId");
-  if (!projectIdFromQuery) return;
+    const projectIdFromQuery = searchParams.get("projectId");
+    if (!projectIdFromQuery) return;
 
-  const p = projects.find(pr => String(pr._id) === String(projectIdFromQuery));
-  if (!p) return;
+    const p = projects.find(
+      (pr) => String(pr._id) === String(projectIdFromQuery)
+    );
+    if (!p) return;
 
-  setSelectedProject(p);
+    setSelectedProject(p);
 
-  // אם אין עדיין שורות חשבונית – ליצור אחת ריקה קשורה לפרויקט
-  setInvoices(prev => prev.length ? prev : [{
-    projectName: p.name,
-    invoiceNumber: "",
-    detail: "",
-    sum: "",
-    status: "לא הוגש",
-    paid: "לא",
-    invitingName: "",
-    files: [],
-    paymentDate: "",
-    supplierId: "",
-    documentType: "",
-    paymentMethod: "",
-  }]);
-}, [projects, searchParams]);
-
+    // אם אין עדיין שורות חשבונית – ליצור אחת ריקה קשורה לפרויקט
+    setInvoices((prev) =>
+      prev.length
+        ? prev
+        : [
+            {
+              projectName: p.name,
+              invoiceNumber: "",
+              detail: "",
+              sum: "",
+              status: "לא הוגש",
+              paid: "לא",
+              invitingName: "",
+              files: [],
+              paymentDate: "",
+              supplierId: "",
+              documentType: "",
+              paymentMethod: "",
+            },
+          ]
+    );
+  }, [projects, searchParams]);
 
   const handleProjectChange = (e) => {
     const projectId = e.target.value;
@@ -249,12 +260,15 @@ useEffect(() => {
           continue;
         }
 
-        const response = await api.get(`/invoices/check-duplicate`, {
-          params: {
-            supplierName: invoice.invitingName,
-            invoiceNumber: invoice.invoiceNumber,
-          },
-        });
+        const response = await api.get(
+          `/projects/${selectedProject._id}/invoices/check-duplicate`,
+          {
+            params: {
+              supplierName: invoice.invitingName,
+              invoiceNumber: invoice.invoiceNumber,
+            },
+          }
+        );
 
         if (response.data.exists) {
           toast.error(
@@ -397,9 +411,13 @@ useEffect(() => {
                   formData.append("file", fileData.file);
                   formData.append("folder", fileData.folder || "invoices");
 
-                  const uploadResponse = await api.post("/upload", formData, {
-                    headers: { "Content-Type": "multipart/form-data" },
-                  });
+                  const uploadResponse = await api.post(
+                    "/upload/cloudinary",
+                    formData,
+                    {
+                      headers: { "Content-Type": "multipart/form-data" },
+                    }
+                  );
 
                   uploadedFiles.push({
                     name: fileData.name,
@@ -439,14 +457,13 @@ useEffect(() => {
             createdAt: invoice.createdAt,
             supplierId: invoice.supplierId,
             documentType: invoice.documentType,
-            paymentMethod:
-              invoice.paid === "כן" ? invoice.paymentMethod : "" ,
+            paymentMethod: invoice.paid === "כן" ? invoice.paymentMethod : "",
           };
         })
       );
 
-      const response = await api.post(
-        "/invoices",
+      await api.post(
+        `/projects/${selectedProject._id}/invoices`,
         { invoices: invoiceData },
         { headers: { "Content-Type": "application/json" } }
       );
@@ -455,8 +472,9 @@ useEffect(() => {
         className: "sonner-toast success rtl",
       });
       const projectIdFromQuery = searchParams.get("projectId");
-      navigate(projectIdFromQuery ? `/projects/${projectIdFromQuery}` : "/invoices");
-
+      navigate(
+        projectIdFromQuery ? `/projects/${projectIdFromQuery}` : "/invoices"
+      );
     } catch (err) {
       console.error("שגיאה במהלך יצירת החשבונית/יות:", err);
 
@@ -513,10 +531,7 @@ useEffect(() => {
       );
     }
 
-    if (
-      fileExtension === "pdf" ||
-      fileUrl.match(/\.(jpeg|jpg|png|gif)$/)
-    ) {
+    if (fileExtension === "pdf" || fileUrl.match(/\.(jpeg|jpg|png|gif)$/)) {
       return (
         <a
           href={fileUrl}
@@ -563,7 +578,9 @@ useEffect(() => {
     }
 
     try {
-      await api.delete(`/upload/${fileToDelete._id}`);
+      await api.delete(`/invoices/upload/cloudinary`, {
+        params: { publicId: fileToDelete.publicId },
+      });
 
       const newInvoices = [...invoices];
       newInvoices[invoiceIndex].files.splice(fileIndex, 1);
@@ -615,7 +632,7 @@ useEffect(() => {
                   בחר פרויקט
                 </label>
                 <select
-                 value={selectedProject?._id || ""} 
+                  value={selectedProject?._id || ""}
                   onChange={handleProjectChange}
                   className="w-full p-4 border-2 border-orange-200 rounded-xl bg-white font-bold text-slate-900 focus:border-orange-500 focus:outline-none focus:ring-4 focus:ring-orange-500/20 transition-all"
                 >
@@ -657,10 +674,7 @@ useEffect(() => {
         {/* Invoices List */}
         <div className="space-y-6">
           {invoices.map((invoice, index) => (
-            <div
-              key={index}
-              className="relative"
-            >
+            <div key={index} className="relative">
               <div className="absolute -inset-2 bg-gradient-to-r from-orange-500 via-amber-500 to-yellow-500 rounded-3xl opacity-10 blur-xl"></div>
 
               <div className="relative bg-white/90 backdrop-blur-xl rounded-3xl shadow-xl shadow-orange-500/10 border border-white/50 overflow-hidden">
@@ -847,9 +861,7 @@ useEffect(() => {
                         <option value="">בחר סוג מסמך…</option>
                         <option value="ח. עסקה">ח. עסקה</option>
                         <option value="ה. עבודה">ה. עבודה</option>
-                        <option value="ד. תשלום">
-                          ד. תשלום
-                        </option>
+                        <option value="ד. תשלום">ד. תשלום</option>
                         <option value="חשבונית מס / קבלה">
                           חשבונית מס / קבלה
                         </option>

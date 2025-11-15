@@ -229,9 +229,12 @@ const CreateOrder = () => {
                   formData.append('file', fileData.file);
                   formData.append('folder', fileData.folder || 'orders');
 
-                  const uploadResponse = await api.post('/upload', formData, {
-                    headers: { 'Content-Type': 'multipart/form-data' },
-                  });
+                const uploadResponse = await api.post(
+  `/projects/${selectedProject._id}/upload`,
+  formData,
+  { headers: { 'Content-Type': 'multipart/form-data' } }
+);
+
 
                   uploadedFiles.push({
                     name: fileData.name,
@@ -269,7 +272,7 @@ const CreateOrder = () => {
       );
 
       const response = await api.post(
-        '/orders',
+         `/projects/${selectedProject._id}/orders`,
         { orders: orderData },
         { headers: { 'Content-Type': 'application/json' } }
       );
@@ -277,7 +280,7 @@ const CreateOrder = () => {
       toast.success('ההזמנה/ות נוצרו בהצלחה!', {
         className: 'sonner-toast success rtl',
       });
-      navigate('/orders');
+navigate(`/projects/${selectedProject._id}/orders`);
       setOrders([]);
     } catch (err) {
       console.error('שגיאה במהלך יצירת ההזמנה/ות:', err);

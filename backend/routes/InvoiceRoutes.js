@@ -1,73 +1,95 @@
-import express from 'express';
-import invoiceControllers from '../controller/invoiceControllers.js';
+import express from "express";
+import invoiceController from "../controller/invoiceControllers.js";
+import { protect } from "../middleware/auth.js";
+import { checkProjectPermission } from "../middleware/permissions.js";
 
 const router = express.Router();
 
-router.get('/', invoiceControllers.getAllInvoices
-);
-
-// חיפוש חשבוניות (אפשר עדיין לסנן לפי פרויקט דרך applyProjectListFilter)
-router.get('/search', invoiceControllers.search );
-
+// כל החשבוניות בפרויקט
 router.get(
-  '/check-duplicate', invoiceControllers.check_duplicate
+  "/project/:projectId",
+  protect,
+  checkProjectPermission("invoices", "view"),
+  invoiceController.getInvoicesByProject
 );
 
-router.get(
-  '/suppliers/:id',
-  invoiceControllers.getSupplierInvoices
-);
-
-// שליפת חשבונית לפי מזהה (עדיין בתוך הקונטקסט של :projectId ב-base path)
-router.get(
-  '/:id',
-   invoiceControllers.getInvoiceById
-);
-
-/* ---------------- כתיבה/עדכון/מחיקה ---------------- */
-
-// יצירת חשבוניות חדשות לפרויקט הנוכחי
+// יצירה
 router.post(
-  '/',
-   invoiceControllers.createInvoices
+  "/:projectId",
+  protect,
+  checkProjectPermission("invoices", "edit"),
+  invoiceController.createInvoice
 );
 
-// עדכון חשבונית קיימת
+// חשבונית בודדת
+router.get(
+  "/:projectId/:id",
+  protect,
+  checkProjectPermission("invoices", "view"),
+  invoiceController.getInvoiceById
+);
+
+// עדכון
 router.put(
-  '/:id',
-  invoiceControllers.updateInvoice
+  "/:projectId/:id",
+  protect,
+  checkProjectPermission("invoices", "edit"),
+  invoiceController.updateInvoice
+);
+
+// מחיקה
+router.delete(
+  "/:projectId/:id",
+  protect,
+  checkProjectPermission("invoices", "edit"),
+  invoiceController.deleteInvoice
+);
+
+// חיפוש
+router.get(
+  "/project/:projectId/search",
+  protect,
+  checkProjectPermission("invoices", "view"),
+  invoiceController.search
 );
 
 // עדכון סטטוס תשלום
 router.put(
-  '/:id/status',
-  invoiceControllers.updateInvoicePaymentStatus
+  "/:projectId/:id/payment",
+  protect,
+  checkProjectPermission("invoices", "edit"),
+  invoiceController.updatePaymentStatus
 );
 
-// עדכון תאריך תשלום
+// עדכון תאריך תשלום בלבד
 router.put(
-  '/:id/date',
-   invoiceControllers.updateInvoicePaymentDate
+  "/:projectId/:id/payment/date",
+  protect,
+  checkProjectPermission("invoices", "edit"),
+  invoiceController.updatePaymentDate
 );
 
-// העברת חשבונית לפרויקט יעד (כתיבה)
-// שים לב: ב-controller יש בדיקה ליעד; כאן מוודאים שיש write על פרויקט המקור (זה שבנתיב)
-router.post(
-  '/:id/move',
-   invoiceControllers.moveInvoice
+// העברה בין פרויקטים
+router.put(
+  "/:projectId/:id/move",
+  protect,
+  checkProjectPermission("invoices", "edit"),
+  invoiceController.moveInvoice
 );
 
-// מחיקת חשבונית
-router.delete(
-  '/:id',
-   invoiceControllers.deleteInvoice
+// בדיקת כפילות
+router.get(
+  "/:projectId/check-duplicate",
+  protect,
+  checkProjectPermission("invoices", "view"),
+  invoiceController.checkDuplicate
 );
 
-// מחיקת קובץ מקלאודינרי (קשור לניהול מסמכים של חשבוניות)
-// אפשר להשאיר כ-write על invoices; אם תרצה להחמיר — תעביר גם דרך ensureProjectAccess
-router.delete(
-  '/upload/cloudinary',
-  invoiceControllers.deleteFile
+// חשבוניות של ספק
+router.get(
+  "/supplier/:id",
+  protect,
+  invoiceController.getSupplierInvoices
 );
 
 export default router;

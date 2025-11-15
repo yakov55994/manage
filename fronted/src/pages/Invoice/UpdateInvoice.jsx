@@ -41,14 +41,16 @@ const InvoiceEditPage = () => {
   const [files, setFiles] = useState([]);
   const [loading, setLoading] = useState(false);
 
-  const { id } = useParams();
+  const { projectId, id } = useParams();
   const navigate = useNavigate();
 
   useEffect(() => {
     const fetchInvoice = async () => {
       setLoading(true);
       try {
-        const { data: invoiceData } = await api.get(`/invoices/${id}`);
+        const { data: invoiceData } = await api.get(
+          `/projects/${projectId}/invoices/${id}`
+        );
         if (!invoiceData) {
           setLoading(false);
           return;
@@ -84,7 +86,9 @@ const InvoiceEditPage = () => {
         setFiles(processed);
       } catch (err) {
         console.error("Error loading invoice:", err);
-        toast.error("שגיאה בטעינת החשבונית", { className: "sonner-toast error rtl" });
+        toast.error("שגיאה בטעינת החשבונית", {
+          className: "sonner-toast error rtl",
+        });
       } finally {
         setLoading(false);
       }
@@ -102,7 +106,11 @@ const InvoiceEditPage = () => {
           out.push({
             ...file,
             url: file.url || file.fileUrl || file.secure_url,
-            name: file.name || file.originalName || file.filename || `קובץ ${i + 1}`,
+            name:
+              file.name ||
+              file.originalName ||
+              file.filename ||
+              `קובץ ${i + 1}`,
           });
         } else if (file?._id) {
           const { data } = await api.get(`/files/${file._id}`);
@@ -110,20 +118,32 @@ const InvoiceEditPage = () => {
             out.push({
               ...data,
               url: data.url || data.fileUrl || data.secure_url,
-              name: data.name || data.originalName || data.filename || `קובץ ${i + 1}`,
+              name:
+                data.name ||
+                data.originalName ||
+                data.filename ||
+                `קובץ ${i + 1}`,
             });
           }
         } else if (file) {
           out.push({
             ...file,
-            name: file.name || file.originalName || file.filename || `קובץ ${i + 1}`,
+            name:
+              file.name ||
+              file.originalName ||
+              file.filename ||
+              `קובץ ${i + 1}`,
           });
         }
       } catch {
         if (file) {
           out.push({
             ...file,
-            name: file.name || file.originalName || file.filename || `קובץ ${i + 1}`,
+            name:
+              file.name ||
+              file.originalName ||
+              file.filename ||
+              `קובץ ${i + 1}`,
             url: file.url || file.fileUrl || file.secure_url || null,
           });
         }
@@ -211,9 +231,13 @@ const InvoiceEditPage = () => {
       const publicId = extractPublicIdFromUrl(fileUrl);
       if (publicId) {
         try {
-          await api.delete("/upload/delete-cloudinary", {
-            data: { publicId, resourceType: "raw" },
-          });
+          await api.delete(
+            `/projects/${projectId}/invoices/${id}/delete-file`,
+            {
+              data: { publicId },
+            }
+          );
+
           toast.success("הקובץ נמחק מ-Cloudinary");
         } catch {
           toast.warning("הוסר מהרשימה. בדוק ידנית אם נמחק מ-Cloudinary");
@@ -230,8 +254,11 @@ const InvoiceEditPage = () => {
     if (isLocal) {
       return (
         <span className="text-gray-700 text-sm">
-          📄 {file.name} {file.size ? `(${(file.size / 1024).toFixed(1)} KB)` : ""}{" "}
-          <span className="text-orange-500 text-xs font-bold">(יועלה בשמירה)</span>
+          📄 {file.name}{" "}
+          {file.size ? `(${(file.size / 1024).toFixed(1)} KB)` : ""}{" "}
+          <span className="text-orange-500 text-xs font-bold">
+            (יועלה בשמירה)
+          </span>
         </span>
       );
     }
@@ -327,7 +354,9 @@ const InvoiceEditPage = () => {
       return;
     }
     if (!createdAt) {
-      toast.error("יש לבחור תאריך יצירת החשבונית", { className: "sonner-toast error rtl" });
+      toast.error("יש לבחור תאריך יצירת החשבונית", {
+        className: "sonner-toast error rtl",
+      });
       setLoading(false);
       return;
     }
@@ -377,15 +406,22 @@ const InvoiceEditPage = () => {
         paymentMethod: paid === "כן" ? paymentMethod : "",
       };
 
-      const res = await api.put(`/invoices/${id}`, formData);
+      const res = await api.put(
+        `/projects/${projectId}/invoices/${id}`,
+        formData
+      );
 
-      toast.success("החשבונית עודכנה בהצלחה!", { className: "sonner-toast success rtl" });
+      toast.success("החשבונית עודכנה בהצלחה!", {
+        className: "sonner-toast success rtl",
+      });
       setInvoice(res.data);
-      navigate(`/invoices`);
+      navigate(`/projects/${projectId}/invoices`);
     } catch (err) {
       console.error("Error updating invoice:", err);
       const msg =
-        err?.response?.data?.message || err?.response?.data?.error || "שגיאה בעדכון החשבונית";
+        err?.response?.data?.message ||
+        err?.response?.data?.error ||
+        "שגיאה בעדכון החשבונית";
       toast.error(msg, { className: "sonner-toast error rtl" });
     } finally {
       setLoading(false);
@@ -443,7 +479,7 @@ const InvoiceEditPage = () => {
           <div className="relative">
             {/* Decorative gradient bar */}
             <div className="absolute -inset-x-6 -inset-y-3 bg-gradient-to-r from-orange-500 via-amber-500 to-yellow-500 rounded-3xl opacity-5 blur-xl"></div>
-            
+
             <div className="relative bg-white/80 backdrop-blur-xl rounded-3xl shadow-2xl shadow-orange-500/10 p-8 border border-white/50">
               <div className="flex items-start justify-between gap-6 flex-wrap">
                 <div className="flex-1">
@@ -464,7 +500,8 @@ const InvoiceEditPage = () => {
                     </div>
                   </div>
                   <p className="text-slate-600 text-sm max-w-2xl leading-relaxed">
-                    עדכן פרטי חשבונית, סטטוס תשלום, קבצים מצורפים ומידע נוסף במערכת ניהול החשבוניות המתקדמת
+                    עדכן פרטי חשבונית, סטטוס תשלום, קבצים מצורפים ומידע נוסף
+                    במערכת ניהול החשבוניות המתקדמת
                   </p>
                 </div>
                 {PaidBadge}
@@ -474,13 +511,10 @@ const InvoiceEditPage = () => {
         </header>
 
         {/* Main Form Card */}
-        <form
-          onSubmit={handleSubmit}
-          className="max-w-6xl mx-auto relative"
-        >
+        <form onSubmit={handleSubmit} className="max-w-6xl mx-auto relative">
           {/* Decorative elements */}
           <div className="absolute -inset-4 bg-gradient-to-r from-orange-500 via-amber-500 to-yellow-500 rounded-3xl opacity-10 blur-2xl"></div>
-          
+
           <div className="relative bg-white/90 backdrop-blur-2xl rounded-3xl shadow-2xl shadow-orange-500/10 border border-white/50 overflow-hidden">
             {/* Top Info Bar with Gradient */}
             <div className="bg-gradient-to-r from-orange-500 via-amber-500 to-yellow-500 p-1">
@@ -490,13 +524,15 @@ const InvoiceEditPage = () => {
                     <ClipboardList className="w-5 h-5 text-orange-600" />
                   </div>
                   <div>
-                    <span className="text-xs font-medium text-slate-500 block mb-1">מספר חשבונית</span>
+                    <span className="text-xs font-medium text-slate-500 block mb-1">
+                      מספר חשבונית
+                    </span>
                     <span className="font-bold text-xl bg-gradient-to-r from-orange-600 to-amber-600 bg-clip-text">
                       {invoiceNumber}
                     </span>
                   </div>
                 </div>
-                
+
                 <div className="flex items-center gap-3">
                   <div className="p-2.5 rounded-xl bg-gradient-to-br from-amber-100 to-yellow-100">
                     <Calendar className="w-5 h-5 text-amber-600" />
@@ -523,7 +559,7 @@ const InvoiceEditPage = () => {
               {/* Section: פרטי מסמך */}
               <section className="relative">
                 <div className="absolute -right-4 top-0 w-1 h-full bg-gradient-to-b from-orange-500 to-amber-500 rounded-full"></div>
-                
+
                 <div className="flex items-center gap-3 mb-6">
                   <div className="p-3 rounded-2xl bg-gradient-to-br from-orange-500 to-orange-600 shadow-lg shadow-orange-500/30">
                     <FileText className="w-6 h-6 text-white" />
@@ -549,7 +585,9 @@ const InvoiceEditPage = () => {
                   </div>
 
                   <div className="group">
-                    <label className="text-sm font-bold text-slate-700 mb-2 block">סטטוס</label>
+                    <label className="text-sm font-bold text-slate-700 mb-2 block">
+                      סטטוס
+                    </label>
                     <select
                       value={status}
                       onChange={(e) => setStatus(e.target.value)}
@@ -562,7 +600,9 @@ const InvoiceEditPage = () => {
                   </div>
 
                   <div className="group">
-                    <label className="text-sm font-bold text-slate-700 mb-2 block">סוג מסמך</label>
+                    <label className="text-sm font-bold text-slate-700 mb-2 block">
+                      סוג מסמך
+                    </label>
                     <select
                       value={documentType}
                       onChange={(e) => setDocumentType(e.target.value)}
@@ -572,9 +612,7 @@ const InvoiceEditPage = () => {
                       <option value="">בחר סוג מסמך…</option>
                       <option value="ח. עסקה">ח. עסקה</option>
                       <option value="ה. עבודה">ה. עבודה</option>
-                      <option value="ד. תשלום">
-                        ד. תשלום
-                      </option>
+                      <option value="ד. תשלום">ד. תשלום</option>
                       <option value="חשבונית מס / קבלה">
                         חשבונית מס / קבלה
                       </option>
@@ -596,7 +634,9 @@ const InvoiceEditPage = () => {
                   </div>
 
                   <div className="sm:col-span-2 lg:col-span-3 group">
-                    <label className="text-sm font-bold text-slate-700 mb-2 block">פירוט</label>
+                    <label className="text-sm font-bold text-slate-700 mb-2 block">
+                      פירוט
+                    </label>
                     <textarea
                       value={detail}
                       onChange={(e) => setDetail(e.target.value)}
@@ -622,7 +662,7 @@ const InvoiceEditPage = () => {
               {/* Section: תשלום */}
               <section className="relative">
                 <div className="absolute -right-4 top-0 w-1 h-full bg-gradient-to-b from-amber-500 to-yellow-500 rounded-full"></div>
-                
+
                 <div className="flex items-center gap-3 mb-6">
                   <div className="p-3 rounded-2xl bg-gradient-to-br from-amber-500 to-yellow-600 shadow-lg shadow-amber-500/30">
                     <CreditCard className="w-6 h-6 text-white" />
@@ -654,33 +694,32 @@ const InvoiceEditPage = () => {
                     </select>
                   </div>
 
-               <div className="group">
-  <label className="text-sm font-bold text-slate-700 mb-2 flex items-center gap-2">
-    <Calendar className="w-4 h-4 text-emerald-500" />
-    תאריך התשלום
-  </label>
+                  <div className="group">
+                    <label className="text-sm font-bold text-slate-700 mb-2 flex items-center gap-2">
+                      <Calendar className="w-4 h-4 text-emerald-500" />
+                      תאריך התשלום
+                    </label>
 
-  {paid === "כן" ? (
-    <DateField
-      type="date"
-      value={paymentDate}
-      onChange={(val) => setPaymentDate(val)}
-      className={`w-full p-3 border-2 rounded-xl font-medium transition-all focus:outline-none focus:ring-4
+                    {paid === "כן" ? (
+                      <DateField
+                        type="date"
+                        value={paymentDate}
+                        onChange={(val) => setPaymentDate(val)}
+                        className={`w-full p-3 border-2 rounded-xl font-medium transition-all focus:outline-none focus:ring-4
         ${
           !paymentDate
             ? "border-rose-300 bg-rose-50 focus:border-rose-500 focus:ring-rose-500/20"
             : "border-slate-200 bg-white focus:border-emerald-500 focus:ring-emerald-500/20 group-hover:border-emerald-300"
         }`}
-      placeholder="yyyy-mm-dd"
-      required={paid === "כן"}
-    />
-  ) : (
-    <div className="mt-2 bg-gradient-to-br from-slate-100 to-slate-200 text-slate-500 rounded-xl px-4 py-3 text-center font-medium border-2 border-slate-200">
-      החשבונית לא שולמה
-    </div>
-  )}
-</div>
-
+                        placeholder="yyyy-mm-dd"
+                        required={paid === "כן"}
+                      />
+                    ) : (
+                      <div className="mt-2 bg-gradient-to-br from-slate-100 to-slate-200 text-slate-500 rounded-xl px-4 py-3 text-center font-medium border-2 border-slate-200">
+                        החשבונית לא שולמה
+                      </div>
+                    )}
+                  </div>
 
                   <div className="group">
                     <label className="text-sm font-bold text-slate-700 mb-2 block">
@@ -729,7 +768,7 @@ const InvoiceEditPage = () => {
               {/* Section: קבצים */}
               <section className="relative">
                 <div className="absolute -right-4 top-0 w-1 h-full bg-gradient-to-b from-yellow-500 to-orange-500 rounded-full"></div>
-                
+
                 <div className="flex items-center gap-3 mb-6">
                   <div className="p-3 rounded-2xl bg-gradient-to-br from-yellow-500 to-orange-600 shadow-lg shadow-yellow-500/30">
                     <Upload className="w-6 h-6 text-white" />
@@ -774,7 +813,9 @@ const InvoiceEditPage = () => {
                   ) : (
                     <div className="text-center py-8 text-slate-400">
                       <Upload className="w-12 h-12 mx-auto mb-3 opacity-50" />
-                      <p className="text-sm font-medium">אין קבצים מצורפים כרגע</p>
+                      <p className="text-sm font-medium">
+                        אין קבצים מצורפים כרגע
+                      </p>
                     </div>
                   )}
                 </div>
@@ -786,7 +827,7 @@ const InvoiceEditPage = () => {
               <div className="flex justify-end gap-4">
                 <button
                   type="button"
-                  onClick={() => navigate("/invoices")}
+                  onClick={() => navigate(`/projects/${projectId}/invoices`)}
                   className="px-6 py-3 rounded-xl font-bold text-slate-600 hover:bg-slate-100 transition-all"
                 >
                   ביטול

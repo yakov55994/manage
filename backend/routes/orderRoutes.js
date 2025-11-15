@@ -1,37 +1,43 @@
-// routes/order.routes.js
-import express from 'express';
-import orderControllers from '../controller/orderControllers.js';
+import express from "express";
+import orderController from "../controller/orderControllers.js";
+import { protect } from "../middleware/auth.js";
+import { checkProjectPermission } from "../middleware/permissions.js";
 
-
-const router = express.Router();
-
-router.get(
-  '/',  orderControllers.getAllOrders    // דאג שהקונטרולר יקרא מ-req.queryFilter אם קיים
-);
+const router = express.Router({ mergeParams: true });
 
 router.get(
-  '/search',
-  orderControllers.search
-);
-
-router.get(
-  '/:id',
-  orderControllers.getOrderById
+  "/orders/project/:projectId",
+  protect,
+  checkProjectPermission("orders", "view"),
+  orderController.getOrdersByProject
 );
 
 router.post(
-  '/',
-  orderControllers.createOrders
+  "/orders/:projectId",
+  protect,
+  checkProjectPermission("orders", "edit"),
+  orderController.createOrder
+);
+
+router.get(
+  "/orders/:projectId/:id",
+  protect,
+  checkProjectPermission("orders", "view"),
+  orderController.getOrderById
 );
 
 router.put(
-  '/:id',
-  orderControllers.updateOrder
+  "/orders/:projectId/:id",
+  protect,
+  checkProjectPermission("orders", "edit"),
+  orderController.updateOrder
 );
 
 router.delete(
-  '/:id',
-  orderControllers.deleteOrder
+  "/orders/:projectId/:id",
+  protect,
+  checkProjectPermission("orders", "edit"),
+  orderController.deleteOrder
 );
 
 export default router;

@@ -1,227 +1,132 @@
 // services/projectService.js
-import mongoose from 'mongoose';
-import Project from '../models/Project.js';
-import Invoice from '../models/Invoice.js';
-import Order from '../models/Order.js';
+import mongoose from "mongoose";
+import Project from "../models/Project.js";
+import Invoice from "../models/Invoice.js";
+import Order from "../models/Order.js";
 
-function isValidId(id) {
-  return mongoose.Types.ObjectId.isValid(id);
-}
+const isValidId = (id) => mongoose.Types.ObjectId.isValid(id);
 
 const projectService = {
-  // ➕ יצירת פרויקט
+  // ➕ יצירת פרויקט חדש
   async createProject(data) {
     try {
-      const cleaned = {
-        ...data,
-        name: String(data?.name || '').trim(),
+      const clean = {
+        name: String(data.name || "").trim(),
+        budget: Number(data.budget || 0),
+        remainingBudget: Number(data.budget || 0),
+        invitingName: data.invitingName || "",
+        Contact_person: data.Contact_person || "",
+        usersPermissions: data.usersPermissions || [],
       };
-      const project = new Project(cleaned);
+
+      const exists = await Project.findOne({ name: clean.name });
+      if (exists) {
+        throw new Error(`פרויקט בשם "${clean.name}" כבר קיים`);
+      }
+
+      const project = new Project(clean);
       await project.save();
       return project;
     } catch (err) {
-      throw new Error('Error creating project');
+      throw new Error(err.message || "שגיאה ביצירת פרויקט");
     }
   },
 
-  // 🧾 הוספת חשבונית לפרויקט (מומלץ בדרך כלל לבצע דרך invoiceService.createInvoices)
-  async addInvoiceToProject(projectId, invoiceData) {
-    if (!isValidId(projectId)) throw new Error('ה-ID של הפרויקט לא תקין');
-
-    const session = await mongoose.startSession();
-    try {
-      let newInvoice;
-
-      await session.withTransaction(async () => {
-        const project = await Project.findById(projectId).session(session);
-        if (!project) throw new Error('פרויקט לא נמצא');
-
-        // בדיקת כפילות (אופציונלי להוסיף גם projectId לסקופ הכפילות)
-        const dup = await Invoice.findOne({
-          invoiceNumber: invoiceData.invoiceNumber,
-          invitingName: invoiceData.invitingName,
-          projectId, // ← כפילות בתוך אותו פרויקט בלבד
-        }).session(session);
-        if (dup) {
-          throw new Error(`חשבונית מספר "${invoiceData.invoiceNumber}" כבר קיימת עבור "${invoiceData.invitingName}" בפרויקט זה`);
-        }
-
-        // יצירת חשבונית
-        newInvoice = await Invoice.create(
-          [{
-            invoiceNumber: invoiceData.invoiceNumber,
-            projectName: project.name,  // לשימוש UI בלבד
-            projectId: project._id,     // מקור האמת
-            sum: invoiceData.sum,
-            status: invoiceData.status,
-            invitingName: invoiceData.invitingName,
-            detail: invoiceData.detail,
-            paid: invoiceData.paid,
-            paymentDate: invoiceData.paymentDate || null,
-            createdAt: invoiceData.createdAt || new Date(),
-            files: Array.isArray(invoiceData.files) ? invoiceData.files : [],
-            documentType: invoiceData.documentType || undefined,
-            paymentMethod: invoiceData.paymentMethod || '',
-            supplierId: invoiceData.supplierId || undefined,
-          }],
-          { session }
-        ).then(arr => arr[0]);
-
-        // עדכון תקציב + קישור החשבונית (ObjectId)
-        const delta = Number(newInvoice.sum || 0);
-        await Project.findByIdAndUpdate(
-          project._id,
-          {
-            $addToSet: { invoices: newInvoice._id },
-            $inc: { remainingBudget: -delta },
-          },
-          { new: true, session }
-        );
-      });
-
-      return newInvoice;
-    } finally {
-      session.endSession();
-    }
-  },
-
-// 📃 כל הפרויקטים עם קבצים מהחשבוניות
-async getAllProjects(filter = {}, { sort = { createdAt: -1 }, lean = true } = {}) {
-  // 1. שלוף את הפרויקטים
-  const projects = await Project.find(filter).sort(sort).lean().exec();
-  
-  // 2. אסוף את כל ה-IDs של החשבוניות
-  const allInvoiceIds = [];
-  projects.forEach(project => {
-    if (project.invoices) {
-      project.invoices.forEach(inv => {
-        if (inv._id) allInvoiceIds.push(inv._id);
-      });
-    }
-  });
-  
-  // 3. שלוף את כל החשבוניות המלאות (עם files וספק)
-  const Invoice = mongoose.model('Invoice'); // או require('./Invoice') תלוי באיך הקוד שלך מאורגן
-  const fullInvoices = await Invoice.find({ _id: { $in: allInvoiceIds } })
-    .populate({ path: 'supplierId', select: 'name phone bankDetails' })
-    .lean()
-    .exec();
-  
-  // 4. צור מפה של ID -> חשבונית מלאה
-  const invoiceMap = {};
-  fullInvoices.forEach(inv => {
-    invoiceMap[inv._id.toString()] = {
-      files: inv.files || [],
-      supplier: inv.supplierId || null
-    };
-  });
-  
-  // 5. הוסף את ה-files והספק לכל חשבונית בפרויקט
-  projects.forEach(project => {
-    if (project.invoices) {
-      project.invoices.forEach(inv => {
-        if (inv._id) {
-          const fullData = invoiceMap[inv._id.toString()];
-          if (fullData) {
-            inv.files = fullData.files;
-            inv.supplier = fullData.supplier;
-          }
-        }
-      });
-    }
-  });
-  
-  return projects;
-},
-
-  // 📄 פרויקט לפי ID
-  async getProjectById(id) {
-  // שליפת הפרויקט עצמו
-  const projectDoc = await Project.findById(id).lean();
-  if (!projectDoc) return null;
-
-  // 1. שליפת ההזמנות והחשבוניות
-  const [orders, invoices] = await Promise.all([
-    Order.find({ projectId: id }).sort({ createdAt: -1 }).lean(),
-    Invoice.find({ projectId: id })
-      .populate({ path: 'supplierId', select: 'name phone bankDetails' }) // 🆕 populate הספק
+  // 📃 שליפת כל הפרויקטים לפי הרשאות המידלוור
+  async getAllProjects(filter = {}) {
+    const projects = await Project.find(filter)
       .sort({ createdAt: -1 })
-      .lean(),
-  ]);
+      .lean();
 
-  // 2. המרה לפורמט עם supplier במקום supplierId
-  const invoicesWithSupplier = invoices.map(inv => ({
-    ...inv,
-    supplier: inv.supplierId || null, // 🆕 העתקת supplierId ל-supplier
-  }));
+    return projects;
+  },
 
-  // מחזירים אובייקט מאוחד
-  return {
-    ...projectDoc,
-    orders: Array.isArray(orders) ? orders : [],
-    invoices: invoicesWithSupplier,
-  };
-},
+  // 📄 שליפת פרויקט לפי ID כולל חשבוניות + הזמנות + ספקים
+  async getProjectById(projectId) {
+    if (!isValidId(projectId)) throw new Error("ID לא תקין");
 
-  // ✏️ עדכון פרויקט (מינימלי; משאיר שליטה למה לעדכן)
-  async updateProject(id, projectData = {}) {
-    if (!isValidId(id)) throw new Error('ID לא תקין');
+    const project = await Project.findById(projectId).lean();
+    if (!project) return null;
 
-    // הגנה רכה: לא מאפשרים לשנות _id/שדות מערכת
-    const disallow = ['_id', 'createdAt', 'updatedAt'];
-    disallow.forEach(k => delete projectData[k]);
+    const [invoices, orders] = await Promise.all([
+      Invoice.find({ projectId })
+        .populate({ path: "supplierId", select: "name phone bankDetails" })
+        .sort({ createdAt: -1 })
+        .lean(),
+      Order.find({ projectId })
+        .sort({ createdAt: -1 })
+        .lean(),
+    ]);
 
-    // אם רוצים לעדכן רק remainingBudget (כמו בקוד הישן) זה עדיין נתמך
+    return {
+      ...project,
+      invoices,
+      orders,
+    };
+  },
+
+  // ✏️ עדכון פרויקט
+  async updateProject(projectId, data = {}) {
+    if (!isValidId(projectId)) throw new Error("ID לא תקין");
+
+    const forbidden = ["_id", "createdAt", "updatedAt"];
+    forbidden.forEach((f) => delete data[f]);
+
     const updated = await Project.findByIdAndUpdate(
-      id,
-      { $set: projectData },
+      projectId,
+      { $set: data },
       { new: true, runValidators: true }
-    );
+    ).lean();
+
     return updated;
   },
 
-  // 🗑️ מחיקת פרויקט (מוחק גם חשבוניות/הזמנות ע"פ projectId)
-  async deleteProjectById(id) {
-    if (!isValidId(id)) throw new Error('❌ ID של הפרויקט לא תקין');
+  // 🗑️ מחיקת פרויקט כולל כל מה שמשויך אליו
+  async deleteProjectById(projectId) {
+    if (!isValidId(projectId)) throw new Error("ID לא תקין");
 
     const session = await mongoose.startSession();
-    try {
-      await session.withTransaction(async () => {
-        const proj = await Project.findById(id).session(session);
-        if (!proj) throw new Error('⚠️ פרויקט לא נמצא בבסיס הנתונים');
 
-        // מחיקת חשבוניות והזמנות לפי projectId (לא לפי projectName)
-        await Invoice.deleteMany({ projectId: id }).session(session);
-        await Order.deleteMany({ projectId: id }).session(session);
+    await session.withTransaction(async () => {
+      const project = await Project.findById(projectId).session(session);
+      if (!project) throw new Error("פרויקט לא נמצא");
 
-        // מחיקת הפרויקט
-        const del = await Project.findByIdAndDelete(id).session(session);
-        if (!del) throw new Error('❌ שגיאה במחיקת הפרויקט');
-      });
+      await Invoice.deleteMany({ projectId }).session(session);
+      await Order.deleteMany({ projectId }).session(session);
 
-      return { message: '✅ הפרויקט וכל המסמכים המשויכים נמחקו בהצלחה' };
-    } catch (err) {
-      console.error('❌ שגיאה במחיקת הפרויקט:', err.message);
-      throw new Error(err.message || '❌ שגיאה לא ידועה במחיקת הפרויקט');
-    } finally {
-      session.endSession();
-    }
+      await Project.findByIdAndDelete(projectId).session(session);
+    });
+
+    session.endSession();
+    return { message: "הפרויקט נמחק בהצלחה" };
   },
 
-  // 🔎 חיפוש פרויקטים לפי שם
+  // 🔎 חיפוש לפי שם
   async search(query) {
-    if (query === undefined || query === null) {
-      throw new Error('מילת חיפוש לא נמצאה');
-    }
-    const regex = query === '0' || !isNaN(query) ? String(query) : new RegExp(String(query), 'i');
-    return Project.find({ name: { $regex: regex } }).sort({ createdAt: -1 }).lean();
+    const regex = new RegExp(String(query).trim(), "i");
+
+    return Project.find({ name: { $regex: regex } })
+      .sort({ createdAt: -1 })
+      .lean();
   },
 
-  // 📦 הזמנות לפי projectId
+  // 📦 הזמנות לפי Project
   async getOrdersByProjectId(projectId) {
-    if (!isValidId(projectId)) throw new Error('ID לא תקין');
-    // עדיף לא להסתמך על project.orders אם הוא מערך מוטמע; נשלוף מהקולקציה
-    return Order.find({ projectId }).sort({ createdAt: -1 }).lean();
+    if (!isValidId(projectId)) throw new Error("ID לא תקין");
+
+    return Order.find({ projectId })
+      .sort({ createdAt: -1 })
+      .lean();
+  },
+
+  // 💵 חשבוניות לפי Project
+  async getInvoicesByProjectId(projectId) {
+    if (!isValidId(projectId)) throw new Error("ID לא תקין");
+
+    return Invoice.find({ projectId })
+      .populate({ path: "supplierId", select: "name phone bankDetails" })
+      .sort({ createdAt: -1 })
+      .lean();
   },
 };
 

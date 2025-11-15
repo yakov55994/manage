@@ -10,10 +10,10 @@ import {
 
 const router = express.Router();
 
-// Public routes
+// 🔓 פתוח
 router.post('/login', login);
 
-// Protected routes (Admin only)
+// 🔐 סגור למנהלים בלבד
 router.get('/', protect, requireAdmin, getAllUsers);
 router.post('/', protect, requireAdmin, createUser);
 router.put('/:id', protect, requireAdmin, updateUser);

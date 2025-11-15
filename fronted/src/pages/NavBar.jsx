@@ -13,12 +13,15 @@ import {
   UserPlus,
   Users
 } from 'lucide-react';
+import { useAuth } from '../context/AuthContext.jsx'
 
 const Sidebar = () => {
   const [activeItem, setActiveItem] = useState(null);
   const [query, setQuery] = useState('');
   const navigate = useNavigate(); // ניווט לחיפוש
 
+    const { isAdmin } = useAuth()
+  
   const handleSearch = () => {
     if (query.trim()) {
       navigate(`/search?query=${query}`);
@@ -57,6 +60,13 @@ return (
            { icon: Users, text: "הצגת ספקים", path: "/suppliers", desc: "כל הספקים" },
            { icon: ClipboardList, text: "דף סיכום", path: "/summary-page", desc: "סיכום כללי" },
            { icon: ListTodo, text: "משימות", path: "/Notes", desc: "רשימת משימות" },
+             ...(isAdmin ? [{
+    icon: ListTodo,
+    text: "ניהול משתמשים",
+    path: "/admin",
+    desc: "ניהול משתמשים והרשאות"
+  }] : []),
+
          ].map((item, index) => (
            <Link
              key={index}

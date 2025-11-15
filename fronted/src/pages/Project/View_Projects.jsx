@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import api from '../../api/api';
+import api, { apiWithProject } from '../../api/api';
 import { ClipLoader } from 'react-spinners';
 import { useNavigate } from 'react-router-dom';
 import * as XLSX from "xlsx";
@@ -491,7 +491,7 @@ const exportCustomReport = () => {
     const fetchProjects = async () => {
       try {
         setLoading(true);
-        const response = await api.get('/projects');
+        const response = await apiWithProject("get", '/projects')
         setProjects(response.data);
         setAllProjects(response.data);
         setLoading(false);

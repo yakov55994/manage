@@ -592,7 +592,7 @@ const getFilteredInvoices = () => {
   useEffect(() => {
     const fetchInvoices = async () => {
       try {
-        const res = await api.get("/invoices"); // או הנתיב שלך
+const res = await api.get("/invoices/project/all");
         setAllInvoices(arr(res.data));
         setInvoices(arr(res.data));
       } catch (error) {
@@ -611,12 +611,7 @@ const getFilteredInvoices = () => {
   const handleDelete = async () => {
     try {
       if (invoiceToDelete) {
-        await api.delete(`/invoices/${invoiceToDelete._id}`, {
-          data: {
-            invoiceNumber: invoiceToDelete.invoiceNumber,
-            projectName: invoiceToDelete.projectName,
-          },
-        });
+        await api.delete(`/invoices/project/${invoiceToDelete.projectId}/${invoiceToDelete._id}`);
 
         const updatedInvoices = allInvoices.filter(
           (invoice) => invoice._id !== invoiceToDelete._id
@@ -667,56 +662,55 @@ const getFilteredInvoices = () => {
     navigate(`/invoices/${id}`);
   };
 
-  const togglePaymentStatus = async (invoice) => {
-    try {
-      if (invoice.paid !== "כן") {
-        setPaymentCapture({
-          open: true,
-          invoice,
-          defaultDate: new Date().toISOString().slice(0, 10),
-          defaultMethod: "",
-        });
-        return;
-      }
-
-      const { data: updated } = await api.put(
-        `/invoices/${invoice._id}/status`,
-        {
-          paid: "לא",
-          paymentDate: null,
-          paymentMethod: "",
-        }
-      );
-      setInvoices((prev) =>
-        prev.map((inv) => (inv._id === invoice._id ? updated : inv))
-      );
-      setAllInvoices((prev) =>
-        prev.map((inv) => (inv._id === invoice._id ? updated : inv))
-      );
-      toast.success("סטטוס התשלום עודכן ל - לא", {
-        className: "sonner-toast success rtl",
+const togglePaymentStatus = async (invoice) => {
+  try {
+    // אם החשבונית עדיין לא שולמה → פותח את מודאל לכידת תשלום
+    if (invoice.paid !== "כן") {
+      setPaymentCapture({
+        open: true,
+        invoice,
+        defaultDate: new Date().toISOString().slice(0, 10),
+        defaultMethod: "",
       });
-    } catch (err) {
-      console.error(err);
-      toast.error("שגיאה בעדכון סטטוס התשלום", {
-        className: "sonner-toast error rtl",
-      });
+      return;
     }
-  };
+
+    // אם החשבונית כן שולמה → עדכון ל"לא"
+    const { data: updated } = await api.put(
+      `/invoices/project/${invoice.projectId}/${invoice._id}/status`,
+      { paid: "לא" }
+    );
+
+    setInvoices((prev) =>
+      prev.map((inv) => (inv._id === invoice._id ? updated : inv))
+    );
+
+    setAllInvoices((prev) =>
+      prev.map((inv) => (inv._id === invoice._id ? updated : inv))
+    );
+
+    toast.success("סטטוס התשלום עודכן ל - לא", {
+      className: "sonner-toast success rtl",
+    });
+  } catch (err) {
+    console.error(err);
+    toast.error("שגיאה בעדכון סטטוס התשלום", {
+      className: "sonner-toast error rtl",
+    });
+  }
+};
+
 
   const handleSavePaymentCapture = async ({ paymentDate, paymentMethod }) => {
     const invoice = paymentCapture.invoice;
     if (!invoice) return;
 
     try {
-      const { data: updated } = await api.put(
-        `/invoices/${invoice._id}/status`,
-        {
-          paid: "כן",
-          paymentDate,
-          paymentMethod,
-        }
-      );
+const { data: updated } = await api.put(
+  `/invoices/project/${invoice.projectId}/${invoice._id}/status`,
+  { paid: "כן", paymentDate, paymentMethod }
+);
+
 
       setInvoices((prev) =>
         prev.map((inv) => (inv._id === invoice._id ? updated : inv))

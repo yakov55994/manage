@@ -6,7 +6,7 @@ import { ShoppingCart, Edit, Trash2, FileText, Calendar, User, Hash, DollarSign,
 import { toast } from 'sonner';
 
 const OrderDetailsPage = () => {
-  const { id } = useParams();
+const { projectId, id } = useParams();
   const [order, setOrder] = useState(null);
   const [confirmOpen, setConfirmOpen] = useState(false);
   const [deleting, setDeleting] = useState(false);
@@ -16,7 +16,7 @@ const OrderDetailsPage = () => {
   useEffect(() => {
     const fetchInvoiceDetails = async () => {
       try {
-        const response = await api.get(`/orders/${id}`);
+const response = await api.get(`/projects/${projectId}/orders/${id}`);
         const orderData = response.data;
 
         if (orderData.files && orderData.files.length > 0) {
@@ -127,14 +127,14 @@ const OrderDetailsPage = () => {
   };
 
   const handleEdit = (id) => {
-    navigate(`/update-order/${id}`);
+navigate(`/projects/${projectId}/orders/${id}/edit`);
   };
 
   const handleDelete = async () => {
     try {
       if (!order?._id) return;
       setDeleting(true);
-      await api.delete(`/orders/${order._id}`);
+await api.delete(`/projects/${projectId}/orders/${order._id}`);
       toast.success("ההזמנה נמחקה בהצלחה", {
         className: "sonner-toast success rtl",
       });
@@ -161,7 +161,7 @@ const OrderDetailsPage = () => {
             <h1 className="text-3xl font-bold text-red-600 mb-2">הזמנה לא נמצאה</h1>
             <p className="text-gray-600 text-center mb-6">לא ניתן למצוא את ההזמנה המבוקשת</p>
             <button
-              onClick={() => navigate('/orders')}
+              onClick={() => navigate(`/projects/${projectId}/orders`)}
               className="px-6 py-3 bg-gradient-to-r from-orange-500 to-amber-500 text-white rounded-xl hover:from-orange-600 hover:to-amber-600 transition-all duration-300 shadow-lg hover:shadow-xl font-medium"
             >
               חזור לרשימת הזמנות

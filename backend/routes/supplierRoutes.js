@@ -1,50 +1,50 @@
-import express from 'express';
-import { supplierController } from '../controller/SupplierController.js';
+// routes/supplierRoutes.js
+import express from "express";
+import supplierController from "../controller/supplierController.js";
+import { protect } from "../middleware/auth.js";
+import { checkProjectPermission } from "../middleware/permissions.js";
 
-// לעבוד תחת base: /api/projects/:projectId/suppliers
 const router = express.Router({ mergeParams: true });
 
-// הגנה + scope
-
-// 🔎 חיפוש ספקים (קריאה)
 router.get(
-  '/search',
+  "/suppliers",
+  protect,
+  checkProjectPermission("suppliers", "view"),
+  supplierController.getSuppliersByProject
+);
+
+router.get(
+  "/suppliers/search",
+  protect,
+  checkProjectPermission("suppliers", "view"),
   supplierController.search
 );
 
-// ➕ יצירת ספק (כתיבה)
-// מומלץ ב-controller: להצמיד supplier.project = req.params.projectId אם יש שדה כזה בסכמה
 router.post(
-  '/',
-
+  "/suppliers",
+  protect,
+  checkProjectPermission("suppliers", "edit"),
   supplierController.createSupplier
 );
 
-// 📃 כל הספקים (קריאה)
 router.get(
-  '/',
-  supplierController.getAllSuppliers
-);
-
-// 📄 ספק לפי ID (קריאה)
-router.get(
-  '/:id',
-
+  "/suppliers/:id",
+  protect,
+  checkProjectPermission("suppliers", "view"),
   supplierController.getSupplierById
 );
 
-// ✏️ עדכון ספק (כתיבה)
 router.put(
-  '/:id',
-
-
+  "/suppliers/:id",
+  protect,
+  checkProjectPermission("suppliers", "edit"),
   supplierController.updateSupplier
 );
 
-// 🗑️ מחיקת ספק (מחיקה)
 router.delete(
-  '/:id',
-
+  "/suppliers/:id",
+  protect,
+  checkProjectPermission("suppliers", "edit"),
   supplierController.deleteSupplier
 );
 

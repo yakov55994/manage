@@ -1,25 +1,26 @@
-import axios from 'axios';
+import axios from "axios";
 
-const baseURL = import.meta.env.MODE === 'production' 
-    ? 'https://management-server-owna.onrender.com/api'
-    : 'http://localhost:3000/api';
+const baseURL =
+  import.meta.env.MODE === "development"
+    ? "http://localhost:3000/api"
+    : "https://management-server-owna.onrender.com/api";
 
 const api = axios.create({
-    baseURL,
-    withCredentials: true,
-    headers: {
-        'Content-Type': 'application/json'
-    }
+  baseURL,
+  withCredentials: true,
+  headers: {
+    "Content-Type": "application/json",
+  },
 });
 
 api.interceptors.request.use(
   (config) => {
-    const token = localStorage.getItem('token');
-    console.log('📤 Request:', config.url, 'Token:', token ? '✅' : '❌');
-    
+    const token = localStorage.getItem("token");
+    console.log("📤 Request:", config.url, "Token:", token ? "✅" : "❌");
+
     if (token) {
       config.headers.Authorization = `Bearer ${token}`;
-      console.log('🔑 Authorization header set');
+      console.log("🔑 Authorization header set");
     }
     return config;
   },
@@ -30,20 +31,43 @@ api.interceptors.request.use(
 
 api.interceptors.response.use(
   (response) => {
-    console.log('✅ Response:', response.config.url, 'Status:', response.status);
     return response;
   },
   (error) => {
-    console.error('❌ Response error:', error.config?.url, 'Status:', error.response?.status);
-    
-    if (error.response?.status === 401) {
-      console.warn('🚫 401 - Triggering logout event');
-      
-      // 🆕 במקום למחוק ישירות - שלח אירוע
-      window.dispatchEvent(new CustomEvent('auth:logout'));
-    }
+    console.log("🚨 INTERCEPTOR FIRED:", {
+      url: error.config?.url,
+      status: error.response?.status,
+      message: error.response?.data?.message,
+    });
+
     return Promise.reject(error);
   }
 );
 
 export default api;
+
+// 🟦 פונקציה חכמה שמנהלת קריאות עם /projects/:id רק למשתמש רגיל
+export const apiWithProject = async (method, path, body = null) => {
+  const user = JSON.parse(localStorage.getItem("user"));
+  const projectId = localStorage.getItem("selectedProjectId");
+
+  // מנהל → תמיד הולך לנתיב הרגיל
+  if (user?.role === "admin") {
+    return api({
+      method,
+      url: path,
+      data: body,
+    });
+  }
+
+  // משתמש רגיל → חייב projectId
+  if (!projectId) {
+    throw new Error("חסר projectId למשתמש רגיל");
+  }
+
+  return api({
+    method,
+    url: `/projects/${projectId}${path}`,
+    data: body,
+  });
+};

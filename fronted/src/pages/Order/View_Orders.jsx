@@ -327,24 +327,37 @@ const OrdersPage = () => {
       ? res
       : [];
 
-  useEffect(() => {
-    const fetchOrders = async () => {
-      try {
-        setLoading(true)
-        const res = await api.get("/orders"); // או הנתיב שלך
-        setAllOrders(arr(res.data));
-        setOrders(arr(res.data));
-        setLoading(false)
-      } catch (error) {
-        console.error("Error fetching orders:", error);
-        toast.error("שגיאה בטעינת הזמנות", {
-          className: "sonner-toast error rtl",
-        });
-        setLoading(false);
+const authUser = JSON.parse(localStorage.getItem("auth_user") || "{}");
+const selectedProjectId = authUser?.selectedProject;
+
+useEffect(() => {
+  const fetchOrders = async () => {
+    try {
+      if (!selectedProjectId) {
+        toast.error("לא נבחר פרויקט");
+        return;
       }
-    };
-    fetchOrders();
-  }, []);
+
+      setLoading(true);
+
+      const res = await api.get(`/orders/project/${selectedProjectId}`);
+
+      setAllOrders(arr(res.data));
+      setOrders(arr(res.data));
+
+      setLoading(false);
+    } catch (error) {
+      console.error("Error fetching orders:", error);
+      toast.error("שגיאה בטעינת הזמנות", {
+        className: "sonner-toast error rtl",
+      });
+      setLoading(false);
+    }
+  };
+
+  fetchOrders();
+}, []);
+
 
   useEffect(() => {
   if (!showReportModal) return;
@@ -354,34 +367,36 @@ const OrdersPage = () => {
 }, [showReportModal]);
 
 
-  const handleDelete = async () => {
-    if (!orderToDelete) {
-      toast.error("לא נבחרה הזמנה למחיקה או שה-ID לא תקין", {
-        className: "sonner-toast error rtl",
-      });
-      return;
-    }
+ const handleDelete = async () => {
+  if (!orderToDelete) {
+    toast.error("לא נבחרה הזמנה למחיקה", {
+      className: "sonner-toast error rtl",
+    });
+    return;
+  }
 
-    try {
-      await api.delete(`/orders/${orderToDelete}`);
-      setOrders((prevOrders) =>
-        prevOrders.filter((order) => order._id !== orderToDelete)
-      );
-      setAllOrders((prevOrders) =>
-        prevOrders.filter((order) => order._id !== orderToDelete)
-      );
-      setShowModal(false);
-      toast.success("ההזמנה נמחקה בהצלחה", {
-        className: "sonner-toast success rtl",
-      });
-    } catch (error) {
-      toast.error("שגיאה במחיקת הזמנה", {
-        className: "sonner-toast error rtl",
-      });
-    } finally {
-      setLoading(false);
-    }
-  };
+  try {
+    await api.delete(`/orders/${orderToDelete}`, {
+      params: { projectId: selectedProjectId }
+    });
+
+    setOrders(prev => prev.filter(o => o._id !== orderToDelete));
+    setAllOrders(prev => prev.filter(o => o._id !== orderToDelete));
+
+    setShowModal(false);
+
+    toast.success("ההזמנה נמחקה בהצלחה", {
+      className: "sonner-toast success rtl",
+    });
+  } catch (error) {
+    toast.error("שגיאה במחיקת הזמנה", {
+      className: "sonner-toast error rtl",
+    });
+  } finally {
+    setLoading(false);
+  }
+};
+
 
   const handleEdit = (id) => {
     navigate(`/update-order/${id}`);

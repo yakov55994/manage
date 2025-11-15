@@ -1,107 +1,76 @@
-// services/SupplierService.js
-import Supplier from '../models/Supplier.js';
-import mongoose from 'mongoose';
+// services/supplierService.js
+import Supplier from "../models/Supplier.js";
+import Project from "../models/Project.js";
+import Invoice from "../models/Invoice.js";
+import mongoose from "mongoose";
 
-function assertProject(projectId) {
-  if (!projectId) throw new Error('projectId is required');
-  if (!mongoose.Types.ObjectId.isValid(projectId)) throw new Error('Invalid projectId');
-}
-
-export const supplierService = {
-  // ➕ יצירת ספק חדש בפרויקט
-  async createSupplier(supplierData) {
-    try {
-      const { project } = supplierData || {};
-      assertProject(project);
-
-      // (אופציונלי) מניעת כפילות שם ספק בתוך אותו פרויקט
-      if (supplierData?.name) {
-        const dup = await Supplier.findOne({ name: supplierData.name.trim(), project });
-        if (dup) {
-          throw new Error('כבר קיים ספק בשם זה בפרויקט');
-        }
-      }
-
-      const supplier = new Supplier(supplierData);
-      return await supplier.save();
-    } catch (error) {
-      throw new Error(`שגיאה ביצירת ספק: ${error.message}`);
-    }
-  },
-
-  // 🔎 חיפוש ספקים בפרויקט
-    async search(query) {
-    if (query === undefined || query === null) {
-      throw new Error('מילת חיפוש לא נמצאה');
-    }
-    const regex = query === '0' || !isNaN(query) ? String(query) : new RegExp(String(query), 'i');
-    return Supplier.find({ name: { $regex: regex } }).sort({ createdAt: -1 }).lean();
-  },
-
-  // 📃 כל הספקים עם פילטר חופשי (ה־controller מעביר { project: projectId, ... })
-async  getAllSuppliers() {
-  const suppliers = await Supplier.aggregate([
-    { $sort: { createdAt: -1 } },
-    {
-      $lookup: {
-        from: 'invoices',
-        localField: 'invoices',
-        foreignField: '_id',
-        as: 'invoices'
-      }
+const supplierService = {
+    // רשימת ספקים לפי פרויקט
+    async getSuppliersByProject(projectId) {
+        return Supplier.find({ projects: projectId }).sort({ name: 1 });
     },
-    { $addFields: { invoicesCount: { $size: '$invoices' } } },
-    { $project: { invoices: 0 } } // לא להחזיר את הרשימה הכבדה, רק ספירה
-  ]);
-  return suppliers;
-},
 
+    // יצירת ספק + שיוך לפרויקט
+    async createSupplier(projectId, data) {
+        const supplier = new Supplier({
+            ...data,
+            projects: [projectId]
+        });
 
-  // 📄 ספק לפי ID בפרויקט
-  async getSupplierById(id) {
-    try {
-      if (!mongoose.Types.ObjectId.isValid(id)) throw new Error('Invalid supplier id');
+        await supplier.save();
 
-      const supplier = await Supplier.findOne({ _id: id }).populate("name");
-      if (!supplier) throw new Error('ספק לא נמצא');
-      return supplier;
-    } catch (error) {
-      throw new Error(`שגיאה בקבלת ספק: ${error.message}`);
+        // לא חובה להוסיף את הספק לפרויקט (לא צריך שם קשר)
+        return supplier;
+    },
+
+    // שליפת ספק בודד (רק אם שייך לפרויקט)
+    async getSupplierById(projectId, supplierId) {
+        return Supplier.findOne({
+            _id: supplierId,
+            projects: projectId
+        });
+    },
+
+    // עדכון ספק
+    async updateSupplier(projectId, supplierId, data) {
+        return Supplier.findOneAndUpdate(
+            { _id: supplierId, projects: projectId },
+            { $set: data },
+            { new: true }
+        );
+    },
+
+    // מחיקה מוחלטת של ספק + חשבוניות שלו
+    async deleteSupplier(projectId, supplierId) {
+        const supplier = await Supplier.findOne({
+            _id: supplierId,
+            projects: projectId
+        });
+
+        if (!supplier) return null;
+
+        // מוחקים חשבוניות של הספק
+        await Invoice.deleteMany({ supplierId });
+
+        // מוחקים את הספק
+        await supplier.deleteOne();
+
+        return true;
+    },
+
+    // חיפוש ספקים בפרויקט
+    async search(projectId, q) {
+        const regex = new RegExp(q, "i");
+
+        return Supplier.find({
+            projects: projectId,
+            $or: [
+                { name: regex },
+                { phone: regex },
+                { business_tax: regex }
+            ]
+        });
     }
-  },
-
-  // ✏️ עדכון ספק בפרויקט
-  async updateSupplier(projectId, id, updateData) {
-    try {
-      assertProject(projectId);
-      if (!mongoose.Types.ObjectId.isValid(id)) throw new Error('Invalid supplier id');
-
-      // לא מאפשרים לשנות project מבחוץ
-      if ('project' in updateData) delete updateData.project;
-
-      const supplier = await Supplier.findOneAndUpdate(
-        { _id: id, project: projectId },
-        updateData,
-        { new: true, runValidators: true }
-      );
-      if (!supplier) throw new Error('ספק לא נמצא');
-      return supplier;
-    } catch (error) {
-      throw new Error(`שגיאה בעדכון ספק: ${error.message}`);
-    }
-  },
-
-  // 🗑️ מחיקת ספק בפרויקט
-  async deleteSupplier(projectId, id) {
-    try {
-      assertProject(projectId);
-      if (!mongoose.Types.ObjectId.isValid(id)) throw new Error('Invalid supplier id');
-
-      const supplier = await Supplier.findOneAndDelete({ _id: id, project: projectId });
-      if (!supplier) throw new Error('ספק לא נמצא');
-      return supplier;
-    } catch (error) {
-      throw new Error(`שגיאה במחיקת ספק: ${error.message}`);
-    }
-  },
 };
+
+export default supplierService;
