@@ -12,39 +12,40 @@ const api = axios.create({
   },
 });
 
+// =========================
+// REQUEST INTERCEPTOR
+// =========================
 api.interceptors.request.use(
   (config) => {
     const token = localStorage.getItem("token");
-
-    if (token) {
-      config.headers.Authorization = `Bearer ${token}`;
-    }
+    if (token) config.headers.Authorization = `Bearer ${token}`;
     return config;
   },
-  (error) => {
-    return Promise.reject(error);
-  }
+  (error) => Promise.reject(error)
 );
 
+// =========================
+// RESPONSE INTERCEPTOR
+// =========================
 api.interceptors.response.use(
-  (response) => {
-    return response;
-  },
+  (response) => response,
+
   (error) => {
+    // לוג מסודר לשגיאות
+    console.error("❌ API ERROR:", {
       url: error.config?.url,
       status: error.response?.status,
       message: error.response?.data?.message,
     });
 
-    // 👇 כאן ההפניה הפשוטה
+    // הפניה לדף אין גישה
     if (error.response?.status === 403) {
       window.location.href = "/no-access";
-      return; // שלא ימשיך
+      return;
     }
 
     return Promise.reject(error);
   }
 );
-
 
 export default api;
