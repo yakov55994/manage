@@ -194,7 +194,6 @@ const SearchResults = () => {
                     )}
                     {type === 'supplier' && (
                         <>
-                                {console.log(item)}
 
                             <h3 className="text-xl font-bold truncate">{item.name || item.companyName || 'ספק'}</h3>
                             <p className="text-white/90">

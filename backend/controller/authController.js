@@ -13,11 +13,9 @@ const generateToken = (userId) => {
 
 // התחברות
 export const login = async (req, res) => {
-    console.log('[AUTH] /login hit', req.body?.username);
 
   try {
     const { username, password } = req.body;
-    console.log("req.body", req.body)
 
     if (!username || !password) {
       return res.status(400).json({

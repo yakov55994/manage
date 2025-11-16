@@ -37,7 +37,6 @@ const Notes = () => {
                 const response = await api.post('/notes', { 
                     text: inputText
                 });
-                console.log("Response data:", response.data); // בדיקת התגובה
                 
                 // בדיקה אם התגובה תקינה
                 const newNote = response.data.note || response.data;

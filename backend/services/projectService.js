@@ -70,9 +70,6 @@ export default {
   },
 
   async updateProject(user, projectId, data) {
-    if (user.role !== "admin")
-      throw new Error("אין הרשאה");
-
     return Project.findByIdAndUpdate(projectId, data, { new: true });
   },
 

@@ -34,27 +34,21 @@ cloudinary.v2.config({
 
 router.delete('/delete-cloudinary', async (req, res) => {
   try {
-    console.log('🗑️ בקשת מחיקה מ-Cloudinary התקבלה:', req.body);
     
     const { publicId, resourceType } = req.body;
     
     if (!publicId) {
-      console.log('❌ חסר publicId');
       return res.status(400).json({ 
         error: 'publicId is required',
         received: req.body 
       });
     }
 
-    console.log(`🔍 מנסה למחוק קובץ עם publicId: ${publicId}`);
-    console.log(`📂 resourceType: ${resourceType || 'auto'}`);
-
     // מחיקה ישירה מ-Cloudinary (ללא נגיעה בDB!)
     const result = await cloudinary.v2.uploader.destroy(publicId, {
       resource_type: resourceType || 'raw'
     });
 
-    console.log('✅ תוצאת מחיקה מ-Cloudinary:', result);
 
     if (result.result === 'ok') {
       res.json({ 

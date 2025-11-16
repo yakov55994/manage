@@ -20,7 +20,6 @@ export default function MoveInvoiceModal({
       try {
         // הביא רק שדות הכרחיים (שמור כמו שה־API שלך תומך)
         const { data } = await api.get("/projects");
-        console.log(data)
         setProjects(Array.isArray(data.data) ? data.data : (data?.projects || []));
       } catch (err) {
         console.error(err);

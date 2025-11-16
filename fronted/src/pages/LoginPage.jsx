@@ -27,11 +27,9 @@ const handleSubmit = async (e) => {
   setLoading(true);
   
   try {
-    console.log('🔐 Attempting login...');
     
     const { data } = await api.post("/users/login", { username, password });
     
-    console.log('📦 Server response:', data);
     
     if (!data?.token) {
       throw new Error("לא התקבל טוקן מהשרת");
@@ -42,17 +40,12 @@ const handleSubmit = async (e) => {
     localStorage.setItem('user', JSON.stringify(data.user));
     api.defaults.headers.common['Authorization'] = `Bearer ${data.token}`;
     
-    console.log('💾 Saved to localStorage');
-    console.log('Token:', localStorage.getItem('token') ? '✅' : '❌');
-    console.log('User:', localStorage.getItem('user') ? '✅' : '❌');
-    
     // עדכן את ה-context
     await login({ token: data.token, user: data.user });
     
     // 🆕 המתן 100ms כדי לוודא שהכל נשמר
     await new Promise(resolve => setTimeout(resolve, 100));
     
-    console.log('✅ Login complete!');
     
     toast.success("ברוך/ה הבא/ה 🙂", { className: "sonner-toast success rtl" });
     

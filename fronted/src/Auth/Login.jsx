@@ -26,7 +26,6 @@ const handleSubmit = async (e) => {
   try {
     // שרת צריך להחזיר: { token, user: {_id, username, role} }
   const { data } = await api.post("/users/login", { username, password });
-  console.log(data);
       if (!data?.token) throw new Error("לא התקבל טוקן מהשרת");
       await login({ token: data.token, user: data.user }); // עדכון ה־AuthContext
       toast.success("ברוך/ה הבא/ה 🙂", { className: "sonner-toast success rtl" });

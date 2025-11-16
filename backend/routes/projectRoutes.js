@@ -1,5 +1,5 @@
 import express from "express";
-import { protect, requireAdmin } from "../middleware/auth.js";
+import { protect, requireAdmin, requireProjectAccess } from "../middleware/auth.js";
 import projectController from "../controller/projectControllers.js";
 import { can } from "../middleware/auth.js";
 
@@ -23,9 +23,10 @@ router.post("/",
 
 router.put("/:projectId",
   protect,
-  requireAdmin,
+  requireProjectAccess("edit"),
   projectController.updateProject
 );
+
 
 router.delete("/:projectId",
   protect,

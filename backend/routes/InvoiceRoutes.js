@@ -5,46 +5,54 @@ import { checkAccess } from "../middleware/auth.js";
 
 const router = express.Router();
 
-router.get("/", protect, invoiceController.getInvoices);
-
-router.get("/:id",
-  protect,
-  checkAccess("invoice", "view"),
-  invoiceController.getInvoiceById
-);
-
+// 🟢 תמיד קודם ROUTES עם שמות!
 router.get(
   "/check/duplicate",
   protect,
   invoiceController.checkDuplicate
 );
 
+// 🟢 אח"כ ה־root
+router.get("/", protect, invoiceController.getInvoices);
 
-router.post("/",
+// 🟢 ואז כל ה־id
+router.get(
+  "/:id",
+  protect,
+  checkAccess("invoice", "view"),
+  invoiceController.getInvoiceById
+);
+
+router.post(
+  "/",
   protect,
   checkAccess("invoice", "edit"),
   invoiceController.createInvoice
 );
 
-router.put("/:id/edit",
+router.put(
+  "/:id/edit",
   protect,
   checkAccess("invoice", "edit"),
   invoiceController.updateInvoice
 );
 
-router.put("/:id/status",
+router.put(
+  "/:id/status",
   protect,
   checkAccess("invoice", "edit"),
   invoiceController.updatePaymentStatus
 );
 
-router.put("/:id/move",
+router.put(
+  "/:id/move",
   protect,
   checkAccess("invoice", "edit"),
   invoiceController.moveInvoice
 );
 
-router.delete("/:id",
+router.delete(
+  "/:id",
   protect,
   checkAccess("invoice", "edit"),
   invoiceController.deleteInvoice

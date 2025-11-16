@@ -46,7 +46,6 @@ const CreateInvoice = () => {
     const fetchProjects = async () => {
       try {
         const response = await api.get("/projects");
-        console.log(response);
         setProjects(response.data?.data || []);
       } catch (err) {
         toast.error("שגיאה בטעינת הפרויקטים", {

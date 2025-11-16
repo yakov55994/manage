@@ -13,25 +13,25 @@ router.get(
 
 router.get("/:id",
   protect,
-  checkAccess("suppliers", "view"),
+  checkAccess("supplier", "view"),
   supplierController.getSupplierById
 );
 
 router.post("/",
   protect,
-  checkAccess("suppliers", "edit"),
+  checkAccess("supplier", "edit"),
   supplierController.createSupplier
 );
 
 router.put("/:id",
   protect,
-  checkAccess("suppliers", "edit"),
+  checkAccess("supplier", "edit"),
   supplierController.updateSupplier
 );
 
 router.delete("/:id",
   protect,
-  checkAccess("suppliers", "edit"),
+  checkAccess("supplier", "edit"),
   supplierController.deleteSupplier
 );
 

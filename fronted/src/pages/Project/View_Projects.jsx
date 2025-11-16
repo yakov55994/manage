@@ -70,9 +70,6 @@ const ProjectsPage = ({ initialProjects = [] }) => {
 
   const { user, isAdmin } = useAuth();
 
-  console.log("👤 USER FROM AUTH:", user);
-  console.log("🔑 USER.permissions:", user?.permissions);
-
   const navigate = useNavigate();
 
   const formatNumber = (num) => num?.toLocaleString("he-IL");
@@ -570,13 +567,10 @@ const ProjectsPage = ({ initialProjects = [] }) => {
           String(p.project?._id || p.project)
         );
 
-        console.log("🔐 Allowed project IDs:", allowedProjectIds);
 
         const filtered = data.filter((p) =>
           allowedProjectIds.includes(String(p._id))
         );
-
-        console.log("📌 Projects allowed for this user:", filtered);
 
         setProjects(filtered);
         setAllProjects(filtered);
@@ -605,7 +599,6 @@ const ProjectsPage = ({ initialProjects = [] }) => {
 const handleDelete = async () => {
   try {
     if (projectToDelete) {
-      console.log("projectToDelete:", projectToDelete);
 
       await api.delete(`/projects/${projectToDelete}`);
 

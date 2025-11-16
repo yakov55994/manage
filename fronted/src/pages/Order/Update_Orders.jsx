@@ -38,7 +38,6 @@ const OrderEditPage = () => {
       setLoading(true);
       try {
         const response = await api.get(`/orders/${id}`);
-        console.log(response)
         const data = response.data.data;
         setProjectName(data.projectName);
         setOrder(data);
@@ -120,9 +119,6 @@ const OrderEditPage = () => {
       return;
     }
 
-    console.log("=== DELETING FILE ===");
-    console.log("File to delete:", fileToDelete);
-
     if (fileToDelete.isLocal) {
       const newFiles = [...files];
       newFiles.splice(fileIndex, 1);
@@ -148,7 +144,6 @@ const OrderEditPage = () => {
 
       if (publicId) {
         try {
-          console.log(`מנסה למחוק עם publicId: ${publicId}`);
 
           await api.delete("/upload/delete-cloudinary", {
             data: {
@@ -160,7 +155,6 @@ const OrderEditPage = () => {
           toast.success("הקובץ נמחק בהצלחה מ-Cloudinary", {
             className: "sonner-toast success rtl",
           });
-          console.log("✅ נמחק בהצלחה מ-Cloudinary");
         } catch (deleteError) {
           console.error(
             "מחיקה מ-Cloudinary נכשלה:",

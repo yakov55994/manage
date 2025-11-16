@@ -45,7 +45,6 @@ const SupplierDetailsPage = () => {
     const fetchSupplierDetails = async () => {
       try {
         const res = await api.get(`/suppliers/${id}`);
-        console.log(res.data.data);
       setSupplier(res?.data?.data ?? res?.data ?? res);
       } catch (error) {
         console.error("Error fetching supplier details:", error);
@@ -65,7 +64,6 @@ useEffect(() => {
     setInvoicesLoading(true);
     try {
       const res = await api.get(`/suppliers/${id}`);
-      console.log("RAW:", res.data.data);
 
       const supplier = res?.data?.data;
 
@@ -223,7 +221,6 @@ const getActionState = (invoice) => {
                     <Sparkles className="w-4 h-4 text-orange-500" />
                     <span className="text-sm font-medium text-slate-600">
                       {supplier.name}
-                      {console.log(supplier)}
                     </span>
                   </div>
                 </div>

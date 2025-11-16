@@ -336,7 +336,6 @@ const OrdersPage = () => {
         setLoading(true);
 
         const res = await api.get(`/orders`);
-        console.log(res)
         setAllOrders(arr(res.data.data));
         setOrders(arr(res.data.data));
 

@@ -12,8 +12,50 @@ const normalizeUser = (u) => {
 
   return {
     ...u,
-    permissions: Array.isArray(u.permissions) ? u.permissions : [], // ← חשוב!
+    permissions: Array.isArray(u.permissions) ? u.permissions : [], 
   };
+};
+
+// =========================
+// PERMISSION HELPERS
+// =========================
+const levels = { none: 0, view: 1, edit: 2 };
+
+// מקבל הרשאת פרויקט לפי ה־ID
+const getProjectPerm = (user, projectId) => {
+  if (!user || !projectId) return null;
+  return user.permissions.find(
+    (p) => String(p.project) === String(projectId)
+  );
+};
+
+// האם המשתמש יכול לראות פרויקט
+const canViewProject = (user, projectId) => {
+  if (user?.role === "admin") return true;
+
+  const perm = getProjectPerm(user, projectId);
+  return perm && levels[perm.access] >= levels["view"];
+};
+
+// האם המשתמש יכול לערוך פרויקט
+const canEditProject = (user, projectId) => {
+  if (user?.role === "admin") return true;
+
+  const perm = getProjectPerm(user, projectId);
+  return perm && levels[perm.access] >= levels["edit"];
+};
+
+// האם המשתמש יכול לבצע פעולה על מודול (invoices/orders/...)
+const canAccessModule = (user, projectId, moduleName, required = "view") => {
+  if (user?.role === "admin") return true;
+
+  const perm = getProjectPerm(user, projectId);
+  if (!perm) return false;
+
+  return (
+    perm.modules &&
+    levels[perm.modules[moduleName]] >= levels[required]
+  );
 };
 
 export const AuthProvider = ({ children }) => {
@@ -61,31 +103,6 @@ export const AuthProvider = ({ children }) => {
   }, []);
 
   // =========================
-  // DEBOUNCED LOGOUT HANDLER
-  // =========================
-  useEffect(() => {
-    let logoutTimeout = null;
-
-    const handleLogout = () => {
-      if (logoutTimeout) clearTimeout(logoutTimeout);
-
-      logoutTimeout = setTimeout(() => {
-        const res = logout();
-        if (res.success) {
-          window.location.href = "/login";
-        }
-      }, 100);
-    };
-
-    window.addEventListener("auth:logout", handleLogout);
-
-    return () => {
-      if (logoutTimeout) clearTimeout(logoutTimeout);
-      window.removeEventListener("auth:logout", handleLogout);
-    };
-  }, []);
-
-  // =========================
   // LOGIN
   // =========================
   const login = async ({ token, user: userData }) => {
@@ -111,6 +128,14 @@ export const AuthProvider = ({ children }) => {
         isAdmin,
         isAuthenticated,
         loading,
+
+        // 🔥 פונקציות הרשאה חדשות
+        canViewProject: (projectId) => canViewProject(user, projectId),
+        canEditProject: (projectId) => canEditProject(user, projectId),
+        canViewModule: (projectId, module) =>
+          canAccessModule(user, projectId, module, "view"),
+        canEditModule: (projectId, module) =>
+          canAccessModule(user, projectId, module, "edit"),
       }}
     >
       {children}

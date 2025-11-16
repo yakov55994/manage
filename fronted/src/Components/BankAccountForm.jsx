@@ -31,13 +31,7 @@ const BankAccountForm = () => {
     e.preventDefault();
     const bankName = selectedBank?.bankName || "";
     const branch = branches.find((b) => b.branchCode === selectedBranchCode);
-    console.log({
-      bankCode: selectedBankCode,
-      bankName,
-      branchCode: selectedBranchCode,
-      branchCity: branch?.city,
-      accountNumber,
-    });
+
     alert("הפרטים נקלטו בהצלחה ✅");
   };
 

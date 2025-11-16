@@ -35,7 +35,6 @@ const ProjectDetailsPage = () => {
   const [loadingOrders, setLoadingOrders] = useState(true);
   const [loadingInvoices, setLoadingInvoices] = useState(true);
 
-  console.log(id);
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -46,9 +45,7 @@ const ProjectDetailsPage = () => {
         setLoadingInvoices(true);
 
         const response = await api.get(`/projects/${id}`);
-        console.log("response", response);
         const projectData = response.data?.data || {};
-        console.log("📌 PROJECT RESPONSE:", response);
 
         setProject(projectData);
         setOrders(projectData.orders || []);

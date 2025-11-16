@@ -173,7 +173,6 @@ const SupplierEditPage = () => {
         };
       }
 
-      console.log('Updating supplier with data:', supplierData);
 
       await api.put(`/suppliers/${id}`, supplierData);
 

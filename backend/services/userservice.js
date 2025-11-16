@@ -13,7 +13,9 @@ export const authenticateUser = async (username, password) => {
 };
 
 export const getAllUsers = () => {
-  return User.find().populate("permissions.project", "name").select("-password");
+  return User.find()
+  // .populate("permissions.project", "_id name")
+.select("-password");
 };
 
 export const createNewUser = async (data) => {
@@ -37,7 +39,8 @@ export const updateUser = async (id, data) => {
     data,
     { new: true, runValidators: true }
   )
-    .populate("permissions.project", "name")
+    // .populate("permissions.project", "_id name")
+
     .select("-password");
 
   return updated;

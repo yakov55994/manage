@@ -15,11 +15,9 @@ const api = axios.create({
 api.interceptors.request.use(
   (config) => {
     const token = localStorage.getItem("token");
-    console.log("📤 Request:", config.url, "Token:", token ? "✅" : "❌");
 
     if (token) {
       config.headers.Authorization = `Bearer ${token}`;
-      console.log("🔑 Authorization header set");
     }
     return config;
   },
@@ -33,7 +31,6 @@ api.interceptors.response.use(
     return response;
   },
   (error) => {
-    console.log("🚨 INTERCEPTOR FIRED:", {
       url: error.config?.url,
       status: error.response?.status,
       message: error.response?.data?.message,

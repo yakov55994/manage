@@ -5,43 +5,48 @@ import { checkAccess } from "../middleware/auth.js";
 
 const router = express.Router();
 
+// 🟢 קודם ROUTES שיש להם שמות ייחודיים
+router.post(
+  "/bulk",
+  protect,
+  checkAccess("order", "edit"),
+  orderController.createBulkOrders
+);
 
+// 🟢 root
 router.get(
   "/",
   protect,
   orderController.getOrders
 );
 
-
-router.get("/:id",
+// 🟢 לבסוף ID
+router.get(
+  "/:id",
   protect,
   checkAccess("order", "view"),
   orderController.getOrderById
 );
 
-router.post("/bulk",
-  protect,
-  checkAccess("order", "edit"),
-  orderController.createBulkOrders
-);
-
-router.post("/",
+router.post(
+  "/",
   protect,
   checkAccess("order", "edit"),
   orderController.createOrder
 );
 
-router.put("/:id/edit",
+router.put(
+  "/:id/edit",
   protect,
   checkAccess("order", "edit"),
   orderController.updateOrder
 );
 
-router.delete("/:id",
+router.delete(
+  "/:id",
   protect,
   checkAccess("order", "edit"),
   orderController.deleteOrder
 );
-
 
 export default router;

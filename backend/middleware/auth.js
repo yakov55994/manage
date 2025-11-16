@@ -23,7 +23,8 @@ export const protect = async (req, res, next) => {
     const decoded = jwt.verify(token, JWT_SECRET);
 
     const user = await User.findById(decoded.id)
-      .populate("permissions.project", "name") // זה לא משנה לשאילתא, רק לנתונים ללקוח
+      // .populate("permissions.project", "_id name")
+ // זה לא משנה לשאילתא, רק לנתונים ללקוח
       .select("-password");
 
     if (!user) return res.status(401).json({ message: "משתמש לא קיים" });
@@ -32,7 +33,6 @@ export const protect = async (req, res, next) => {
     req.user = user; // ⬅️ הכי חשוב
     next();
   } catch (err) {
-    console.log("❌ protect error:", err.message);
     return res.status(401).json({ message: "Token לא תקין" });
   }
 };
@@ -94,82 +94,130 @@ export const hasModuleAccess = (user, projectId, module, required) => {
 
   return true;
 };
+export function canAccessModule(user, projectId, moduleName, action) {
+  const perm = user.permissions.find(
+    (p) => String(p.project) === String(projectId)
+  );
+
+  if (!perm) return false;
+
+  const level = perm.modules?.[moduleName]; // "view" / "edit" / "none"
+
+  if (!level || level === "none") return false;
+
+  if (action === "view") return level === "view" || level === "edit";
+
+  if (action === "edit") return level === "edit";
+
+  return false;
+}
+
 
 export const checkAccess = (type, action) => {
+  
   return async (req, res, next) => {
     try {
+
       const user = req.user;
 
-      // 🔥 אדמין תמיד עובר — דילוג על כל הבדיקות
-      if (user.role === "admin") {
-        console.log(`🟢 ADMIN bypass for ${type}:${action}`);
-        return next();
-      }
+      // 🔥 אדמין תמיד עובר
+      if (user.role === "admin") return next();
 
-      // -----------------------------
-      // שלב 1 — משיכת האובייקט לפי ID
-      // -----------------------------
+      let item;
       const id = req.params.id || req.params.projectId;
-      let item = null;
 
-      if (type === "invoice") item = await Invoice.findById(id);
-      if (type === "order") item = await Order.findById(id);
-      if (type === "supplier") item = await Supplier.findById(id);
-      if (type === "project") item = await Project.findById(id);
+      // טעינת האייטם
+      switch (type) {
+        case "invoice": item = await Invoice.findById(id); break;
+        case "order": item = await Order.findById(id); break;
+        case "supplier": item = await Supplier.findById(id); break;
+        case "project": item = await Project.findById(id); break;
+        default:
+          return res.status(500).json({ message: "שגיאה בהרשאות" });
+      }
 
       if (!item) {
-        console.log(`❌ ${type} (${id}) not found`);
-        return res.status(404).json({ message: `${type} לא נמצא` });
+        return res.status(404).json({ message: "לא נמצא" });
       }
 
-      // -----------------------------
-      // שלב 2 — חילוץ projectId
-      // -----------------------------
+      // זיהוי פרויקט
       const projectId =
         item.projectId ||
         item.project ||
         (type === "project" ? item._id : null);
 
       if (!projectId) {
-        console.log(`❌ No projectId found for ${type} ${id}`);
-        return res.status(403).json({ message: "אין הרשאה לפרויקט זה" });
+        return res.status(400).json({ message: "לא נמצא projectId" });
       }
 
-      // -----------------------------
-      // שלב 3 — בדיקת גישה לפרויקט
-      // -----------------------------
+      // בדיקת גישה לפרויקט
       if (!canAccessProject(user, projectId)) {
-        console.log(
-          `❌ User ${user.username} cannot access project ${projectId}`
-        );
-        return res.status(403).json({ message: "אין גישה לפרויקט זה" });
+        return res.status(403).json({ message: "אין הרשאה לפרויקט" });
       }
 
-      // -----------------------------
-      // שלב 4 — בדיקת גישה למודול (חשבוניות/הזמנות/ספקים)
-      // -----------------------------
-      const moduleName = type + "s";
+      // בדיקת גישה למודול
+    const moduleName = 
+  type === "order" ? "orders" :
+  type === "invoice" ? "invoices" :
+  type === "supplier" ? "suppliers" :
+  type === "project" ? "projects" :
+  null;
 
-      if (!canAccessModule(user, projectId, moduleName, action)) {
-        console.log(
-          `❌ User ${user.username} cannot ${action} in module ${moduleName} of project ${projectId}`
-        );
-        return res.status(403).json({ message: "אין הרשאה לביצוע פעולה זו" });
-      }
+if (!moduleName) {
+  return res.status(500).json({ message: "שגיאה בהרשאות" });
+}
 
-      // -----------------------------
-      // אם עבר — הכל תקין
-      // -----------------------------
-      console.log(
-        `🟢 Access granted: user=${user.username}, module=${moduleName}, action=${action}, project=${projectId}`
-      );
+if (!canAccessModule(user, projectId, moduleName, action)) {
+  return res.status(403).json({ message: "אין הרשאה" });
+}
+
 
       next();
     } catch (err) {
-      console.error("❌ checkAccess error:", err);
       return res.status(403).json({ message: "אין הרשאה" });
     }
   };
 };
 
+// המשתמש חייב שיהיה לו הרשאה לפרויקט
+export function canAccessProject(user, projectId) {
+  const allowedProjects = user.permissions.map(p => {
+    return String(p.project?._id || p.project);
+  });
+
+  const current = String(projectId);
+
+  return allowedProjects.includes(current);
+}
+
+
+
+
+
+export const requireProjectAccess = (requiredAccess = "view") => {
+  return (req, res, next) => {
+    const user = req.user;
+    const projectId = req.params.projectId || req.params.id;
+
+    // אדמין תמיד עובר
+    if (user.role === "admin") return next();
+
+    const perm = user.permissions.find(
+      (p) => String(p.project) === String(projectId)
+    );
+
+    if (!perm) {
+      return res.status(403).json({ message: "אין גישה לפרויקט זה" });
+    }
+
+    // בדיקת רמת גישה
+    const levels = { none: 0, view: 1, edit: 2 };
+
+    if (levels[perm.access] < levels[requiredAccess]) {
+      return res.status(403).json({ message: "אין הרשאת גישה מתאימה" });
+    }
+
+    next();
+  };
+};
 
