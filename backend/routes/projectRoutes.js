@@ -1,49 +1,35 @@
 import express from "express";
+import { protect, requireAdmin } from "../middleware/auth.js";
 import projectController from "../controller/projectControllers.js";
-import { protect } from '../middleware/auth.js';
-import { checkProjectPermission } from "../middleware/permissions.js";
+import { can } from "../middleware/auth.js";
 
 const router = express.Router();
 
-// שליפה של כל הפרויקטים — כל אחד רק מה שמותר לו
-router.get(
-  "/",
+router.get("/",
   protect,
-  checkProjectPermission("projects", "view-list", false),
-  projectController.getAllProjects
+  projectController.getAllProjects // כבר מסודר לפי הרשאות
 );
 
-
-
-// יצירה
-router.post(
-  "/",
+router.get("/:projectId",
   protect,
-  checkProjectPermission("projects", "edit"),
-  projectController.createProject
-);
-
-// פרויקט ספציפי
-router.get(
-  "/:projectId",
-  protect,
-  checkProjectPermission("projects", "view"),
   projectController.getProjectById
 );
 
-// עדכון
-router.put(
-  "/:projectId",
+router.post("/",
   protect,
-  checkProjectPermission("projects", "edit"),
+  requireAdmin,
+  projectController.createProject
+);
+
+router.put("/:projectId",
+  protect,
+  requireAdmin,
   projectController.updateProject
 );
 
-// מחיקה
-router.delete(
-  "/:projectId",
+router.delete("/:projectId",
   protect,
-  checkProjectPermission("projects", "edit"),
+  requireAdmin,
   projectController.deleteProject
 );
 

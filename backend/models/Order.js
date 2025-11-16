@@ -7,12 +7,12 @@ const orderSchema = new mongoose.Schema({
 
   sum: { type: Number, required: true },
 
-  createdAt: { type: String, required: true }, // מגיע מהלקוח כמו אצלך
+  createdAt: { type: Date, required: true },
 
-  status: { 
-    type: String, 
-    enum: ["הוגש", "לא הוגש", "בעיבוד"], 
-    required: true 
+  status: {
+    type: String,
+    enum: ["הוגש", "לא הוגש", "בעיבוד"],
+    required: true
   },
 
   invitingName: { type: String, required: true }, // מי ביצע את ההזמנה

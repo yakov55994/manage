@@ -1,18 +1,29 @@
+// =============================
+// USER MANAGEMENT – FIXED VERSION
+// =============================
 import { useState, useEffect } from "react";
 import { useAuth } from "../context/AuthContext";
 import api from "../api/api";
 import { toast } from "sonner";
 import { ClipLoader } from "react-spinners";
 import {
-  Users, Plus, Edit2, Trash2, Shield, User, Lock, Mail,
-  CheckCircle, XCircle, Eye, EyeOff, Save, X, FolderKanban
+  Users,
+  Plus,
+  Edit2,
+  Trash2,
+  User,
+  Eye,
+  EyeOff,
+  Save,
+  X,
+  FolderKanban,
 } from "lucide-react";
 
-// =============================
-// DEFAULT PERMISSIONS TEMPLATE
-// =============================
+// Helpers
+const normalizeId = (id) => String(id?._id || id || "");
+
 const defaultProjPerm = (projectId) => ({
-  project: projectId,
+  project: normalizeId(projectId),
   access: "view",
   modules: {
     invoices: "view",
@@ -34,70 +45,76 @@ export default function UserManagement() {
   const [deleteModal, setDeleteModal] = useState({ show: false, user: null });
   const [showPassword, setShowPassword] = useState(false);
 
-  // =============================
-  // FORM DATA
-  // =============================
+  // permissions MUST ALWAYS be array
   const [formData, setFormData] = useState({
     username: "",
     password: "",
     email: "",
     role: "user",
     isActive: true,
-    permissions: {
-      projects: [] // רק זה!
-    }
+    permissions: [], // array only
   });
 
-  // =============================
-  // HELPERS
-  // =============================
-
+  // check if project selected
   const isProjectSelected = (projectId) =>
-    formData.permissions.projects.some(p => String(p.project) === String(projectId));
+    formData.permissions.some(
+      (p) => String(p.project) === String(projectId)
+    );
 
+  // TOGGLE project
   const toggleProject = (projectId) => {
-    setFormData(prev => {
-      const list = [...prev.permissions.projects];
-      const idx = list.findIndex(p => p.project === projectId);
+    const id = normalizeId(projectId);
+
+    setFormData((prev) => {
+      const list = [...prev.permissions];
+      const idx = list.findIndex((p) => String(p.project) === id);
 
       if (idx >= 0) {
         list.splice(idx, 1);
       } else {
-        list.push(defaultProjPerm(projectId));
+        list.push(defaultProjPerm(id));
       }
 
-      return { ...prev, permissions: { ...prev.permissions, projects: list } };
+      return { ...prev, permissions: list };
     });
   };
 
+  // SET access level
   const setProjectAccess = (projectId, access) => {
-    setFormData(prev => {
-      const list = [...prev.permissions.projects];
-      const idx = list.findIndex(p => p.project === projectId);
+    setFormData((prev) => {
+      const list = [...prev.permissions];
+      const idx = list.findIndex(
+        (p) => String(p.project) === String(projectId)
+      );
+
       if (idx < 0) return prev;
 
       list[idx] = { ...list[idx], access };
-      return { ...prev, permissions: { ...prev.permissions, projects: list } };
+
+      return { ...prev, permissions: list };
     });
   };
 
+  // SET module access
   const setModuleAccess = (projectId, moduleKey, value) => {
-    setFormData(prev => {
-      const list = [...prev.permissions.projects];
-      const idx = list.findIndex(p => p.project === projectId);
+    setFormData((prev) => {
+      const list = [...prev.permissions];
+      const idx = list.findIndex(
+        (p) => String(p.project) === String(projectId)
+      );
+
       if (idx < 0) return prev;
 
       list[idx] = {
         ...list[idx],
-        modules: { ...list[idx].modules, [moduleKey]: value }
+        modules: { ...list[idx].modules, [moduleKey]: value },
       };
-      return { ...prev, permissions: { ...prev.permissions, projects: list } };
+
+      return { ...prev, permissions: list };
     });
   };
 
-  // =============================
-  // LOAD DATA
-  // =============================
+  // LOAD EVERYTHING
   useEffect(() => {
     if (authLoading) return;
     if (!isAdmin) {
@@ -116,18 +133,15 @@ export default function UserManagement() {
         api.get("/projects"),
       ]);
       setUsers(usersRes.data.data || []);
-      setProjects(projectsRes.data || []);
+      setProjects(projectsRes.data.data || []);
     } catch (error) {
-      console.error(error);
       toast.error("שגיאה בטעינת נתונים");
     } finally {
       setLoading(false);
     }
   };
 
-  // =============================
-  // MODALS
-  // =============================
+  // CREATE NEW USER
   const openCreate = () => {
     setEditingUser(null);
     setFormData({
@@ -136,22 +150,24 @@ export default function UserManagement() {
       email: "",
       role: "user",
       isActive: true,
-      permissions: { projects: [] },
+      permissions: [],
     });
     setShowModal(true);
   };
 
+  // EDIT USER
   const openEdit = (user) => {
-    const normalized = user.permissions?.projects?.map(p => ({
-      project: p.project?._id || p.project,
-      access: p.access || "view",
-      modules: {
-        invoices: p.modules?.invoices || "view",
-        orders: p.modules?.orders || "view",
-        suppliers: p.modules?.suppliers || "view",
-        files: p.modules?.files || "view",
-      },
-    })) || [];
+    const normalized =
+      (user.permissions || []).map((p) => ({
+        project: String(p.project._id || p.project),
+        access: p.access || "view",
+        modules: {
+          invoices: p.modules?.invoices || "view",
+          orders: p.modules?.orders || "view",
+          suppliers: p.modules?.suppliers || "view",
+          files: p.modules?.files || "view",
+        },
+      })) || [];
 
     setEditingUser(user);
     setFormData({
@@ -160,12 +176,13 @@ export default function UserManagement() {
       email: user.email || "",
       role: user.role,
       isActive: user.isActive,
-      permissions: { projects: normalized }
+      permissions: normalized, // ARRAY ONLY
     });
 
     setShowModal(true);
   };
 
+  // SAVE USER
   const saveUser = async (e) => {
     e.preventDefault();
 
@@ -174,9 +191,7 @@ export default function UserManagement() {
       email: formData.email,
       role: formData.role,
       isActive: formData.isActive,
-      permissions: {
-        projects: formData.permissions.projects
-      }
+      permissions: formData.permissions,
     };
 
     if (formData.password) payload.password = formData.password;
@@ -207,10 +222,7 @@ export default function UserManagement() {
     }
   };
 
-  // =============================
-  // RENDER
-  // =============================
-
+  // UI
   if (authLoading || loading) {
     return (
       <div className="flex justify-center items-center h-screen">
@@ -225,15 +237,16 @@ export default function UserManagement() {
 
   return (
     <div className="p-6">
-
       {/* HEADER */}
       <div className="flex justify-between items-center mb-6">
         <h1 className="text-3xl font-bold flex gap-3 items-center">
           <Users className="text-orange-600" /> ניהול משתמשים
         </h1>
 
-        <button onClick={openCreate}
-          className="px-6 py-3 bg-green-600 text-white rounded-xl hover:bg-green-700 flex items-center gap-2">
+        <button
+          onClick={openCreate}
+          className="px-6 py-3 bg-green-600 text-white rounded-xl hover:bg-green-700 flex items-center gap-2"
+        >
           <Plus /> משתמש חדש
         </button>
       </div>
@@ -251,7 +264,7 @@ export default function UserManagement() {
             </tr>
           </thead>
           <tbody>
-            {users.map(u => (
+            {users.map((u) => (
               <tr key={u._id} className="border-b hover:bg-orange-50">
                 <td className="p-3">{u.username}</td>
                 <td className="p-3">{u.email || "-"}</td>
@@ -259,14 +272,16 @@ export default function UserManagement() {
                   {u.role === "admin" ? "מנהל" : "משתמש"}
                 </td>
                 <td className="p-3 text-center">
-                  {u.role === "admin"
-                    ? "הכל"
-                    : u.permissions.projects.length}
+                  {u.role === "admin" ? "הכל" : u.permissions?.length}
                 </td>
                 <td className="p-3 text-center space-x-3">
-                  <button onClick={() => openEdit(u)}><Edit2 /></button>
-                  <button onClick={() => setDeleteModal({ show: true, user: u })}
-                    disabled={currentUser.id === u._id}>
+                  <button onClick={() => openEdit(u)}>
+                    <Edit2 />
+                  </button>
+                  <button
+                    onClick={() => setDeleteModal({ show: true, user: u })}
+                    disabled={currentUser.id === u._id}
+                  >
                     <Trash2 className="text-red-600" />
                   </button>
                 </td>
@@ -280,35 +295,38 @@ export default function UserManagement() {
       {showModal && (
         <div className="fixed inset-0 bg-black/50 flex justify-center items-center p-6 z-50">
           <div className="bg-white max-w-3xl w-full p-6 rounded-xl shadow-xl max-h-[90vh] overflow-y-auto">
-
             <h2 className="text-2xl font-bold mb-4 flex gap-2 items-center">
               <User /> {editingUser ? "עריכת משתמש" : "משתמש חדש"}
             </h2>
 
             <form onSubmit={saveUser} className="space-y-6">
-
               {/* BASIC FIELDS */}
               <div className="grid grid-cols-2 gap-4">
-
                 <div>
                   <label className="block mb-2 font-semibold">שם משתמש</label>
                   <input
                     required
                     className="w-full p-2 border rounded"
                     value={formData.username}
-                    onChange={e => setFormData({ ...formData, username: e.target.value })}
+                    onChange={(e) =>
+                      setFormData({ ...formData, username: e.target.value })
+                    }
                   />
                 </div>
 
                 <div>
-                  <label className="block mb-2 font-semibold">סיסמה {!editingUser && "*"}</label>
+                  <label className="block mb-2 font-semibold">
+                    סיסמה {!editingUser && "*"}
+                  </label>
                   <div className="relative">
                     <input
                       type={showPassword ? "text" : "password"}
                       required={!editingUser}
                       className="w-full p-2 border rounded"
                       value={formData.password}
-                      onChange={e => setFormData({ ...formData, password: e.target.value })}
+                      onChange={(e) =>
+                        setFormData({ ...formData, password: e.target.value })
+                      }
                     />
                     <button
                       type="button"
@@ -326,7 +344,9 @@ export default function UserManagement() {
                     type="email"
                     className="w-full p-2 border rounded"
                     value={formData.email}
-                    onChange={e => setFormData({ ...formData, email: e.target.value })}
+                    onChange={(e) =>
+                      setFormData({ ...formData, email: e.target.value })
+                    }
                   />
                 </div>
 
@@ -335,13 +355,14 @@ export default function UserManagement() {
                   <select
                     className="w-full p-2 border rounded"
                     value={formData.role}
-                    onChange={e => setFormData({ ...formData, role: e.target.value })}
+                    onChange={(e) =>
+                      setFormData({ ...formData, role: e.target.value })
+                    }
                   >
                     <option value="user">משתמש</option>
                     <option value="admin">מנהל</option>
                   </select>
                 </div>
-
               </div>
 
               {/* PROJECT PERMISSIONS */}
@@ -352,53 +373,65 @@ export default function UserManagement() {
                   </h3>
 
                   <div className="grid gap-4">
-                    {projects.map(p => {
+                    {projects.map((p) => {
                       const selected = isProjectSelected(p._id);
-                      const proj = formData.permissions.projects.find(x => x.project === p._id);
+                      const proj = formData.permissions.find(
+                        (x) => String(x.project) === String(p._id)
+                      );
 
                       return (
-                        <div key={p._id} className={`border p-4 rounded-xl ${selected ? "bg-blue-50 border-blue-400" : "bg-gray-50 border-gray-300"}`}>
-
+                        <div
+                          key={p._id}
+                          className={`border p-4 rounded-xl ${
+                            selected
+                              ? "bg-blue-50 border-blue-400"
+                              : "bg-gray-50 border-gray-300"
+                          }`}
+                        >
                           <div className="flex justify-between items-center">
                             <label className="flex gap-3 items-center cursor-pointer">
-                              <input 
+                              <input
                                 type="checkbox"
                                 className="w-5 h-5"
                                 checked={selected}
                                 onChange={() => toggleProject(p._id)}
                               />
-                              <span className="font-bold text-lg">{p.name}</span>
+                              <span className="font-bold text-lg">
+                                {p.name}
+                              </span>
                             </label>
 
-                            {/* PROJECT LEVEL ACCESS */}
                             {selected && (
                               <div className="flex gap-6">
                                 <label className="flex gap-2 items-center cursor-pointer">
-                                  <input 
+                                  <input
                                     type="radio"
                                     name={`access-${p._id}`}
                                     className="w-4 h-4"
                                     checked={proj.access === "view"}
-                                    onChange={() => setProjectAccess(p._id, "view")}
-                                  /> 
+                                    onChange={() =>
+                                      setProjectAccess(p._id, "view")
+                                    }
+                                  />
                                   <span>צפייה</span>
                                 </label>
 
                                 <label className="flex gap-2 items-center cursor-pointer">
-                                  <input 
+                                  <input
                                     type="radio"
                                     name={`access-${p._id}`}
                                     className="w-4 h-4"
                                     checked={proj.access === "edit"}
-                                    onChange={() => setProjectAccess(p._id, "edit")}
-                                  /> 
+                                    onChange={() =>
+                                      setProjectAccess(p._id, "edit")
+                                    }
+                                  />
                                   <span>עריכה</span>
                                 </label>
                               </div>
                             )}
                           </div>
 
-                          {/* MODULE LEVEL ACCESS */}
                           {selected && (
                             <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mt-4 p-3 bg-white border rounded-xl">
                               {[
@@ -406,14 +439,20 @@ export default function UserManagement() {
                                 { key: "orders", label: "הזמנות" },
                                 { key: "suppliers", label: "ספקים" },
                                 { key: "files", label: "קבצים" },
-                              ].map(m => (
+                              ].map((m) => (
                                 <div key={m.key}>
-                                  <label className="block mb-1 font-semibold text-sm">{m.label}</label>
+                                  <label className="block mb-1 font-semibold text-sm">
+                                    {m.label}
+                                  </label>
                                   <select
                                     className="w-full border p-2 rounded"
                                     value={proj.modules[m.key]}
                                     onChange={(e) =>
-                                      setModuleAccess(p._id, m.key, e.target.value)
+                                      setModuleAccess(
+                                        p._id,
+                                        m.key,
+                                        e.target.value
+                                      )
                                     }
                                   >
                                     <option value="view">צפייה</option>
@@ -423,18 +462,16 @@ export default function UserManagement() {
                               ))}
                             </div>
                           )}
-
                         </div>
                       );
                     })}
                   </div>
-
                 </div>
               )}
 
               {/* ACTION BUTTONS */}
               <div className="flex gap-4 mt-6 sticky bottom-0 bg-white py-4">
-                <button 
+                <button
                   type="submit"
                   className="flex-1 bg-orange-600 text-white p-3 rounded-xl hover:bg-orange-700 flex items-center justify-center gap-2"
                 >
@@ -451,7 +488,6 @@ export default function UserManagement() {
                   ביטול
                 </button>
               </div>
-
             </form>
           </div>
         </div>
@@ -486,7 +522,6 @@ export default function UserManagement() {
           </div>
         </div>
       )}
-
     </div>
   );
 }

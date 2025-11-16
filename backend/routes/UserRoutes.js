@@ -20,3 +20,4 @@ router.put('/:id', protect, requireAdmin, updateUser);
 router.delete('/:id', protect, requireAdmin, deleteUser);
 
 export default router;
+  

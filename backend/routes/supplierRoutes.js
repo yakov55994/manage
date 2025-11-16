@@ -1,54 +1,39 @@
-import express from 'express'
-import { protect } from '../middleware/auth.js';
-import { checkProjectPermission } from '../middleware/permissions.js';
-import supplierController from '../controller/supplierController.js'
+import express from "express";
+import { protect } from "../middleware/auth.js";
+import supplierController from "../controller/SupplierController.js";
+import { checkAccess } from "../middleware/auth.js";
 
-const router = express.Router({ mergeParams: true });
-
+const router = express.Router();
 
 router.get(
-  "/all",
+  "/",
   protect,
-  supplierController.getAllSuppliers
+  supplierController.getSuppliers
 );
 
-
-// כל הספקים של פרויקט
-router.get(
-  '/:projectId/suppliers',
+router.get("/:id",
   protect,
-  checkProjectPermission("suppliers", "view"),
-  supplierController.getSuppliersByProject
-);
-
-// יצירת ספק
-router.post(
-  '/:projectId/suppliers',
-  protect,
-  checkProjectPermission("suppliers", "edit"),
-  supplierController.createSupplier
-);
-
-// ספק לפי ID
-router.get(
-  '/:projectId/suppliers/:id',
-  protect,
-  checkProjectPermission("suppliers", "view"),
+  checkAccess("suppliers", "view"),
   supplierController.getSupplierById
 );
 
-router.put(
-  '/:projectId/suppliers/:id',
+router.post("/",
   protect,
-  checkProjectPermission("suppliers", "edit"),
+  checkAccess("suppliers", "edit"),
+  supplierController.createSupplier
+);
+
+router.put("/:id",
+  protect,
+  checkAccess("suppliers", "edit"),
   supplierController.updateSupplier
 );
 
-router.delete(
-  '/:projectId/suppliers/:id',
+router.delete("/:id",
   protect,
-  checkProjectPermission("suppliers", "edit"),
+  checkAccess("suppliers", "edit"),
   supplierController.deleteSupplier
 );
+
 
 export default router;

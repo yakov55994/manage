@@ -1,113 +1,126 @@
-import mongoose from "mongoose";
+// services/orderService.js
 import Order from "../models/Order.js";
-import Project from "../models/Project.js";
 
-function normalizeFiles(files) {
-  if (!Array.isArray(files)) return [];
-  return files.map(f => ({
-    name: f.name || f.fileName || "",
-    url: f.url || f.fileUrl || "",
-    type: f.type || f.fileType || "",
-    size: f.size || 0,
-    publicId: f.publicId || "",
-    resourceType: f.resourceType || ""
-  }));
+function canView(user, projectId) {
+  if (user.role === "admin") return true;
+  return user.permissions.some(p => String(p.project) === String(projectId));
 }
 
-const orderService = {
-  // 📌 כל ההזמנות בפרויקט
-  async getOrdersByProject(projectId) {
-    return Order.find({ projectId }).sort({ createdAt: -1 });
+function canEdit(user, projectId) {
+  if (user.role === "admin") return true;
+  return user.permissions.some(p =>
+    String(p.project) === String(projectId) &&
+    p.modules?.orders === "edit"
+  );
+}
+
+export default {
+
+  async getOrders(user) {
+    if (user.role === "admin") return Order.find();
+
+    const allowed = user.permissions.map(p => p.project);
+    return Order.find({ projectId: { $in: allowed } });
   },
 
-  // 📌 הזמנה בודדת
-  async getOrderById(projectId, id) {
-    return Order.findOne({ _id: id, projectId });
+  async getOrdersByProject(user, projectId) {
+    if (!canView(user, projectId)) throw new Error("אין גישה");
+
+    return Order.find({ projectId });
   },
 
-  // ➕ יצירת הזמנה אחת (אצלך אתה יוצר רק אחת כל פעם)
-  async createOrder(projectId, data) {
-    if (!projectId) throw new Error("projectId is required");
-
-    // בדיקת כפילות במספר הזמנה בפרויקט
-    const exists = await Order.findOne({
-      orderNumber: data.orderNumber,
-      projectId
-    });
-
-    if (exists) {
-      throw new Error(`הזמנה מספר ${data.orderNumber} כבר קיימת בפרויקט זה`);
-    }
-
-    const newOrder = await Order.create({
-      ...data,
-      projectId,
-      files: normalizeFiles(data.files)
-    });
-
-    // עדכון פרויקט
-    await Project.findByIdAndUpdate(
-      projectId,
-      {
-        $push: { orders: newOrder._id },
-        $inc: { remainingBudget: -Number(newOrder.sum || 0) }
-      },
-      { new: true }
-    );
-
-    return newOrder;
-  },
-
-  // ✏️ עדכון הזמנה
-  async updateOrder(projectId, id, data) {
-    if (data.files) data.files = normalizeFiles(data.files);
-
-    return Order.findOneAndUpdate(
-      { _id: id, projectId },
-      data,
-      { new: true, runValidators: true }
-    );
-  },
-
-  // 🗑️ מחיקה + עדכון תקציב בפרויקט
-  async deleteOrder(projectId, id) {
-    const order = await Order.findOne({ _id: id, projectId });
+  async getOrderById(user, orderId) {
+    const order = await Order.findById(orderId);
     if (!order) return null;
 
-    await Project.findByIdAndUpdate(
-      projectId,
-      {
-        $pull: { orders: order._id },
-        $inc: { remainingBudget: Number(order.sum || 0) }
-      }
-    );
-
-    await Order.deleteOne({ _id: id });
+    if (!canView(user, order.projectId))
+      throw new Error("אין גישה להזמנה");
 
     return order;
   },
 
-  // 🔎 חיפוש בפרויקט
-  async search(projectId, q) {
-    const filter = { projectId };
+async createBulkOrders(user, ordersArray) {
+  if (!Array.isArray(ordersArray)) {
+    throw new Error("orders חייב להיות מערך");
+  }
 
-    if (q) {
-      const or = [
-        { invitingName: { $regex: q, $options: "i" } },
-        { detail: { $regex: q, $options: "i" } },
-        { projectName: { $regex: q, $options: "i" } }
-      ];
+  const results = [];
 
-      if (!isNaN(q)) {
-        or.push({ orderNumber: Number(q) });
-        or.push({ sum: Number(q) });
+  for (const order of ordersArray) {
+    const {
+      projectId,
+      orderNumber,
+      sum,
+      status,
+      invitingName,
+      detail,
+      files,
+      Contact_person,
+      createdAt
+    } = order;
+
+    // הרשאות
+    if (user.role !== "admin") {
+      const allowedProjects = user.permissions.map(p => String(p.project));
+      if (!allowedProjects.includes(String(projectId))) {
+        throw new Error("אין הרשאה לפרויקט זה");
       }
-
-      filter.$or = or;
     }
 
-    return Order.find(filter).sort({ createdAt: -1 });
+    // ולידציה בסיסית
+    if (!projectId) throw new Error("חסר projectId");
+    if (!orderNumber) throw new Error("חסר מספר הזמנה");
+    if (!invitingName) throw new Error("חסר שם מזמין");
+    if (!sum || Number(sum) <= 0) throw new Error("סכום לא תקין");
+    if (!detail) throw new Error("חסר פירוט הזמנה");
+    if (!Contact_person) throw new Error("חסר איש קשר");
+    if (!createdAt) throw new Error("חסר תאריך יצירה");
+
+    const newOrder = await Order.create({
+      projectId,
+      projectName: order.projectName,
+      orderNumber,
+      sum,
+      status,
+      invitingName,
+      detail,
+      files,
+      Contact_person,
+      createdAt
+    });
+
+    results.push(newOrder);
+  }
+
+  return results;
+},
+  async createOrder(req, res) {
+    try {
+      const order = await orderService.createOrder(req.user, req.body);
+      res.status(201).json({ success: true, data: order });
+    } catch (e) {
+      res.status(400).json({ success: false, message: e.message });
+    }
+  },
+  async updateOrder(user, orderId, data) {
+    const order = await Order.findById(orderId);
+    if (!order) throw new Error("לא נמצא");
+
+    if (!canEdit(user, order.projectId))
+      throw new Error("אין הרשאה לערוך");
+
+    Object.assign(order, data);
+    return order.save();
+  },
+
+  async deleteOrder(user, orderId) {
+    const order = await Order.findById(orderId);
+    if (!order) throw new Error("לא נמצא");
+
+    if (!canEdit(user, order.projectId))
+      throw new Error("אין הרשאה למחוק");
+
+    await order.deleteOne();
+    return true;
   }
 };
-
-export default orderService;

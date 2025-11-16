@@ -19,8 +19,9 @@ export default function MoveInvoiceModal({
     (async () => {
       try {
         // הביא רק שדות הכרחיים (שמור כמו שה־API שלך תומך)
-        const { data } = await api.get("/projects?fields=_id,name&limit=1000");
-        setProjects(Array.isArray(data) ? data : (data?.projects || []));
+        const { data } = await api.get("/projects");
+        console.log(data)
+        setProjects(Array.isArray(data.data) ? data.data : (data?.projects || []));
       } catch (err) {
         console.error(err);
         toast.error("שגיאה בטעינת פרויקטים", { className: "sonner-toast error rtl" });
@@ -59,7 +60,7 @@ export default function MoveInvoiceModal({
         toProjectId: selectedProjectId,
       });
 
-      const moved = data?.invoice || data; // גמיש לתשובות שונות
+      const moved = data?.data || data; // גמיש לתשובות שונות
       if (onMoved) onMoved(moved);
 
       const target = projects.find(p => String(p._id) === String(selectedProjectId));

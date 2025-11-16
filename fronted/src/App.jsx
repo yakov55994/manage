@@ -33,6 +33,7 @@ import SupplierDetailsPage from "./pages/Supplier/Supplier_details.jsx";
 import SupplierEditPage from "./pages/Supplier/Supplier_update.jsx";
 import UserManagement from "./pages/UserManagement.jsx";
 import { AuthProvider, useAuth } from "./context/AuthContext.jsx"; // ✅ הוסף import
+import NoAccess from "./pages/NoAccess.jsx";
 
 // קומפוננט פנימי שמשתמש ב-hooks
 const AppContent = () => {
@@ -62,7 +63,9 @@ const AppContent = () => {
           <div className="mb-0 mr-auto max-w-60 top-1 z-50 flex items-center gap-4 text-white p-2">
             <div
               className={`flex items-center gap-2 px-4 py-2 rounded-2xl font-semibold text-sm tracking-wide shadow-lg ${
-                isAuthenticated ? "bg-green-600 text-white" : "bg-red-600 text-white"
+                isAuthenticated
+                  ? "bg-green-600 text-white"
+                  : "bg-red-600 text-white"
               }`}
             >
               <div
@@ -80,7 +83,9 @@ const AppContent = () => {
                   ? "bg-red-600 text-white hover:bg-red-500 shadow-red-600/30"
                   : "bg-green-600 text-white hover:bg-green-500 shadow-green-600/30"
               } shadow-lg`}
-              onClick={isAuthenticated ? handleLogout : () => navigate("/login")}
+              onClick={
+                isAuthenticated ? handleLogout : () => navigate("/login")
+              }
             >
               {isAuthenticated ? (
                 <ArrowRightCircle className="w-4 h-4" />
@@ -92,9 +97,9 @@ const AppContent = () => {
           </div>
           <Routes>
             <Route path="*" element={<Home />} />
-            <Route path="/home" element={<Home />} />
             <Route path="/login" element={<Login />} />
             <Route path="/search" element={<SearchResults />} />
+            <Route path="/no-access" element={<NoAccess />} />
 
             {/* נתיבים מוגנים */}
             <Route
@@ -178,7 +183,7 @@ const AppContent = () => {
               }
             />
             <Route
-              path="/update-invoice/:id"
+              path="/invoices/:id/edit"
               element={
                 <ProtectedRoute>
                   <UpdateInvoice />
@@ -186,7 +191,7 @@ const AppContent = () => {
               }
             />
             <Route
-              path="/update-order/:id"
+              path="orders/:id/edit"
               element={
                 <ProtectedRoute>
                   <UpdateOrder />
@@ -244,12 +249,12 @@ const AppContent = () => {
                 </ProtectedRoute>
               }
             />
-            
+
             {/* ✅ ניהול משתמשים - רק לAdmin */}
             <Route
               path="/admin"
               element={
-                <ProtectedRoute adminOnly >
+                <ProtectedRoute adminOnly>
                   <UserManagement />
                 </ProtectedRoute>
               }
@@ -257,21 +262,22 @@ const AppContent = () => {
           </Routes>
         </div>
       </div>
-      
+
       {/* Footer קבוע בתחתית הדף */}
       <footer className="bg-gray-50 border-t border-gray-200 py-4">
         <p className="text-center font-bold text-slate-600">
           © כל הזכויות שמורות ל
-          <a 
-            href="https://yc-dev.pages.dev" 
-            target="_blank" 
+          <a
+            href="https://yc-dev.pages.dev"
+            target="_blank"
             rel="noopener noreferrer"
           >
-            {" "}יעקב כהן
+            {" "}
+            יעקב כהן
           </a>
         </p>
       </footer>
-      
+
       <Toaster />
     </div>
   );

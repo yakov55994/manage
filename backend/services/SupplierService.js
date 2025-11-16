@@ -1,80 +1,101 @@
 // services/supplierService.js
 import Supplier from "../models/Supplier.js";
-import Project from "../models/Project.js";
-import Invoice from "../models/Invoice.js";
-import mongoose from "mongoose";
 
-const supplierService = {
+function canView(user, projectId) {
+  if (user.role === "admin") return true;
+  return user.permissions.some(p => String(p.project) === String(projectId));
+}
 
-    async getAllSuppliers() {
-  return Supplier.find().sort({ name: 1 });
+function canEdit(user, projectId) {
+  if (user.role === "admin") return true;
+  return user.permissions.some(p =>
+    String(p.project) === String(projectId) &&
+    p.modules?.suppliers === "edit"
+  );
+}
+
+export default {
+
+  async getAllSuppliers(user) {
+    if (user.role === "admin") return Supplier.find();
+
+    const allowed = user.permissions.map(p => p.project);
+
+    return Supplier.find({ projects: { $in: allowed } });
+  },
+
+  async getSuppliersByProject(user, projectId) {
+    if (!canView(user, projectId)) throw new Error("אין גישה");
+
+    return Supplier.find({ projects: projectId })
+      .populate({
+        path: "invoices",
+        model: "Invoice",
+        match: { projectId }, // רק חשבוניות של הפרויקט הזה
+        populate: { path: "projectId", select: "name" }
+      });
+  },
+async getSupplierById(user, supplierId) {
+  const supplier = await Supplier.findById(supplierId)
+    .populate({
+      path: "invoices",
+      model: "Invoice",
+      populate: [
+        { path: "projectId", select: "name" },
+        { path: "files", select: "url publicId resourceType" }
+      ],
+    });
+
+  if (!supplier) return null;
+
+  // אם אדמין — גישה מלאה
+  if (user.role === "admin") return supplier;
+
+  // ספק ללא פרויקטים — פתוח לכל משתמש שיש לו מודול ספקים
+  if (supplier.projects.length === 0) return supplier;
+
+  const hasAccess = supplier.projects.some(p =>
+    user.permissions.some(u => String(u.project) === String(p))
+  );
+
+  if (!hasAccess) throw new Error("אין גישה לספק");
+
+  return supplier;
 },
-    // רשימת ספקים לפי פרויקט
-    async getSuppliersByProject(projectId) {
-        return Supplier.find({ projects: projectId }).sort({ name: 1 });
-    },
 
-    // יצירת ספק + שיוך לפרויקט
-    async createSupplier(projectId, data) {
-        const supplier = new Supplier({
-            ...data,
-            projects: [projectId]
-        });
+  async createSupplier(user, data) {
+    if (!canEdit(user, data.projectId))
+      throw new Error("אין הרשאה ליצור ספק");
 
-        await supplier.save();
+    const supplier = await Supplier.create(data);
 
-        // לא חובה להוסיף את הספק לפרויקט (לא צריך שם קשר)
-        return supplier;
-    },
+    return supplier;
+  },
 
-    // שליפת ספק בודד (רק אם שייך לפרויקט)
-    async getSupplierById(projectId, supplierId) {
-        return Supplier.findOne({
-            _id: supplierId,
-            projects: projectId
-        });
-    },
+  async updateSupplier(user, supplierId, data) {
+    const supplier = await Supplier.findById(supplierId);
+    if (!supplier) throw new Error("לא נמצא");
 
-    // עדכון ספק
-    async updateSupplier(projectId, supplierId, data) {
-        return Supplier.findOneAndUpdate(
-            { _id: supplierId, projects: projectId },
-            { $set: data },
-            { new: true }
-        );
-    },
+    const projectId = supplier.projects?.[0];
 
-    // מחיקה מוחלטת של ספק + חשבוניות שלו
-    async deleteSupplier(projectId, supplierId) {
-        const supplier = await Supplier.findOne({
-            _id: supplierId,
-            projects: projectId
-        });
+    if (!canEdit(user, projectId))
+      throw new Error("אין הרשאה");
 
-        if (!supplier) return null;
+    Object.assign(supplier, data);
+    return supplier.save();
+  },
 
-        // מוחקים חשבוניות של הספק
-        await Invoice.deleteMany({ supplierId });
+  async deleteSupplier(user, supplierId) {
+    const supplier = await Supplier.findById(supplierId);
 
-        // מוחקים את הספק
-        await supplier.deleteOne();
+    if (!supplier) throw new Error("לא נמצא");
 
-        return true;
-    },
+    const projectId = supplier.projects?.[0];
 
-    // חיפוש ספקים בפרויקט
-    async search(projectId, q) {
-        const regex = new RegExp(q, "i");
+    if (!canEdit(user, projectId))
+      throw new Error("אין הרשאה למחוק");
 
-        return Supplier.find({
-            projects: projectId,
-            $or: [
-                { name: regex },
-                { phone: regex },
-                { business_tax: regex }
-            ]
-        });
-    }
+    await supplier.deleteOne();
+    return true;
+  }
 };
-
-export default supplierService;

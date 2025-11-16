@@ -1,21 +1,24 @@
-import jwt from 'jsonwebtoken';
-import * as userService from '../services/userService.js';
+import * as userService from "../services/userservice.js";
+import jwt from "jsonwebtoken";
+import dotenv from 'dotenv'
 
-const JWT_SECRET = process.env.JWT_SECRET || 'dev-secret';
+dotenv.config();
 
-// 🔓 Login
+const JWT_SECRET = process.env.JWT_SECRET;
+
 export const login = async (req, res) => {
   try {
     const { username, password } = req.body;
 
     const result = await userService.authenticateUser(username, password);
+
     if (!result.success)
       return res.status(401).json({ message: result.message });
 
     const token = jwt.sign(
       { id: result.user._id, role: result.user.role },
       JWT_SECRET,
-      { expiresIn: '7d' }
+      { expiresIn: "7d" }
     );
 
     res.json({
@@ -29,59 +32,55 @@ export const login = async (req, res) => {
         permissions: result.user.permissions
       }
     });
-  } catch (e) {
-    res.status(500).json({ message: 'שגיאה בשרת', error: e.message });
+
+  } catch (err) {
+    res.status(500).json({ message: err.message });
   }
 };
 
-// 👥 Get all users
 export const getAllUsers = async (req, res) => {
   try {
     const users = await userService.getAllUsers();
     res.json({ success: true, data: users });
-  } catch (e) {
-    res.status(500).json({ message: e.message });
+  } catch (err) {
+    res.status(500).json({ message: err.message });
   }
 };
 
-// ➕ Create new user
 export const createUser = async (req, res) => {
   try {
     const result = await userService.createNewUser(req.body);
-
-    if (!result.success)
-      return res.status(400).json({ message: result.message });
-
     res.status(201).json({ success: true, data: result.user });
-  } catch (e) {
-    res.status(500).json({ message: e.message });
+  } catch (err) {
+    res.status(400).json({ message: err.message });
   }
 };
 
-// ✏ Update user
 export const updateUser = async (req, res) => {
   try {
-    const user = await userService.updateUser(req.params.id, req.body);
+    const updated = await userService.updateUser(req.params.id, req.body);
 
-    if (!user)
-      return res.status(404).json({ message: 'משתמש לא נמצא' });
+    if (!updated)
+      return res.status(404).json({ message: "משתמש לא נמצא" });
 
-    res.json({ success: true, data: user });
-  } catch (e) {
-    res.status(500).json({ message: e.message });
+    res.json({ success: true, data: updated });
+
+  } catch (err) {
+    console.log("❌ User Update Error:", err);
+    res.status(500).json({ message: err.message });
   }
 };
 
-// ❌ Delete user
 export const deleteUser = async (req, res) => {
   try {
     const result = await userService.deleteUser(req.params.id);
 
     if (!result.success)
-      return res.status(result.status || 400).json({ message: result.message });
+      return res.status(400).json({ message: result.message });
 
     res.json({ success: true, message: result.message });
-  } catch (e) {
-    res.status(500).json({ message: e.message });
+
+  } catch (err) {
+    res.status(500).json({ message: err.message });
   }
 };

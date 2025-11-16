@@ -48,14 +48,9 @@ const InvoiceEditPage = () => {
     const fetchInvoice = async () => {
       setLoading(true);
       try {
-        const { data: invoiceData } = await api.get(
-          `/projects/${projectId}/invoices/${id}`
-        );
-        if (!invoiceData) {
-          setLoading(false);
-          return;
-        }
-
+        const response = await api.get(`/invoices/${id}`);
+        const invoiceData = response.data?.data;
+        if (!invoiceData) return;
         setInvoice(invoiceData);
 
         setInvoiceNumber(invoiceData.invoiceNumber ?? "");
@@ -232,7 +227,7 @@ const InvoiceEditPage = () => {
       if (publicId) {
         try {
           await api.delete(
-            `/projects/${projectId}/invoices/${id}/delete-file`,
+            `/invoices/${id}/delete-file`,
             {
               data: { publicId },
             }
@@ -407,7 +402,7 @@ const InvoiceEditPage = () => {
       };
 
       const res = await api.put(
-        `/projects/${projectId}/invoices/${id}`,
+        `/invoices/${id}/edit`,
         formData
       );
 
@@ -415,7 +410,7 @@ const InvoiceEditPage = () => {
         className: "sonner-toast success rtl",
       });
       setInvoice(res.data);
-      navigate(`/projects/${projectId}/invoices`);
+      navigate(`/invoices`);
     } catch (err) {
       console.error("Error updating invoice:", err);
       const msg =

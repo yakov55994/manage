@@ -314,7 +314,7 @@ const SuppliersPage = () => {
       try {
         const res = await api.get("/suppliers");
         const data = arr(res);
-        setAllSuppliers(data);
+        setAllSuppliers(data.data);
         setSuppliers(data);
       } catch (error) {
         console.error("Error fetching suppliers:", error);

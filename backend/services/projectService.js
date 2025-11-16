@@ -1,133 +1,85 @@
 // services/projectService.js
-import mongoose from "mongoose";
-import Project from "../models/Project.js";
 import Invoice from "../models/Invoice.js";
 import Order from "../models/Order.js";
+import Project from "../models/Project.js";
 
-const isValidId = (id) => mongoose.Types.ObjectId.isValid(id);
+export default {
 
-const projectService = {
-  // ➕ יצירת פרויקט חדש
-  async createProject(data) {
-    try {
-      const clean = {
-        name: String(data.name || "").trim(),
-        budget: Number(data.budget || 0),
-        remainingBudget: Number(data.budget || 0),
-        invitingName: data.invitingName || "",
-        Contact_person: data.Contact_person || "",
-        usersPermissions: data.usersPermissions || [],
-      };
+  async getAllProjects(user) {
+    let query = {};
 
-      const exists = await Project.findOne({ name: clean.name });
-      if (exists) {
-        throw new Error(`פרויקט בשם "${clean.name}" כבר קיים`);
-      }
+    if (user.role !== "admin") {
+      const allowed = user.permissions.map(p =>
+        p.project?._id?.toString() || p.project.toString()
+      );
 
-      const project = new Project(clean);
-      await project.save();
-      return project;
-    } catch (err) {
-      throw new Error(err.message || "שגיאה ביצירת פרויקט");
+      query = { _id: { $in: allowed } };
     }
+
+    return Project.find(query)
+      .populate("invoices")
+      .populate("orders");
+  },
+  async getProjectById(user, projectId) {
+
+    // הרשאות
+    if (user.role !== "admin") {
+      const allowedProjectIds = user.permissions.flatMap(p =>
+        (p.projects || []).map(id => String(id))
+      );
+
+      if (!allowedProjectIds.includes(String(projectId))) {
+        throw new Error("אין הרשאה לפרויקט זה");
+      }
+    }
+
+    // טעינת פרויקט עם כל ה-populates
+    const project = await Project.findById(projectId)
+      .populate({
+        path: "invoices",
+        select:
+          "invoiceNumber projectName sum status invitingName detail paid paymentDate documentType paymentMethod files supplierId",
+        populate: [
+          { path: "supplierId", select: "name" }
+        ]
+      })
+      .populate({
+        path: "orders",
+        select: "orderNumber sum status paid paymentDate",
+      });
+
+    return project;
   },
 
-  // 📃 שליפת כל הפרויקטים לפי הרשאות המידלוור
-  async getAllProjects(filter = {}) {
-    const projects = await Project.find(filter)
-      .sort({ createdAt: -1 })
-      .lean();
+  async createBulkInvoices(user, projectId, invoicesData) {
+    const results = [];
 
-    return projects;
+    for (const inv of invoicesData) {
+      inv.projectId = projectId;
+      const created = await invoiceService.createInvoice(user, inv);
+      results.push(created);
+    }
+
+    return results;
+  },
+  async createProject(user, data) {
+    if (user.role !== "admin")
+      throw new Error("רק מנהל יכול ליצור פרויקט");
+
+    return Project.create(data);
   },
 
-  // 📄 שליפת פרויקט לפי ID כולל חשבוניות + הזמנות + ספקים
-  async getProjectById(projectId) {
-    if (!isValidId(projectId)) throw new Error("ID לא תקין");
+  async updateProject(user, projectId, data) {
+    if (user.role !== "admin")
+      throw new Error("אין הרשאה");
 
-    const project = await Project.findById(projectId).lean();
-    if (!project) return null;
-
-    const [invoices, orders] = await Promise.all([
-      Invoice.find({ projectId })
-        .populate({ path: "supplierId", select: "name phone bankDetails" })
-        .sort({ createdAt: -1 })
-        .lean(),
-      Order.find({ projectId })
-        .sort({ createdAt: -1 })
-        .lean(),
-    ]);
-
-    return {
-      ...project,
-      invoices,
-      orders,
-    };
+    return Project.findByIdAndUpdate(projectId, data, { new: true });
   },
 
-  // ✏️ עדכון פרויקט
-  async updateProject(projectId, data = {}) {
-    if (!isValidId(projectId)) throw new Error("ID לא תקין");
+  async deleteProject(user, projectId) {
+    if (user.role !== "admin")
+      throw new Error("אין הרשאה");
 
-    const forbidden = ["_id", "createdAt", "updatedAt"];
-    forbidden.forEach((f) => delete data[f]);
-
-    const updated = await Project.findByIdAndUpdate(
-      projectId,
-      { $set: data },
-      { new: true, runValidators: true }
-    ).lean();
-
-    return updated;
-  },
-
-  // 🗑️ מחיקת פרויקט כולל כל מה שמשויך אליו
-  async deleteProjectById(projectId) {
-    if (!isValidId(projectId)) throw new Error("ID לא תקין");
-
-    const session = await mongoose.startSession();
-
-    await session.withTransaction(async () => {
-      const project = await Project.findById(projectId).session(session);
-      if (!project) throw new Error("פרויקט לא נמצא");
-
-      await Invoice.deleteMany({ projectId }).session(session);
-      await Order.deleteMany({ projectId }).session(session);
-
-      await Project.findByIdAndDelete(projectId).session(session);
-    });
-
-    session.endSession();
-    return { message: "הפרויקט נמחק בהצלחה" };
-  },
-
-  // 🔎 חיפוש לפי שם
-  async search(query) {
-    const regex = new RegExp(String(query).trim(), "i");
-
-    return Project.find({ name: { $regex: regex } })
-      .sort({ createdAt: -1 })
-      .lean();
-  },
-
-  // 📦 הזמנות לפי Project
-  async getOrdersByProjectId(projectId) {
-    if (!isValidId(projectId)) throw new Error("ID לא תקין");
-
-    return Order.find({ projectId })
-      .sort({ createdAt: -1 })
-      .lean();
-  },
-
-  // 💵 חשבוניות לפי Project
-  async getInvoicesByProjectId(projectId) {
-    if (!isValidId(projectId)) throw new Error("ID לא תקין");
-
-    return Invoice.find({ projectId })
-      .populate({ path: "supplierId", select: "name phone bankDetails" })
-      .sort({ createdAt: -1 })
-      .lean();
-  },
+    return Project.findByIdAndDelete(projectId);
+  }
 };
-
-export default projectService;

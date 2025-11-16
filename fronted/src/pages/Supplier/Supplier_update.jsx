@@ -101,7 +101,7 @@ const SupplierEditPage = () => {
   };
 
   const validateForm = () => {
-    const requiredFields = ['name', 'business_tax', 'phone'];
+    const requiredFields = ['name', 'business_tax'];
 
     for (let field of requiredFields) {
       if (!supplier[field] || supplier[field].toString().trim() === '') {
@@ -142,7 +142,6 @@ const SupplierEditPage = () => {
       name: 'שם הספק',
       business_tax: 'מספר עוסק',
       address: 'כתובת',
-      phone: 'טלפון',
       email: 'אימייל'
     };
     return fieldNames[field] || field;
@@ -160,7 +159,7 @@ const SupplierEditPage = () => {
       const supplierData = {
         name: supplier.name.trim(),
         business_tax: supplier.business_tax.trim(),
-        phone: supplier.phone.trim(),
+        phone: supplier.phone.trim() || "",
         address: supplier.address?.trim() || undefined,
         email: supplier.email?.trim() || undefined,
       };

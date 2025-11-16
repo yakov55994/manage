@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
-import api, { apiWithProject } from "../../api/api";
+import api from "../../api/api";
 import { ClipLoader } from "react-spinners";
 import {
   Building2,
@@ -35,47 +35,47 @@ const ProjectDetailsPage = () => {
   const [loadingOrders, setLoadingOrders] = useState(true);
   const [loadingInvoices, setLoadingInvoices] = useState(true);
 
+  console.log(id);
   const navigate = useNavigate();
 
-useEffect(() => {
-  const fetchProjectDetails = async () => {
-    try {
-      setLoadingProject(true);
-      setLoadingOrders(true);
-      setLoadingInvoices(true);
+  useEffect(() => {
+    const fetchProjectDetails = async () => {
+      try {
+        setLoadingProject(true);
+        setLoadingOrders(true);
+        setLoadingInvoices(true);
 
-const response = await apiWithProject("get", `/projects/${id}`);
+        const response = await api.get(`/projects/${id}`);
+        console.log("response", response);
+        const projectData = response.data?.data || {};
+        console.log("📌 PROJECT RESPONSE:", response);
 
-      const projectData = response.data?.data || {};
+        setProject(projectData);
+        setOrders(projectData.orders || []);
+        setInvoices(projectData.invoices || []);
+      } catch (error) {
+        console.error("Error fetching project details:", error);
+        toast.error("שגיאה בשליפת פרטי הפרויקט", {
+          className: "sonner-toast error rtl",
+        });
+      } finally {
+        setLoadingProject(false);
+        setLoadingOrders(false);
+        setLoadingInvoices(false);
+      }
+    };
 
-      setProject(projectData);
-      setOrders(Array.isArray(projectData.orders) ? projectData.orders : []);
-      setInvoices(Array.isArray(projectData.invoices) ? projectData.invoices : []);
+    fetchProjectDetails();
+  }, [id]);
 
-    } catch (error) {
-      console.error("Error fetching project details:", error);
-      toast.error("שגיאה בשליפת פרטי הפרויקט", { className: "sonner-toast error rtl" });
-    } finally {
-      setLoadingProject(false);
-      setLoadingOrders(false);
-      setLoadingInvoices(false);
-    }
-  };
+  // עכשיו אין צורך בסינון לפי projectId:
+  const filteredOrders = orders
+    ?.filter((o) => !statusFilter || o.status === statusFilter)
+    ?.sort((a, b) => (sortOrder === "desc" ? b.sum - a.sum : a.sum - b.sum));
 
-  fetchProjectDetails();
-}, [id]);
-
-
-// עכשיו אין צורך בסינון לפי projectId:
-const filteredOrders = orders
-  ?.filter(o => !statusFilter || o.status === statusFilter)
-  ?.sort((a, b) => (sortOrder === "desc" ? b.sum - a.sum : a.sum - b.sum));
-
-const filteredInvoices = invoices
-  ?.filter(inv => !statusFilter || inv.status === statusFilter)
-  ?.sort((a, b) => (sortOrder === "desc" ? b.sum - a.sum : a.sum - b.sum));
-
-
+  const filteredInvoices = invoices
+    ?.filter((inv) => !statusFilter || inv.status === statusFilter)
+    ?.sort((a, b) => (sortOrder === "desc" ? b.sum - a.sum : a.sum - b.sum));
 
   const INTERIM_ALIASES = new Set(["ח. עסקה", "ה. עבודה", "ד. תשלום"]);
 
@@ -252,7 +252,7 @@ const filteredInvoices = invoices
                   <div className="flex items-center justify-center gap-2 mt-2">
                     <Sparkles className="w-4 h-4 text-orange-500" />
                     <span className="text-sm font-medium text-slate-600">
-                      {project.name}
+                      {project?.name}
                     </span>
                   </div>
                 </div>
@@ -327,8 +327,7 @@ const filteredInvoices = invoices
                         שם הפרויקט
                       </p>
                       <p className="text-sm font-bold text-slate-900">
-                        {console.log(project)}
-                        {project.name}
+                        {project?.name}
                       </p>
                     </div>
                   </div>
@@ -345,7 +344,7 @@ const filteredInvoices = invoices
                         איש קשר
                       </p>
                       <p className="text-sm font-bold text-slate-900">
-                        {project.Contact_person || "לא הוזן"}
+                        {project?.Contact_person || "לא הוזן"}
                       </p>
                     </div>
                   </div>
@@ -362,7 +361,7 @@ const filteredInvoices = invoices
                         תקציב
                       </p>
                       <div className="text-sm font-bold text-slate-900">
-                        {project.budget
+                        {project?.budget
                           ? formatCurrencyWithAlert(project.budget)
                           : "עדיין אין תקציב"}
                       </div>
@@ -381,14 +380,12 @@ const filteredInvoices = invoices
                         תקציב שנותר
                       </p>
                       <div className="font-bold">
-                        {formatCurrencyWithAlert(project.remainingBudget)}
+                        {formatCurrencyWithAlert(project?.remainingBudget)}
                       </div>
                     </div>
                   </div>
                 </div>
 
-
-        
                 {/* Created Date */}
                 <div className="group p-4 rounded-xl bg-gradient-to-br from-orange-50 to-amber-50 border-2 border-orange-200 hover:border-orange-400 transition-all">
                   <div className="flex items-start gap-3">
@@ -400,7 +397,7 @@ const filteredInvoices = invoices
                         נוצר בתאריך
                       </p>
                       <p className="text-sm font-bold text-slate-900">
-                        {formatDate(project.createdAt)}
+                        {formatDate(project?.createdAt)}
                       </p>
                     </div>
                   </div>
@@ -425,7 +422,7 @@ const filteredInvoices = invoices
                     הזמנות של הפרויקט
                   </h2>
                   <span className="mr-auto px-3 py-1 rounded-full bg-blue-100 text-blue-700 text-sm font-bold">
-                    {filteredOrders.length}
+                    {filteredOrders?.length}
                   </span>
                 </div>
               </div>
@@ -567,8 +564,8 @@ const filteredInvoices = invoices
                           </td>
 
                           <td className="px-4 py-3 text-sm font-bold text-center">
-                            {invoice.supplier?.name || "—"}
-                        </td>
+                            {invoice.supplierId?.name || "—"}
+                          </td>
                           <td className="px-4 py-3 text-sm font-bold text-center">
                             {invoice.paid === "כן" ? "שולם" : "לא שולם"}
                           </td>

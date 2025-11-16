@@ -1,61 +1,97 @@
+// controllers/projectController.js
+import Invoice from "../models/Invoice.js";
+import Order from "../models/Order.js";
+import Project from "../models/Project.js";
 import projectService from "../services/projectService.js";
 
 const projectController = {
-  createProject: async (req, res) => {
-    try {
-      const project = await projectService.createProject(req.body);
-      res.status(201).json({ success: true, data: project });
-    } catch (e) {
-      res.status(400).json({ success: false, message: e.message });
-    }
-  },
 
-  getAllProjects: async (req, res) => {
+  async getAllProjects(req, res) {
     try {
-      const projects = await projectService.getAllProjects(req.queryFilter);
+      const projects = await projectService.getAllProjects(req.user);
       res.json({ success: true, data: projects });
     } catch (e) {
-      res.status(500).json({ success: false, message: e.message });
-    }
+  return res.status(403).json({ message: "אין הרשאה" });
+}
+
   },
 
   getProjectById: async (req, res) => {
-    try {
-      const project = await projectService.getProjectById(req.params.projectId);
-      if (!project) return res.status(404).json({ success: false, message: "לא נמצא" });
+    const projectId = req.params.projectId;
 
-      res.json({ success: true, data: project });
-    } catch (e) {
-      res.status(500).json({ success: false, message: e.message });
+    console.log("📥 REQUEST PROJECT ID:", projectId);
+
+    try {
+      const project = await Project.findById(projectId);
+
+      if (!project) {
+        return res.status(404).json({ message: "פרויקט לא נמצא" });
+      }
+
+      const invoices = await Invoice.find({ projectId })
+        .populate("supplierId", "name");
+
+      const orders = await Order.find({ projectId });
+
+      return res.json({
+        success: true,
+        data: {
+          ...project.toObject(),
+          invoices,
+          orders,
+        },
+      });
+
+    } catch (err) {
+      console.error("❌ ERROR getProjectById:", err);
+      res.status(500).json({ message: err.message });
     }
   },
 
-  updateProject: async (req, res) => {
+  async createBulkInvoices(req, res) {
     try {
-      const updated = await projectService.updateProject(req.params.projectId, req.body);
-      if (!updated) return res.status(404).json({ success: false, message: "לא נמצא" });
+      const invoices = await projectService.createBulkInvoices(
+        req.user,
+        req.params.projectId,
+        req.body.invoices
+      );
+
+      res.status(201).json({ success: true, data: invoices });
+    } catch (e) {
+      res.status(403).json({ success: false, message: e.message });
+    }
+  },
+  async createProject(req, res) {
+    try {
+      const project = await projectService.createProject(req.user, req.body);
+      res.status(201).json({ success: true, data: project });
+    } catch (e) {
+      res.status(400).json({ message: e.message });
+    }
+  },
+
+  async updateProject(req, res) {
+    try {
+      const updated = await projectService.updateProject(
+        req.user,
+        req.params.id,
+        req.body
+      );
 
       res.json({ success: true, data: updated });
     } catch (e) {
-      res.status(400).json({ success: false, message: e.message });
+      res.status(403).json({ message: e.message });
     }
   },
 
-  deleteProject: async (req, res) => {
+  async deleteProject(req, res) {
+    console.log("🔥 DELETE PROJECT ROUTE HIT:", req.params.projectId);
+
     try {
-      await projectService.deleteProjectById(req.params.projectId);
+      await projectService.deleteProject(req.user, req.params.projectId);
       res.json({ success: true, message: "נמחק" });
     } catch (e) {
-      res.status(500).json({ success: false, message: e.message });
-    }
-  },
-
-  search: async (req, res) => {
-    try {
-      const results = await projectService.search(req.query.query);
-      res.json({ success: true, data: results });
-    } catch (e) {
-      res.status(500).json({ success: false, message: e.message });
+      res.status(403).json({ message: e.message });
     }
   }
 };

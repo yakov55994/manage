@@ -1,109 +1,118 @@
 // context/AuthContext.jsx
-import { createContext, useState, useContext, useEffect, useRef } from 'react';
-import api from '../api/api';
+import { createContext, useState, useContext, useEffect, useRef } from "react";
+import api from "../api/api";
 
 const AuthContext = createContext();
+
+// =========================
+// NORMALIZE USER PERMISSIONS
+// =========================
+const normalizeUser = (u) => {
+  if (!u) return null;
+
+  return {
+    ...u,
+    permissions: Array.isArray(u.permissions) ? u.permissions : [], // ← חשוב!
+  };
+};
 
 export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
-  const logoutInProgress = useRef(false); // 🆕 flag למניעת logout כפול
+  const logoutInProgress = useRef(false);
 
-  // פונקציית logout
+  // =========================
+  // LOGOUT
+  // =========================
   const logout = () => {
-    if (logoutInProgress.current) {
-      console.log('⏭️ Logout already in progress, skipping...');
-      return { success: false };
-    }
-    
+    if (logoutInProgress.current) return { success: false };
+
     logoutInProgress.current = true;
-    console.log('🚪 Logging out...');
-    
-    localStorage.removeItem('token');
-    localStorage.removeItem('user');
-    delete api.defaults.headers.common['Authorization'];
+
+    localStorage.removeItem("token");
+    localStorage.removeItem("user");
+    delete api.defaults.headers.common["Authorization"];
     setUser(null);
-    
+
     return { success: true };
   };
 
+  // =========================
+  // LOAD USER ON START
+  // =========================
   useEffect(() => {
-    const token = localStorage.getItem('token');
-    const userData = localStorage.getItem('user');
-    
-    console.log('🔍 AuthContext init - token:', !!token, 'userData:', userData);
-    
+    const token = localStorage.getItem("token");
+    const userData = localStorage.getItem("user");
+
     if (token && userData) {
       try {
-        const parsedUser = JSON.parse(userData);
-        setUser(parsedUser);
-        api.defaults.headers.common['Authorization'] = `Bearer ${token}`;
-        console.log('✅ User loaded:', parsedUser);
-      } catch (error) {
-        console.error('❌ Error parsing user data:', error);
-        localStorage.removeItem('token');
-        localStorage.removeItem('user');
+        const parsed = JSON.parse(userData);
+        const normalized = normalizeUser(parsed);
+
+        api.defaults.headers.common["Authorization"] = `Bearer ${token}`;
+        setUser(normalized);
+      } catch (err) {
+        localStorage.removeItem("token");
+        localStorage.removeItem("user");
       }
     }
+
     setLoading(false);
   }, []);
 
-  // 🆕 Debounced logout handler
+  // =========================
+  // DEBOUNCED LOGOUT HANDLER
+  // =========================
   useEffect(() => {
     let logoutTimeout = null;
-    
+
     const handleLogout = () => {
-      // 🆕 אם כבר יש logout בתור - בטל את הישן
-      if (logoutTimeout) {
-        clearTimeout(logoutTimeout);
-      }
-      
-      // 🆕 המתן 100ms לפני logout - אם יש עוד 401, נאחד אותם
+      if (logoutTimeout) clearTimeout(logoutTimeout);
+
       logoutTimeout = setTimeout(() => {
-        console.log('🔔 Logout event received - clearing auth');
-        const result = logout();
-        
-        if (result.success) {
-          window.location.href = '/login';
+        const res = logout();
+        if (res.success) {
+          window.location.href = "/login";
         }
-      }, 100); // 🆕 debounce של 100ms
+      }, 100);
     };
 
-    window.addEventListener('auth:logout', handleLogout);
-    
+    window.addEventListener("auth:logout", handleLogout);
+
     return () => {
-      if (logoutTimeout) {
-        clearTimeout(logoutTimeout);
-      }
-      window.removeEventListener('auth:logout', handleLogout);
+      if (logoutTimeout) clearTimeout(logoutTimeout);
+      window.removeEventListener("auth:logout", handleLogout);
     };
   }, []);
 
+  // =========================
+  // LOGIN
+  // =========================
   const login = async ({ token, user: userData }) => {
-    console.log('🔐 Login - saving token and user:', userData);
-    
-    logoutInProgress.current = false; // 🆕 איפוס הflag
-    
-    localStorage.setItem('token', token);
-    localStorage.setItem('user', JSON.stringify(userData));
-    api.defaults.headers.common['Authorization'] = `Bearer ${token}`;
-    setUser(userData);
+    logoutInProgress.current = false;
+
+    const normalized = normalizeUser(userData);
+
+    localStorage.setItem("token", token);
+    localStorage.setItem("user", JSON.stringify(normalized));
+    api.defaults.headers.common["Authorization"] = `Bearer ${token}`;
+    setUser(normalized);
   };
 
-  const isAdmin = user?.role === 'admin';
+  const isAdmin = user?.role === "admin";
   const isAuthenticated = !!user;
 
-  console.log('👤 Current user:', user, 'isAdmin:', isAdmin, 'isAuthenticated:', isAuthenticated);
-
   return (
-    <AuthContext.Provider value={{ 
-      user, 
-      login, 
-      logout, 
-      isAdmin, 
-      isAuthenticated,
-      loading 
-    }}>
+    <AuthContext.Provider
+      value={{
+        user,
+        login,
+        logout,
+        isAdmin,
+        isAuthenticated,
+        loading,
+      }}
+    >
       {children}
     </AuthContext.Provider>
   );

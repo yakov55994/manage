@@ -6,9 +6,9 @@ import Invoice from "./Invoice.js";
 const supplierSchema = new mongoose.Schema({
     name: { type: String, required: true },
     business_tax: { type: String, required: true },
-    address: String,
+    address: {type: String, require: true},
     phone: String,
-    email: String,
+    email: {type: String, require: true},
     date: { type: Date, default: Date.now },
 
     bankDetails: {
@@ -21,15 +21,14 @@ const supplierSchema = new mongoose.Schema({
         type: mongoose.Schema.Types.ObjectId,
         ref: "Project"
     }],
+    invoices: [
+        { type: mongoose.Schema.Types.ObjectId, ref: "Invoice" }
+    ],
 
-    invoices: [{
-        type: mongoose.Schema.Types.ObjectId,
-        ref: "Invoice"
-    }]
 });
 
 /** 🧹 Cascade delete: מחיקת ספק מוחקת את החשבוניות שלו */
-supplierSchema.pre("deleteOne", { document: true, query: false }, async function(next) {
+supplierSchema.pre("deleteOne", { document: true, query: false }, async function (next) {
     try {
         await Invoice.deleteMany({ supplierId: this._id });
         next();

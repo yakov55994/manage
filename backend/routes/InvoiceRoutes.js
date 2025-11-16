@@ -1,43 +1,53 @@
-import express from 'express'
-import { protect } from '../middleware/auth.js';
-import { checkProjectPermission } from '../middleware/permissions.js';
-import invoiceController from '../controller/invoiceControllers.js'
+import express from "express";
+import { protect } from "../middleware/auth.js";
+import invoiceController from "../controller/invoiceControllers.js";
+import { checkAccess } from "../middleware/auth.js";
 
-const router = express.Router({ mergeParams: true });
+const router = express.Router();
 
-router.get(
-  "/",
+router.get("/", protect, invoiceController.getInvoices);
+
+router.get("/:id",
   protect,
-  checkProjectPermission("invoices", "view"),
-  invoiceController.getInvoicesByProject
-);
-
-router.post(
-  "/",
-  protect,
-  checkProjectPermission("invoices", "edit"),
-  invoiceController.createInvoice
-);
-
-router.get(
-  "/:id",
-  protect,
-  checkProjectPermission("invoices", "view"),
+  checkAccess("invoice", "view"),
   invoiceController.getInvoiceById
 );
 
-router.put(
-  "/:id",
+router.get(
+  "/check/duplicate",
   protect,
-  checkProjectPermission("invoices", "edit"),
+  invoiceController.checkDuplicate
+);
+
+
+router.post("/",
+  protect,
+  checkAccess("invoice", "edit"),
+  invoiceController.createInvoice
+);
+
+router.put("/:id/edit",
+  protect,
+  checkAccess("invoice", "edit"),
   invoiceController.updateInvoice
 );
 
-router.delete(
-  "/:id",
+router.put("/:id/status",
   protect,
-  checkProjectPermission("invoices", "edit"),
+  checkAccess("invoice", "edit"),
+  invoiceController.updatePaymentStatus
+);
+
+router.put("/:id/move",
+  protect,
+  checkAccess("invoice", "edit"),
+  invoiceController.moveInvoice
+);
+
+router.delete("/:id",
+  protect,
+  checkAccess("invoice", "edit"),
   invoiceController.deleteInvoice
 );
 
-export default router
+export default router;

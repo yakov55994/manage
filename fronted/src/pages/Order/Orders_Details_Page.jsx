@@ -1,12 +1,25 @@
-import { useEffect, useState } from 'react';
-import { useNavigate, useParams } from 'react-router-dom';
-import api from '../../api/api';
-import { ClipLoader } from 'react-spinners';
-import { ShoppingCart, Edit, Trash2, FileText, Calendar, User, Hash, DollarSign, Briefcase, AlertCircle, Phone, X } from "lucide-react";
-import { toast } from 'sonner';
+import { useEffect, useState } from "react";
+import { useNavigate, useParams } from "react-router-dom";
+import api from "../../api/api";
+import { ClipLoader } from "react-spinners";
+import {
+  ShoppingCart,
+  Edit,
+  Trash2,
+  FileText,
+  Calendar,
+  User,
+  Hash,
+  DollarSign,
+  Briefcase,
+  AlertCircle,
+  Phone,
+  X,
+} from "lucide-react";
+import { toast } from "sonner";
 
 const OrderDetailsPage = () => {
-const { projectId, id } = useParams();
+  const { projectId, id } = useParams();
   const [order, setOrder] = useState(null);
   const [confirmOpen, setConfirmOpen] = useState(false);
   const [deleting, setDeleting] = useState(false);
@@ -16,8 +29,8 @@ const { projectId, id } = useParams();
   useEffect(() => {
     const fetchInvoiceDetails = async () => {
       try {
-const response = await api.get(`/projects/${projectId}/orders/${id}`);
-        const orderData = response.data;
+        const response = await api.get(`/orders/${id}`);
+        const orderData = response.data.data;
 
         if (orderData.files && orderData.files.length > 0) {
           const fileDetails = await Promise.all(
@@ -52,7 +65,9 @@ const response = await api.get(`/projects/${projectId}/orders/${id}`);
           <div className="absolute inset-0 bg-orange-500/20 blur-3xl rounded-full"></div>
           <ClipLoader size={80} color="#f97316" loading={loading} />
         </div>
-        <h1 className="mt-6 font-bold text-2xl text-orange-900">טוען פרטי הזמנה...</h1>
+        <h1 className="mt-6 font-bold text-2xl text-orange-900">
+          טוען פרטי הזמנה...
+        </h1>
       </div>
     );
   }
@@ -63,11 +78,17 @@ const response = await api.get(`/projects/${projectId}/orders/${id}`);
 
   function formatHebrewDate(dateTime) {
     const date = new Date(dateTime);
-    return date.toLocaleString('he-IL', { year: 'numeric', month: '2-digit', day: '2-digit' });
+    return date.toLocaleString("he-IL", {
+      year: "numeric",
+      month: "2-digit",
+      day: "2-digit",
+    });
   }
 
   const openInExcelViewer = (fileUrl) => {
-    const officeUrl = `https://view.officeapps.live.com/op/view.aspx?src=${encodeURIComponent(fileUrl)}`;
+    const officeUrl = `https://view.officeapps.live.com/op/view.aspx?src=${encodeURIComponent(
+      fileUrl
+    )}`;
     window.open(officeUrl, "_blank");
   };
 
@@ -75,21 +96,21 @@ const response = await api.get(`/projects/${projectId}/orders/${id}`);
     const fileUrl = file?.url || file?.fileUrl;
     if (!fileUrl) return null;
 
-    const fileExtension = fileUrl.split('.').pop().toLowerCase();
+    const fileExtension = fileUrl.split(".").pop().toLowerCase();
 
-    if (fileExtension === 'pdf') {
+    if (fileExtension === "pdf") {
       return (
-        <a 
-          href={fileUrl} 
-          target="_blank" 
-          rel="noopener noreferrer" 
+        <a
+          href={fileUrl}
+          target="_blank"
+          rel="noopener noreferrer"
           className="inline-flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-orange-500 to-amber-500 text-white rounded-lg hover:from-orange-600 hover:to-amber-600 transition-all duration-300 shadow-md hover:shadow-lg"
         >
           <FileText className="w-5 h-5" />
           <span className="font-medium">צפה בקובץ PDF</span>
         </a>
       );
-    } else if (fileExtension === 'xlsx' || fileExtension === 'xls') {
+    } else if (fileExtension === "xlsx" || fileExtension === "xls") {
       return (
         <button
           onClick={() => openInExcelViewer(fileUrl)}
@@ -101,10 +122,10 @@ const response = await api.get(`/projects/${projectId}/orders/${id}`);
       );
     } else if (fileUrl.match(/\.(jpeg|jpg|png|gif)$/)) {
       return (
-        <a 
-          href={fileUrl} 
-          target="_blank" 
-          rel="noopener noreferrer" 
+        <a
+          href={fileUrl}
+          target="_blank"
+          rel="noopener noreferrer"
           className="inline-flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-blue-500 to-cyan-500 text-white rounded-lg hover:from-blue-600 hover:to-cyan-600 transition-all duration-300 shadow-md hover:shadow-lg"
         >
           <FileText className="w-5 h-5" />
@@ -113,10 +134,10 @@ const response = await api.get(`/projects/${projectId}/orders/${id}`);
       );
     } else {
       return (
-        <a 
-          href={fileUrl} 
-          target="_blank" 
-          rel="noopener noreferrer" 
+        <a
+          href={fileUrl}
+          target="_blank"
+          rel="noopener noreferrer"
           className="inline-flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-purple-500 to-pink-500 text-white rounded-lg hover:from-purple-600 hover:to-pink-600 transition-all duration-300 shadow-md hover:shadow-lg"
         >
           <FileText className="w-5 h-5" />
@@ -127,14 +148,14 @@ const response = await api.get(`/projects/${projectId}/orders/${id}`);
   };
 
   const handleEdit = (id) => {
-navigate(`/projects/${projectId}/orders/${id}/edit`);
+    navigate(`/orders/${id}/edit`);
   };
 
   const handleDelete = async () => {
     try {
       if (!order?._id) return;
       setDeleting(true);
-await api.delete(`/projects/${projectId}/orders/${order._id}`);
+      await api.delete(`/orders/${order._id}`);
       toast.success("ההזמנה נמחקה בהצלחה", {
         className: "sonner-toast success rtl",
       });
@@ -158,10 +179,14 @@ await api.delete(`/projects/${projectId}/orders/${order._id}`);
             <div className="bg-red-100 rounded-full p-4 mb-4">
               <AlertCircle className="w-16 h-16 text-red-600" />
             </div>
-            <h1 className="text-3xl font-bold text-red-600 mb-2">הזמנה לא נמצאה</h1>
-            <p className="text-gray-600 text-center mb-6">לא ניתן למצוא את ההזמנה המבוקשת</p>
+            <h1 className="text-3xl font-bold text-red-600 mb-2">
+              הזמנה לא נמצאה
+            </h1>
+            <p className="text-gray-600 text-center mb-6">
+              לא ניתן למצוא את ההזמנה המבוקשת
+            </p>
             <button
-              onClick={() => navigate(`/projects/${projectId}/orders`)}
+              onClick={() => navigate(`/orders`)}
               className="px-6 py-3 bg-gradient-to-r from-orange-500 to-amber-500 text-white rounded-xl hover:from-orange-600 hover:to-amber-600 transition-all duration-300 shadow-lg hover:shadow-xl font-medium"
             >
               חזור לרשימת הזמנות
@@ -183,7 +208,9 @@ await api.delete(`/projects/${projectId}/orders/${order._id}`);
                 <ShoppingCart className="text-white w-8 h-8" />
               </div>
               <div>
-                <h1 className="text-3xl md:text-4xl font-bold text-gray-900">פרטי הזמנה</h1>
+                <h1 className="text-3xl md:text-4xl font-bold text-gray-900">
+                  פרטי הזמנה
+                </h1>
                 <p className="text-gray-600 mt-1">הצגת מידע מפורט על ההזמנה</p>
               </div>
             </div>
@@ -218,9 +245,13 @@ await api.delete(`/projects/${projectId}/orders/${order._id}`);
                 <div className="bg-white p-2 rounded-lg shadow-sm">
                   <User className="w-5 h-5 text-orange-600" />
                 </div>
-                <span className="text-sm font-semibold text-gray-600">שם המזמין</span>
+                <span className="text-sm font-semibold text-gray-600">
+                  שם המזמין
+                </span>
               </div>
-              <p className="text-xl font-bold text-gray-900 mr-10">{order.invitingName}</p>
+              <p className="text-xl font-bold text-gray-900 mr-10">
+                {order.invitingName}
+              </p>
             </div>
 
             {/* מספר הזמנה */}
@@ -229,9 +260,13 @@ await api.delete(`/projects/${projectId}/orders/${order._id}`);
                 <div className="bg-white p-2 rounded-lg shadow-sm">
                   <Hash className="w-5 h-5 text-amber-600" />
                 </div>
-                <span className="text-sm font-semibold text-gray-600">מספר הזמנה</span>
+                <span className="text-sm font-semibold text-gray-600">
+                  מספר הזמנה
+                </span>
               </div>
-              <p className="text-xl font-bold text-gray-900 mr-10">{order.orderNumber}</p>
+              <p className="text-xl font-bold text-gray-900 mr-10">
+                {order.orderNumber}
+              </p>
             </div>
 
             {/* סכום */}
@@ -240,9 +275,13 @@ await api.delete(`/projects/${projectId}/orders/${order._id}`);
                 <div className="bg-white p-2 rounded-lg shadow-sm">
                   <DollarSign className="w-5 h-5 text-green-600" />
                 </div>
-                <span className="text-sm font-semibold text-gray-600">סכום</span>
+                <span className="text-sm font-semibold text-gray-600">
+                  סכום
+                </span>
               </div>
-              <p className="text-xl font-bold text-green-700 mr-10">{formatNumber(order.sum)} ₪</p>
+              <p className="text-xl font-bold text-green-700 mr-10">
+                {formatNumber(order.sum)} ₪
+              </p>
             </div>
 
             {/* פירוט */}
@@ -251,9 +290,13 @@ await api.delete(`/projects/${projectId}/orders/${order._id}`);
                 <div className="bg-white p-2 rounded-lg shadow-sm">
                   <FileText className="w-5 h-5 text-blue-600" />
                 </div>
-                <span className="text-sm font-semibold text-gray-600">פירוט</span>
+                <span className="text-sm font-semibold text-gray-600">
+                  פירוט
+                </span>
               </div>
-              <p className="text-xl font-bold text-gray-900 mr-10">{order.detail}</p>
+              <p className="text-xl font-bold text-gray-900 mr-10">
+                {order.detail}
+              </p>
             </div>
 
             {/* פרויקט */}
@@ -262,9 +305,13 @@ await api.delete(`/projects/${projectId}/orders/${order._id}`);
                 <div className="bg-white p-2 rounded-lg shadow-sm">
                   <Briefcase className="w-5 h-5 text-purple-600" />
                 </div>
-                <span className="text-sm font-semibold text-gray-600">פרויקט</span>
+                <span className="text-sm font-semibold text-gray-600">
+                  פרויקט
+                </span>
               </div>
-              <p className="text-xl font-bold text-gray-900 mr-10">{order.projectName}</p>
+              <p className="text-xl font-bold text-gray-900 mr-10">
+                {order.projectName}
+              </p>
             </div>
 
             {/* תאריך יצירה */}
@@ -273,9 +320,13 @@ await api.delete(`/projects/${projectId}/orders/${order._id}`);
                 <div className="bg-white p-2 rounded-lg shadow-sm">
                   <Calendar className="w-5 h-5 text-indigo-600" />
                 </div>
-                <span className="text-sm font-semibold text-gray-600">תאריך יצירה</span>
+                <span className="text-sm font-semibold text-gray-600">
+                  תאריך יצירה
+                </span>
               </div>
-              <p className="text-xl font-bold text-gray-900 mr-10">{formatHebrewDate(order.createdAt)}</p>
+              <p className="text-xl font-bold text-gray-900 mr-10">
+                {formatHebrewDate(order.createdAt)}
+              </p>
             </div>
 
             {/* סטטוס */}
@@ -284,9 +335,13 @@ await api.delete(`/projects/${projectId}/orders/${order._id}`);
                 <div className="bg-white p-2 rounded-lg shadow-sm">
                   <AlertCircle className="w-5 h-5 text-orange-600" />
                 </div>
-                <span className="text-sm font-semibold text-gray-600">סטטוס הזמנה</span>
+                <span className="text-sm font-semibold text-gray-600">
+                  סטטוס הזמנה
+                </span>
               </div>
-              <p className="text-xl font-bold text-gray-900 mr-10">{order.status}</p>
+              <p className="text-xl font-bold text-gray-900 mr-10">
+                {order.status}
+              </p>
             </div>
 
             {/* איש קשר */}
@@ -295,9 +350,13 @@ await api.delete(`/projects/${projectId}/orders/${order._id}`);
                 <div className="bg-white p-2 rounded-lg shadow-sm">
                   <Phone className="w-5 h-5 text-teal-600" />
                 </div>
-                <span className="text-sm font-semibold text-gray-600">איש קשר</span>
+                <span className="text-sm font-semibold text-gray-600">
+                  איש קשר
+                </span>
               </div>
-              <p className="text-xl font-bold text-gray-900 mr-10">{order.Contact_person}</p>
+              <p className="text-xl font-bold text-gray-900 mr-10">
+                {order.Contact_person}
+              </p>
             </div>
           </div>
 
@@ -308,13 +367,15 @@ await api.delete(`/projects/${projectId}/orders/${order._id}`);
                 <div className="bg-gradient-to-br from-orange-500 to-amber-500 p-2 rounded-lg shadow-lg">
                   <FileText className="text-white w-6 h-6" />
                 </div>
-                <h2 className="text-2xl font-bold text-gray-900">קבצים מצורפים</h2>
+                <h2 className="text-2xl font-bold text-gray-900">
+                  קבצים מצורפים
+                </h2>
               </div>
-              
+
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 {order.files.map((file, index) => (
-                  <div 
-                    key={index} 
+                  <div
+                    key={index}
                     className="bg-gradient-to-br from-gray-50 to-gray-100 p-5 rounded-xl border-2 border-gray-200 hover:border-orange-400 transition-all duration-300 shadow-md hover:shadow-lg"
                   >
                     <div className="flex items-center justify-between">
@@ -322,11 +383,11 @@ await api.delete(`/projects/${projectId}/orders/${order._id}`);
                         <div className="bg-gradient-to-br from-orange-500 to-amber-500 text-white font-bold w-10 h-10 rounded-lg flex items-center justify-center shadow-md">
                           {index + 1}
                         </div>
-                        <span className="font-semibold text-gray-700">קובץ {index + 1}</span>
+                        <span className="font-semibold text-gray-700">
+                          קובץ {index + 1}
+                        </span>
                       </div>
-                      <div>
-                        {renderFile(file)}
-                      </div>
+                      <div>{renderFile(file)}</div>
                     </div>
                   </div>
                 ))}
@@ -338,7 +399,9 @@ await api.delete(`/projects/${projectId}/orders/${order._id}`);
             <div className="mt-8 pt-8 border-t-2 border-gray-200">
               <div className="bg-gradient-to-br from-gray-50 to-gray-100 p-8 rounded-xl border-2 border-dashed border-gray-300 text-center">
                 <FileText className="w-16 h-16 text-gray-400 mx-auto mb-3" />
-                <p className="text-xl font-semibold text-gray-600">אין קבצים מצורפים</p>
+                <p className="text-xl font-semibold text-gray-600">
+                  אין קבצים מצורפים
+                </p>
               </div>
             </div>
           )}

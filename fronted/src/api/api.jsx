@@ -7,7 +7,6 @@ const baseURL =
 
 const api = axios.create({
   baseURL,
-  withCredentials: true,
   headers: {
     "Content-Type": "application/json",
   },
@@ -40,38 +39,15 @@ api.interceptors.response.use(
       message: error.response?.data?.message,
     });
 
+    // 👇 כאן ההפניה הפשוטה
+    if (error.response?.status === 403) {
+      window.location.href = "/no-access";
+      return; // שלא ימשיך
+    }
+
     return Promise.reject(error);
   }
 );
 
+
 export default api;
-
-// 🟦 פונקציה חכמה שמנהלת קריאות עם /projects/:id רק למשתמש רגיל
-export const apiWithProject = async (method, path, body = null) => {
-  const user = JSON.parse(localStorage.getItem("user"));
-  const projectId = localStorage.getItem("selectedProjectId");
-
-  // מנהל → פונה לנתיב רגיל
-  if (user?.role === "admin") {
-    return api({
-      method,
-      url: path,
-      data: body,
-    });
-  }
-
-  // משתמש רגיל → חייב projectId
-  if (!projectId) {
-    throw new Error("חסר projectId למשתמש רגיל");
-  }
-
-  // בנייה נכונה של ה־URL
-  const cleanPath = path.startsWith("/") ? path : `/${path}`;
-
-  return api({
-    method,
-    url: `/projects/${projectId}${cleanPath}`,
-    data: body,
-  });
-};
-

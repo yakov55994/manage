@@ -81,23 +81,22 @@ const InvoicesPage = () => {
     supplierAccountNumber: false,
   });
 
-// עמודות זמינות – ודא שהלייבל נכון (מספר חשבונית, לא "מספר הזמנה")
-const availableColumns = [
-  { key: 'invoiceNumber', label: 'מספר חשבונית' },
-  { key: 'projectName', label: 'שם הפרוייקט' },
-  { key: 'invitingName', label: 'שם המזמין' },
-  { key: 'sum', label: 'סכום' },
-  { key: 'status', label: 'סטטוס הגשה' },
-  { key: 'createdAt', label: 'תאריך יצירה' },
-  { key: 'detail', label: 'פירוט' },
-  { key: 'paid', label: 'סטטוס תשלום' },
-  { key: 'paymentDate', label: 'תאריך תשלום' },
-  { key: 'documentType', label: 'סוג מסמך' },
-  { key: 'paymentMethod', label: 'אמצעי תשלום' },
-];
+  // עמודות זמינות – ודא שהלייבל נכון (מספר חשבונית, לא "מספר הזמנה")
+  const availableColumns = [
+    { key: "invoiceNumber", label: "מספר חשבונית" },
+    { key: "projectName", label: "שם הפרוייקט" },
+    { key: "invitingName", label: "שם המזמין" },
+    { key: "sum", label: "סכום" },
+    { key: "status", label: "סטטוס הגשה" },
+    { key: "createdAt", label: "תאריך יצירה" },
+    { key: "detail", label: "פירוט" },
+    { key: "paid", label: "סטטוס תשלום" },
+    { key: "paymentDate", label: "תאריך תשלום" },
+    { key: "documentType", label: "סוג מסמך" },
+    { key: "paymentMethod", label: "אמצעי תשלום" },
+  ];
 
-// ברירת מחדל – עמודות לייצוא (אפשר להשאיר כמו אצלך, רק וידא שsync עם availableColumns)
-
+  // ברירת מחדל – עמודות לייצוא (אפשר להשאיר כמו אצלך, רק וידא שsync עם availableColumns)
 
   const navigate = useNavigate();
 
@@ -110,13 +109,12 @@ const availableColumns = [
     });
   };
 
-const normalizeDate = (d) => {
-  if (!d) return null;
-  const raw = d?.$date || d; // תומך גם באובייקט { $date: ... } וגם במחרוזת כמו "2025-02-25"
-  const dt = new Date(raw);
-  return isNaN(dt.getTime()) ? null : dt;
-};
-
+  const normalizeDate = (d) => {
+    if (!d) return null;
+    const raw = d?.$date || d; // תומך גם באובייקט { $date: ... } וגם במחרוזת כמו "2025-02-25"
+    const dt = new Date(raw);
+    return isNaN(dt.getTime()) ? null : dt;
+  };
 
   const INTERIM_TYPES = new Set(["ח. עסקה", "ה. עבודה", "ד. תשלום"]);
   const FINAL_TYPES = new Set([
@@ -155,139 +153,161 @@ const normalizeDate = (d) => {
       ? res
       : [];
 
-const getFilteredInvoices = () => {
-  let filtered = [...allInvoices];
+  const getFilteredInvoices = () => {
+    let filtered = [...allInvoices];
 
-  // חיפוש כללי
-  if (searchTerm) {
-    filtered = filtered.filter((invoice) =>
-      (invoice.invoiceNumber?.toString() || "").includes(searchTerm) ||
-      (invoice.projectName || "").toLowerCase().includes(searchTerm.toLowerCase()) ||
-      (invoice.supplier?.name || "").toLowerCase().includes(searchTerm.toLowerCase()) ||
-      (invoice.invitingName || "").toLowerCase().includes(searchTerm.toLowerCase())
-    );
-  }
-
-  // פילטר בר מהיר (תשלום/סטטוס הגשה)
-  if (paymentFilter !== "all") {
-    const isPaid = paymentFilter === "paid";
-    filtered = filtered.filter((invoice) =>
-      (isPaid && invoice.paid === "כן") || (!isPaid && invoice.paid !== "כן")
-    );
-  }
-
-  if (statusFilter !== "all") {
-    filtered = filtered.filter((invoice) => {
-      if (statusFilter === "submitted") return invoice.status === "הוגש";
-      if (statusFilter === "inProgress") return invoice.status === "בעיבוד";
-      if (statusFilter === "notSubmitted") return invoice.status === "לא הוגש";
-      return true;
-    });
-  }
-
-  // פילטרים מתקדמים בתוך המודאל
-  if (showReportModal) {
-    const createdFrom = normalizeDate(advancedFilters.dateFrom);
-    const createdTo = normalizeDate(advancedFilters.dateTo);
-    const paidFrom = normalizeDate(advancedFilters.paymentDateFrom);
-    const paidTo = normalizeDate(advancedFilters.paymentDateTo);
-
-    if (createdFrom) {
-      filtered = filtered.filter((inv) => {
-        const d = normalizeDate(inv.createdAt);
-        return d && d >= createdFrom;
-      });
+    // חיפוש כללי
+    if (searchTerm) {
+      filtered = filtered.filter(
+        (invoice) =>
+          (invoice.invoiceNumber?.toString() || "").includes(searchTerm) ||
+          (invoice.projectName || "")
+            .toLowerCase()
+            .includes(searchTerm.toLowerCase()) ||
+          (invoice.supplier?.name || "")
+            .toLowerCase()
+            .includes(searchTerm.toLowerCase()) ||
+          (invoice.invitingName || "")
+            .toLowerCase()
+            .includes(searchTerm.toLowerCase())
+      );
     }
-    if (createdTo) {
-      filtered = filtered.filter((inv) => {
-        const d = normalizeDate(inv.createdAt);
-        return d && d <= createdTo;
-      });
+
+    // פילטר בר מהיר (תשלום/סטטוס הגשה)
+    if (paymentFilter !== "all") {
+      const isPaid = paymentFilter === "paid";
+      filtered = filtered.filter(
+        (invoice) =>
+          (isPaid && invoice.paid === "כן") ||
+          (!isPaid && invoice.paid !== "כן")
+      );
     }
-    if (paidFrom) {
-      filtered = filtered.filter((inv) => {
-        const d = normalizeDate(inv.paymentDate);
-        return d && d >= paidFrom;
-      });
-    }
-    if (paidTo) {
-      filtered = filtered.filter((inv) => {
-        const d = normalizeDate(inv.paymentDate);
-        return d && d <= paidTo;
+
+    if (statusFilter !== "all") {
+      filtered = filtered.filter((invoice) => {
+        if (statusFilter === "submitted") return invoice.status === "הוגש";
+        if (statusFilter === "inProgress") return invoice.status === "בעיבוד";
+        if (statusFilter === "notSubmitted")
+          return invoice.status === "לא הוגש";
+        return true;
       });
     }
 
-    if (advancedFilters.amountMin) {
-      filtered = filtered.filter((inv) =>
-        Number(inv.sum) >= Number(advancedFilters.amountMin)
-      );
-    }
-    if (advancedFilters.amountMax) {
-      filtered = filtered.filter((inv) =>
-        Number(inv.sum) <= Number(advancedFilters.amountMax)
-      );
+    // פילטרים מתקדמים בתוך המודאל
+    if (showReportModal) {
+      const createdFrom = normalizeDate(advancedFilters.dateFrom);
+      const createdTo = normalizeDate(advancedFilters.dateTo);
+      const paidFrom = normalizeDate(advancedFilters.paymentDateFrom);
+      const paidTo = normalizeDate(advancedFilters.paymentDateTo);
+
+      if (createdFrom) {
+        filtered = filtered.filter((inv) => {
+          const d = normalizeDate(inv.createdAt);
+          return d && d >= createdFrom;
+        });
+      }
+      if (createdTo) {
+        filtered = filtered.filter((inv) => {
+          const d = normalizeDate(inv.createdAt);
+          return d && d <= createdTo;
+        });
+      }
+      if (paidFrom) {
+        filtered = filtered.filter((inv) => {
+          const d = normalizeDate(inv.paymentDate);
+          return d && d >= paidFrom;
+        });
+      }
+      if (paidTo) {
+        filtered = filtered.filter((inv) => {
+          const d = normalizeDate(inv.paymentDate);
+          return d && d <= paidTo;
+        });
+      }
+
+      if (advancedFilters.amountMin) {
+        filtered = filtered.filter(
+          (inv) => Number(inv.sum) >= Number(advancedFilters.amountMin)
+        );
+      }
+      if (advancedFilters.amountMax) {
+        filtered = filtered.filter(
+          (inv) => Number(inv.sum) <= Number(advancedFilters.amountMax)
+        );
+      }
+
+      if (advancedFilters.projectName) {
+        filtered = filtered.filter((inv) =>
+          (inv.projectName || "")
+            .toLowerCase()
+            .includes(advancedFilters.projectName.toLowerCase())
+        );
+      }
+
+      if (advancedFilters.supplierName) {
+        const q = advancedFilters.supplierName.toLowerCase();
+        filtered = filtered.filter(
+          (inv) =>
+            (inv.supplier?.name || "").toLowerCase().includes(q) ||
+            (inv.invitingName || "").toLowerCase().includes(q)
+        );
+      }
+
+      if (advancedFilters.invoiceNumberFrom) {
+        filtered = filtered.filter(
+          (inv) =>
+            Number(inv.invoiceNumber) >=
+            Number(advancedFilters.invoiceNumberFrom)
+        );
+      }
+      if (advancedFilters.invoiceNumberTo) {
+        filtered = filtered.filter(
+          (inv) =>
+            Number(inv.invoiceNumber) <= Number(advancedFilters.invoiceNumberTo)
+        );
+      }
+
+      if (advancedFilters.hasSupplier === "yes") {
+        filtered = filtered.filter(
+          (inv) => inv.supplier && typeof inv.supplier === "object"
+        );
+      } else if (advancedFilters.hasSupplier === "no") {
+        filtered = filtered.filter(
+          (inv) => !inv.supplier || typeof inv.supplier !== "object"
+        );
+      }
+
+      if (advancedFilters.paymentStatus === "paid") {
+        filtered = filtered.filter((inv) => inv.paid === "כן");
+      } else if (advancedFilters.paymentStatus === "unpaid") {
+        filtered = filtered.filter((inv) => inv.paid !== "כן");
+      }
+
+      if (advancedFilters.submissionStatus === "submitted") {
+        filtered = filtered.filter((inv) => inv.status === "הוגש");
+      } else if (advancedFilters.submissionStatus === "inProgress") {
+        filtered = filtered.filter((inv) => inv.status === "בעיבוד");
+      } else if (advancedFilters.submissionStatus === "notSubmitted") {
+        filtered = filtered.filter((inv) => inv.status === "לא הוגש");
+      }
+
+      if (advancedFilters.documentType) {
+        const wanted = advancedFilters.documentType.trim();
+        filtered = filtered.filter(
+          (inv) => (inv.documentType || "").trim() === wanted
+        );
+      }
+
+      if (advancedFilters.paymentMethod) {
+        const wanted = advancedFilters.paymentMethod.trim();
+        filtered = filtered.filter(
+          (inv) => (inv.paymentMethod || "").trim() === wanted
+        );
+      }
     }
 
-    if (advancedFilters.projectName) {
-      filtered = filtered.filter((inv) =>
-        (inv.projectName || "").toLowerCase()
-          .includes(advancedFilters.projectName.toLowerCase())
-      );
-    }
-
-    if (advancedFilters.supplierName) {
-      const q = advancedFilters.supplierName.toLowerCase();
-      filtered = filtered.filter((inv) =>
-        (inv.supplier?.name || "").toLowerCase().includes(q) ||
-        (inv.invitingName || "").toLowerCase().includes(q)
-      );
-    }
-
-    if (advancedFilters.invoiceNumberFrom) {
-      filtered = filtered.filter((inv) =>
-        Number(inv.invoiceNumber) >= Number(advancedFilters.invoiceNumberFrom)
-      );
-    }
-    if (advancedFilters.invoiceNumberTo) {
-      filtered = filtered.filter((inv) =>
-        Number(inv.invoiceNumber) <= Number(advancedFilters.invoiceNumberTo)
-      );
-    }
-
-    if (advancedFilters.hasSupplier === "yes") {
-      filtered = filtered.filter((inv) => inv.supplier && typeof inv.supplier === "object");
-    } else if (advancedFilters.hasSupplier === "no") {
-      filtered = filtered.filter((inv) => !inv.supplier || typeof inv.supplier !== "object");
-    }
-
-    if (advancedFilters.paymentStatus === "paid") {
-      filtered = filtered.filter((inv) => inv.paid === "כן");
-    } else if (advancedFilters.paymentStatus === "unpaid") {
-      filtered = filtered.filter((inv) => inv.paid !== "כן");
-    }
-
-    if (advancedFilters.submissionStatus === "submitted") {
-      filtered = filtered.filter((inv) => inv.status === "הוגש");
-    } else if (advancedFilters.submissionStatus === "inProgress") {
-      filtered = filtered.filter((inv) => inv.status === "בעיבוד");
-    } else if (advancedFilters.submissionStatus === "notSubmitted") {
-      filtered = filtered.filter((inv) => inv.status === "לא הוגש");
-    }
-
-    if (advancedFilters.documentType) {
-      const wanted = advancedFilters.documentType.trim();
-      filtered = filtered.filter((inv) => (inv.documentType || "").trim() === wanted);
-    }
-
-    if (advancedFilters.paymentMethod) {
-      const wanted = advancedFilters.paymentMethod.trim();
-      filtered = filtered.filter((inv) => (inv.paymentMethod || "").trim() === wanted);
-    }
-  }
-
-  return filtered;
-};
-
+    return filtered;
+  };
 
   const filteredInvoices = getFilteredInvoices();
 
@@ -354,11 +374,11 @@ const getFilteredInvoices = () => {
   }, [paymentFilter, statusFilter]);
 
   useEffect(() => {
-  if (!showReportModal) return;
-  const onKeyDown = (e) => e.key === "Escape" && setShowReportModal(false);
-  window.addEventListener("keydown", onKeyDown);
-  return () => window.removeEventListener("keydown", onKeyDown);
-}, [showReportModal]);
+    if (!showReportModal) return;
+    const onKeyDown = (e) => e.key === "Escape" && setShowReportModal(false);
+    window.addEventListener("keydown", onKeyDown);
+    return () => window.removeEventListener("keydown", onKeyDown);
+  }, [showReportModal]);
 
   const sortedInvoices = [...(searchTerm ? filteredInvoices : invoices)].sort(
     (a, b) => {
@@ -592,8 +612,8 @@ const getFilteredInvoices = () => {
   useEffect(() => {
     const fetchInvoices = async () => {
       try {
-const res = await api.get("/invoices/project/all");
-        setAllInvoices(arr(res.data));
+        const res = await api.get("/invoices");
+        setAllInvoices(arr(res.data.data));
         setInvoices(arr(res.data));
       } catch (error) {
         console.error("Error fetching invoices:", error);
@@ -611,7 +631,9 @@ const res = await api.get("/invoices/project/all");
   const handleDelete = async () => {
     try {
       if (invoiceToDelete) {
-        await api.delete(`/invoices/project/${invoiceToDelete.projectId}/${invoiceToDelete._id}`);
+        await api.delete(
+          `/invoices/${invoiceToDelete._id}`
+        );
 
         const updatedInvoices = allInvoices.filter(
           (invoice) => invoice._id !== invoiceToDelete._id
@@ -655,62 +677,60 @@ const res = await api.get("/invoices/project/all");
   };
 
   const handleEdit = (id) => {
-    navigate(`/update-invoice/${id}`);
+    navigate(`/invoices/${id}/edit`);
   };
 
   const handleView = (id) => {
     navigate(`/invoices/${id}`);
   };
 
-const togglePaymentStatus = async (invoice) => {
-  try {
-    // אם החשבונית עדיין לא שולמה → פותח את מודאל לכידת תשלום
-    if (invoice.paid !== "כן") {
-      setPaymentCapture({
-        open: true,
-        invoice,
-        defaultDate: new Date().toISOString().slice(0, 10),
-        defaultMethod: "",
+  const togglePaymentStatus = async (invoice) => {
+    try {
+      // אם החשבונית עדיין לא שולמה → פותח את מודאל לכידת תשלום
+      if (invoice.paid !== "כן") {
+        setPaymentCapture({
+          open: true,
+          invoice,
+          defaultDate: new Date().toISOString().slice(0, 10),
+          defaultMethod: "",
+        });
+        return;
+      }
+
+      // אם החשבונית כן שולמה → עדכון ל"לא"
+      const { data: updated } = await api.put(
+        `/invoices/${invoice._id}/status`,
+        { paid: "לא" }
+      );
+
+      setInvoices((prev) =>
+        prev.map((inv) => (inv._id === invoice._id ? updated : inv))
+      );
+
+      setAllInvoices((prev) =>
+        prev.map((inv) => (inv._id === invoice._id ? updated : inv))
+      );
+
+      toast.success("סטטוס התשלום עודכן ל - לא", {
+        className: "sonner-toast success rtl",
       });
-      return;
+    } catch (err) {
+      console.error(err);
+      toast.error("שגיאה בעדכון סטטוס התשלום", {
+        className: "sonner-toast error rtl",
+      });
     }
-
-    // אם החשבונית כן שולמה → עדכון ל"לא"
-    const { data: updated } = await api.put(
-      `/invoices/project/${invoice.projectId}/${invoice._id}/status`,
-      { paid: "לא" }
-    );
-
-    setInvoices((prev) =>
-      prev.map((inv) => (inv._id === invoice._id ? updated : inv))
-    );
-
-    setAllInvoices((prev) =>
-      prev.map((inv) => (inv._id === invoice._id ? updated : inv))
-    );
-
-    toast.success("סטטוס התשלום עודכן ל - לא", {
-      className: "sonner-toast success rtl",
-    });
-  } catch (err) {
-    console.error(err);
-    toast.error("שגיאה בעדכון סטטוס התשלום", {
-      className: "sonner-toast error rtl",
-    });
-  }
-};
-
+  };
 
   const handleSavePaymentCapture = async ({ paymentDate, paymentMethod }) => {
     const invoice = paymentCapture.invoice;
     if (!invoice) return;
 
     try {
-const { data: updated } = await api.put(
-  `/invoices/project/${invoice.projectId}/${invoice._id}/status`,
-  { paid: "כן", paymentDate, paymentMethod }
-);
-
+      const { data: updated } = await api.put(
+        `/invoices/${invoice._id}/status`,
+        { paid: "כן", paymentDate, paymentMethod }
+      );
 
       setInvoices((prev) =>
         prev.map((inv) => (inv._id === invoice._id ? updated : inv))
@@ -1147,333 +1167,449 @@ const { data: updated } = await api.put(
           </div>
         )}
 
-{showReportModal && (
-  <div className="fixed inset-0 z-50">
-    {/* רקע + סגירה בלחיצה בחוץ */}
-    <div
-      className="absolute inset-0 bg-black/60 backdrop-blur-sm"
-      onClick={() => setShowReportModal(false)}
-    />
+        {showReportModal && (
+          <div className="fixed inset-0 z-50">
+            {/* רקע + סגירה בלחיצה בחוץ */}
+            <div
+              className="absolute inset-0 bg-black/60 backdrop-blur-sm"
+              onClick={() => setShowReportModal(false)}
+            />
 
-    {/* מעטפת עם גלילה */}
-    <div className="fixed inset-0 flex items-center justify-center p-4 overflow-y-auto">
-      {/* קופסת המודאל */}
-      <div
-        className="relative w-full max-w-4xl mt-20"
-        onClick={(e) => e.stopPropagation()}
-        role="dialog"
-        aria-modal="true"
-      >
-        {/* זוהר עדין */}
-        <div className="pointer-events-none absolute -inset-2 bg-gradient-to-r from-orange-500 to-amber-500 rounded-3xl opacity-20 blur-xl"></div>
-
-        <div className="relative bg-white rounded-3xl shadow-2xl overflow-hidden">
-          {/* כותרת + כפתור סגירה */}
-          <div className="bg-gradient-to-r from-orange-500 to-amber-500 text-white p-6">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-3">
-                <div className="bg-white/20 p-2 rounded-lg">
-                  <FileSpreadsheet className="w-6 h-6" />
-                </div>
-                <h3 className="text-2xl font-bold">מחולל דוחות חשבוניות</h3>
-              </div>
-              <button
-                onClick={() => setShowReportModal(false)}
-                className="text-white hover:bg-white/20 rounded-lg p-2 transition-colors"
-                aria-label="סגור"
-                title="סגור"
+            {/* מעטפת עם גלילה */}
+            <div className="fixed inset-0 flex items-center justify-center p-4 overflow-y-auto">
+              {/* קופסת המודאל */}
+              <div
+                className="relative w-full max-w-4xl mt-20"
+                onClick={(e) => e.stopPropagation()}
+                role="dialog"
+                aria-modal="true"
               >
-                <X className="w-6 h-6" />
-              </button>
+                {/* זוהר עדין */}
+                <div className="pointer-events-none absolute -inset-2 bg-gradient-to-r from-orange-500 to-amber-500 rounded-3xl opacity-20 blur-xl"></div>
+
+                <div className="relative bg-white rounded-3xl shadow-2xl overflow-hidden">
+                  {/* כותרת + כפתור סגירה */}
+                  <div className="bg-gradient-to-r from-orange-500 to-amber-500 text-white p-6">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-3">
+                        <div className="bg-white/20 p-2 rounded-lg">
+                          <FileSpreadsheet className="w-6 h-6" />
+                        </div>
+                        <h3 className="text-2xl font-bold">
+                          מחולל דוחות חשבוניות
+                        </h3>
+                      </div>
+                      <button
+                        onClick={() => setShowReportModal(false)}
+                        className="text-white hover:bg-white/20 rounded-lg p-2 transition-colors"
+                        aria-label="סגור"
+                        title="סגור"
+                      >
+                        <X className="w-6 h-6" />
+                      </button>
+                    </div>
+                    <p className="text-white/90 text-sm mt-2">
+                      סנן את החשבוניות ובחר עמודות לייצוא
+                    </p>
+                  </div>
+
+                  {/* תוכן המודאל */}
+                  <div className="max-h-[calc(85vh-8rem)] overflow-y-auto p-6">
+                    {/* Advanced Filters Section */}
+                    <div className="mb-6">
+                      <div className="flex items-center justify-between mb-4">
+                        <h4 className="text-lg font-bold text-gray-900 flex items-center gap-2">
+                          <Filter className="w-5 h-5 text-orange-500" />
+                          סינון מתקדם
+                        </h4>
+                        <button
+                          onClick={() =>
+                            setAdvancedFilters({
+                              dateFrom: "",
+                              dateTo: "",
+                              paymentDateFrom: "",
+                              paymentDateTo: "",
+                              amountMin: "",
+                              amountMax: "",
+                              projectName: "",
+                              supplierName: "",
+                              invoiceNumberFrom: "",
+                              invoiceNumberTo: "",
+                              hasSupplier: "all",
+                              paymentStatus: "all",
+                              submissionStatus: "all",
+                              documentType: "",
+                              paymentMethod: "",
+                            })
+                          }
+                          className="text-sm text-red-600 hover:text-red-700 font-bold"
+                        >
+                          נקה סינונים
+                        </button>
+                      </div>
+
+                      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                        {/* יצירה מ/עד */}
+                        <div>
+                          <label className="block text-sm font-semibold text-gray-700 mb-2">
+                            תאריך יצירה מ־
+                          </label>
+                          <input
+                            type="date"
+                            value={advancedFilters.dateFrom}
+                            onChange={(e) =>
+                              setAdvancedFilters({
+                                ...advancedFilters,
+                                dateFrom: e.target.value,
+                              })
+                            }
+                            className="w-full px-4 py-2 border-2 border-gray-200 rounded-xl focus:border-orange-500 focus:outline-none focus:ring-2 focus:ring-orange-200"
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-sm font-semibold text-gray-700 mb-2">
+                            תאריך יצירה עד־
+                          </label>
+                          <input
+                            type="date"
+                            value={advancedFilters.dateTo}
+                            onChange={(e) =>
+                              setAdvancedFilters({
+                                ...advancedFilters,
+                                dateTo: e.target.value,
+                              })
+                            }
+                            className="w-full px-4 py-2 border-2 border-gray-200 rounded-xl focus:border-orange-500 focus:outline-none focus:ring-2 focus:ring-orange-200"
+                          />
+                        </div>
+
+                        {/* תשלום מ/עד */}
+                        <div>
+                          <label className="block text-sm font-semibold text-gray-700 mb-2">
+                            תאריך תשלום מ־
+                          </label>
+                          <input
+                            type="date"
+                            value={advancedFilters.paymentDateFrom}
+                            onChange={(e) =>
+                              setAdvancedFilters({
+                                ...advancedFilters,
+                                paymentDateFrom: e.target.value,
+                              })
+                            }
+                            className="w-full px-4 py-2 border-2 border-gray-200 rounded-xl focus:border-orange-500 focus:outline-none focus:ring-2 focus:ring-orange-200"
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-sm font-semibold text-gray-700 mb-2">
+                            תאריך תשלום עד־
+                          </label>
+                          <input
+                            type="date"
+                            value={advancedFilters.paymentDateTo}
+                            onChange={(e) =>
+                              setAdvancedFilters({
+                                ...advancedFilters,
+                                paymentDateTo: e.target.value,
+                              })
+                            }
+                            className="w-full px-4 py-2 border-2 border-gray-200 rounded-xl focus:border-orange-500 focus:outline-none focus:ring-2 focus:ring-orange-200"
+                          />
+                        </div>
+
+                        {/* סכום */}
+                        <div>
+                          <label className="block text-sm font-semibold text-gray-700 mb-2">
+                            סכום מינימום
+                          </label>
+                          <input
+                            type="number"
+                            value={advancedFilters.amountMin}
+                            onChange={(e) =>
+                              setAdvancedFilters({
+                                ...advancedFilters,
+                                amountMin: e.target.value,
+                              })
+                            }
+                            placeholder="₪"
+                            className="w-full px-4 py-2 border-2 border-gray-200 rounded-xl focus:border-orange-500 focus:outline-none focus:ring-2 focus:ring-orange-200"
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-sm font-semibold text-gray-700 mb-2">
+                            סכום מקסימום
+                          </label>
+                          <input
+                            type="number"
+                            value={advancedFilters.amountMax}
+                            onChange={(e) =>
+                              setAdvancedFilters({
+                                ...advancedFilters,
+                                amountMax: e.target.value,
+                              })
+                            }
+                            placeholder="₪"
+                            className="w-full px-4 py-2 border-2 border-gray-200 rounded-xl focus:border-orange-500 focus:outline-none focus:ring-2 focus:ring-orange-200"
+                          />
+                        </div>
+
+                        {/* שמות */}
+                        <div>
+                          <label className="block text-sm font-semibold text-gray-700 mb-2">
+                            שם פרויקט
+                          </label>
+                          <input
+                            type="text"
+                            value={advancedFilters.projectName}
+                            onChange={(e) =>
+                              setAdvancedFilters({
+                                ...advancedFilters,
+                                projectName: e.target.value,
+                              })
+                            }
+                            placeholder="חפש שם פרויקט"
+                            className="w-full px-4 py-2 border-2 border-gray-200 rounded-xl focus:border-orange-500 focus:outline-none focus:ring-2 focus:ring-orange-200"
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-sm font-semibold text-gray-700 mb-2">
+                            שם ספק / מזמין
+                          </label>
+                          <input
+                            type="text"
+                            value={advancedFilters.supplierName}
+                            onChange={(e) =>
+                              setAdvancedFilters({
+                                ...advancedFilters,
+                                supplierName: e.target.value,
+                              })
+                            }
+                            placeholder="חפש ספק או מזמין"
+                            className="w-full px-4 py-2 border-2 border-gray-200 rounded-xl focus:border-orange-500 focus:outline-none focus:ring-2 focus:ring-orange-200"
+                          />
+                        </div>
+
+                        {/* טווח מספר חשבונית */}
+                        <div>
+                          <label className="block text-sm font-semibold text-gray-700 mb-2">
+                            מס׳ חשבונית מ־
+                          </label>
+                          <input
+                            type="number"
+                            value={advancedFilters.invoiceNumberFrom}
+                            onChange={(e) =>
+                              setAdvancedFilters({
+                                ...advancedFilters,
+                                invoiceNumberFrom: e.target.value,
+                              })
+                            }
+                            className="w-full px-4 py-2 border-2 border-gray-200 rounded-xl focus:border-orange-500 focus:outline-none focus:ring-2 focus:ring-orange-200"
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-sm font-semibold text-gray-700 mb-2">
+                            מס׳ חשבונית עד־
+                          </label>
+                          <input
+                            type="number"
+                            value={advancedFilters.invoiceNumberTo}
+                            onChange={(e) =>
+                              setAdvancedFilters({
+                                ...advancedFilters,
+                                invoiceNumberTo: e.target.value,
+                              })
+                            }
+                            className="w-full px-4 py-2 border-2 border-gray-200 rounded-xl focus:border-orange-500 focus:outline-none focus:ring-2 focus:ring-orange-200"
+                          />
+                        </div>
+
+                        {/* יש/אין ספק */}
+                        <div>
+                          <label className="block text-sm font-semibold text-gray-700 mb-2">
+                            ספק
+                          </label>
+                          <select
+                            value={advancedFilters.hasSupplier}
+                            onChange={(e) =>
+                              setAdvancedFilters({
+                                ...advancedFilters,
+                                hasSupplier: e.target.value,
+                              })
+                            }
+                            className="w-full px-4 py-2 border-2 border-gray-200 rounded-xl focus:border-orange-500 focus:outline-none focus:ring-2 focus:ring-orange-200"
+                          >
+                            <option value="all">הכל</option>
+                            <option value="yes">קיים ספק</option>
+                            <option value="no">ללא ספק</option>
+                          </select>
+                        </div>
+
+                        {/* סטטוסי תשלום/הגשה */}
+                        <div>
+                          <label className="block text-sm font-semibold text-gray-700 mb-2">
+                            סטטוס תשלום
+                          </label>
+                          <select
+                            value={advancedFilters.paymentStatus}
+                            onChange={(e) =>
+                              setAdvancedFilters({
+                                ...advancedFilters,
+                                paymentStatus: e.target.value,
+                              })
+                            }
+                            className="w-full px-4 py-2 border-2 border-gray-200 rounded-xl focus:border-orange-500 focus:outline-none focus:ring-2 focus:ring-orange-200"
+                          >
+                            <option value="all">הכל</option>
+                            <option value="paid">שולם</option>
+                            <option value="unpaid">לא שולם</option>
+                          </select>
+                        </div>
+
+                        <div>
+                          <label className="block text-sm font-semibold text-gray-700 mb-2">
+                            סטטוס הגשה
+                          </label>
+                          <select
+                            value={advancedFilters.submissionStatus}
+                            onChange={(e) =>
+                              setAdvancedFilters({
+                                ...advancedFilters,
+                                submissionStatus: e.target.value,
+                              })
+                            }
+                            className="w-full px-4 py-2 border-2 border-gray-200 rounded-xl focus:border-orange-500 focus:outline-none focus:ring-2 focus:ring-orange-200"
+                          >
+                            <option value="all">הכל</option>
+                            <option value="submitted">הוגש</option>
+                            <option value="inProgress">בעיבוד</option>
+                            <option value="notSubmitted">לא הוגש</option>
+                          </select>
+                        </div>
+
+                        {/* סוג מסמך / אמצעי תשלום */}
+                        <div>
+                          <label className="block text-sm font-semibold text-gray-700 mb-2">
+                            סוג מסמך
+                          </label>
+                          <input
+                            type="text"
+                            value={advancedFilters.documentType || ""}
+                            onChange={(e) =>
+                              setAdvancedFilters({
+                                ...advancedFilters,
+                                documentType: e.target.value,
+                              })
+                            }
+                            placeholder='למשל: "חשבונית מס/קבלה", "ח. עסקה"'
+                            className="w-full px-4 py-2 border-2 border-gray-200 rounded-xl focus:border-orange-500 focus:outline-none focus:ring-2 focus:ring-orange-200"
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-sm font-semibold text-gray-700 mb-2">
+                            אמצעי תשלום
+                          </label>
+                          <select
+                            value={advancedFilters.paymentMethod || ""}
+                            onChange={(e) =>
+                              setAdvancedFilters({
+                                ...advancedFilters,
+                                paymentMethod: e.target.value,
+                              })
+                            }
+                            className="w-full px-4 py-2 border-2 border-gray-200 rounded-xl focus:border-orange-500 focus:outline-none focus:ring-2 focus:ring-orange-200"
+                          >
+                            <option value="">הכל</option>
+                            <option value="bank_transfer">העברה בנקאית</option>
+                            <option value="check">צ׳ק</option>
+                          </select>
+                        </div>
+                      </div>
+
+                      {/* Filter Summary */}
+                      <div className="mt-4 p-4 bg-gradient-to-br from-blue-50 to-cyan-50 rounded-xl border-2 border-blue-200">
+                        <p className="text-sm font-bold text-gray-700">
+                          מסננים: {filteredInvoices.length} חשבוניות מתוך{" "}
+                          {allInvoices.length}
+                        </p>
+                      </div>
+                    </div>
+
+                    {/* Column Selection Section */}
+                    <div className="mb-6">
+                      <div className="flex items-center justify-between mb-4">
+                        <h4 className="text-lg font-bold text-gray-900">
+                          בחר עמודות לייצוא
+                        </h4>
+                        <div className="flex gap-2">
+                          <button
+                            onClick={selectAllColumns}
+                            className="flex items-center gap-2 px-3 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700"
+                          >
+                            <CheckSquare className="w-4 h-4" />
+                            בחר הכל
+                          </button>
+                          <button
+                            onClick={deselectAllColumns}
+                            className="flex items-center gap-2 px-3 py-2 bg-rose-600 text-white rounded-lg hover:bg-rose-700"
+                          >
+                            <Square className="w-4 h-4" />
+                            בטל הכל
+                          </button>
+                        </div>
+                      </div>
+
+                      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
+                        {availableColumns.map((column) => (
+                          <label
+                            key={column.key}
+                            className={`flex items-center gap-3 p-3 rounded-xl border-2 cursor-pointer transition-all ${
+                              exportColumns[column.key]
+                                ? "bg-gradient-to-br from-orange-50 to-amber-50 border-orange-400"
+                                : "bg-gray-50 border-gray-200 hover:border-gray-300"
+                            }`}
+                          >
+                            <input
+                              type="checkbox"
+                              checked={!!exportColumns[column.key]}
+                              onChange={() => toggleColumn(column.key)}
+                              className="w-5 h-5 text-orange-600 rounded focus:ring-2 focus:ring-orange-500"
+                            />
+                            <span
+                              className={`text-sm font-medium ${
+                                exportColumns[column.key]
+                                  ? "text-gray-900"
+                                  : "text-gray-600"
+                              }`}
+                            >
+                              {column.label}
+                            </span>
+                          </label>
+                        ))}
+                      </div>
+                    </div>
+
+                    {/* כפתורי פעולה */}
+                    <div className="flex gap-3">
+                      <button
+                        onClick={() => setShowReportModal(false)}
+                        className="flex-1 px-6 py-3 bg-gray-200 text-gray-700 rounded-xl hover:bg-gray-300 transition-all"
+                      >
+                        ביטול
+                      </button>
+                      <button
+                        onClick={exportCustomReport}
+                        className="flex-1 flex items-center justify-center gap-2 px-6 py-3 bg-gradient-to-r from-orange-500 to-amber-500 text-white rounded-xl hover:from-orange-600 hover:to-amber-600 transition-all shadow-lg"
+                      >
+                        <DownloadCloud className="w-5 h-5" />
+                        ייצא דוח
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              </div>
             </div>
-            <p className="text-white/90 text-sm mt-2">סנן את החשבוניות ובחר עמודות לייצוא</p>
           </div>
-
-          {/* תוכן המודאל */}
-          <div className="max-h-[calc(85vh-8rem)] overflow-y-auto p-6">
-            {/* Advanced Filters Section */}
-            <div className="mb-6">
-              <div className="flex items-center justify-between mb-4">
-                <h4 className="text-lg font-bold text-gray-900 flex items-center gap-2">
-                  <Filter className="w-5 h-5 text-orange-500" />
-                  סינון מתקדם
-                </h4>
-                <button
-                  onClick={() =>
-                    setAdvancedFilters({
-                      dateFrom: "",
-                      dateTo: "",
-                      paymentDateFrom: "",
-                      paymentDateTo: "",
-                      amountMin: "",
-                      amountMax: "",
-                      projectName: "",
-                      supplierName: "",
-                      invoiceNumberFrom: "",
-                      invoiceNumberTo: "",
-                      hasSupplier: "all",
-                      paymentStatus: "all",
-                      submissionStatus: "all",
-                      documentType: "",
-                      paymentMethod: "",
-                    })
-                  }
-                  className="text-sm text-red-600 hover:text-red-700 font-bold"
-                >
-                  נקה סינונים
-                </button>
-              </div>
-
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                {/* יצירה מ/עד */}
-                <div>
-                  <label className="block text-sm font-semibold text-gray-700 mb-2">תאריך יצירה מ־</label>
-                  <input
-                    type="date"
-                    value={advancedFilters.dateFrom}
-                    onChange={(e) => setAdvancedFilters({ ...advancedFilters, dateFrom: e.target.value })}
-                    className="w-full px-4 py-2 border-2 border-gray-200 rounded-xl focus:border-orange-500 focus:outline-none focus:ring-2 focus:ring-orange-200"
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-semibold text-gray-700 mb-2">תאריך יצירה עד־</label>
-                  <input
-                    type="date"
-                    value={advancedFilters.dateTo}
-                    onChange={(e) => setAdvancedFilters({ ...advancedFilters, dateTo: e.target.value })}
-                    className="w-full px-4 py-2 border-2 border-gray-200 rounded-xl focus:border-orange-500 focus:outline-none focus:ring-2 focus:ring-orange-200"
-                  />
-                </div>
-
-                {/* תשלום מ/עד */}
-                <div>
-                  <label className="block text-sm font-semibold text-gray-700 mb-2">תאריך תשלום מ־</label>
-                  <input
-                    type="date"
-                    value={advancedFilters.paymentDateFrom}
-                    onChange={(e) => setAdvancedFilters({ ...advancedFilters, paymentDateFrom: e.target.value })}
-                    className="w-full px-4 py-2 border-2 border-gray-200 rounded-xl focus:border-orange-500 focus:outline-none focus:ring-2 focus:ring-orange-200"
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-semibold text-gray-700 mb-2">תאריך תשלום עד־</label>
-                  <input
-                    type="date"
-                    value={advancedFilters.paymentDateTo}
-                    onChange={(e) => setAdvancedFilters({ ...advancedFilters, paymentDateTo: e.target.value })}
-                    className="w-full px-4 py-2 border-2 border-gray-200 rounded-xl focus:border-orange-500 focus:outline-none focus:ring-2 focus:ring-orange-200"
-                  />
-                </div>
-
-                {/* סכום */}
-                <div>
-                  <label className="block text-sm font-semibold text-gray-700 mb-2">סכום מינימום</label>
-                  <input
-                    type="number"
-                    value={advancedFilters.amountMin}
-                    onChange={(e) => setAdvancedFilters({ ...advancedFilters, amountMin: e.target.value })}
-                    placeholder="₪"
-                    className="w-full px-4 py-2 border-2 border-gray-200 rounded-xl focus:border-orange-500 focus:outline-none focus:ring-2 focus:ring-orange-200"
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-semibold text-gray-700 mb-2">סכום מקסימום</label>
-                  <input
-                    type="number"
-                    value={advancedFilters.amountMax}
-                    onChange={(e) => setAdvancedFilters({ ...advancedFilters, amountMax: e.target.value })}
-                    placeholder="₪"
-                    className="w-full px-4 py-2 border-2 border-gray-200 rounded-xl focus:border-orange-500 focus:outline-none focus:ring-2 focus:ring-orange-200"
-                  />
-                </div>
-
-                {/* שמות */}
-                <div>
-                  <label className="block text-sm font-semibold text-gray-700 mb-2">שם פרויקט</label>
-                  <input
-                    type="text"
-                    value={advancedFilters.projectName}
-                    onChange={(e) => setAdvancedFilters({ ...advancedFilters, projectName: e.target.value })}
-                    placeholder="חפש שם פרויקט"
-                    className="w-full px-4 py-2 border-2 border-gray-200 rounded-xl focus:border-orange-500 focus:outline-none focus:ring-2 focus:ring-orange-200"
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-semibold text-gray-700 mb-2">שם ספק / מזמין</label>
-                  <input
-                    type="text"
-                    value={advancedFilters.supplierName}
-                    onChange={(e) => setAdvancedFilters({ ...advancedFilters, supplierName: e.target.value })}
-                    placeholder="חפש ספק או מזמין"
-                    className="w-full px-4 py-2 border-2 border-gray-200 rounded-xl focus:border-orange-500 focus:outline-none focus:ring-2 focus:ring-orange-200"
-                  />
-                </div>
-
-                {/* טווח מספר חשבונית */}
-                <div>
-                  <label className="block text-sm font-semibold text-gray-700 mb-2">מס׳ חשבונית מ־</label>
-                  <input
-                    type="number"
-                    value={advancedFilters.invoiceNumberFrom}
-                    onChange={(e) => setAdvancedFilters({ ...advancedFilters, invoiceNumberFrom: e.target.value })}
-                    className="w-full px-4 py-2 border-2 border-gray-200 rounded-xl focus:border-orange-500 focus:outline-none focus:ring-2 focus:ring-orange-200"
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-semibold text-gray-700 mb-2">מס׳ חשבונית עד־</label>
-                  <input
-                    type="number"
-                    value={advancedFilters.invoiceNumberTo}
-                    onChange={(e) => setAdvancedFilters({ ...advancedFilters, invoiceNumberTo: e.target.value })}
-                    className="w-full px-4 py-2 border-2 border-gray-200 rounded-xl focus:border-orange-500 focus:outline-none focus:ring-2 focus:ring-orange-200"
-                  />
-                </div>
-
-                {/* יש/אין ספק */}
-                <div>
-                  <label className="block text-sm font-semibold text-gray-700 mb-2">ספק</label>
-                  <select
-                    value={advancedFilters.hasSupplier}
-                    onChange={(e) => setAdvancedFilters({ ...advancedFilters, hasSupplier: e.target.value })}
-                    className="w-full px-4 py-2 border-2 border-gray-200 rounded-xl focus:border-orange-500 focus:outline-none focus:ring-2 focus:ring-orange-200"
-                  >
-                    <option value="all">הכל</option>
-                    <option value="yes">קיים ספק</option>
-                    <option value="no">ללא ספק</option>
-                  </select>
-                </div>
-
-                {/* סטטוסי תשלום/הגשה */}
-                <div>
-                  <label className="block text-sm font-semibold text-gray-700 mb-2">סטטוס תשלום</label>
-                  <select
-                    value={advancedFilters.paymentStatus}
-                    onChange={(e) => setAdvancedFilters({ ...advancedFilters, paymentStatus: e.target.value })}
-                    className="w-full px-4 py-2 border-2 border-gray-200 rounded-xl focus:border-orange-500 focus:outline-none focus:ring-2 focus:ring-orange-200"
-                  >
-                    <option value="all">הכל</option>
-                    <option value="paid">שולם</option>
-                    <option value="unpaid">לא שולם</option>
-                  </select>
-                </div>
-
-                <div>
-                  <label className="block text-sm font-semibold text-gray-700 mb-2">סטטוס הגשה</label>
-                  <select
-                    value={advancedFilters.submissionStatus}
-                    onChange={(e) => setAdvancedFilters({ ...advancedFilters, submissionStatus: e.target.value })}
-                    className="w-full px-4 py-2 border-2 border-gray-200 rounded-xl focus:border-orange-500 focus:outline-none focus:ring-2 focus:ring-orange-200"
-                  >
-                    <option value="all">הכל</option>
-                    <option value="submitted">הוגש</option>
-                    <option value="inProgress">בעיבוד</option>
-                    <option value="notSubmitted">לא הוגש</option>
-                  </select>
-                </div>
-
-                {/* סוג מסמך / אמצעי תשלום */}
-                <div>
-                  <label className="block text-sm font-semibold text-gray-700 mb-2">סוג מסמך</label>
-                  <input
-                    type="text"
-                    value={advancedFilters.documentType || ""}
-                    onChange={(e) => setAdvancedFilters({ ...advancedFilters, documentType: e.target.value })}
-                    placeholder='למשל: "חשבונית מס/קבלה", "ח. עסקה"'
-                    className="w-full px-4 py-2 border-2 border-gray-200 rounded-xl focus:border-orange-500 focus:outline-none focus:ring-2 focus:ring-orange-200"
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-semibold text-gray-700 mb-2">אמצעי תשלום</label>
-                  <select
-                    value={advancedFilters.paymentMethod || ""}
-                    onChange={(e) => setAdvancedFilters({ ...advancedFilters, paymentMethod: e.target.value })}
-                    className="w-full px-4 py-2 border-2 border-gray-200 rounded-xl focus:border-orange-500 focus:outline-none focus:ring-2 focus:ring-orange-200"
-                  >
-                    <option value="">הכל</option>
-                    <option value="bank_transfer">העברה בנקאית</option>
-                    <option value="check">צ׳ק</option>
-                  </select>
-                </div>
-              </div>
-
-              {/* Filter Summary */}
-              <div className="mt-4 p-4 bg-gradient-to-br from-blue-50 to-cyan-50 rounded-xl border-2 border-blue-200">
-                <p className="text-sm font-bold text-gray-700">
-                  מסננים: {filteredInvoices.length} חשבוניות מתוך {allInvoices.length}
-                </p>
-              </div>
-            </div>
-
-            {/* Column Selection Section */}
-            <div className="mb-6">
-              <div className="flex items-center justify-between mb-4">
-                <h4 className="text-lg font-bold text-gray-900">בחר עמודות לייצוא</h4>
-                <div className="flex gap-2">
-                  <button
-                    onClick={selectAllColumns}
-                    className="flex items-center gap-2 px-3 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700"
-                  >
-                    <CheckSquare className="w-4 h-4" />
-                    בחר הכל
-                  </button>
-                  <button
-                    onClick={deselectAllColumns}
-                    className="flex items-center gap-2 px-3 py-2 bg-rose-600 text-white rounded-lg hover:bg-rose-700"
-                  >
-                    <Square className="w-4 h-4" />
-                    בטל הכל
-                  </button>
-                </div>
-              </div>
-
-              <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
-                {availableColumns.map((column) => (
-                  <label
-                    key={column.key}
-                    className={`flex items-center gap-3 p-3 rounded-xl border-2 cursor-pointer transition-all ${
-                      exportColumns[column.key]
-                        ? 'bg-gradient-to-br from-orange-50 to-amber-50 border-orange-400'
-                        : 'bg-gray-50 border-gray-200 hover:border-gray-300'
-                    }`}
-                  >
-                    <input
-                      type="checkbox"
-                      checked={!!exportColumns[column.key]}
-                      onChange={() => toggleColumn(column.key)}
-                      className="w-5 h-5 text-orange-600 rounded focus:ring-2 focus:ring-orange-500"
-                    />
-                    <span className={`text-sm font-medium ${
-                      exportColumns[column.key] ? 'text-gray-900' : 'text-gray-600'
-                    }`}>
-                      {column.label}
-                    </span>
-                  </label>
-                ))}
-              </div>
-            </div>
-
-            {/* כפתורי פעולה */}
-            <div className="flex gap-3">
-              <button
-                onClick={() => setShowReportModal(false)}
-                className="flex-1 px-6 py-3 bg-gray-200 text-gray-700 rounded-xl hover:bg-gray-300 transition-all"
-              >
-                ביטול
-              </button>
-              <button
-                onClick={exportCustomReport}
-                className="flex-1 flex items-center justify-center gap-2 px-6 py-3 bg-gradient-to-r from-orange-500 to-amber-500 text-white rounded-xl hover:from-orange-600 hover:to-amber-600 transition-all shadow-lg"
-              >
-                <DownloadCloud className="w-5 h-5" />
-                ייצא דוח
-              </button>
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
-  </div>
-)}
+        )}
 
         {/* Delete Modal - keeping existing modals exactly as they were */}
         {showModal && (

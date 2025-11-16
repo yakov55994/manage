@@ -1,8 +1,8 @@
-import React, { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
-import api from '../../api/api';
-import FileUploader from '../../Components/FileUploader';
-import { toast } from 'sonner';
+import React, { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
+import api from "../../api/api";
+import FileUploader from "../../Components/FileUploader";
+import { toast } from "sonner";
 import {
   ShoppingCart,
   FileText,
@@ -18,8 +18,8 @@ import {
   Sparkles,
   TrendingUp,
   Phone,
-} from 'lucide-react';
-import DateField from '../../Components/DateField';
+} from "lucide-react";
+import DateField from "../../Components/DateField";
 
 const CreateOrder = () => {
   const [projects, setProjects] = useState([]);
@@ -34,11 +34,11 @@ const CreateOrder = () => {
   useEffect(() => {
     const fetchProjects = async () => {
       try {
-        const response = await api.get('/projects');
-        setProjects(response.data || []);
+        const response = await api.get("/projects");
+        setProjects(response.data.data || []);
       } catch (err) {
-        toast.error('שגיאה בהבאת הפרויקטים', {
-          className: 'sonner-toast error rtl',
+        toast.error("שגיאה בהבאת הפרויקטים", {
+          className: "sonner-toast error rtl",
         });
       }
     };
@@ -53,23 +53,23 @@ const CreateOrder = () => {
 
   const addOrder = () => {
     if (!selectedProject) {
-      toast.error('יש לבחור פרוייקט קודם', {
-        className: 'sonner-toast error rtl',
+      toast.error("יש לבחור פרוייקט קודם", {
+        className: "sonner-toast error rtl",
       });
       return;
     }
     setOrders([
       ...orders,
       {
-        projectName: selectedProject?.name || '',
-        orderNumber: '',
-        detail: '',
-        sum: '',
-        status: 'לא הוגש',
-        invitingName: '',
+        projectName: selectedProject?.name || "",
+        orderNumber: "",
+        detail: "",
+        sum: "",
+        status: "לא הוגש",
+        invitingName: "",
         files: [],
-        Contact_person: '',
-        createdAt: '',
+        Contact_person: "",
+        createdAt: "",
       },
     ]);
   };
@@ -92,7 +92,7 @@ const CreateOrder = () => {
 
   const handleOrderUpload = (index, selectedFiles) => {
     if (!selectedFiles || selectedFiles.length === 0) {
-      toast.info('לא נבחרו קבצים', { className: 'sonner-toast info rtl' });
+      toast.info("לא נבחרו קבצים", { className: "sonner-toast info rtl" });
       return;
     }
 
@@ -117,21 +117,21 @@ const CreateOrder = () => {
     setOrders(newOrders);
 
     toast.success(`${selectedFiles.length} קבצים נבחרו (יועלו בעת השמירה)`, {
-      className: 'sonner-toast success rtl',
+      className: "sonner-toast success rtl",
     });
   };
 
   const validateSubmission = () => {
     if (!selectedProject) {
-      toast.error('יש לבחור פרויקט תחילה', {
-        className: 'sonner-toast error rtl',
+      toast.error("יש לבחור פרויקט תחילה", {
+        className: "sonner-toast error rtl",
       });
       return false;
     }
 
     if (orders.length === 0) {
-      toast.error('יש להוסיף לפחות הזמנה אחת', {
-        className: 'sonner-toast error rtl',
+      toast.error("יש להוסיף לפחות הזמנה אחת", {
+        className: "sonner-toast error rtl",
       });
       return false;
     }
@@ -142,52 +142,49 @@ const CreateOrder = () => {
 
       if (!order.orderNumber) {
         toast.error(`הזמנה מספר ${orderNumber}: חסר מספר הזמנה`, {
-          className: 'sonner-toast error rtl',
+          className: "sonner-toast error rtl",
         });
         return false;
       }
 
-      if (!order.invitingName || order.invitingName.trim() === '') {
+      if (!order.invitingName || order.invitingName.trim() === "") {
         toast.error(`הזמנה מספר ${orderNumber}: חסר שם המזמין`, {
-          className: 'sonner-toast error rtl',
+          className: "sonner-toast error rtl",
         });
         return false;
       }
 
       if (!order.sum || order.sum <= 0) {
-        toast.error(
-          `הזמנה מספר ${orderNumber}: חסר סכום או שהסכום לא תקין`,
-          {
-            className: 'sonner-toast error rtl',
-          }
-        );
-        return false;
-      }
-
-      if (!order.detail || order.detail.trim() === '') {
-        toast.error(`הזמנה מספר ${orderNumber}: חסר פירוט ההזמנה`, {
-          className: 'sonner-toast error rtl',
+        toast.error(`הזמנה מספר ${orderNumber}: חסר סכום או שהסכום לא תקין`, {
+          className: "sonner-toast error rtl",
         });
         return false;
       }
 
-      if (!order.Contact_person || order.Contact_person.trim() === '') {
+      if (!order.detail || order.detail.trim() === "") {
+        toast.error(`הזמנה מספר ${orderNumber}: חסר פירוט ההזמנה`, {
+          className: "sonner-toast error rtl",
+        });
+        return false;
+      }
+
+      if (!order.Contact_person || order.Contact_person.trim() === "") {
         toast.error(`הזמנה מספר ${orderNumber}: חסר איש קשר`, {
-          className: 'sonner-toast error rtl',
+          className: "sonner-toast error rtl",
         });
         return false;
       }
 
       if (!order.status) {
         toast.error(`הזמנה מספר ${orderNumber}: חסר סטטוס ההזמנה`, {
-          className: 'sonner-toast error rtl',
+          className: "sonner-toast error rtl",
         });
         return false;
       }
 
       if (!order.createdAt) {
         toast.error(`הזמנה מספר ${orderNumber}: חסר תאריך יצירת ההזמנה`, {
-          className: 'sonner-toast error rtl',
+          className: "sonner-toast error rtl",
         });
         return false;
       }
@@ -200,7 +197,7 @@ const CreateOrder = () => {
 
     if (duplicates.length > 0) {
       toast.error(`שם מזמין "${duplicates[0]}" מופיע יותר מפעם אחת`, {
-        className: 'sonner-toast error rtl',
+        className: "sonner-toast error rtl",
       });
       return false;
     }
@@ -226,15 +223,12 @@ const CreateOrder = () => {
               if (fileData.isLocal && fileData.file) {
                 try {
                   const formData = new FormData();
-                  formData.append('file', fileData.file);
-                  formData.append('folder', fileData.folder || 'orders');
+                  formData.append("file", fileData.file);
+                  formData.append("folder", fileData.folder || "orders");
 
-                const uploadResponse = await api.post(
-  `/projects/${selectedProject._id}/upload`,
-  formData,
-  { headers: { 'Content-Type': 'multipart/form-data' } }
-);
-
+                  const uploadResponse = await api.post(`/upload`, formData, {
+                    headers: { "Content-Type": "multipart/form-data" },
+                  });
 
                   uploadedFiles.push({
                     name: fileData.name,
@@ -246,7 +240,7 @@ const CreateOrder = () => {
                   });
                 } catch (uploadError) {
                   toast.error(`שגיאה בהעלאת ${fileData.name}`, {
-                    className: 'sonner-toast error rtl',
+                    className: "sonner-toast error rtl",
                   });
                   throw uploadError;
                 }
@@ -270,27 +264,24 @@ const CreateOrder = () => {
           };
         })
       );
-
-      const response = await api.post(
-         `/projects/${selectedProject._id}/orders`,
-        { orders: orderData },
-        { headers: { 'Content-Type': 'application/json' } }
-      );
-
-      toast.success('ההזמנה/ות נוצרו בהצלחה!', {
-        className: 'sonner-toast success rtl',
+      const response = await api.post("/orders/bulk", {
+        orders: orderData,
       });
-navigate(`/projects/${selectedProject._id}/orders`);
+
+      toast.success("ההזמנה/ות נוצרו בהצלחה!", {
+        className: "sonner-toast success rtl",
+      });
+      navigate(`/orders`);
       setOrders([]);
     } catch (err) {
-      console.error('שגיאה במהלך יצירת ההזמנה/ות:', err);
+      console.error("שגיאה במהלך יצירת ההזמנה/ות:", err);
       if (err.response?.data?.message) {
         toast.error(`שגיאה: ${err.response.data.message}`, {
-          className: 'sonner-toast error rtl',
+          className: "sonner-toast error rtl",
         });
       } else {
-        toast.error('שגיאה ביצירת ההזמנה - אנא נסה שוב', {
-          className: 'sonner-toast error rtl',
+        toast.error("שגיאה ביצירת ההזמנה - אנא נסה שוב", {
+          className: "sonner-toast error rtl",
         });
       }
     } finally {
@@ -308,7 +299,7 @@ navigate(`/projects/${selectedProject._id}/orders`);
     const officeUrl = `https://view.officeapps.live.com/op/view.aspx?src=${encodeURIComponent(
       fileUrl
     )}`;
-    window.open(officeUrl, '_blank');
+    window.open(officeUrl, "_blank");
   };
 
   const renderFile = (file) => {
@@ -330,9 +321,9 @@ navigate(`/projects/${selectedProject._id}/orders`);
       );
     }
 
-    const fileExtension = fileUrl.split('.').pop().toLowerCase();
+    const fileExtension = fileUrl.split(".").pop().toLowerCase();
 
-    if (fileExtension === 'xlsx') {
+    if (fileExtension === "xlsx") {
       return (
         <button
           onClick={() => openInExcelViewer(fileUrl)}
@@ -343,7 +334,7 @@ navigate(`/projects/${selectedProject._id}/orders`);
       );
     }
 
-    if (fileExtension === 'pdf' || fileUrl.match(/\.(jpeg|jpg|png|gif)$/)) {
+    if (fileExtension === "pdf" || fileUrl.match(/\.(jpeg|jpg|png|gif)$/)) {
       return (
         <a
           href={fileUrl}
@@ -467,7 +458,11 @@ navigate(`/projects/${selectedProject._id}/orders`);
                         type="text"
                         value={order.invitingName}
                         onChange={(e) =>
-                          handleOrderChange(index, 'invitingName', e.target.value)
+                          handleOrderChange(
+                            index,
+                            "invitingName",
+                            e.target.value
+                          )
                         }
                         className="mt-2 w-full rounded-xl border-2 border-slate-200 bg-white px-4 py-3 text-sm font-medium focus:border-orange-500 focus:outline-none focus:ring-4 focus:ring-orange-500/20 transition-all group-hover:border-orange-300"
                         placeholder="הזן שם מזמין..."
@@ -484,7 +479,11 @@ navigate(`/projects/${selectedProject._id}/orders`);
                         type="number"
                         value={order.orderNumber}
                         onChange={(e) =>
-                          handleOrderChange(index, 'orderNumber', e.target.value)
+                          handleOrderChange(
+                            index,
+                            "orderNumber",
+                            e.target.value
+                          )
                         }
                         className="mt-2 w-full rounded-xl border-2 border-slate-200 bg-white px-4 py-3 text-sm font-medium focus:border-orange-500 focus:outline-none focus:ring-4 focus:ring-orange-500/20 transition-all group-hover:border-orange-300"
                         required
@@ -501,7 +500,7 @@ navigate(`/projects/${selectedProject._id}/orders`);
                         type="number"
                         value={order.sum}
                         onChange={(e) =>
-                          handleOrderChange(index, 'sum', e.target.value)
+                          handleOrderChange(index, "sum", e.target.value)
                         }
                         className="mt-2 w-full rounded-xl border-2 border-slate-200 bg-white px-4 py-3 text-sm font-medium focus:border-orange-500 focus:outline-none focus:ring-4 focus:ring-orange-500/20 transition-all group-hover:border-orange-300"
                         required
@@ -516,7 +515,7 @@ navigate(`/projects/${selectedProject._id}/orders`);
                       <textarea
                         value={order.detail}
                         onChange={(e) =>
-                          handleOrderChange(index, 'detail', e.target.value)
+                          handleOrderChange(index, "detail", e.target.value)
                         }
                         className="mt-2 w-full min-h-[100px] rounded-xl border-2 border-slate-200 bg-white px-4 py-3 text-sm font-medium focus:border-orange-500 focus:outline-none focus:ring-4 focus:ring-orange-500/20 transition-all resize-none group-hover:border-orange-300"
                         placeholder="הוסף פירוט על ההזמנה..."
@@ -525,7 +524,7 @@ navigate(`/projects/${selectedProject._id}/orders`);
                     </div>
 
                     {/* Created At */}
-                 <div className="group">
+                    <div className="group">
                       <label className="text-sm font-bold text-slate-700 mb-2 flex items-center gap-2">
                         <Calendar className="w-4 h-4 text-orange-500" />
                         תאריך יצירת ההזמנה
@@ -552,7 +551,11 @@ navigate(`/projects/${selectedProject._id}/orders`);
                         type="text"
                         value={order.Contact_person}
                         onChange={(e) =>
-                          handleOrderChange(index, 'Contact_person', e.target.value)
+                          handleOrderChange(
+                            index,
+                            "Contact_person",
+                            e.target.value
+                          )
                         }
                         className="mt-2 w-full rounded-xl border-2 border-slate-200 bg-white px-4 py-3 text-sm font-medium focus:border-orange-500 focus:outline-none focus:ring-4 focus:ring-orange-500/20 transition-all group-hover:border-orange-300"
                         placeholder="הכנס שם איש הקשר..."
@@ -568,7 +571,7 @@ navigate(`/projects/${selectedProject._id}/orders`);
                       <select
                         value={order.status}
                         onChange={(e) =>
-                          handleOrderChange(index, 'status', e.target.value)
+                          handleOrderChange(index, "status", e.target.value)
                         }
                         className="mt-2 w-full rounded-xl border-2 border-slate-200 bg-white px-4 py-3 text-sm font-medium focus:border-orange-500 focus:outline-none focus:ring-4 focus:ring-orange-500/20 transition-all group-hover:border-orange-300"
                         required
@@ -603,10 +606,14 @@ navigate(`/projects/${selectedProject._id}/orders`);
                                 <div className="p-2 rounded-lg bg-gradient-to-br from-orange-100 to-amber-100">
                                   <FileText className="w-4 h-4 text-orange-600" />
                                 </div>
-                                <div className="truncate">{renderFile(file)}</div>
+                                <div className="truncate">
+                                  {renderFile(file)}
+                                </div>
                               </div>
                               <button
-                                onClick={() => handleRemoveFile(index, fileIndex)}
+                                onClick={() =>
+                                  handleRemoveFile(index, fileIndex)
+                                }
                                 className="mr-2 px-3 py-1.5 rounded-lg text-sm text-red-600 hover:bg-red-50 font-medium transition-all"
                               >
                                 הסר

@@ -1,7 +1,7 @@
-import { useState } from 'react';
-import api from '../../api/api.jsx';
-import { useNavigate } from 'react-router-dom';
-import { toast } from 'sonner';
+import { useState } from "react";
+import api from "../../api/api.jsx";
+import { useNavigate } from "react-router-dom";
+import { toast } from "sonner";
 import {
   FolderPlus,
   Building2,
@@ -10,12 +10,12 @@ import {
   Sparkles,
   Save,
   ArrowRight,
-} from 'lucide-react';
+} from "lucide-react";
 
 const CreateProject = () => {
-  const [name, setName] = useState('');
-  const [invitingName, setInvitingName] = useState('');
-  const [Contact_person, setContact_Person] = useState('');
+  const [name, setName] = useState("");
+  const [invitingName, setInvitingName] = useState("");
+  const [Contact_person, setContact_Person] = useState("");
   const [loading, setLoading] = useState(false);
 
   const navigate = useNavigate();
@@ -26,31 +26,31 @@ const CreateProject = () => {
 
     try {
       await api.post(
-        '/projects',
+        "/projects",
         { name, invitingName, Contact_person },
         {
           headers: {
-            'Content-Type': 'application/json',
+            "Content-Type": "application/json",
           },
         }
       );
 
-      toast.success('הפרויקט נוצר בהצלחה', {
-        className: 'sonner-toast success rtl',
+      toast.success("הפרויקט נוצר בהצלחה", {
+        className: "sonner-toast success rtl",
       });
 
-      setName('');
-      setInvitingName('');
-      setContact_Person('');
-      navigate('/projects');
+      setName("");
+      setInvitingName("");
+      setContact_Person("");
+      navigate("/projects");
     } catch (err) {
       if (err.response && err.response.status === 400) {
-        toast.error(err.response.data.error, {
-          className: 'sonner-toast error rtl',
+        toast.error(err.response?.data?.message || "שגיאה בלתי צפויה", {
+          className: "sonner-toast error rtl",
         });
       } else {
-        toast.error('נכשל ביצירת הפרויקט', {
-          className: 'sonner-toast error rtl',
+        toast.error("נכשל ביצירת הפרויקט", {
+          className: "sonner-toast error rtl",
         });
       }
     } finally {
@@ -194,7 +194,7 @@ const CreateProject = () => {
               <div className="flex justify-center gap-4">
                 <button
                   type="button"
-                  onClick={() => navigate('/projects')}
+                  onClick={() => navigate("/projects")}
                   className="px-8 py-4 rounded-xl font-bold text-slate-600 hover:bg-slate-100 transition-all"
                 >
                   ביטול

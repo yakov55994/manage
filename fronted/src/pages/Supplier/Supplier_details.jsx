@@ -59,30 +59,33 @@ const SupplierDetailsPage = () => {
 
     fetchSupplierDetails();
   }, [id]);
+useEffect(() => {
+  if (!id) return;
+  (async () => {
+    setInvoicesLoading(true);
+    try {
+      const res = await api.get(`/suppliers/${id}`);
+      console.log("RAW:", res.data.data);
 
-  useEffect(() => {
-    if (!id) return;
-    (async () => {
-      setInvoicesLoading(true);
-      try {
-        const res = await api.get(`/invoices/suppliers/${id}`);
-        const arr = Array.isArray(res?.data?.data)
-          ? res.data.data
-          : Array.isArray(res?.data)
-          ? res.data
-          : [];
-        setInvoices(arr);
-      } catch (e) {
-        console.error(e);
-        toast.error("שגיאה בטעינת חשבוניות הספק", {
-          className: "sonner-toast error rtl",
-        });
-        setInvoices([]);
-      } finally {
-        setInvoicesLoading(false);
-      }
-    })();
-  }, [id]);
+      const supplier = res?.data?.data;
+
+      const arr = Array.isArray(supplier?.invoices)
+        ? supplier.invoices
+        : [];
+
+      setInvoices(arr);
+    } catch (e) {
+      console.error(e);
+      toast.error("שגיאה בטעינת חשבוניות הספק", {
+        className: "sonner-toast error rtl",
+      });
+      setInvoices([]);
+    } finally {
+      setInvoicesLoading(false);
+    }
+  })();
+}, [id]);
+
 
   const INTERIM_TYPES = new Set(['ח. עסקה', 'ה. עבודה', 'ד. תשלום']);
 const FINAL_TYPES   = new Set([

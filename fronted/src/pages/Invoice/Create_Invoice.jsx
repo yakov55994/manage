@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import api, { apiWithProject } from "../../api/api";
+import api from "../../api/api";
 import FileUploader from "../../Components/FileUploader";
 import { toast } from "sonner";
 import SupplierSelector from "../../Components/SupplierSelector.jsx";
@@ -39,15 +39,15 @@ const CreateInvoice = () => {
   const [searchParams] = useSearchParams();
 
   const navigate = useNavigate();
-
-
+  const user = JSON.parse(localStorage.getItem("user"));
+  const isAdmin = user?.role === "admin";
 
   useEffect(() => {
     const fetchProjects = async () => {
       try {
         const response = await api.get("/projects");
         console.log(response);
-setProjects(response.data?.data || []);
+        setProjects(response.data?.data || []);
       } catch (err) {
         toast.error("שגיאה בטעינת הפרויקטים", {
           className: "sonner-toast error rtl",
@@ -245,19 +245,17 @@ setProjects(response.data?.data || []);
           continue;
         }
 
-        const response = await apiWithProject(
-  "get",
-  `/projects/${selectedProject._id}/invoices/check-duplicate`,
-  null
-);
-
+        const response = await api.get("/invoices/check/duplicate", {
+          params: {
+            invoiceNumber: invoice.invoiceNumber,
+            supplierId: invoice.supplierId,
+          },
+        });
 
         if (response.data.exists) {
           toast.error(
             `לספק "${invoice.invitingName}" כבר קיימת חשבונית עם מספר "${invoice.invoiceNumber}"`,
-            {
-              className: "sonner-toast error rtl",
-            }
+            { className: "sonner-toast error rtl" }
           );
           return false;
         }
@@ -434,7 +432,7 @@ setProjects(response.data?.data || []);
             files: uploadedFiles,
             paymentDate:
               invoice.paid === "כן"
-                ? formatHebrewDate(invoice.paymentDate)
+                ? new Date(invoice.paymentDate).toISOString().split("T")[0]
                 : "",
             createdAt: invoice.createdAt,
             supplierId: invoice.supplierId,
@@ -443,32 +441,19 @@ setProjects(response.data?.data || []);
           };
         })
       );
-await apiWithProject(
-  "post",
-  `/projects/${selectedProject._id}/invoices`,
-  { invoices: invoiceData }
-);
 
+      const user = JSON.parse(localStorage.getItem("user"));
+      const isAdmin = user?.role === "admin";
 
-      toast.success("החשבונית/ות נוצרו בהצלחה!", {
-        className: "sonner-toast success rtl",
-      });
-      const projectIdFromQuery = searchParams.get("projectId");
-      navigate(
-        projectIdFromQuery ? `/projects/${projectIdFromQuery}` : "/invoices"
-      );
+      for (const inv of invoiceData) {
+        await api.post("/invoices", inv);
+      }
+
+      toast.success("החשבונית/ות נוצרו בהצלחה!");
+      navigate(`/invoices`);
     } catch (err) {
       console.error("שגיאה במהלך יצירת החשבונית/יות:", err);
-
-      if (err.response?.data?.message) {
-        toast.error(`שגיאה: ${err.response.data.message}`, {
-          className: "sonner-toast error rtl",
-        });
-      } else {
-        toast.error("שגיאה ביצירת החשבונית - אנא נסה שוב", {
-          className: "sonner-toast error rtl",
-        });
-      }
+      toast.error("שגיאה ביצירת החשבוניות - אנא נסה שוב");
     } finally {
       setIsLoading(false);
     }
@@ -689,21 +674,19 @@ await apiWithProject(
                   <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                     {/* Supplier Selector */}
                     <div className="space-y-2">
-          <SupplierSelector
-  projectId={selectedProject?._id}
-  value={invoice.supplierId}
-  onSelect={(supplier) => {
-    const newInvoices = [...invoices];
-    newInvoices[index] = {
-      ...newInvoices[index],
-      invitingName: supplier?.name || "",
-      supplierId: supplier?._id || "",
-    };
-    setInvoices(newInvoices);
-  }}
-/>
-
-
+                      <SupplierSelector
+                        projectId={selectedProject?._id}
+                        value={invoice.supplierId}
+                        onSelect={(supplier) => {
+                          const newInvoices = [...invoices];
+                          newInvoices[index] = {
+                            ...newInvoices[index],
+                            invitingName: supplier?.name || "",
+                            supplierId: supplier?._id || "",
+                          };
+                          setInvoices(newInvoices);
+                        }}
+                      />
 
                       <button
                         type="button"

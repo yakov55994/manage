@@ -2,39 +2,55 @@ import mongoose from "mongoose";
 import bcryptjs from "bcryptjs";
 
 const permissionSchema = new mongoose.Schema({
-  project: { type: mongoose.Schema.Types.ObjectId, ref: 'Project', required: true },
-  access: { type: String, enum: ['view', 'edit'], default: 'view' },
+  project: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: "Project"
+  },
 
+  // גישה כללית לפרויקט
+  access: {
+    type: String,
+    enum: ["none", "view", "edit"],
+    default: "none"
+  },
+
+  // הרשאות לפי מודול
   modules: {
-    invoices: { type: String, enum: ['view', 'edit'], default: 'view' },
-    orders: { type: String, enum: ['view', 'edit'], default: 'view' },
-    suppliers: { type: String, enum: ['view', 'edit'], default: 'view' },
-    files: { type: String, enum: ['view', 'edit'], default: 'view' }
+    invoices: { type: String, enum: ["none", "view", "edit"], default: "none" },
+    orders: { type: String, enum: ["none", "view", "edit"], default: "none" },
+    suppliers: { type: String, enum: ["none", "view", "edit"], default: "none" },
+    files: { type: String, enum: ["none", "view", "edit"], default: "none" }
   }
 });
 
-const userSchema = new mongoose.Schema({
-  username: { type: String, required: true, unique: true },
-  password: { type: String, required: true },
-  email: String,
-  role: { type: String, enum: ['admin', 'user'], default: 'user' },
-  isActive: { type: Boolean, default: true },
 
-  // 🔥 מבנה חד וברור של הרשאות
-  permissions: [permissionSchema]
+const userSchema = new mongoose.Schema(
+  {
+    username: { type: String, required: true, unique: true },
+    password: { type: String, required: true },
+    email: String,
+    role: { type: String, enum: ["admin", "user"], default: "user" },
+    isActive: { type: Boolean, default: true },
 
-}, { timestamps: true });
+    // ⭐ חשוב! מערך תקין לפי Mongoose
+    permissions: {
+      type: [permissionSchema],
+      default: []
+    }
+  },
+  { timestamps: true }
+);
 
-// Hash password
-userSchema.pre('save', async function(next) {
-  if (!this.isModified('password')) return next();
+// Hash password before saving
+userSchema.pre("save", async function (next) {
+  if (!this.isModified("password")) return next();
   this.password = await bcryptjs.hash(this.password, 10);
   next();
 });
 
 // Compare password
-userSchema.methods.comparePassword = async function(candidatePassword) {
-  return bcryptjs.compare(candidatePassword, this.password);
+userSchema.methods.comparePassword = function (candidate) {
+  return bcryptjs.compare(candidate, this.password);
 };
 
-export default mongoose.model('User', userSchema);
+export default mongoose.model("User", userSchema);

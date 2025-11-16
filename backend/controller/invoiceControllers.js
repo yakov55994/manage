@@ -1,86 +1,123 @@
-// controllers/invoiceController.js
 import invoiceService from "../services/invoiceService.js";
 
 const invoiceController = {
 
-  getInvoicesByProject: async (req, res) => {
-    try { res.json(await invoiceService.getInvoicesByProject(req.params.projectId)); }
-    catch (e) { res.status(500).json({ message: e.message }); }
-  },
-
-  createInvoice: async (req, res) => {
-    try { res.status(201).json(await invoiceService.createInvoice(req.params.projectId, req.body)); }
-    catch (e) { res.status(400).json({ message: e.message }); }
-  },
-
-  getInvoiceById: async (req, res) => {
+  // ✔ שליפה של כל החשבוניות בהתאם להרשאות
+  async getInvoices(req, res) {
     try {
-      const invoice = await invoiceService.getInvoiceById(req.params.projectId, req.params.id);
+      const data = await invoiceService.getAllInvoices(req.user);
+      res.json({ success: true, data });
+    } catch (e) {
+      res.status(500).json({ success: false, message: e.message });
+    }
+  },
+
+  async getInvoicesByProject(req, res) {
+    try {
+      const data = await invoiceService.getInvoicesByProject(
+        req.user,
+        req.params.projectId
+      );
+
+      res.json({ success: true, data });
+    } catch (e) {
+      res.status(403).json({ success: false, message: e.message });
+    }
+  },
+
+  async getInvoiceById(req, res) {
+    try {
+      const invoice = await invoiceService.getInvoiceById(
+        req.user,
+        req.params.id
+      );
+
       if (!invoice) return res.status(404).json({ message: "לא נמצא" });
-      res.json(invoice);
-    } catch (e) { res.status(500).json({ message: e.message }); }
+      res.json({ success: true, data: invoice });
+    } catch (e) {
+      res.status(403).json({ success: false, message: e.message });
+    }
   },
 
-  updateInvoice: async (req, res) => {
+  async createBulkInvoices(req, res) {
+  try {
+    const invoices = await invoiceService.createBulkInvoices(
+      req.user,
+      req.body.invoices
+    );
+
+    res.status(201).json({ success: true, data: invoices });
+  } catch (e) {
+    res.status(400).json({ success: false, message: e.message });
+  }
+},
+
+  async createInvoice(req, res) {
     try {
-      const updated = await invoiceService.updateInvoice(req.params.projectId, req.params.id, req.body);
-      if (!updated) return res.status(404).json({ message: "לא נמצא" });
-      res.json(updated);
-    } catch (e) { res.status(400).json({ message: e.message }); }
+      const invoice = await invoiceService.createInvoice(req.user, req.body);
+      res.status(201).json({ success: true, data: invoice });
+    } catch (e) {
+      res.status(400).json({ success: false, message: e.message });
+    }
   },
 
-  deleteInvoice: async (req, res) => {
+  async updateInvoice(req, res) {
     try {
-      const deleted = await invoiceService.deleteInvoice(req.params.projectId, req.params.id);
-      if (!deleted) return res.status(404).json({ message: "לא נמצא" });
-      res.json({ message: "נמחק" });
-    } catch (e) { res.status(400).json({ message: e.message }); }
-  },
-
-  search: async (req, res) => {
-    try { res.json(await invoiceService.search(req.params.projectId, req.query.q)); }
-    catch (e) { res.status(500).json({ message: e.message }); }
-  },
-
-  updatePaymentStatus: async (req, res) => {
-    try {
-      res.json(
-        await invoiceService.updatePaymentStatus(req.params.projectId, req.params.id, req.body)
+      const updated = await invoiceService.updateInvoice(
+        req.user,
+        req.params.id,
+        req.body
       );
-    } catch (e) { res.status(400).json({ message: e.message }); }
+      res.json({ success: true, data: updated });
+    } catch (e) {
+      res.status(403).json({ success: false, message: e.message });
+    }
   },
 
-  updatePaymentDate: async (req, res) => {
+  async deleteInvoice(req, res) {
     try {
-      res.json(
-        await invoiceService.updatePaymentDate(req.params.projectId, req.params.id, req.body.date)
-      );
-    } catch (e) { res.status(400).json({ message: e.message }); }
+      await invoiceService.deleteInvoice(req.user, req.params.id);
+      res.json({ success: true, message: "נמחק" });
+    } catch (e) {
+      res.status(403).json({ success: false, message: e.message });
+    }
   },
 
-  moveInvoice: async (req, res) => {
+  async checkDuplicate(req, res) {
     try {
-      res.json(
-        await invoiceService.moveInvoice(req.params.id, req.params.projectId, req.body.toProjectId)
-      );
-    } catch (e) { res.status(400).json({ message: e.message }); }
+      const exists = await invoiceService.checkDuplicate(req.user, req.query);
+      res.json({ success: true, exists });
+    } catch (e) {
+      res.status(403).json({ success: false, message: e.message });
+    }
   },
 
-  checkDuplicate: async (req, res) => {
+  async moveInvoice(req, res) {
     try {
-      const exists = await invoiceService.checkDuplicate(
-        req.params.projectId,
-        req.query.supplierName,
-        req.query.invoiceNumber
+      const updated = await invoiceService.moveInvoice(
+        req.user,
+        req.params.id,
+        req.body.toProjectId
       );
-      res.json({ exists: !!exists });
-    } catch (e) { res.status(500).json({ message: e.message }); }
+      res.json({ success: true, data: updated });
+    } catch (e) {
+      res.status(403).json({ success: false, message: e.message });
+    }
   },
 
-  getSupplierInvoices: async (req, res) => {
-    try { res.json(await invoiceService.getSupplierInvoices(req.params.id)); }
-    catch (e) { res.status(500).json({ message: e.message }); }
-  },
+  async updatePaymentStatus(req, res) {
+  try {
+    const updated = await invoiceService.updatePaymentStatus(
+      req.user,
+      req.params.id,
+      req.body
+    );
+
+    res.json({ success: true, data: updated });
+  } catch (e) {
+    res.status(403).json({ success: false, message: e.message });
+  }
+},
 
 };
 

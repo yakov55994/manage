@@ -3,26 +3,20 @@ import mongoose from 'mongoose';
 import dotenv from 'dotenv';
 import cors from 'cors';
 
-// ❌ הסר את jwt אם לא משתמשים פה
-// import jwt from 'jsonwebtoken';
-
-// ראוטרים
+// Routers
 import authRoutes from './routes/Auth.js';
-import usersRoutes from './routes/UserRoutes.js';          // ודא שהתוואי/שם זהים לקובץ בפועל
-import projectRoutes from './routes/projectRoutes.js';     // שמות לפי מה שהגדרנו למעלה
+import usersRoutes from './routes/UserRoutes.js';
+import projectRoutes from './routes/projectRoutes.js';
 import invoiceRoutes from './routes/InvoiceRoutes.js';
 import orderRoutes from './routes/orderRoutes.js';
 import notesRoutes from './routes/NotesRoutes.js';
 import uploadRoute from './routes/uploadRoute.js';
 import suppliersRoutes from './routes/supplierRoutes.js';
 
-// אם ה-routers כבר עושים protect – אין צורך לייבא פה:
-// import { protect } from './middleware/auth.js';
-
 dotenv.config();
 const app = express();
 
-// ✅ CORS
+// CORS
 const allowedOrigins = [
   'http://localhost:5173',
   'https://manage-46b.pages.dev',
@@ -31,49 +25,62 @@ const allowedOrigins = [
 
 const corsOptions = {
   origin(origin, cb) {
-    if (!origin) return cb(null, true); // Postman/SSR
+    if (!origin) return cb(null, true);
     return cb(allowedOrigins.includes(origin) ? null : new Error('Not allowed by CORS'), true);
   },
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
   allowedHeaders: [
-    'Origin', 'X-Requested-With', 'Content-Type', 'Accept', 'Authorization',
-    'Cache-Control' // ← כדי למנוע שגיאת preflight על cache-control
+    'Origin',
+    'X-Requested-With',
+    'Content-Type',
+    'Accept',
+    'Authorization',
+    'Cache-Control'
+  ],
+  exposedHeaders: [
+    'Authorization'
   ],
   optionsSuccessStatus: 200,
 };
 
-app.use(cors(corsOptions));
-app.options('*', cors(corsOptions), (req, res) => res.sendStatus(200));
 
-// ✅ Body parsers
+app.use(cors(corsOptions));
+app.options('*', cors(corsOptions));
+
+// Parsers
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
-// ✅ Auth (פתוח)
+// Auth
 app.use('/api/auth', authRoutes);
 
-// ✅ Routers עם הגנות בפנים (protect/withScope/requireOp נעשים בתוך הקבצים עצמם)
+// Projects
 app.use('/api/projects', projectRoutes);
 
-app.use('/api/projects/:projectId/invoices', invoiceRoutes);
-app.use('/api/projects/:projectId/orders', orderRoutes);
-app.use('/api/suppliers/', suppliersRoutes);
+// Invoices
+app.use('/api/invoices', invoiceRoutes);
 
-// 🧑‍💼 ניהול משתמשים — בקובץ ה־router כבר יש protect+requireAdmin (כמו שהכנת)
+// Orders
+app.use('/api/orders', orderRoutes);
+
+// Suppliers
+app.use('/api/suppliers', suppliersRoutes);
+
+// Users
 app.use('/api/users', usersRoutes);
 
-// ראוטרים נוספים (אם אין להם הגנות פנימיות – עטוף אותם שם, לא כאן)
+// Notes + Uploads
 app.use('/api/notes', notesRoutes);
 app.use('/api/upload', uploadRoute);
 
-// ✅ Error handler
+// Error handler
 app.use((err, req, res, next) => {
   console.error('❌ Server error:', err.stack);
   res.status(500).json({ message: 'Internal Server Error', error: err.message });
 });
 
-// ✅ DB + Server
+// Start DB + Server
 const connectDB = async () => {
   try {
     await mongoose.connect(process.env.MONGO_URL);

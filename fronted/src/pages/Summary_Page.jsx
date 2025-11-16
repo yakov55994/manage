@@ -30,37 +30,58 @@ const SummaryPage = () => {
 
   const navigate = useNavigate();
 
-  useEffect(() => {
-    const fetchData = async () => {
-      try {
-        const [projectResponse, orderResponse, invoiceResponse, suppliersResponse] = await Promise.all([
-          api.get('/projects'),
-          api.get('/orders'),
-          api.get('/invoices'),
-          api.get('/suppliers')
-        ]);
-        
-        setProjects(projectResponse.data);
-        setOrders(orderResponse.data);
-        setInvoices(invoiceResponse.data);
-        
-        if (suppliersResponse.data && suppliersResponse.data.success && Array.isArray(suppliersResponse.data.data)) {
-          setSuppliers(suppliersResponse.data.data);
-        } else {
-          setSuppliers([]);
-        }
-      } catch (error) {
-        console.error("Error fetching data:", error);
-        toast.error("שגיאה בטעינת הנתונים. נסה שנית מאוחר יותר.", {
-          className: "sonner-toast error rtl"
-        });
-      } finally {
-        setLoading(false);
-      }
-    };
-    
-    fetchData();
-  }, []);
+useEffect(() => {
+  const fetchData = async () => {
+    try {
+      const [projectsRes, ordersRes, invoicesRes, suppliersRes] = await Promise.all([
+        api.get("/projects"),
+        api.get("/orders"),
+        api.get("/invoices"),
+        api.get("/suppliers")
+      ]);
+
+      // פרויקטים — החלק הקריטי!!!
+      const projectsArr =
+        Array.isArray(projectsRes.data?.data)
+          ? projectsRes.data.data
+          : (Array.isArray(projectsRes.data) ? projectsRes.data : []);
+
+      setProjects(projectsArr);
+
+      // הזמנות
+      const ordersArr =
+        Array.isArray(ordersRes.data?.data)
+          ? ordersRes.data.data
+          : ordersRes.data;
+      setOrders(ordersArr);
+
+      // חשבוניות
+      const invoicesArr =
+        Array.isArray(invoicesRes.data?.data)
+          ? invoicesRes.data.data
+          : invoicesRes.data;
+      setInvoices(invoicesArr);
+
+      // ספקים
+      setSuppliers(
+        suppliersRes.data?.success && Array.isArray(suppliersRes.data?.data)
+          ? suppliersRes.data.data
+          : []
+      );
+
+    } catch (error) {
+      console.error("Error fetching data:", error);
+      toast.error("שגיאה בטעינת הנתונים", {
+        className: "sonner-toast error rtl",
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  fetchData();
+}, []);
+
 
   const formatNumber = (num) => num?.toLocaleString('he-IL');
   
@@ -138,10 +159,10 @@ const SummaryPage = () => {
     });
   };
 
-  const moveToProjectDetails = (project) => navigate(`/project/${project._id}`);
-  const moveToInvoiceDetails = (invoice) => navigate(`/invoice/${invoice._id}`);
-  const moveToOrderDetails = (order) => navigate(`/order/${order._id}`);
-  const moveToSupplierDetails = (supplier) => navigate(`/supplier/${supplier._id}`);
+  const moveToProjectDetails = (project) => navigate(`/projects/${project._id}`);
+  const moveToInvoiceDetails = (invoice) => navigate(`/invoices/${invoice._id}`);
+  const moveToOrderDetails = (order) => navigate(`/orders/${order._id}`);
+  const moveToSupplierDetails = (supplier) => navigate(`/suppliers/${supplier._id}`);
 
   if (loading) {
     return (

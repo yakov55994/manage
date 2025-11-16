@@ -36,8 +36,8 @@ const InvoiceDetailsPage = () => {
   useEffect(() => {
     const fetchInvoiceDetails = async () => {
       try {
-        const response = await api.get(`/projects/${projectId}/invoices/${id}`);
-        const invoiceData = response.data;
+        const response = await api.get(`/invoices/${id}`);
+        const invoiceData = response.data.data;
 
         if (!invoiceData) {
           setLoading(false);
@@ -272,18 +272,19 @@ const InvoiceDetailsPage = () => {
   };
 
   const handleEdit = (id) => {
-navigate(`/projects/${projectId}/invoices/${id}/edit`);
+    navigate(`/invoices/${id}/edit`);
   };
 
   const handleDelete = async () => {
     try {
       if (!invoice?._id) return;
       setDeleting(true);
-await api.delete(`/projects/${invoice.projectId}/invoices/${invoice._id}`);
+      await api.delete(`/invoices/${invoice._id}`);
+
       toast.success("החשבונית נמחקה בהצלחה", {
         className: "sonner-toast success rtl",
       });
-navigate(`/projects/${invoice.projectId}/invoices`);
+      navigate(`/invoices`);
     } catch (error) {
       console.error("Error deleting invoice:", error);
       toast.error("שגיאה במחיקת החשבונית", {

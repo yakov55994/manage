@@ -26,7 +26,7 @@ const SupplierSelector = ({
     const fetchSuppliers = async () => {
       try {
         setLoading(true);
-        const res = await api.get(`/suppliers/all`);
+        const res = await api.get(`/suppliers`);
         setSuppliers(res?.data?.data || []);
       } catch (error) {
         console.error('Error fetching suppliers:', error);

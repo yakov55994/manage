@@ -32,24 +32,28 @@ const UpdateProjectPage = () => {
 
   const navigate = useNavigate();
 
-  useEffect(() => {
-    const fetchProject = async () => {
-      try {
-        const { data } = await api.get(`/projects/${id}`);
-        setProject(data);
-        setNewProjectName(data.name || '');
-        setBudget(data.budget ?? 0);
-        setInvitingName(data.invitingName || '');
-        setRemainingBudget(data.remainingBudget ?? 0);
-        setContact_Person(data.Contact_person || '');
-        setLoading(false);
-      } catch (error) {
-        toast.error('שגיאה בשליפת פרויקט', { className: 'sonner-toast error rtl' });
-        setLoading(false);
-      }
-    };
-    fetchProject();
-  }, [id]);
+useEffect(() => {
+  const fetchProject = async () => {
+    try {
+      const res = await api.get(`/projects/${id}`);
+      const project = res.data.data;  // 👈 זה ה־project האמיתי
+
+      setProject(project);
+      setNewProjectName(project.name || '');
+      setBudget(project.budget ?? 0);
+      setInvitingName(project.invitingName || '');
+      setRemainingBudget(project.remainingBudget ?? 0);
+      setContact_Person(project.Contact_person || '');
+    } catch (error) {
+      toast.error('שגיאה בשליפת פרויקט', { className: 'sonner-toast error rtl' });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  fetchProject();
+}, [id]);
+
 
   const handleSubmit = async (e) => {
     e.preventDefault();

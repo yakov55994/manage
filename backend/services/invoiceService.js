@@ -1,160 +1,158 @@
 // services/invoiceService.js
-import mongoose from "mongoose";
 import Invoice from "../models/Invoice.js";
 import Project from "../models/Project.js";
 
-// עוזר ליצירת Date
-function toUtc(dateStr) {
-  if (!dateStr) return null;
-  const d = new Date(dateStr);
-  if (isNaN(d)) return null;
-  return new Date(Date.UTC(d.getFullYear(), d.getMonth(), d.getDate(), 12, 0, 0));
+function canViewProject(user, projectId) {
+  if (user.role === "admin") return true;
+
+  return user.permissions.some(p => String(p.project) === String(projectId));
 }
 
-const invoiceService = {
-  /** ============================
-   *   1. חשבוניות לפי פרויקט
-   * ============================ */
-  async getInvoicesByProject(projectId) {
+function canEditProject(user, projectId) {
+  if (user.role === "admin") return true;
+
+  return user.permissions.some(p =>
+    String(p.project) === String(projectId) &&
+    p.modules?.invoices === "edit"
+  );
+}
+
+export default {
+
+  async getAllInvoices(user) {
+    if (user.role === "admin") {
+      return Invoice.find().sort({ createdAt: -1 });
+    }
+
+    const allowedProjects = user.permissions.map(p => p.project);
+
+    return Invoice.find({ projectId: { $in: allowedProjects } })
+      .sort({ createdAt: -1 });
+  },
+
+  async getInvoicesByProject(user, projectId) {
+    if (!canViewProject(user, projectId))
+      throw new Error("אין לך הרשאה לפרויקט זה");
+
     return Invoice.find({ projectId }).sort({ createdAt: -1 });
   },
 
-  /** ============================
-   *   2. יצירת חשבונית
-   * ============================ */
-  async createInvoice(projectId, data) {
-    const invoice = new Invoice({
-      ...data,
-      projectId,
-      projectName: data.projectName
-    });
+  async getInvoiceById(user, invoiceId) {
+    const invoice = await Invoice.findById(invoiceId);
+    if (!invoice) return null;
 
-    await invoice.save();
-    return invoice;
-  },
-
-  /** ============================
-   *   3. שליפה לפי מזהה
-   * ============================ */
-  async getInvoiceById(projectId, id) {
-    return Invoice.findOne({ _id: id, projectId });
-  },
-
-  /** ============================
-   *   4. עדכון חשבונית
-   * ============================ */
-  async updateInvoice(projectId, id, data) {
-    return Invoice.findOneAndUpdate(
-      { _id: id, projectId },
-      data,
-      { new: true }
-    );
-  },
-
-  /** ============================
-   *   5. מחיקת חשבונית
-   * ============================ */
-  async deleteInvoice(projectId, id) {
-    return Invoice.findOneAndDelete({ _id: id, projectId });
-  },
-
-  /** ============================
-   *   6. חיפוש בפרויקט
-   * ============================ */
-  async search(projectId, q) {
-    const regex = new RegExp(q, "i");
-    return Invoice.find({
-      projectId,
-      $or: [
-        { invoiceNumber: regex },
-        { invitingName: regex },
-        { detail: regex }
-      ]
-    });
-  },
-
-  /** ========================================
-   *   7. עדכון תשלום (סטטוס + תאריך + אמצעי)
-   * ======================================== */
-  async updatePaymentStatus(projectId, id, { paid, paymentDate, paymentMethod }) {
-    return Invoice.findOneAndUpdate(
-      { _id: id, projectId },
-      {
-        paid,
-        paymentDate: toUtc(paymentDate),
-        paymentMethod
-      },
-      { new: true }
-    );
-  },
-
-  /** ========================================
-   *   8. עדכון תאריך תשלום בלבד
-   * ======================================== */
-  async updatePaymentDate(projectId, id, date) {
-    return Invoice.findOneAndUpdate(
-      { _id: id, projectId },
-      { paymentDate: toUtc(date) },
-      { new: true }
-    );
-  },
-
-  /** ========================================
-   *   9. העברת חשבונית בין פרויקטים
-   * ======================================== */
-  async moveInvoice(invoiceId, fromProjectId, toProjectId) {
-    const invoice = await Invoice.findOne({ _id: invoiceId, projectId: fromProjectId });
-    if (!invoice) throw new Error("חשבונית לא נמצאה בפרויקט המקור");
-
-    // מעדכן את הפרויקט המקורי (מחזיר תקציב)
-    await Project.findByIdAndUpdate(
-      fromProjectId,
-      { 
-        $pull: { invoices: invoiceId },
-        $inc: { remainingBudget: invoice.sum } 
-      }
-    );
-
-    // מעדכן את פרויקט היעד (מוריד מהתקציב)
-    await Project.findByIdAndUpdate(
-      toProjectId,
-      { 
-        $push: { invoices: invoiceId },
-        $inc: { remainingBudget: -invoice.sum } 
-      }
-    );
-
-    // מעדכן את החשבונית
-    invoice.projectId = toProjectId;
-    await invoice.save();
+    if (!canViewProject(user, invoice.projectId))
+      throw new Error("אין גישה לחשבונית");
 
     return invoice;
   },
 
-  /** ========================================
-   *   10. בדיקת כפילות
-   * ======================================== */
-  async checkDuplicate(projectId, supplierName, invoiceNumber) {
-    return Invoice.findOne({
-      projectId,
-      invitingName: supplierName,
-      invoiceNumber
-    });
-  },
+  async createBulkInvoices(user, invoicesData) {
 
-  /** ========================================
-   *   11. חשבוניות לפי ספק
-   * ======================================== */
-  async getSupplierInvoices(supplierId) {
-    return Invoice.find({ supplierId }).sort({ createdAt: -1 });
-  },
+  const results = [];
 
-  /** ========================================
-   *   12. מחיקת קובץ ב-Cloudinary
-   * ======================================== */
-  async deleteFile(publicId, resourceType = "raw", cloudinary) {
-    return cloudinary.uploader.destroy(publicId, { resource_type: resourceType });
+  for (const inv of invoicesData) {
+    const created = await this.createInvoice(user, inv);
+    results.push(created);
   }
-};
 
-export default invoiceService;
+  return results;
+},
+
+  async createInvoice(user, body) {
+    if (!canEditProject(user, body.projectId))
+      throw new Error("אין הרשאת עריכה בפרויקט");
+
+    return Invoice.create(body);
+  },
+
+  async updateInvoice(user, invoiceId, body) {
+    const invoice = await Invoice.findById(invoiceId);
+    if (!invoice) throw new Error("לא נמצא");
+
+    if (!canEditProject(user, invoice.projectId))
+      throw new Error("אין הרשאה לערוך חשבונית זו");
+
+    Object.assign(invoice, body);
+    return invoice.save();
+  },
+
+  async deleteInvoice(user, invoiceId) {
+    const invoice = await Invoice.findById(invoiceId);
+    if (!invoice) throw new Error("לא נמצא");
+
+    if (!canEditProject(user, invoice.projectId))
+      throw new Error("אין הרשאה למחוק");
+
+    await invoice.deleteOne();
+    return true;
+  },
+
+  async updatePaymentStatus(user, invoiceId, data) {
+    const invoice = await Invoice.findById(invoiceId);
+    if (!invoice) throw new Error("לא נמצא");
+
+    if (!canEditProject(user, invoice.projectId))
+      throw new Error("אין הרשאה לעדכן סטטוס");
+
+    invoice.paid = data.paid;
+    invoice.paymentDate = data.paymentDate || null;
+    invoice.paymentMethod = data.paymentMethod || "";
+
+    return invoice.save();
+  },
+
+async moveInvoice(user, invoiceId, toProjectId) {
+  const invoice = await Invoice.findById(invoiceId);
+  if (!invoice) throw new Error("חשבונית לא נמצאה");
+
+  const fromProjectId = String(invoice.projectId);
+
+  const isAdmin = user.role === "admin";
+
+  if (!isAdmin) {
+    if (!canEditProject(user, fromProjectId)) {
+      throw new Error("אין הרשאה להזיז חשבונית מהפרויקט הנוכחי");
+    }
+
+    if (!canEditProject(user, toProjectId)) {
+      throw new Error("אין הרשאה להעביר לפרויקט היעד");
+    }
+  }
+
+  // בדיקת פרויקט יעד
+  const targetProject = await Project.findById(toProjectId);
+  if (!targetProject) throw new Error("פרויקט היעד לא נמצא");
+
+  // עדכון שדות החשבונית
+  invoice.projectId = toProjectId;
+  invoice.projectName = targetProject.name; // 🔥 חובה!!
+
+  const updated = await invoice.save();
+  return updated;
+},
+async checkDuplicate(user, query) {
+  const { invoiceNumber, supplierId } = query;
+
+  if (!invoiceNumber || !supplierId)
+    throw new Error("Missing invoiceNumber or supplierId");
+
+  // אם המשתמש Admin → לבדוק בכל המערכת
+  if (user.role === "admin") {
+    return Invoice.findOne({
+      invoiceNumber,
+      supplierId,
+    });
+  }
+
+  // משתמש רגיל → מותר לבדוק רק בפרויקטים שלו
+  const allowedProjectIds = user.permissions.map(p => p.project);
+
+  return Invoice.findOne({
+    invoiceNumber,
+    supplierId,
+    projectId: { $in: allowedProjectIds }
+  });
+}
+
+};

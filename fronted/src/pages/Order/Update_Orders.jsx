@@ -30,15 +30,16 @@ const OrderEditPage = () => {
   const [files, setFiles] = useState([]);
   const [loading, setLoading] = useState(false);
 
-  const { projectId, id } = useParams();
+  const { id } = useParams();
   const navigate = useNavigate();
 
   useEffect(() => {
     const fetchOrder = async () => {
       setLoading(true);
       try {
-        api.get(`/projects/${projectId}/orders/${id}`);
-        const data = response.data;
+        const response = await api.get(`/orders/${id}`);
+        console.log(response)
+        const data = response.data.data;
         setProjectName(data.projectName);
         setOrder(data);
         setOrderNumber(data.orderNumber);
@@ -288,16 +289,15 @@ const OrderEditPage = () => {
         detail,
         invitingName,
         projectName,
-        projectId: selectedProjectId,
         Contact_person,
         files: uploadedFiles,
       };
 
-      await api.put(`/projects/${projectId}/orders/${id}`, formData);
+      await api.put(`/orders/${id}/edit`, formData);
       toast.success("הזמנה עודכנה בהצלחה", {
         className: "sonner-toast success rtl",
       });
-      navigate(`/projects/${projectId}/orders/${id}`);
+      navigate(`/orders/${id}`);
     } catch (error) {
       toast.error(error.message, {
         className: "sonner-toast error rtl",
@@ -565,7 +565,7 @@ const OrderEditPage = () => {
 
               <button
                 type="button"
-                onClick={() => navigate(`/projects/${projectId}/orders/${id}`)}
+                onClick={() => navigate(`/orders/${id}`)}
                 disabled={loading}
                 className="px-8 py-4 bg-gray-200 text-gray-700 rounded-xl hover:bg-gray-300 transition-all duration-300 font-bold text-lg disabled:opacity-50"
               >

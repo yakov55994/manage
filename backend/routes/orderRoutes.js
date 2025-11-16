@@ -1,44 +1,47 @@
-import express from 'express'
-import { protect } from '../middleware/auth.js';
-import { checkProjectPermission } from '../middleware/permissions.js';
-import orderController from '../controller/orderControllers.js'
+import express from "express";
+import { protect } from "../middleware/auth.js";
+import orderController from "../controller/orderControllers.js";
+import { checkAccess } from "../middleware/auth.js";
 
+const router = express.Router();
 
-const router = express.Router({ mergeParams: true });
 
 router.get(
   "/",
   protect,
-  checkProjectPermission("orders", "view"),
-  orderController.getOrdersByProject
+  orderController.getOrders
 );
 
-router.post(
-  "/",
-  protect,
-  checkProjectPermission("orders", "edit"),
-  orderController.createOrder
-);
 
-router.get(
-  "/:id",
+router.get("/:id",
   protect,
-  checkProjectPermission("orders", "view"),
+  checkAccess("order", "view"),
   orderController.getOrderById
 );
 
-router.put(
-  "/:id",
+router.post("/bulk",
   protect,
-  checkProjectPermission("orders", "edit"),
+  checkAccess("order", "edit"),
+  orderController.createBulkOrders
+);
+
+router.post("/",
+  protect,
+  checkAccess("order", "edit"),
+  orderController.createOrder
+);
+
+router.put("/:id/edit",
+  protect,
+  checkAccess("order", "edit"),
   orderController.updateOrder
 );
 
-router.delete(
-  "/:id",
+router.delete("/:id",
   protect,
-  checkProjectPermission("orders", "edit"),
+  checkAccess("order", "edit"),
   orderController.deleteOrder
 );
 
-export default router
+
+export default router;
