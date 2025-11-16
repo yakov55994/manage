@@ -487,25 +487,35 @@ const exportCustomReport = () => {
     saveAs(new Blob([wbout], { type: "application/octet-stream" }), "סיכום פרוייקטים.xlsx");
   };
 
-  useEffect(() => {
-    const fetchProjects = async () => {
-      try {
-        setLoading(true);
-        const response = await apiWithProject("get", '/projects')
-        setProjects(response.data);
-        setAllProjects(response.data);
-        setLoading(false);
-      } catch (error) {
-        console.error("Error fetching projects:", error);
-        toast.error('שגיאה בשליפת פרויקטים', {
-          className: "sonner-toast error rtl"
-        });
-        setLoading(false);
-      }
-    };
+useEffect(() => {
+  const fetchProjects = async () => {
+    try {
+      setLoading(true);
 
-    fetchProjects();
-  }, []);
+      const response = await api.get("/projects");
+
+      // כי השרת מחזיר:  { success: true, data: [...] }
+      const data = Array.isArray(response.data?.data)
+        ? response.data.data
+        : [];
+
+      console.log("Projects loaded:", data);
+
+      setProjects(data);
+      setAllProjects(data);
+
+    } catch (error) {
+      console.error("Error fetching projects:", error);
+      toast.error("שגיאה בשליפת פרויקטים", {
+        className: "sonner-toast error rtl",
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  fetchProjects();
+}, []);
 
 
   useEffect(() => {

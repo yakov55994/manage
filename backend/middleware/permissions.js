@@ -1,15 +1,19 @@
-// middleware/permissions.js
-
-export const checkProjectPermission = (moduleName, required) => {
-  return async (req, res, next) => {
+export const checkProjectPermission = (moduleName, required, wantProjectId = true) => {
+  return (req, res, next) => {
     try {
-      const user = req.user; // מגיע מה-protect
+      const user = req.user;
+
+      // אם לא נדרש projectId — תן לעבור
+      if (!wantProjectId) return next();
+
+      // משיכות projectId מתוך הבקשה
       const projectId =
         req.params.projectId ||
         req.body.project ||
         req.body.projectId ||
         req.query.projectId;
 
+      // אין projectId? תחזיר שגיאה
       if (!projectId) {
         return res.status(400).json({
           success: false,
@@ -17,10 +21,10 @@ export const checkProjectPermission = (moduleName, required) => {
         });
       }
 
-      // אם מנהל – גישה מלאה
+      // אם אדמין — גישה לכל פרויקט
       if (user.role === "admin") return next();
 
-      // מוצא את ההרשאה של היוזר לפרויקט הזה
+      // לא אדמין — בודק הרשאות
       const proj = user.permissions?.projects?.find(
         (p) => String(p.project) === String(projectId)
       );
@@ -32,10 +36,8 @@ export const checkProjectPermission = (moduleName, required) => {
         });
       }
 
-      // רמת ההרשאה הנוכחית
       const currentLevel = proj.modules?.[moduleName] || proj.access;
 
-      // בודק עריכה
       if (required === "edit" && currentLevel !== "edit") {
         return res.status(403).json({
           success: false,
@@ -43,13 +45,9 @@ export const checkProjectPermission = (moduleName, required) => {
         });
       }
 
-      return next();
+      next();
     } catch (err) {
-      console.error("Permission error:", err);
-      return res.status(500).json({
-        success: false,
-        message: "Server error",
-      });
+      res.status(500).json({ message: "Server error" });
     }
   };
 };

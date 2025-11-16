@@ -4,29 +4,30 @@ import api from '../api/api';
 import { toast } from 'sonner';
 
 const SupplierSelector = ({ 
-   value, 
-   onChange, 
-   label = "בחר ספק", 
-   placeholder = "חפש או בחר ספק...", 
-   required = false,
-   className = "",
-   disabled = false 
- }) => {
+  projectId,
+  value, 
+  onSelect,
+  label = "בחר ספק", 
+  placeholder = "חפש או בחר ספק...", 
+  required = false,
+  className = "",
+  disabled = false 
+}) => {
   const [suppliers, setSuppliers] = useState([]);
   const [loading, setLoading] = useState(false);
   const [isOpen, setIsOpen] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedSupplier, setSelectedSupplier] = useState(null);
 
-
-  
   // טעינת ספקים
   useEffect(() => {
+    if (!projectId) return;
+
     const fetchSuppliers = async () => {
       try {
         setLoading(true);
-        const response = await api.get('/suppliers');
-        setSuppliers(response.data)
+        const res = await api.get(`/suppliers/all`);
+        setSuppliers(res?.data?.data || []);
       } catch (error) {
         console.error('Error fetching suppliers:', error);
         toast.error('שגיאה בטעינת רשימת ספקים', {
@@ -39,10 +40,10 @@ const SupplierSelector = ({
     };
 
     fetchSuppliers();
-  }, []);
+  }, [projectId]);
 
   // עדכון הספק הנבחר כשמשנים את value מבחוץ
- useEffect(() => {
+  useEffect(() => {
     if (value && suppliers.length > 0) {
       const supplier =
         suppliers.find((s) => s?._id === value) ||
@@ -55,12 +56,11 @@ const SupplierSelector = ({
   }, [value, suppliers]);
 
   // סינון ספקים לפי חיפוש
- const filteredSuppliers = (suppliers || []).filter((supplier) => {
+  const filteredSuppliers = (suppliers || []).filter((supplier) => {
     const name = String(supplier?.name ?? "").toLowerCase();
     const email = String(supplier?.email ?? "").toLowerCase();
-    const tax  = String(supplier?.business_tax ?? "");
+    const tax = String(supplier?.business_tax ?? "");
     const term = String(searchTerm ?? "").toLowerCase();
-    // חיפוש: name/email לא רגיל -> lowerCase; מספר עוסק -> השוואת מחרוזת כמו שהיא
     return name.includes(term) || email.includes(term) || tax.includes(String(searchTerm ?? ""));
   });
 
@@ -70,14 +70,14 @@ const SupplierSelector = ({
     setSearchTerm('');
     
     // שלח את הספק הנבחר להורה
-    if (onChange) {
-      onChange(supplier);
+    if (onSelect) {
+      onSelect(supplier);
     }
   };
 
- const formatSupplierDisplay = (supplier) => {
+  const formatSupplierDisplay = (supplier) => {
     const name = supplier?.name ?? "ללא שם";
-    const tax  = supplier?.business_tax ?? "";
+    const tax = supplier?.business_tax ?? "";
     return tax ? `${name} - ${tax}` : name;
   };
 
@@ -151,9 +151,11 @@ const SupplierSelector = ({
                     <div className="font-bold text-black">
                       {formatSupplierDisplay(supplier)}
                     </div>
-                    <div className="text-sm text-gray-600 mt-1">
-                      {supplier.email} • {supplier.phone}
-                    </div>
+                    {(supplier.email || supplier.phone) && (
+                      <div className="text-sm text-gray-600 mt-1">
+                        {supplier.email} {supplier.email && supplier.phone && '•'} {supplier.phone}
+                      </div>
+                    )}
                   </div>
                 ))
               )}

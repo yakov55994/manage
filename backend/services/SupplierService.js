@@ -5,6 +5,10 @@ import Invoice from "../models/Invoice.js";
 import mongoose from "mongoose";
 
 const supplierService = {
+
+    async getAllSuppliers() {
+  return Supplier.find().sort({ name: 1 });
+},
     // רשימת ספקים לפי פרויקט
     async getSuppliersByProject(projectId) {
         return Supplier.find({ projects: projectId }).sort({ name: 1 });

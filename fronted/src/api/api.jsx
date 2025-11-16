@@ -51,7 +51,7 @@ export const apiWithProject = async (method, path, body = null) => {
   const user = JSON.parse(localStorage.getItem("user"));
   const projectId = localStorage.getItem("selectedProjectId");
 
-  // מנהל → תמיד הולך לנתיב הרגיל
+  // מנהל → פונה לנתיב רגיל
   if (user?.role === "admin") {
     return api({
       method,
@@ -65,9 +65,13 @@ export const apiWithProject = async (method, path, body = null) => {
     throw new Error("חסר projectId למשתמש רגיל");
   }
 
+  // בנייה נכונה של ה־URL
+  const cleanPath = path.startsWith("/") ? path : `/${path}`;
+
   return api({
     method,
-    url: `/projects/${projectId}${path}`,
+    url: `/projects/${projectId}${cleanPath}`,
     data: body,
   });
 };
+

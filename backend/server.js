@@ -54,10 +54,11 @@ app.use(express.urlencoded({ extended: true }));
 app.use('/api/auth', authRoutes);
 
 // ✅ Routers עם הגנות בפנים (protect/withScope/requireOp נעשים בתוך הקבצים עצמם)
-app.use('/api/projects', projectRoutes);                             // פרויקטים (אין :projectId בבסיס)
-app.use('/api/invoices', invoiceRoutes);         // חשבוניות תחת פרויקט
-app.use('/api/orders', orderRoutes);             // הזמנות תחת פרויקט
-app.use('/api/suppliers', suppliersRoutes);      // ספקים תחת פרויקט
+app.use('/api/projects', projectRoutes);
+
+app.use('/api/projects/:projectId/invoices', invoiceRoutes);
+app.use('/api/projects/:projectId/orders', orderRoutes);
+app.use('/api/suppliers/', suppliersRoutes);
 
 // 🧑‍💼 ניהול משתמשים — בקובץ ה־router כבר יש protect+requireAdmin (כמו שהכנת)
 app.use('/api/users', usersRoutes);

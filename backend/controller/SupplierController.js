@@ -2,6 +2,15 @@
 import supplierService from "../services/supplierService.js";
 
 const supplierController = {
+
+    async getAllSuppliers(req, res) {
+  try {
+    const suppliers = await supplierService.getAllSuppliers();
+    res.json({ success: true, data: suppliers });
+  } catch (e) {
+    res.status(500).json({ message: e.message });
+  }
+},
     async getSuppliersByProject(req, res) {
         try {
             const suppliers = await supplierService.getSuppliersByProject(req.params.projectId);

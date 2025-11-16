@@ -9,9 +9,11 @@ const router = express.Router();
 router.get(
   "/",
   protect,
-  checkProjectPermission("projects", "view-list"),
+  checkProjectPermission("projects", "view-list", false),
   projectController.getAllProjects
 );
+
+
 
 // יצירה
 router.post(

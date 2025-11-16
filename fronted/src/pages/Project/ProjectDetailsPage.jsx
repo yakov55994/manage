@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
-import api from "../../api/api";
+import api, { apiWithProject } from "../../api/api";
 import { ClipLoader } from "react-spinners";
 import {
   Building2,
@@ -44,10 +44,14 @@ useEffect(() => {
       setLoadingOrders(true);
       setLoadingInvoices(true);
 
-      const { data: p } = await api.get(`/projects/${id}`);
-      setProject(p);
-      setOrders(Array.isArray(p?.orders) ? p.orders : []);
-      setInvoices(Array.isArray(p?.invoices) ? p.invoices : []);
+const response = await apiWithProject("get", `/projects/${id}`);
+
+      const projectData = response.data?.data || {};
+
+      setProject(projectData);
+      setOrders(Array.isArray(projectData.orders) ? projectData.orders : []);
+      setInvoices(Array.isArray(projectData.invoices) ? projectData.invoices : []);
+
     } catch (error) {
       console.error("Error fetching project details:", error);
       toast.error("שגיאה בשליפת פרטי הפרויקט", { className: "sonner-toast error rtl" });
@@ -60,6 +64,7 @@ useEffect(() => {
 
   fetchProjectDetails();
 }, [id]);
+
 
 // עכשיו אין צורך בסינון לפי projectId:
 const filteredOrders = orders

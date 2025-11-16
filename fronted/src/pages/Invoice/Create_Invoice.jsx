@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import api from "../../api/api";
+import api, { apiWithProject } from "../../api/api";
 import FileUploader from "../../Components/FileUploader";
 import { toast } from "sonner";
 import SupplierSelector from "../../Components/SupplierSelector.jsx";
@@ -36,33 +36,18 @@ const CreateInvoice = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [invoiceIndexToDelete, setInvoiceIndexToDelete] = useState(null);
   const [showModal, setShowModal] = useState(false);
-  const [suppliers, setSuppliers] = useState([]);
   const [searchParams] = useSearchParams();
 
   const navigate = useNavigate();
 
-  useEffect(() => {
-    if (!selectedProject?._id) return;
 
-    (async () => {
-      try {
-        const res = await api.get(`/projects/${selectedProject._id}/suppliers`);
-        setSuppliers(res?.data || []);
-      } catch (err) {
-        console.error(err);
-        toast.error("שגיאה בטעינת ספקים", {
-          className: "sonner-toast error rtl",
-        });
-        setSuppliers([]);
-      }
-    })();
-  }, [selectedProject]);
 
   useEffect(() => {
     const fetchProjects = async () => {
       try {
         const response = await api.get("/projects");
-        setProjects(response?.data || []);
+        console.log(response);
+setProjects(response.data?.data || []);
       } catch (err) {
         toast.error("שגיאה בטעינת הפרויקטים", {
           className: "sonner-toast error rtl",
@@ -260,15 +245,12 @@ const CreateInvoice = () => {
           continue;
         }
 
-        const response = await api.get(
-          `/projects/${selectedProject._id}/invoices/check-duplicate`,
-          {
-            params: {
-              supplierName: invoice.invitingName,
-              invoiceNumber: invoice.invoiceNumber,
-            },
-          }
-        );
+        const response = await apiWithProject(
+  "get",
+  `/projects/${selectedProject._id}/invoices/check-duplicate`,
+  null
+);
+
 
         if (response.data.exists) {
           toast.error(
@@ -461,12 +443,12 @@ const CreateInvoice = () => {
           };
         })
       );
+await apiWithProject(
+  "post",
+  `/projects/${selectedProject._id}/invoices`,
+  { invoices: invoiceData }
+);
 
-      await api.post(
-        `/projects/${selectedProject._id}/invoices`,
-        { invoices: invoiceData },
-        { headers: { "Content-Type": "application/json" } }
-      );
 
       toast.success("החשבונית/ות נוצרו בהצלחה!", {
         className: "sonner-toast success rtl",
@@ -707,23 +689,21 @@ const CreateInvoice = () => {
                   <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                     {/* Supplier Selector */}
                     <div className="space-y-2">
-                      <SupplierSelector
-                        label="שם הספק"
-                        suppliers={suppliers}
-                        value={invoice.invitingName || ""}
-                        onChange={(supplier) => {
-                          const newInvoices = [...invoices];
-                          newInvoices[index] = {
-                            ...newInvoices[index],
-                            invitingName:
-                              supplier?.name || supplier?.supplierName || "",
-                            supplierId: supplier?._id || supplier?.id || "",
-                          };
-                          setInvoices(newInvoices);
-                        }}
-                        placeholder="בחר ספק מהרשימה..."
-                        required={true}
-                      />
+          <SupplierSelector
+  projectId={selectedProject?._id}
+  value={invoice.supplierId}
+  onSelect={(supplier) => {
+    const newInvoices = [...invoices];
+    newInvoices[index] = {
+      ...newInvoices[index],
+      invitingName: supplier?.name || "",
+      supplierId: supplier?._id || "",
+    };
+    setInvoices(newInvoices);
+  }}
+/>
+
+
 
                       <button
                         type="button"
