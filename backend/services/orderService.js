@@ -17,6 +17,8 @@ function canEdit(user, projectId) {
 export default {
 
   async getOrders(user) {
+    console.log("ORDER PERMISSIONS:", user.permissions);
+
     if (user.role === "admin") return Order.find();
 
     const allowed = user.permissions.map(p => p.project);

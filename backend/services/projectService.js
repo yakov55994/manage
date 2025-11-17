@@ -6,6 +6,7 @@ import Project from "../models/Project.js";
 export default {
 
   async getAllProjects(user) {
+    console.log("PERMISSIONS:", user.permissions);
     let query = {};
 
     if (user.role !== "admin") {
