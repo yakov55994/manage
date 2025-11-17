@@ -327,7 +327,7 @@ const OrdersPage = () => {
       ? res
       : [];
 
-  const authUser = JSON.parse(localStorage.getItem("auth_user") || "{}");
+  const authUser = JSON.parse(localStorage.getItem("user") || "{}");
   const selectedProjectId = authUser?.selectedProject;
 
   useEffect(() => {

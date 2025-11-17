@@ -119,6 +119,14 @@ export const AuthProvider = ({ children }) => {
   const isAdmin = user?.role === "admin";
   const isAuthenticated = !!user;
 
+  useEffect(() => {
+  console.log("==== USER DEBUG ====");
+  console.log("USER:", user);
+  console.log("IS ADMIN:", isAdmin);
+  console.log("USER PERMISSIONS:", user?.permissions);
+  console.log("TOKEN:", localStorage.getItem("token"));
+}, [user]);
+
   return (
     <AuthContext.Provider
       value={{
