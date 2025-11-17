@@ -20,6 +20,7 @@ import {
   Phone,
 } from "lucide-react";
 import DateField from "../../Components/DateField";
+import { useAuth } from "../../context/AuthContext";
 
 const CreateOrder = () => {
   const [projects, setProjects] = useState([]);
@@ -28,11 +29,16 @@ const CreateOrder = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [orderIndexToDelete, setOrderIndexToDelete] = useState(null);
   const [showModal, setShowModal] = useState(false);
+  const { user, isAdmin, loading: authLoading } = useAuth();
 
   const navigate = useNavigate();
 
   useEffect(() => {
+    if (authLoading) return; // ⛔ מחכים לאימות
+    if (!user) return; // ⛔ אין משתמש → אין מה להביא
+
     const fetchProjects = async () => {
+      
       try {
         const response = await api.get("/projects");
         setProjects(response.data.data || []);

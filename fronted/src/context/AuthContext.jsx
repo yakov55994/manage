@@ -4,6 +4,30 @@ import api from "../api/api";
 
 const AuthContext = createContext();
 
+const [loading, setLoading] = useState(true);
+
+useEffect(() => {
+  const checkAuth = async () => {
+    try {
+      const token = localStorage.getItem("token");
+      if (!token) {
+        setUser(null);
+        return;
+      }
+
+      const res = await api.get("/auth/me");
+      setUser(res.data.user);
+    } catch (err) {
+      setUser(null);
+    } finally {
+      setLoading(false); // <---- הכי חשוב
+    }
+  };
+
+  checkAuth();
+}, []);
+
+
 // =========================
 // NORMALIZE USER PERMISSIONS
 // =========================

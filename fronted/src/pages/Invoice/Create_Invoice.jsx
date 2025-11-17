@@ -23,6 +23,7 @@ import {
   AlertCircle,
 } from "lucide-react";
 import { useSearchParams } from "react-router-dom";
+import { useAuth } from "../../context/AuthContext.jsx";
 
 const PAYMENT_METHODS = [
   { value: "bank_transfer", label: "העברה בנקאית" },
@@ -39,11 +40,13 @@ const CreateInvoice = () => {
   const [searchParams] = useSearchParams();
 
   const navigate = useNavigate();
-  const user = JSON.parse(localStorage.getItem("user"));
-  const isAdmin = user?.role === "admin";
+  const { user, isAdmin, loading: authLoading } = useAuth();
 
   useEffect(() => {
     const fetchProjects = async () => {
+      if (authLoading) return; // ⛔ מחכים לאימות
+      if (!user) return; // ⛔ אין משתמש → אין מה להביא
+
       try {
         const response = await api.get("/projects");
         setProjects(response.data?.data || []);

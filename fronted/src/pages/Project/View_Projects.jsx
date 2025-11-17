@@ -68,7 +68,7 @@ const ProjectsPage = ({ initialProjects = [] }) => {
     fileCount: true,
   });
 
-  const { user, isAdmin } = useAuth();
+  const { user, isAdmin, loading: authLoading } = useAuth();
 
   const navigate = useNavigate();
 
@@ -544,6 +544,9 @@ const ProjectsPage = ({ initialProjects = [] }) => {
   };
 
   useEffect(() => {
+    if (authLoading) return;
+    if (!user) return;
+
     const fetchProjects = async () => {
       try {
         setLoading(true);
@@ -566,7 +569,6 @@ const ProjectsPage = ({ initialProjects = [] }) => {
         const allowedProjectIds = user?.permissions?.map((p) =>
           String(p.project?._id || p.project)
         );
-
 
         const filtered = data.filter((p) =>
           allowedProjectIds.includes(String(p._id))
@@ -596,32 +598,31 @@ const ProjectsPage = ({ initialProjects = [] }) => {
     return () => window.removeEventListener("keydown", onKeyDown);
   }, [showReportModal]);
 
-const handleDelete = async () => {
-  try {
-    if (projectToDelete) {
+  const handleDelete = async () => {
+    try {
+      if (projectToDelete) {
+        await api.delete(`/projects/${projectToDelete}`);
 
-      await api.delete(`/projects/${projectToDelete}`);
+        // 🔥 תיקון: לוודא שהשוואת ID תהיה תקינה
+        const updatedProjects = projects.filter(
+          (p) => String(p._id) !== String(projectToDelete)
+        );
 
-      // 🔥 תיקון: לוודא שהשוואת ID תהיה תקינה
-      const updatedProjects = projects.filter(
-        (p) => String(p._id) !== String(projectToDelete)
-      );
+        setProjects(updatedProjects);
+        setAllProjects(updatedProjects);
+        setShowModal(false);
 
-      setProjects(updatedProjects);
-      setAllProjects(updatedProjects);
-      setShowModal(false);
-
-      toast.success("הפרוייקט נמחק בהצלחה", {
-        className: "sonner-toast success rtl",
+        toast.success("הפרוייקט נמחק בהצלחה", {
+          className: "sonner-toast success rtl",
+        });
+      }
+    } catch (error) {
+      console.error("Error deleting project:", error);
+      toast.error("שגיאה במחיקת הפרויקט", {
+        className: "sonner-toast error rtl",
       });
     }
-  } catch (error) {
-    console.error("Error deleting project:", error);
-    toast.error("שגיאה במחיקת הפרויקט", {
-      className: "sonner-toast error rtl",
-    });
-  }
-};
+  };
 
   const handleEdit = (id) => {
     navigate(`/update-project/${id}`);
