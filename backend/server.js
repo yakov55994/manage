@@ -24,24 +24,26 @@ const allowedOrigins = [
 ];
 
 const corsOptions = {
-  origin(origin, cb) {
-    if (!origin) return cb(null, true);
-    return cb(allowedOrigins.includes(origin) ? null : new Error('Not allowed by CORS'), true);
+  origin(origin, callback) {
+    if (!origin) return callback(null, true); // Postman, Server-to-server
+
+    if (allowedOrigins.includes(origin)) {
+      return callback(null, true);          // מותר
+    } else {
+      console.log("❌ BLOCKED ORIGIN:", origin);
+      return callback(new Error("Not allowed by CORS")); // לא מותר
+    }
   },
   credentials: true,
-  methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
+  methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
   allowedHeaders: [
-    'Origin',
-    'X-Requested-With',
-    'Content-Type',
-    'Accept',
-    'Authorization',
-    'Cache-Control'
+    "Origin",
+    "X-Requested-With",
+    "Content-Type",
+    "Accept",
+    "Authorization",
+    "Cache-Control",
   ],
-  exposedHeaders: [
-    'Authorization'
-  ],
-  optionsSuccessStatus: 200,
 };
 
 
