@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useSearchParams } from 'react-router-dom';
-import api from '../../api/api.jsx';
+import api from '../../api/api.js';
 import { useNavigate } from 'react-router-dom';
 import { Search, Package, FileText, ShoppingCart, Truck } from 'lucide-react';
 import { ClipLoader } from 'react-spinners';
