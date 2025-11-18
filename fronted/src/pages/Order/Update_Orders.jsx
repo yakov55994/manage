@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
-import api from "../../api/api";
+import api from "../../api/api.jsx";
 import { ClipLoader } from "react-spinners";
 import { toast } from "sonner";
 import {
@@ -144,7 +144,6 @@ const OrderEditPage = () => {
 
       if (publicId) {
         try {
-
           await api.delete("/upload/delete-cloudinary", {
             data: {
               publicId: publicId,

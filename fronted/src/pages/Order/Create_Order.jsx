@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import api from "../../api/api";
+import api from "../../api/api.jsx";
 import FileUploader from "../../Components/FileUploader";
 import { toast } from "sonner";
 import {
@@ -38,7 +38,6 @@ const CreateOrder = () => {
     if (!user) return; // ⛔ אין משתמש → אין מה להביא
 
     const fetchProjects = async () => {
-      
       try {
         const response = await api.get("/projects");
         setProjects(response.data.data || []);

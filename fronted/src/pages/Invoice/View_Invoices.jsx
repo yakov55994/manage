@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { ClipLoader } from "react-spinners";
-import api from "../../api/api";
+import api from "../../api/api.jsx";
 import * as XLSX from "xlsx";
 import { saveAs } from "file-saver";
 import { useNavigate } from "react-router-dom";
@@ -631,9 +631,7 @@ const InvoicesPage = () => {
   const handleDelete = async () => {
     try {
       if (invoiceToDelete) {
-        await api.delete(
-          `/invoices/${invoiceToDelete._id}`
-        );
+        await api.delete(`/invoices/${invoiceToDelete._id}`);
 
         const updatedInvoices = allInvoices.filter(
           (invoice) => invoice._id !== invoiceToDelete._id

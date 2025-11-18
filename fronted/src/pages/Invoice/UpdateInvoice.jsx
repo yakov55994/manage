@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
-import api from "../../api/api";
+import api from "../../api/api.jsx";
 import { ClipLoader } from "react-spinners";
 import { toast } from "sonner";
 import FileUploader from "../../Components/FileUploader";
@@ -226,12 +226,9 @@ const InvoiceEditPage = () => {
       const publicId = extractPublicIdFromUrl(fileUrl);
       if (publicId) {
         try {
-          await api.delete(
-            `/invoices/${id}/delete-file`,
-            {
-              data: { publicId },
-            }
-          );
+          await api.delete(`/invoices/${id}/delete-file`, {
+            data: { publicId },
+          });
 
           toast.success("הקובץ נמחק מ-Cloudinary");
         } catch {
@@ -401,10 +398,7 @@ const InvoiceEditPage = () => {
         paymentMethod: paid === "כן" ? paymentMethod : "",
       };
 
-      const res = await api.put(
-        `/invoices/${id}/edit`,
-        formData
-      );
+      const res = await api.put(`/invoices/${id}/edit`, formData);
 
       toast.success("החשבונית עודכנה בהצלחה!", {
         className: "sonner-toast success rtl",

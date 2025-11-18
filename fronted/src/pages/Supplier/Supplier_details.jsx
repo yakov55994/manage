@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import api from "../../api/api";
+import api from "../../api/api.jsx";
 import { ClipLoader } from "react-spinners";
 import {
   User,
@@ -45,7 +45,7 @@ const SupplierDetailsPage = () => {
     const fetchSupplierDetails = async () => {
       try {
         const res = await api.get(`/suppliers/${id}`);
-      setSupplier(res?.data?.data ?? res?.data ?? res);
+        setSupplier(res?.data?.data ?? res?.data ?? res);
       } catch (error) {
         console.error("Error fetching supplier details:", error);
         toast.error("שגיאה בטעינת פרטי הספק", {
@@ -58,61 +58,57 @@ const SupplierDetailsPage = () => {
 
     fetchSupplierDetails();
   }, [id]);
-useEffect(() => {
-  if (!id) return;
-  (async () => {
-    setInvoicesLoading(true);
-    try {
-      const res = await api.get(`/suppliers/${id}`);
+  useEffect(() => {
+    if (!id) return;
+    (async () => {
+      setInvoicesLoading(true);
+      try {
+        const res = await api.get(`/suppliers/${id}`);
 
-      const supplier = res?.data?.data;
+        const supplier = res?.data?.data;
 
-      const arr = Array.isArray(supplier?.invoices)
-        ? supplier.invoices
-        : [];
+        const arr = Array.isArray(supplier?.invoices) ? supplier.invoices : [];
 
-      setInvoices(arr);
-    } catch (e) {
-      console.error(e);
-      toast.error("שגיאה בטעינת חשבוניות הספק", {
-        className: "sonner-toast error rtl",
-      });
-      setInvoices([]);
-    } finally {
-      setInvoicesLoading(false);
-    }
-  })();
-}, [id]);
+        setInvoices(arr);
+      } catch (e) {
+        console.error(e);
+        toast.error("שגיאה בטעינת חשבוניות הספק", {
+          className: "sonner-toast error rtl",
+        });
+        setInvoices([]);
+      } finally {
+        setInvoicesLoading(false);
+      }
+    })();
+  }, [id]);
 
+  const INTERIM_TYPES = new Set(["ח. עסקה", "ה. עבודה", "ד. תשלום"]);
+  const FINAL_TYPES = new Set([
+    "חשבונית מס/קבלה",
+    "חשבונית מס / קבלה", // עם רווחים – נתמוך גם בזה
+    "חשבונית מס-קבלה",
+    "חשבונית מס קבלה",
+  ]);
 
-  const INTERIM_TYPES = new Set(['ח. עסקה', 'ה. עבודה', 'ד. תשלום']);
-const FINAL_TYPES   = new Set([
-  'חשבונית מס/קבלה',
-  'חשבונית מס / קבלה', // עם רווחים – נתמוך גם בזה
-  'חשבונית מס-קבלה',
-  'חשבונית מס קבלה',
-]);
+  const normalizeType = (t) =>
+    String(t || "")
+      .replace(/\s+/g, " ") // רווחים כפולים
+      .replace(/\s*\/\s*/g, "/") // רווחים סביב "/"
+      .trim();
 
-const normalizeType = (t) =>
-  String(t || '')
-    .replace(/\s+/g, ' ')     // רווחים כפולים
-    .replace(/\s*\/\s*/g, '/')// רווחים סביב "/"
-    .trim();
+  const getActionState = (invoice) => {
+    const t = normalizeType(invoice?.documentType);
+    const okF = FINAL_TYPES.has(t);
+    const okI = INTERIM_TYPES.has(t);
 
-const getActionState = (invoice) => {
-  const t   = normalizeType(invoice?.documentType);
-  const okF = FINAL_TYPES.has(t);
-  const okI = INTERIM_TYPES.has(t);
+    const status = okF ? "הושלם" : "חסר";
+    const label = okF ? "חשבונית מס/קבלה" : okI ? t : "";
+    const color = okF
+      ? "bg-emerald-100 text-emerald-700 border-emerald-200"
+      : "bg-amber-100 text-amber-700 border-amber-200";
 
-  const status = okF ? 'הושלם' : 'חסר';
-  const label  = okF ? 'חשבונית מס/קבלה' : (okI ? t : '');
-  const color  = okF
-    ? 'bg-emerald-100 text-emerald-700 border-emerald-200'
-    : 'bg-amber-100 text-amber-700 border-amber-200';
-
-  return { status, label, color };
-};
-
+    return { status, label, color };
+  };
 
   if (loading) {
     return (
@@ -160,9 +156,10 @@ const getActionState = (invoice) => {
   };
 
   const formatILS = (n) =>
-    new Intl.NumberFormat("he-IL", { style: "currency", currency: "ILS" }).format(
-      Number(n || 0)
-    );
+    new Intl.NumberFormat("he-IL", {
+      style: "currency",
+      currency: "ILS",
+    }).format(Number(n || 0));
 
   const paidBadge = (paid) => (
     <span
@@ -216,7 +213,9 @@ const getActionState = (invoice) => {
                   <User className="w-10 h-10 text-white" />
                 </div>
                 <div className="text-center">
-                  <h1 className="text-4xl font-black text-slate-900">פרטי ספק</h1>
+                  <h1 className="text-4xl font-black text-slate-900">
+                    פרטי ספק
+                  </h1>
                   <div className="flex items-center justify-center gap-2 mt-2">
                     <Sparkles className="w-4 h-4 text-orange-500" />
                     <span className="text-sm font-medium text-slate-600">
@@ -259,7 +258,9 @@ const getActionState = (invoice) => {
                   <div className="p-2 rounded-xl bg-gradient-to-br from-orange-100 to-amber-100">
                     <Building2 className="w-5 h-5 text-orange-600" />
                   </div>
-                  <h2 className="text-2xl font-bold text-slate-900">פרטי הספק</h2>
+                  <h2 className="text-2xl font-bold text-slate-900">
+                    פרטי הספק
+                  </h2>
                 </div>
               </div>
             </div>
@@ -308,7 +309,9 @@ const getActionState = (invoice) => {
                       <Phone className="w-4 h-4 text-orange-600" />
                     </div>
                     <div className="flex-1">
-                      <p className="text-xs font-bold text-orange-600 mb-1">טלפון</p>
+                      <p className="text-xs font-bold text-orange-600 mb-1">
+                        טלפון
+                      </p>
                       <p className="text-sm font-bold text-slate-900">
                         {supplier.phone || "לא הוזן"}
                       </p>
@@ -555,84 +558,113 @@ const getActionState = (invoice) => {
                         </tr>
                       </thead>
                       <tbody className="bg-white">
-                       {invoices.map((inv, i) => (
-  <tr
-    key={inv._id || i}
-    role="button"                // נגישות
-    tabIndex={0}                 // פוקוס עם מקלדת
-    aria-label={`פרטי חשבונית ${inv.invoiceNumber || ''}`}
-    className="group border-t border-purple-100 hover:bg-purple-50/50 transition-colors cursor-pointer"
-    onClick={() => navigate(`/invoices/${inv._id}`)}
-    onKeyDown={(e) => {
-      if (e.key === 'Enter' || e.key === ' ') {
-        e.preventDefault();
-        navigate(`/invoices/${inv._id}`);
-      }
-    }}
-  >
-    <td className="px-4 py-3 text-sm">{i + 1}</td>
+                        {invoices.map((inv, i) => (
+                          <tr
+                            key={inv._id || i}
+                            role="button" // נגישות
+                            tabIndex={0} // פוקוס עם מקלדת
+                            aria-label={`פרטי חשבונית ${
+                              inv.invoiceNumber || ""
+                            }`}
+                            className="group border-t border-purple-100 hover:bg-purple-50/50 transition-colors cursor-pointer"
+                            onClick={() => navigate(`/invoices/${inv._id}`)}
+                            onKeyDown={(e) => {
+                              if (e.key === "Enter" || e.key === " ") {
+                                e.preventDefault();
+                                navigate(`/invoices/${inv._id}`);
+                              }
+                            }}
+                          >
+                            <td className="px-4 py-3 text-sm">{i + 1}</td>
 
-    <td className="px-4 py-3 text-sm">
-      {inv.projectName || "—"}
-      {inv.projectId && (
-        <button
-          type="button"
-          onClick={(e) => {
-            e.stopPropagation(); // חשוב כדי לא להפעיל את onClick של השורה
-            navigate(`/projects/${typeof inv.projectId === 'object' ? inv.projectId._id : inv.projectId}`);
-          }}
-          className="mr-2 text-purple-600 hover:text-purple-800 inline-flex items-center gap-1"
-          title="פתח פרויקט"
-        >
-          <ExternalLink className="w-3 h-3" />
-        </button>
-      )}
-    </td>
+                            <td className="px-4 py-3 text-sm">
+                              {inv.projectName || "—"}
+                              {inv.projectId && (
+                                <button
+                                  type="button"
+                                  onClick={(e) => {
+                                    e.stopPropagation(); // חשוב כדי לא להפעיל את onClick של השורה
+                                    navigate(
+                                      `/projects/${
+                                        typeof inv.projectId === "object"
+                                          ? inv.projectId._id
+                                          : inv.projectId
+                                      }`
+                                    );
+                                  }}
+                                  className="mr-2 text-purple-600 hover:text-purple-800 inline-flex items-center gap-1"
+                                  title="פתח פרויקט"
+                                >
+                                  <ExternalLink className="w-3 h-3" />
+                                </button>
+                              )}
+                            </td>
 
-    <td className="px-4 py-3 text-sm font-bold">{inv.invoiceNumber || "—"}</td>
-    <td className="px-4 py-3 text-sm font-bold">{formatILS(inv.sum)}</td>
-    <td className="px-4 py-3 text-sm">{inv.status || "—"}</td>
+                            <td className="px-4 py-3 text-sm font-bold">
+                              {inv.invoiceNumber || "—"}
+                            </td>
+                            <td className="px-4 py-3 text-sm font-bold">
+                              {formatILS(inv.sum)}
+                            </td>
+                            <td className="px-4 py-3 text-sm">
+                              {inv.status || "—"}
+                            </td>
 
-    <td className="px-4 py-3 text-sm">
-      {(() => {
-        const a = getActionState(inv);
-        return (
-          <span className={`inline-flex items-center gap-1 px-2 py-1 rounded-full text-[11px] font-bold border ${a.color}`}>
-            {a.status} • {a.label}
-          </span>
-        );
-      })()}
-    </td>
+                            <td className="px-4 py-3 text-sm">
+                              {(() => {
+                                const a = getActionState(inv);
+                                return (
+                                  <span
+                                    className={`inline-flex items-center gap-1 px-2 py-1 rounded-full text-[11px] font-bold border ${a.color}`}
+                                  >
+                                    {a.status} • {a.label}
+                                  </span>
+                                );
+                              })()}
+                            </td>
 
-    <td className="px-4 py-3">{paidBadge(inv.paid)}</td>
-    <td className="px-4 py-3 text-sm">{pmHebrew(inv.paymentMethod)}</td>
-    <td className="px-4 py-3 text-sm">{formatDate(inv.createdAt)}</td>
-    <td className="px-4 py-3 text-sm">{formatDate(inv.paymentDate)}</td>
-    <td className="px-4 py-3 text-sm">{Array.isArray(inv.files) ? inv.files.length : 0}</td>
+                            <td className="px-4 py-3">{paidBadge(inv.paid)}</td>
+                            <td className="px-4 py-3 text-sm">
+                              {pmHebrew(inv.paymentMethod)}
+                            </td>
+                            <td className="px-4 py-3 text-sm">
+                              {formatDate(inv.createdAt)}
+                            </td>
+                            <td className="px-4 py-3 text-sm">
+                              {formatDate(inv.paymentDate)}
+                            </td>
+                            <td className="px-4 py-3 text-sm">
+                              {Array.isArray(inv.files) ? inv.files.length : 0}
+                            </td>
 
-    <td className="px-4 py-3">
-      <div className="flex gap-2">
-        <button
-          type="button"
-          onClick={(e) => { e.stopPropagation(); navigate(`/invoices/${inv._id}`); }}
-          className="px-3 py-1 text-xs rounded-lg bg-purple-100 text-purple-700 hover:bg-purple-200 font-bold transition-all"
-          title="פרטים"
-        >
-          פרטים
-        </button>
-        <button
-          type="button"
-          onClick={(e) => { e.stopPropagation(); navigate(`/update-invoice/${inv._id}`); }}
-          className="px-3 py-1 text-xs rounded-lg bg-purple-700 text-white hover:bg-purple-800 font-bold transition-all"
-          title="עריכה"
-        >
-          עריכה
-        </button>
-      </div>
-    </td>
-  </tr>
-))}
-
+                            <td className="px-4 py-3">
+                              <div className="flex gap-2">
+                                <button
+                                  type="button"
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    navigate(`/invoices/${inv._id}`);
+                                  }}
+                                  className="px-3 py-1 text-xs rounded-lg bg-purple-100 text-purple-700 hover:bg-purple-200 font-bold transition-all"
+                                  title="פרטים"
+                                >
+                                  פרטים
+                                </button>
+                                <button
+                                  type="button"
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    navigate(`/update-invoice/${inv._id}`);
+                                  }}
+                                  className="px-3 py-1 text-xs rounded-lg bg-purple-700 text-white hover:bg-purple-800 font-bold transition-all"
+                                  title="עריכה"
+                                >
+                                  עריכה
+                                </button>
+                              </div>
+                            </td>
+                          </tr>
+                        ))}
                       </tbody>
                     </table>
                   </div>

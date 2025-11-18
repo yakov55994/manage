@@ -18,7 +18,7 @@ import {
   CheckSquare,
   Square,
 } from "lucide-react";
-import api from "../../api/api";
+import api from "../../api/api.jsx";
 import { toast } from "sonner";
 
 const OrdersPage = () => {
@@ -329,7 +329,7 @@ const OrdersPage = () => {
 
   const authUser = JSON.parse(localStorage.getItem("user") || "{}");
   const selectedProjectId = authUser?.selectedProject;
- 
+
   useEffect(() => {
     const fetchOrders = async () => {
       try {
