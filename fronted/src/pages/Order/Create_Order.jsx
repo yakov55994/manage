@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import api from "../../api/api.jsx";
+import api from "../../api/api.js";
 import FileUploader from "../../Components/FileUploader";
 import { toast } from "sonner";
 import {

@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
-import api from "../../api/api.jsx";
+import api from "../../api/api.js";
 import { ClipLoader } from "react-spinners";
 import { toast } from "sonner";
 import FileUploader from "../../Components/FileUploader";

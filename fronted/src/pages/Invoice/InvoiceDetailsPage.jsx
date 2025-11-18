@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { useParams } from "react-router-dom";
-import api from "../../api/api.jsx";
+import api from "../../api/api.js";
 import { ClipLoader } from "react-spinners";
 import {
   Receipt,

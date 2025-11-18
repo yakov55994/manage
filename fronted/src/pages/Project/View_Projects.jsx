@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import api from "../../api/api.jsx";
+import api from "../../api/api.js";
 import { ClipLoader } from "react-spinners";
 import { useNavigate } from "react-router-dom";
 import * as XLSX from "xlsx";

@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
-import api from "../../api/api.jsx";
+import api from "../../api/api.js";
 import { toast } from "sonner";
 import {
   UserPlus,

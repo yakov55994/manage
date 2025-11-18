@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import api from "../../api/api.jsx";
+import api from "../../api/api.js";
 import { ClipLoader } from "react-spinners";
 import {
   User,
