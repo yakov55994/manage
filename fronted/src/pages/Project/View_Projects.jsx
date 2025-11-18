@@ -543,51 +543,61 @@ const ProjectsPage = ({ initialProjects = [] }) => {
     );
   };
 
-useEffect(() => {
-  if (authLoading) return;
-  if (!user) return;
+  useEffect(() => {
+    console.log("🔍 ProjectsPage useEffect:", { user, authLoading });
 
-  const fetchProjects = async () => {
-    try {
-      setLoading(true);
+    const fetchProjects = async () => {
+      try {
+        console.log("📡 Fetching projects...");
+        const response = await api.get("/projects");
+        console.log("📦 Response:", response.data);
 
-      const response = await api.get("/projects");
+        setLoading(true);
 
-      const data = Array.isArray(response.data?.data)
-        ? response.data.data
-        : [];
+        // 🔥 תמיד נסה לקרוא נתונים, גם בלי user
+        const data = Array.isArray(response.data?.data)
+          ? response.data.data
+          : Array.isArray(response.data)
+          ? response.data
+          : [];
 
-      // 🟥 אם Admin אמיתי — רואה הכל (בלי קשר ל־isAdmin!)
-      if (user?.role === "admin") {
-        setProjects(data);
-        setAllProjects(data);
-        return;
+        // אם אין משתמש או עדיין טוען - הצג הכל (או סנן אחר כך)
+        if (!user || authLoading) {
+          setProjects(data);
+          setAllProjects(data);
+          return;
+        }
+
+        // 🟥 אם Admin אמיתי
+        if (user?.role === "admin") {
+          setProjects(data);
+          setAllProjects(data);
+          return;
+        }
+
+        // 🟩 משתמש רגיל - סנן לפי הרשאות
+        const allowedProjectIds = (user.permissions || []).map((p) =>
+          String(p.project?._id || p.project)
+        );
+
+        const filtered = data.filter((p) =>
+          allowedProjectIds.includes(String(p._id))
+        );
+
+        setProjects(filtered);
+        setAllProjects(filtered);
+      } catch (error) {
+        console.error("Error fetching projects:", error);
+        toast.error("שגיאה בשליפת פרויקטים", {
+          className: "sonner-toast error rtl",
+        });
+      } finally {
+        setLoading(false);
       }
+    };
 
-      // 🟩 משתמש רגיל — מסנן לפי הרשאות
-      const allowedProjectIds = (user.permissions || []).map((p) =>
-        String(p.project?._id || p.project)
-      );
-
-      const filtered = data.filter((p) =>
-        allowedProjectIds.includes(String(p._id))
-      );
-
-      setProjects(filtered);
-      setAllProjects(filtered);
-
-    } catch (error) {
-      console.error("Error fetching projects:", error);
-      toast.error("שגיאה בשליפת פרויקטים", {
-        className: "sonner-toast error rtl",
-      });
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  fetchProjects();
-}, [user, authLoading]);
+    fetchProjects();
+  }, []); // 🔥 הסר תלות ב-user ו-authLoading
 
   useEffect(() => {
     if (!showReportModal) return;

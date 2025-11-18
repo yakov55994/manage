@@ -1,22 +1,22 @@
-import { useEffect, useState } from 'react';
-import { ClipLoader } from 'react-spinners';
-import * as XLSX from 'xlsx';
-import { saveAs } from 'file-saver';
-import { 
-  DownloadCloud, 
-  FolderKanban, 
-  ShoppingCart, 
-  FileText, 
+import { useEffect, useState } from "react";
+import { ClipLoader } from "react-spinners";
+import * as XLSX from "xlsx";
+import { saveAs } from "file-saver";
+import {
+  DownloadCloud,
+  FolderKanban,
+  ShoppingCart,
+  FileText,
   Users,
   Filter,
   TrendingUp,
   TrendingDown,
   BarChart3,
-  Eye
-} from 'lucide-react';
-import api from '../api/api.jsx';
-import { useNavigate } from 'react-router-dom';
-import { toast } from 'sonner';
+  Eye,
+} from "lucide-react";
+import api from "../api/api.jsx";
+import { useNavigate } from "react-router-dom";
+import { toast } from "sonner";
 
 const SummaryPage = () => {
   const [projects, setProjects] = useState([]);
@@ -24,145 +24,186 @@ const SummaryPage = () => {
   const [invoices, setInvoices] = useState([]);
   const [suppliers, setSuppliers] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [statusFilter, setStatusFilter] = useState('');
-  const [sortOrder, setSortOrder] = useState('desc');
-  const [sortBy, setSortBy] = useState('name');
+  const [statusFilter, setStatusFilter] = useState("");
+  const [sortOrder, setSortOrder] = useState("desc");
+  const [sortBy, setSortBy] = useState("name");
 
   const navigate = useNavigate();
 
-useEffect(() => {
-  const fetchData = async () => {
-    try {
-      const [projectsRes, ordersRes, invoicesRes, suppliersRes] = await Promise.all([
-        api.get("/projects"),
-        api.get("/orders"),
-        api.get("/invoices"),
-        api.get("/suppliers")
-      ]);
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        const [projectsRes, ordersRes, invoicesRes, suppliersRes] =
+          await Promise.all([
+            api.get("/projects"),
+            api.get("/orders"),
+            api.get("/invoices"),
+            api.get("/suppliers"),
+          ]);
 
-      // פרויקטים — החלק הקריטי!!!
-      const projectsArr =
-        Array.isArray(projectsRes.data?.data)
+        // פרויקטים — החלק הקריטי!!!
+        const projectsArr = Array.isArray(projectsRes.data?.data)
           ? projectsRes.data.data
-          : (Array.isArray(projectsRes.data) ? projectsRes.data : []);
+          : Array.isArray(projectsRes.data)
+          ? projectsRes.data
+          : [];
 
-      setProjects(projectsArr);
+        setProjects(projectsArr);
 
-      // הזמנות
-      const ordersArr =
-        Array.isArray(ordersRes.data?.data)
+        // הזמנות
+        const ordersArr = Array.isArray(ordersRes.data?.data)
           ? ordersRes.data.data
           : ordersRes.data;
-      setOrders(ordersArr);
+        setOrders(ordersArr);
 
-      // חשבוניות
-      const invoicesArr =
-        Array.isArray(invoicesRes.data?.data)
+        // חשבוניות
+        const invoicesArr = Array.isArray(invoicesRes.data?.data)
           ? invoicesRes.data.data
           : invoicesRes.data;
-      setInvoices(invoicesArr);
+        setInvoices(invoicesArr);
 
-      // ספקים
-      setSuppliers(
-        suppliersRes.data?.success && Array.isArray(suppliersRes.data?.data)
-          ? suppliersRes.data.data
-          : []
-      );
+        // ספקים
+        setSuppliers(
+          suppliersRes.data?.success && Array.isArray(suppliersRes.data?.data)
+            ? suppliersRes.data.data
+            : []
+        );
+      } catch (error) {
+        console.error("Error fetching data:", error);
+        toast.error("שגיאה בטעינת הנתונים", {
+          className: "sonner-toast error rtl",
+        });
+      } finally {
+        setLoading(false);
+      }
+    };
 
-    } catch (error) {
-      console.error("Error fetching data:", error);
-      toast.error("שגיאה בטעינת הנתונים", {
-        className: "sonner-toast error rtl",
-      });
-    } finally {
-      setLoading(false);
-    }
-  };
+    fetchData();
+  }, []);
 
-  fetchData();
-}, []);
+  const formatNumber = (num) => num?.toLocaleString("he-IL");
 
-
-  const formatNumber = (num) => num?.toLocaleString('he-IL');
-  
-  const formatDate = (dateString) => dateString ? new Date(dateString).toLocaleDateString("he-IL", {
-    year: "numeric", month: "2-digit", day: "2-digit"
-  }) : "תאריך לא זמין";
+  const formatDate = (dateString) =>
+    dateString
+      ? new Date(dateString).toLocaleDateString("he-IL", {
+          year: "numeric",
+          month: "2-digit",
+          day: "2-digit",
+        })
+      : "תאריך לא זמין";
 
   const sortData = (data, key, order) => {
     return [...data].sort((a, b) => {
       if (!a[key] || !b[key]) return 0;
-      if (typeof a[key] === 'string') {
-        return order === 'desc' ? b[key].localeCompare(a[key]) : a[key].localeCompare(b[key]);
+      if (typeof a[key] === "string") {
+        return order === "desc"
+          ? b[key].localeCompare(a[key])
+          : a[key].localeCompare(b[key]);
       }
-      return order === 'desc' ? b[key] - a[key] : a[key] - b[key];
+      return order === "desc" ? b[key] - a[key] : a[key] - b[key];
     });
   };
 
-  const sortedProjects = sortData(projects, sortBy === 'budget' ? 'budget' : 'name', sortOrder);
-  const sortedOrders = sortData(orders.filter(o => !statusFilter || o.status === statusFilter), sortBy === 'budget' ? 'sum' : 'projectName', sortOrder);
-  const sortedInvoices = sortData(invoices.filter(i => !statusFilter || i.status === statusFilter), sortBy === 'budget' ? 'sum' : 'projectName', sortOrder);
-  const sortedSuppliers = sortData(suppliers, sortBy === 'budget' ? 'business_tax' : 'name', sortOrder);
+  const sortedProjects = sortData(
+    projects,
+    sortBy === "budget" ? "budget" : "name",
+    sortOrder
+  );
+  const sortedOrders = sortData(
+    orders.filter((o) => !statusFilter || o.status === statusFilter),
+    sortBy === "budget" ? "sum" : "projectName",
+    sortOrder
+  );
+  const sortedInvoices = sortData(
+    invoices.filter((i) => !statusFilter || i.status === statusFilter),
+    sortBy === "budget" ? "sum" : "projectName",
+    sortOrder
+  );
+  const sortedSuppliers = sortData(
+    suppliers,
+    sortBy === "budget" ? "business_tax" : "name",
+    sortOrder
+  );
 
   const exportToExcel = () => {
     const wb = XLSX.utils.book_new();
-    
+
     const createSheet = (data, sheetName) => {
       const ws = XLSX.utils.json_to_sheet(data);
       XLSX.utils.book_append_sheet(wb, ws, sheetName);
     };
 
-    createSheet(sortedProjects.map(p => ({
-      "שם פרויקט": p.name, 
-      "תקציב": p.budget, 
-      "תקציב שנותר": p.remainingBudget, 
-      "שם המזמין": p.invitingName, 
-      "תאריך": formatDate(p.createdAt)
-    })), "פרויקטים");
-    
-    createSheet(sortedOrders.map(o => ({
-      "מספר הזמנה": o.orderNumber, 
-      "פרויקט": o.projectName, 
-      "סכום": o.sum, 
-      "שם המזמין": o.invitingName, 
-      "תאריך": formatDate(o.createdAt), 
-      "סטטוס": o.status, 
-      "פירוט": o.detail
-    })), "הזמנות");
-    
-    createSheet(sortedInvoices.map(i => ({
-      "מספר חשבונית": i.invoiceNumber, 
-      "פרויקט": i.projectName, 
-      "סכום": i.sum, 
-      "שם המזמין": i.invitingName, 
-      "תאריך": formatDate(i.createdAt), 
-      "סטטוס": i.status, 
-      "פירוט": i.detail
-    })), "חשבוניות");
-    
-    createSheet(sortedSuppliers.map(s => ({
-      "שם הספק": s.name,
-      "מספר עוסק": s.business_tax,
-      "כתובת": s.address,
-      "טלפון": s.phone,
-      "אימייל": s.email,
-      "שם הבנק": s.bankDetails?.bankName || '',
-      "מספר סניף": s.bankDetails?.branchNumber || '',
-      "מספר חשבון": s.bankDetails?.accountNumber || '',
-      "תאריך יצירה": formatDate(s.createdAt)
-    })), "ספקים");
-    
-    saveAs(new Blob([XLSX.write(wb, { bookType: "xlsx", type: "array" })], { type: "application/octet-stream" }), "סיכום כללי.xlsx");
-    
+    createSheet(
+      sortedProjects.map((p) => ({
+        "שם פרויקט": p.name,
+        תקציב: p.budget,
+        "תקציב שנותר": p.remainingBudget,
+        "שם המזמין": p.invitingName,
+        תאריך: formatDate(p.createdAt),
+      })),
+      "פרויקטים"
+    );
+
+    createSheet(
+      sortedOrders.map((o) => ({
+        "מספר הזמנה": o.orderNumber,
+        פרויקט: o.projectName,
+        סכום: o.sum,
+        "שם המזמין": o.invitingName,
+        תאריך: formatDate(o.createdAt),
+        סטטוס: o.status,
+        פירוט: o.detail,
+      })),
+      "הזמנות"
+    );
+
+    createSheet(
+      sortedInvoices.map((i) => ({
+        "מספר חשבונית": i.invoiceNumber,
+        פרויקט: i.projectName,
+        סכום: i.sum,
+        "שם המזמין": i.invitingName,
+        תאריך: formatDate(i.createdAt),
+        סטטוס: i.status,
+        פירוט: i.detail,
+      })),
+      "חשבוניות"
+    );
+
+    createSheet(
+      sortedSuppliers.map((s) => ({
+        "שם הספק": s.name,
+        "מספר עוסק": s.business_tax,
+        כתובת: s.address,
+        טלפון: s.phone,
+        אימייל: s.email,
+        "שם הבנק": s.bankDetails?.bankName || "",
+        "מספר סניף": s.bankDetails?.branchNumber || "",
+        "מספר חשבון": s.bankDetails?.accountNumber || "",
+        "תאריך יצירה": formatDate(s.createdAt),
+      })),
+      "ספקים"
+    );
+
+    saveAs(
+      new Blob([XLSX.write(wb, { bookType: "xlsx", type: "array" })], {
+        type: "application/octet-stream",
+      }),
+      "סיכום כללי.xlsx"
+    );
+
     toast.success("הקובץ יוצא בהצלחה!", {
-      className: "sonner-toast success rtl"
+      className: "sonner-toast success rtl",
     });
   };
 
-  const moveToProjectDetails = (project) => navigate(`/projects/${project._id}`);
-  const moveToInvoiceDetails = (invoice) => navigate(`/invoices/${invoice._id}`);
+  const moveToProjectDetails = (project) =>
+    navigate(`/projects/${project._id}`);
+  const moveToInvoiceDetails = (invoice) =>
+    navigate(`/invoices/${invoice._id}`);
   const moveToOrderDetails = (order) => navigate(`/orders/${order._id}`);
-  const moveToSupplierDetails = (supplier) => navigate(`/suppliers/${supplier._id}`);
+  const moveToSupplierDetails = (supplier) =>
+    navigate(`/suppliers/${supplier._id}`);
 
   if (loading) {
     return (
@@ -171,7 +212,9 @@ useEffect(() => {
           <div className="absolute inset-0 bg-orange-500/20 blur-3xl rounded-full"></div>
           <ClipLoader size={80} color="#f97316" loading={loading} />
         </div>
-        <h1 className="mt-6 font-bold text-2xl text-orange-900">טוען נתונים...</h1>
+        <h1 className="mt-6 font-bold text-2xl text-orange-900">
+          טוען נתונים...
+        </h1>
       </div>
     );
   }
@@ -179,7 +222,9 @@ useEffect(() => {
   const formatCurrency = (num) => {
     return (
       <span dir="ltr" className={num < 0 ? "text-red-600" : "text-green-600"}>
-        {num < 0 ? `₪ - ${Math.abs(num).toLocaleString('he-IL')}` : `₪ ${num.toLocaleString('he-IL')}`}
+        {num < 0
+          ? `₪ - ${Math.abs(num).toLocaleString("he-IL")}`
+          : `₪ ${num.toLocaleString("he-IL")}`}
       </span>
     );
   };
@@ -201,8 +246,8 @@ useEffect(() => {
         {/* כרטיסים סטטיסטיים */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
           {/* פרויקטים */}
-          <div 
-            onClick={() => navigate('/projects')}
+          <div
+            onClick={() => navigate("/projects")}
             className="group bg-white rounded-2xl shadow-lg hover:shadow-2xl transition-all duration-300 p-6 cursor-pointer border-2 border-transparent hover:border-orange-400"
           >
             <div className="flex items-center justify-between mb-4">
@@ -218,8 +263,8 @@ useEffect(() => {
           </div>
 
           {/* הזמנות */}
-          <div 
-            onClick={() => navigate('/orders')}
+          <div
+            onClick={() => navigate("/orders")}
             className="group bg-white rounded-2xl shadow-lg hover:shadow-2xl transition-all duration-300 p-6 cursor-pointer border-2 border-transparent hover:border-orange-400"
           >
             <div className="flex items-center justify-between mb-4">
@@ -235,8 +280,8 @@ useEffect(() => {
           </div>
 
           {/* חשבוניות */}
-          <div 
-            onClick={() => navigate('/invoices')}
+          <div
+            onClick={() => navigate("/invoices")}
             className="group bg-white rounded-2xl shadow-lg hover:shadow-2xl transition-all duration-300 p-6 cursor-pointer border-2 border-transparent hover:border-orange-400"
           >
             <div className="flex items-center justify-between mb-4">
@@ -252,8 +297,8 @@ useEffect(() => {
           </div>
 
           {/* ספקים */}
-          <div 
-            onClick={() => navigate('/suppliers')}
+          <div
+            onClick={() => navigate("/suppliers")}
             className="group bg-white rounded-2xl shadow-lg hover:shadow-2xl transition-all duration-300 p-6 cursor-pointer border-2 border-transparent hover:border-orange-400"
           >
             <div className="flex items-center justify-between mb-4">
@@ -306,7 +351,11 @@ useEffect(() => {
 
               <div>
                 <label className="flex items-center gap-2 text-sm font-semibold text-gray-700 mb-2">
-                  {sortOrder === 'desc' ? <TrendingDown className="w-4 h-4 text-purple-600" /> : <TrendingUp className="w-4 h-4 text-purple-600" />}
+                  {sortOrder === "desc" ? (
+                    <TrendingDown className="w-4 h-4 text-purple-600" />
+                  ) : (
+                    <TrendingUp className="w-4 h-4 text-purple-600" />
+                  )}
                   סדר
                 </label>
                 <select
@@ -345,9 +394,13 @@ useEffect(() => {
                 <tr className="bg-gradient-to-r from-blue-100 to-cyan-100 text-blue-900">
                   <th className="px-6 py-4 text-right font-bold">שם פרויקט</th>
                   <th className="px-6 py-4 text-right font-bold">תקציב</th>
-                  <th className="px-6 py-4 text-right font-bold">תקציב שנותר</th>
+                  <th className="px-6 py-4 text-right font-bold">
+                    תקציב שנותר
+                  </th>
                   <th className="px-6 py-4 text-right font-bold">שם המזמין</th>
-                  <th className="px-6 py-4 text-right font-bold">תאריך יצירה</th>
+                  <th className="px-6 py-4 text-right font-bold">
+                    תאריך יצירה
+                  </th>
                 </tr>
               </thead>
               <tbody>
@@ -357,25 +410,48 @@ useEffect(() => {
                       key={project._id}
                       onClick={() => moveToProjectDetails(project)}
                       className={`cursor-pointer border-b border-gray-200 transition-all duration-200 ${
-                        index % 2 === 0 
-                          ? 'bg-gradient-to-r from-blue-50/30 to-cyan-50/30 hover:from-blue-100 hover:to-cyan-100' 
-                          : 'bg-white hover:bg-gradient-to-r hover:from-blue-50 hover:to-cyan-50'
+                        index % 2 === 0
+                          ? "bg-gradient-to-r from-blue-50/30 to-cyan-50/30 hover:from-blue-100 hover:to-cyan-100"
+                          : "bg-white hover:bg-gradient-to-r hover:from-blue-50 hover:to-cyan-50"
                       }`}
                     >
-                      <td className="px-6 py-4 font-semibold text-gray-900">{project.name}</td>
-                      <td className="px-6 py-4 font-medium">
-                        {project.budget ? formatCurrency(project.budget) : <span className="text-gray-500 italic">אין תקציב</span>}
+                      <td className="px-6 py-4 font-semibold text-gray-900">
+                        {project.name}
                       </td>
                       <td className="px-6 py-4 font-medium">
-                        {project.remainingBudget ? formatCurrency(project.remainingBudget) : <span className="text-gray-500 italic">אין תקציב</span>}
+                        {project.budget ? (
+                          formatCurrency(project.budget)
+                        ) : (
+                          <span className="text-gray-500 italic">
+                            אין תקציב
+                          </span>
+                        )}
                       </td>
-                      <td className="px-6 py-4 font-medium text-gray-700">{project.invitingName}</td>
-                      <td className="px-6 py-4 font-medium text-gray-700">{formatDate(project.createdAt)}</td>
+                      <td className="px-6 py-4 font-medium">
+                        {project.remainingBudget ? (
+                          formatCurrency(project.remainingBudget)
+                        ) : (
+                          <span className="text-gray-500 italic">
+                            אין תקציב
+                          </span>
+                        )}
+                      </td>
+                      <td className="px-6 py-4 font-medium text-gray-700">
+                        {project.invitingName}
+                      </td>
+                      <td className="px-6 py-4 font-medium text-gray-700">
+                        {formatDate(project.createdAt)}
+                      </td>
                     </tr>
                   ))
                 ) : (
                   <tr>
-                    <td colSpan="5" className="text-center font-bold text-lg text-red-500 py-8">לא נמצאו פרויקטים</td>
+                    <td
+                      colSpan="5"
+                      className="text-center font-bold text-lg text-red-500 py-8"
+                    >
+                      לא נמצאו פרויקטים
+                    </td>
                   </tr>
                 )}
               </tbody>
@@ -409,21 +485,33 @@ useEffect(() => {
                       key={order._id}
                       onClick={() => moveToOrderDetails(order)}
                       className={`cursor-pointer border-b border-gray-200 transition-all duration-200 ${
-                        index % 2 === 0 
-                          ? 'bg-gradient-to-r from-green-50/30 to-emerald-50/30 hover:from-green-100 hover:to-emerald-100' 
-                          : 'bg-white hover:bg-gradient-to-r hover:from-green-50 hover:to-emerald-50'
+                        index % 2 === 0
+                          ? "bg-gradient-to-r from-green-50/30 to-emerald-50/30 hover:from-green-100 hover:to-emerald-100"
+                          : "bg-white hover:bg-gradient-to-r hover:from-green-50 hover:to-emerald-50"
                       }`}
                     >
-                      <td className="px-6 py-4 font-semibold text-gray-900">{order.orderNumber}</td>
-                      <td className="px-6 py-4 font-medium text-gray-700">{order.projectName}</td>
-                      <td className="px-6 py-4 font-medium">{formatCurrency(order.sum)}</td>
-                      <td className="px-6 py-4 font-medium text-gray-700">{order.invitingName}</td>
+                      <td className="px-6 py-4 font-semibold text-gray-900">
+                        {order.orderNumber}
+                      </td>
+                      <td className="px-6 py-4 font-medium text-gray-700">
+                        {order.projectName}
+                      </td>
+                      <td className="px-6 py-4 font-medium">
+                        {formatCurrency(order.sum)}
+                      </td>
+                      <td className="px-6 py-4 font-medium text-gray-700">
+                        {order.invitingName}
+                      </td>
                       <td className="px-6 py-4">
-                        <span className={`px-3 py-1 rounded-full text-xs font-bold ${
-                          order.status === 'הוגש' ? 'bg-green-100 text-green-700' :
-                          order.status === 'בעיבוד' ? 'bg-yellow-100 text-yellow-700' :
-                          'bg-red-100 text-red-700'
-                        }`}>
+                        <span
+                          className={`px-3 py-1 rounded-full text-xs font-bold ${
+                            order.status === "הוגש"
+                              ? "bg-green-100 text-green-700"
+                              : order.status === "בעיבוד"
+                              ? "bg-yellow-100 text-yellow-700"
+                              : "bg-red-100 text-red-700"
+                          }`}
+                        >
                           {order.status}
                         </span>
                       </td>
@@ -431,7 +519,12 @@ useEffect(() => {
                   ))
                 ) : (
                   <tr>
-                    <td colSpan="5" className="text-center font-bold text-lg text-red-500 py-8">לא נמצאו הזמנות</td>
+                    <td
+                      colSpan="5"
+                      className="text-center font-bold text-lg text-red-500 py-8"
+                    >
+                      לא נמצאו הזמנות
+                    </td>
                   </tr>
                 )}
               </tbody>
@@ -451,7 +544,9 @@ useEffect(() => {
             <table className="w-full">
               <thead>
                 <tr className="bg-gradient-to-r from-amber-100 to-yellow-100 text-amber-900">
-                  <th className="px-6 py-4 text-right font-bold">מספר חשבונית</th>
+                  <th className="px-6 py-4 text-right font-bold">
+                    מספר חשבונית
+                  </th>
                   <th className="px-6 py-4 text-right font-bold">פרויקט</th>
                   <th className="px-6 py-4 text-right font-bold">סכום</th>
                   <th className="px-6 py-4 text-right font-bold">שם המזמין</th>
@@ -465,21 +560,33 @@ useEffect(() => {
                       key={invoice._id}
                       onClick={() => moveToInvoiceDetails(invoice)}
                       className={`cursor-pointer border-b border-gray-200 transition-all duration-200 ${
-                        index % 2 === 0 
-                          ? 'bg-gradient-to-r from-amber-50/30 to-yellow-50/30 hover:from-amber-100 hover:to-yellow-100' 
-                          : 'bg-white hover:bg-gradient-to-r hover:from-amber-50 hover:to-yellow-50'
+                        index % 2 === 0
+                          ? "bg-gradient-to-r from-amber-50/30 to-yellow-50/30 hover:from-amber-100 hover:to-yellow-100"
+                          : "bg-white hover:bg-gradient-to-r hover:from-amber-50 hover:to-yellow-50"
                       }`}
                     >
-                      <td className="px-6 py-4 font-semibold text-gray-900">{invoice.invoiceNumber}</td>
-                      <td className="px-6 py-4 font-medium text-gray-700">{invoice.projectName}</td>
-                      <td className="px-6 py-4 font-medium">{formatCurrency(invoice.sum)}</td>
-                      <td className="px-6 py-4 font-medium text-gray-700">{invoice.invitingName}</td>
+                      <td className="px-6 py-4 font-semibold text-gray-900">
+                        {invoice.invoiceNumber}
+                      </td>
+                      <td className="px-6 py-4 font-medium text-gray-700">
+                        {invoice.projectName}
+                      </td>
+                      <td className="px-6 py-4 font-medium">
+                        {formatCurrency(invoice.sum)}
+                      </td>
+                      <td className="px-6 py-4 font-medium text-gray-700">
+                        {invoice.invitingName}
+                      </td>
                       <td className="px-6 py-4">
-                        <span className={`px-3 py-1 rounded-full text-xs font-bold ${
-                          invoice.status === 'הוגש' ? 'bg-green-100 text-green-700' :
-                          invoice.status === 'בעיבוד' ? 'bg-yellow-100 text-yellow-700' :
-                          'bg-red-100 text-red-700'
-                        }`}>
+                        <span
+                          className={`px-3 py-1 rounded-full text-xs font-bold ${
+                            invoice.status === "הוגש"
+                              ? "bg-green-100 text-green-700"
+                              : invoice.status === "בעיבוד"
+                              ? "bg-yellow-100 text-yellow-700"
+                              : "bg-red-100 text-red-700"
+                          }`}
+                        >
                           {invoice.status}
                         </span>
                       </td>
@@ -487,7 +594,12 @@ useEffect(() => {
                   ))
                 ) : (
                   <tr>
-                    <td colSpan="5" className="text-center font-bold text-lg text-red-500 py-8">לא נמצאו חשבוניות</td>
+                    <td
+                      colSpan="5"
+                      className="text-center font-bold text-lg text-red-500 py-8"
+                    >
+                      לא נמצאו חשבוניות
+                    </td>
                   </tr>
                 )}
               </tbody>
@@ -512,7 +624,9 @@ useEffect(() => {
                   <th className="px-6 py-4 text-right font-bold">טלפון</th>
                   <th className="px-6 py-4 text-right font-bold">אימייל</th>
                   <th className="px-6 py-4 text-right font-bold">שם בנק</th>
-                  <th className="px-6 py-4 text-right font-bold">תאריך יצירה</th>
+                  <th className="px-6 py-4 text-right font-bold">
+                    תאריך יצירה
+                  </th>
                 </tr>
               </thead>
               <tbody>
@@ -522,34 +636,51 @@ useEffect(() => {
                       key={supplier._id}
                       onClick={() => moveToSupplierDetails(supplier)}
                       className={`cursor-pointer border-b border-gray-200 transition-all duration-200 ${
-                        index % 2 === 0 
-                          ? 'bg-gradient-to-r from-purple-50/30 to-pink-50/30 hover:from-purple-100 hover:to-pink-100' 
-                          : 'bg-white hover:bg-gradient-to-r hover:from-purple-50 hover:to-pink-50'
+                        index % 2 === 0
+                          ? "bg-gradient-to-r from-purple-50/30 to-pink-50/30 hover:from-purple-100 hover:to-pink-100"
+                          : "bg-white hover:bg-gradient-to-r hover:from-purple-50 hover:to-pink-50"
                       }`}
                     >
-                      <td className="px-6 py-4 font-semibold text-gray-900">{supplier.name}</td>
-                      <td className="px-6 py-4 font-medium text-gray-700">{formatNumber(supplier.business_tax)}</td>
-                      <td className="px-6 py-4 font-medium text-gray-700">{supplier.phone}</td>
+                      <td className="px-6 py-4 font-semibold text-gray-900">
+                        {supplier.name}
+                      </td>
+                      <td className="px-6 py-4 font-medium text-gray-700">
+                        {formatNumber(supplier.business_tax)}
+                      </td>
+                      <td className="px-6 py-4 font-medium text-gray-700">
+                        {supplier.phone}
+                      </td>
                       <td className="px-6 py-4 font-medium">
                         {supplier.email ? (
-                          <span className="text-blue-600">{supplier.email}</span>
+                          <span className="text-blue-600">
+                            {supplier.email}
+                          </span>
                         ) : (
                           <span className="text-gray-400 italic">לא זמין</span>
                         )}
                       </td>
                       <td className="px-6 py-4 font-medium">
                         {supplier.bankDetails?.bankName ? (
-                          <span className="text-green-600">{supplier.bankDetails.bankName}</span>
+                          <span className="text-green-600">
+                            {supplier.bankDetails.bankName}
+                          </span>
                         ) : (
                           <span className="text-gray-400 italic">לא זמין</span>
                         )}
                       </td>
-                      <td className="px-6 py-4 font-medium text-gray-700">{formatDate(supplier.createdAt)}</td>
+                      <td className="px-6 py-4 font-medium text-gray-700">
+                        {formatDate(supplier.createdAt)}
+                      </td>
                     </tr>
                   ))
                 ) : (
                   <tr>
-                    <td colSpan="6" className="text-center font-bold text-lg text-red-500 py-8">לא נמצאו ספקים</td>
+                    <td
+                      colSpan="6"
+                      className="text-center font-bold text-lg text-red-500 py-8"
+                    >
+                      לא נמצאו ספקים
+                    </td>
                   </tr>
                 )}
               </tbody>

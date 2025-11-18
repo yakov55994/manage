@@ -324,7 +324,7 @@ const OrdersPage = () => {
       : Array.isArray(res?.data)
       ? res.data
       : Array.isArray(res)
-      ? res
+      ? res 
       : [];
 
   const authUser = JSON.parse(localStorage.getItem("user") || "{}");
@@ -336,15 +336,22 @@ const OrdersPage = () => {
         setLoading(true);
 
         const res = await api.get(`/orders`);
-        setAllOrders(arr(res.data.data));
-        setOrders(arr(res.data.data));
 
-        setLoading(false);
+        // 🔥 תקן את הטיפול בנתונים
+        const ordersData = Array.isArray(res.data?.data)
+          ? res.data.data
+          : Array.isArray(res.data)
+          ? res.data
+          : [];
+
+        setAllOrders(ordersData);
+        setOrders(ordersData);
       } catch (error) {
         console.error("Error fetching orders:", error);
         toast.error("שגיאה בטעינת הזמנות", {
           className: "sonner-toast error rtl",
         });
+      } finally {
         setLoading(false);
       }
     };
