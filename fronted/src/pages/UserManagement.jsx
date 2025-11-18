@@ -1,6 +1,6 @@
-// =============================
-// USER MANAGEMENT – MODERN DESIGN
-// =============================
+// =============================================
+// USER MANAGEMENT – REFINED HERO UI STYLE
+// =============================================
 import { useState, useEffect } from "react";
 import { useAuth } from "../context/AuthContext";
 import api from "../api/api.js";
@@ -22,6 +22,17 @@ import {
   UserCircle,
   CheckCircle,
   XCircle,
+  Search,
+  FileText,
+  Package,
+  Building2,
+  Folder,
+  Zap,
+  Filter,
+  CheckSquare,
+  Square,
+  Copy,
+  TrendingUp,
 } from "lucide-react";
 
 // Helpers
@@ -40,15 +51,17 @@ const defaultProjPerm = (projectId) => ({
 
 export default function UserManagement() {
   const { user: currentUser, isAdmin, loading: authLoading } = useAuth();
-
   const [users, setUsers] = useState([]);
   const [projects, setProjects] = useState([]);
   const [loading, setLoading] = useState(true);
-
   const [showModal, setShowModal] = useState(false);
   const [editingUser, setEditingUser] = useState(null);
   const [deleteModal, setDeleteModal] = useState({ show: false, user: null });
   const [showPassword, setShowPassword] = useState(false);
+
+  // Search and filter
+  const [projectSearch, setProjectSearch] = useState("");
+  const [filterStatus, setFilterStatus] = useState("all");
 
   const [formData, setFormData] = useState({
     username: "",
@@ -59,38 +72,113 @@ export default function UserManagement() {
     permissions: [],
   });
 
-  // check if project selected
+  // Check if project selected
   const isProjectSelected = (projectId) =>
     formData.permissions.some((p) => String(p.project) === String(projectId));
 
   // TOGGLE project
   const toggleProject = (projectId) => {
     const id = normalizeId(projectId);
-
     setFormData((prev) => {
       const list = [...prev.permissions];
       const idx = list.findIndex((p) => String(p.project) === id);
-
       if (idx >= 0) {
         list.splice(idx, 1);
       } else {
         list.push(defaultProjPerm(id));
       }
-
       return { ...prev, permissions: list };
     });
+  };
+
+  // NEW: Select all filtered projects
+  const selectAllProjects = () => {
+    setFormData((prev) => {
+      const newPerms = [...prev.permissions];
+      filteredProjects.forEach((p) => {
+        const id = normalizeId(p._id);
+        const exists = newPerms.some((x) => String(x.project) === id);
+        if (!exists) {
+          newPerms.push(defaultProjPerm(id));
+        }
+      });
+      return { ...prev, permissions: newPerms };
+    });
+    toast.success(`נבחרו ${filteredProjects.length} פרויקטים`);
+  };
+
+  // NEW: Deselect all filtered projects
+  const deselectAllProjects = () => {
+    setFormData((prev) => {
+      const filteredIds = filteredProjects.map((p) => String(p._id));
+      const newPerms = prev.permissions.filter(
+        (x) => !filteredIds.includes(String(x.project))
+      );
+      return { ...prev, permissions: newPerms };
+    });
+    toast.success("הפרויקטים בוטלו");
+  };
+
+  // NEW: Apply preset to all selected projects
+  const applyPresetToAll = (preset) => {
+    setFormData((prev) => {
+      const newPerms = prev.permissions.map((perm) => {
+        if (preset === "view-all") {
+          return {
+            ...perm,
+            access: "view",
+            modules: {
+              invoices: "view",
+              orders: "view",
+              suppliers: "view",
+              files: "view",
+            },
+          };
+        } else if (preset === "edit-all") {
+          return {
+            ...perm,
+            access: "edit",
+            modules: {
+              invoices: "edit",
+              orders: "edit",
+              suppliers: "edit",
+              files: "edit",
+            },
+          };
+        } else if (preset === "none-all") {
+          return {
+            ...perm,
+            access: "none",
+            modules: {
+              invoices: "none",
+              orders: "none",
+              suppliers: "none",
+              files: "none",
+            },
+          };
+        }
+        return perm;
+      });
+      return { ...prev, permissions: newPerms };
+    });
+
+    const messages = {
+      "view-all": "הוגדרה צפייה לכל הפרויקטים",
+      "edit-all": "הוגדרה עריכה לכל הפרויקטים",
+      "none-all": "הוסרה גישה מכל הפרויקטים",
+    };
+    toast.success(messages[preset]);
   };
 
   // SET access level
   const setProjectAccess = (projectId, access) => {
     setFormData((prev) => {
       const list = [...prev.permissions];
-      const idx = list.findIndex((p) => String(p.project) === String(projectId));
-
+      const idx = list.findIndex(
+        (p) => String(p.project) === String(projectId)
+      );
       if (idx < 0) return prev;
-
       list[idx] = { ...list[idx], access };
-
       return { ...prev, permissions: list };
     });
   };
@@ -99,15 +187,35 @@ export default function UserManagement() {
   const setModuleAccess = (projectId, moduleKey, value) => {
     setFormData((prev) => {
       const list = [...prev.permissions];
-      const idx = list.findIndex((p) => String(p.project) === String(projectId));
-
+      const idx = list.findIndex(
+        (p) => String(p.project) === String(projectId)
+      );
       if (idx < 0) return prev;
-
       list[idx] = {
         ...list[idx],
         modules: { ...list[idx].modules, [moduleKey]: value },
       };
+      return { ...prev, permissions: list };
+    });
+  };
 
+  // Set all modules in a project at once
+  const setAllModulesInProject = (projectId, value) => {
+    setFormData((prev) => {
+      const list = [...prev.permissions];
+      const idx = list.findIndex(
+        (p) => String(p.project) === String(projectId)
+      );
+      if (idx < 0) return prev;
+      list[idx] = {
+        ...list[idx],
+        modules: {
+          invoices: value,
+          orders: value,
+          suppliers: value,
+          files: value,
+        },
+      };
       return { ...prev, permissions: list };
     });
   };
@@ -150,23 +258,26 @@ export default function UserManagement() {
       isActive: true,
       permissions: [],
     });
+    setProjectSearch("");
     setShowModal(true);
   };
 
   // EDIT USER
   const openEdit = (user) => {
-    const normalized =
-      (user.permissions || []).map((p) => ({
-        project: String(p.project._id || p.project),
-        access: p.access || "view",
+    const normalized = (user.permissions || []).map((p) => {
+      const projectId =
+        typeof p.project === "string" ? p.project : p.project?._id || "";
+      return {
+        project: projectId,
+        access: p?.access || "view",
         modules: {
-          invoices: p.modules?.invoices || "view",
-          orders: p.modules?.orders || "view",
-          suppliers: p.modules?.suppliers || "view",
-          files: p.modules?.files || "view",
+          invoices: p?.modules?.invoices || "view",
+          orders: p?.modules?.orders || "view",
+          suppliers: p?.modules?.suppliers || "view",
+          files: p?.modules?.files || "view",
         },
-      })) || [];
-
+      };
+    });
     setEditingUser(user);
     setFormData({
       username: user.username,
@@ -176,14 +287,13 @@ export default function UserManagement() {
       isActive: user.isActive,
       permissions: normalized,
     });
-
+    setProjectSearch("");
     setShowModal(true);
   };
 
   // SAVE USER
   const saveUser = async (e) => {
     e.preventDefault();
-
     const payload = {
       username: formData.username,
       email: formData.email,
@@ -191,7 +301,6 @@ export default function UserManagement() {
       isActive: formData.isActive,
       permissions: formData.permissions,
     };
-
     if (formData.password) payload.password = formData.password;
 
     try {
@@ -220,355 +329,619 @@ export default function UserManagement() {
     }
   };
 
+  // Filter projects by search
+  const filteredProjects = projects.filter((p) =>
+    p.name.toLowerCase().includes(projectSearch.toLowerCase())
+  );
+
+  // Filter users by status
+  const filteredUsers = users.filter((u) => {
+    if (filterStatus === "active") return u.isActive;
+    if (filterStatus === "inactive") return !u.isActive;
+    return true;
+  });
+
+  // Calculate percentage of projects selected
+  const selectedPercentage =
+    projects.length > 0
+      ? Math.round((formData.permissions.length / projects.length) * 100)
+      : 0;
+
+  // Module icons
+  const moduleIcons = {
+    invoices: FileText,
+    orders: Package,
+    suppliers: Building2,
+    files: Folder,
+  };
+
+  const moduleLabels = {
+    invoices: "חשבוניות",
+    orders: "הזמנות",
+    suppliers: "ספקים",
+    files: "קבצים",
+  };
+
   // UI
   if (authLoading || loading) {
     return (
-      <div className="flex justify-center items-center h-screen bg-gradient-to-br from-purple-50 to-blue-50">
-        <ClipLoader size={80} color="#8b5cf6" />
+      <div className="flex items-center justify-center min-h-screen bg-gradient-to-br from-orange-50 via-amber-50 to-orange-50">
+        <ClipLoader size={60} color="#fb923c" />
       </div>
     );
   }
 
   if (!isAdmin) {
     return (
-      <div className="p-10 text-center">
-        <div className="bg-red-50 border-2 border-red-200 rounded-2xl p-8 max-w-md mx-auto">
-          <XCircle className="mx-auto text-red-500 mb-4" size={64} />
-          <h2 className="text-2xl font-bold text-red-600">אין הרשאה</h2>
-        </div>
+      <div className="flex flex-col items-center justify-center min-h-screen bg-gradient-to-br from-orange-50 via-amber-50 to-orange-50">
+        <Shield className="w-20 h-20 text-black mb-4" />
+        <h2 className="text-2xl font-bold text-gray-800">אין הרשאה</h2>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-purple-50 via-blue-50 to-pink-50 p-6">
+    <div className="min-h-screen bg-gradient-to-br from-orange-50 via-amber-50 to-orange-50 p-8">
       {/* HEADER */}
-      <div className="max-w-7xl mx-auto mb-8">
-        <div className="bg-white rounded-2xl shadow-lg p-6 flex justify-between items-center">
-          <div className="flex items-center gap-4">
-            <div className="bg-gradient-to-br from-purple-500 to-blue-500 p-4 rounded-xl">
-              <Users className="text-white" size={32} />
+      <div className="max-w-7xl mx-auto">
+        <div className="bg-gradient-to-r from-orange-400 to-amber-400 rounded-2xl shadow-xl p-8 mb-8">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-4">
+              <div className="bg-white/20 backdrop-blur-sm p-4 rounded-xl">
+                <Users className="w-10 h-10 " />
+              </div>
+              <div>
+                <h1 className="text-3xl font-bold  mb-2">ניהול משתמשים</h1>
+                <p className="">ניהול גישות והרשאות</p>
+              </div>
             </div>
-            <div>
-              <h1 className="text-3xl font-bold text-gray-800">ניהול משתמשים</h1>
-              <p className="text-gray-500">ניהול גישות והרשאות</p>
-            </div>
+            <button
+              onClick={openCreate}
+              className="bg-white text-black px-6 py-3 rounded-3xl font-semibold hover:bg-black hover:text-white flex items-center gap-2 shadow-lg hover:shadow-xl transition-all"
+            >
+              <Plus className="w-5 h-5" />
+              משתמש חדש
+            </button>
           </div>
 
-          <button
-            onClick={openCreate}
-            className="px-6 py-3 bg-gradient-to-r from-green-500 to-emerald-500 text-white rounded-xl hover:from-green-600 hover:to-emerald-600 flex items-center gap-2 shadow-lg hover:shadow-xl transition-all"
-          >
-            <Plus size={20} />
-            <span className="font-semibold">משתמש חדש</span>
-          </button>
+          {/* Filter Bar */}
+          <div className="mt-6 flex items-center gap-4">
+            <div className="flex items-center gap-2 bg-white/20 backdrop-blur-sm rounded-xl px-4 py-2">
+              <Filter className="w-5 h-5 " />
+              <select
+                value={filterStatus}
+                onChange={(e) => setFilterStatus(e.target.value)}
+                className="bg-transparent  font-semibold outline-none cursor-pointer"
+              >
+                <option value="all" className="text-gray-800">
+                  כל המשתמשים
+                </option>
+                <option value="active" className="text-gray-800">
+                  משתמשים פעילים
+                </option>
+                <option value="inactive" className="text-gray-800">
+                  משתמשים לא פעילים
+                </option>
+              </select>
+            </div>
+            <div className="/90 font-semibold">
+              {filteredUsers.length} משתמשים
+            </div>
+          </div>
         </div>
-      </div>
 
-      {/* CARDS GRID */}
-      <div className="max-w-7xl mx-auto grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        {users.map((u) => (
-          <div
-            key={u._id}
-            className="bg-white rounded-2xl shadow-lg hover:shadow-2xl transition-all duration-300 overflow-hidden border border-gray-100"
-          >
-            {/* Card Header */}
-            <div className="bg-gradient-to-r from-purple-500 to-blue-500 p-6 text-white">
-              <div className="flex items-start justify-between mb-4">
-                <div className="bg-white/20 backdrop-blur-sm p-3 rounded-xl">
-                  <UserCircle size={40} />
+        {/* CARDS GRID */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          {filteredUsers.map((u) => (
+            <div
+              key={u._id}
+              className="bg-white rounded-2xl shadow-lg hover:shadow-xl transition-all overflow-hidden border border-orange-100"
+            >
+              {/* Card Header */}
+              <div className="bg-gradient-to-r from-orange-300 to-amber-300 p-6">
+                <div className="flex items-start justify-between mb-4">
+                  <div className="bg-white/30 backdrop-blur-sm p-3 rounded-xl">
+                    <UserCircle className="w-10 h-10 " />
+                  </div>
+                  <div className="flex gap-2">
+                    <button
+                      onClick={() => openEdit(u)}
+                      className="bg-white/20 backdrop-blur-sm p-2 rounded-lg hover:bg-white/40 transition-all cursor-pointer"
+                    >
+                      <Edit2 className="w-4 h-4 " />
+                    </button>
+                    <button
+                      onClick={() => setDeleteModal({ show: true, user: u })}
+                      disabled={currentUser.id === u._id}
+                      className={`bg-white/20 backdrop-blur-sm p-2 rounded-lg hover:bg-white/40 transition-all cursor-pointer ${
+                        currentUser.id === u._id
+                          ? "opacity-50 cursor-not-allowed"
+                          : ""
+                      }`}
+                    >
+                      <Trash2 className="w-4 h-4 " />
+                    </button>
+                  </div>
                 </div>
-                <div className="flex gap-2">
-                  <button
-                    onClick={() => openEdit(u)}
-                    className="bg-white/20 backdrop-blur-sm p-2 rounded-lg hover:bg-white/30 transition-all"
-                  >
-                    <Edit2 size={18} />
-                  </button>
-                  <button
-                    onClick={() => setDeleteModal({ show: true, user: u })}
-                    disabled={currentUser.id === u._id}
-                    className={`bg-white/20 backdrop-blur-sm p-2 rounded-lg hover:bg-white/30 transition-all ${
-                      currentUser.id === u._id ? "opacity-50 cursor-not-allowed" : ""
+                <h3 className="text-2xl font-bold  mb-1">{u.username}</h3>
+                <div className="flex items-center gap-2 text-black">
+                  <Mail className="w-4 h-4" />
+                  <span className="text-sm">{u.email || "אין אימייל"}</span>
+                </div>
+              </div>
+
+              {/* Card Body */}
+              <div className="p-6 space-y-4">
+                {/* Role Badge */}
+                <div className="flex items-center justify-between">
+                  <span className="text-gray-600 font-medium flex items-center gap-2">
+                    <Shield className="w-4 h-4 text-black" />
+                    תפקיד
+                  </span>
+                  <span
+                    className={`px-3 py-1 rounded-full text-sm font-semibold ${
+                      u.role === "admin"
+                        ? "bg-gradient-to-r from-orange-400 to-amber-400 "
+                        : "bg-orange-100 text-black"
                     }`}
                   >
-                    <Trash2 size={18} />
-                  </button>
+                    {u.role === "admin" ? "מנהל מערכת" : "משתמש רגיל"}
+                  </span>
                 </div>
-              </div>
 
-              <h3 className="text-2xl font-bold mb-1">{u.username}</h3>
-              <p className="text-purple-100 text-sm flex items-center gap-2">
-                <Mail size={14} />
-                {u.email || "אין אימייל"}
-              </p>
-            </div>
+                {/* Projects Count */}
+                <div className="flex items-center justify-between">
+                  <span className="text-gray-600 font-medium flex items-center gap-2">
+                    <FolderKanban className="w-4 h-4 text-black" />
+                    פרויקטים
+                  </span>
+                  <span className="text-black font-semibold">
+                    {u.role === "admin"
+                      ? "גישה מלאה"
+                      : `${u.permissions?.length || 0} פרויקטים`}
+                  </span>
+                </div>
 
-            {/* Card Body */}
-            <div className="p-6 space-y-4">
-              {/* Role Badge */}
-              <div className="flex items-center justify-between">
-                <span className="text-gray-600 font-medium flex items-center gap-2">
-                  <Shield size={18} />
-                  תפקיד
-                </span>
-                <span
-                  className={`px-4 py-2 rounded-full text-sm font-bold ${
-                    u.role === "admin"
-                      ? "bg-purple-100 text-purple-700"
-                      : "bg-blue-100 text-blue-700"
-                  }`}
-                >
-                  {u.role === "admin" ? "מנהל מערכת" : "משתמש רגיל"}
-                </span>
-              </div>
-
-              {/* Projects Count */}
-              <div className="flex items-center justify-between">
-                <span className="text-gray-600 font-medium flex items-center gap-2">
-                  <FolderKanban size={18} />
-                  פרויקטים
-                </span>
-                <span className="px-4 py-2 bg-gradient-to-r from-amber-100 to-orange-100 text-amber-700 rounded-full text-sm font-bold">
-                  {u.role === "admin" ? "גישה מלאה" : `${u.permissions?.length || 0} פרויקטים`}
-                </span>
-              </div>
-
-              {/* Status */}
-              <div className="flex items-center justify-between">
-                <span className="text-gray-600 font-medium">סטטוס</span>
-                <div className="flex items-center gap-2">
-                  {u.isActive ? (
-                    <>
-                      <CheckCircle size={18} className="text-green-500" />
-                      <span className="text-green-600 font-semibold">פעיל</span>
-                    </>
-                  ) : (
-                    <>
-                      <XCircle size={18} className="text-red-500" />
-                      <span className="text-red-600 font-semibold">לא פעיל</span>
-                    </>
-                  )}
+                {/* Status */}
+                <div className="flex items-center justify-between pt-4 border-t border-gray-100">
+                  <span className="text-gray-600 font-medium">סטטוס</span>
+                  <div className="flex items-center gap-2">
+                    {u.isActive ? (
+                      <>
+                        <CheckCircle className="w-5 h-5 text-black" />
+                        <span className="text-black font-semibold">פעיל</span>
+                      </>
+                    ) : (
+                      <>
+                        <XCircle className="w-5 h-5 text-black" />
+                        <span className="text-black font-semibold">
+                          לא פעיל
+                        </span>
+                      </>
+                    )}
+                  </div>
                 </div>
               </div>
             </div>
-          </div>
-        ))}
+          ))}
+        </div>
       </div>
 
       {/* EDIT/CREATE MODAL */}
       {showModal && (
-        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex justify-center items-center p-6 z-50">
-          <div className="bg-white max-w-4xl w-full rounded-2xl shadow-2xl max-h-[90vh] overflow-hidden flex flex-col">
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4 z-50">
+          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-5xl max-h-[90vh] overflow-hidden flex flex-col">
             {/* Modal Header */}
-            <div className="bg-gradient-to-r from-purple-500 to-blue-500 p-6 text-white">
-              <h2 className="text-3xl font-bold flex gap-3 items-center">
-                <User size={32} />
-                {editingUser ? "עריכת משתמש" : "יצירת משתמש חדש"}
-              </h2>
+            <div className="bg-gradient-to-r from-orange-400 to-amber-400 p-6">
+              <div className="flex items-center justify-between">
+                <h2 className="text-2xl font-bold  flex items-center gap-3">
+                  <UserCircle className="w-8 h-8" />
+                  {editingUser ? "עריכת משתמש" : "יצירת משתמש חדש"}
+                </h2>
+                <button
+                  onClick={() => setShowModal(false)}
+                  className="bg-white/20 backdrop-blur-sm p-2 rounded-lg hover:bg-white/30 transition-all"
+                >
+                  <X className="w-6 h-6 " />
+                </button>
+              </div>
             </div>
 
             {/* Modal Body */}
-            <div className="overflow-y-auto flex-1 p-6">
-              <form onSubmit={saveUser} className="space-y-6">
-                {/* BASIC FIELDS */}
-                <div className="bg-gradient-to-br from-purple-50 to-blue-50 rounded-xl p-6">
-                  <h3 className="text-xl font-bold mb-4 flex items-center gap-2">
-                    <UserCircle className="text-purple-600" />
-                    <span>פרטי משתמש</span>
-                  </h3>
+            <form onSubmit={saveUser} className="flex-1 overflow-y-auto p-6">
+              {/* BASIC FIELDS */}
+              <div className="bg-gradient-to-br from-orange-50 to-amber-50 rounded-xl p-6 mb-6 border border-orange-200">
+                <h3 className="text-lg font-bold text-gray-800 mb-4 flex items-center gap-2">
+                  <User className="w-5 h-5 text-black" />
+                  פרטי משתמש
+                </h3>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-sm font-semibold text-gray-700 mb-2">
+                      שם משתמש *
+                    </label>
+                    <input
+                      type="text"
+                      required
+                      value={formData.username}
+                      onChange={(e) =>
+                        setFormData({ ...formData, username: e.target.value })
+                      }
+                      placeholder="הזן שם משתמש"
+                      className="w-full p-3 border-2 border-orange-200 rounded-xl focus:border-orange-400 focus:outline-none transition-colors"
+                    />
+                  </div>
 
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div>
-                      <label className="block mb-2 font-semibold text-gray-700">
-                        שם משתמש *
-                      </label>
+                  <div>
+                    <label className="block text-sm font-semibold text-gray-700 mb-2">
+                      סיסמה {!editingUser && "*"}
+                    </label>
+                    <div className="relative">
                       <input
-                        required
-                        className="w-full p-3 border-2 border-gray-200 rounded-xl focus:border-purple-500 focus:outline-none transition-colors"
-                        value={formData.username}
+                        type={showPassword ? "text" : "password"}
+                        required={!editingUser}
+                        value={formData.password}
                         onChange={(e) =>
-                          setFormData({ ...formData, username: e.target.value })
+                          setFormData({
+                            ...formData,
+                            password: e.target.value,
+                          })
                         }
-                        placeholder="הזן שם משתמש"
+                        placeholder={
+                          editingUser ? "השאר ריק אם לא משנה" : "הזן סיסמה"
+                        }
+                        className="w-full p-3 border-2 border-orange-200 rounded-xl focus:border-orange-400 focus:outline-none transition-colors"
                       />
-                    </div>
-
-                    <div>
-                      <label className="block mb-2 font-semibold text-gray-700">
-                        סיסמה {!editingUser && "*"}
-                      </label>
-                      <div className="relative">
-                        <input
-                          type={showPassword ? "text" : "password"}
-                          required={!editingUser}
-                          className="w-full p-3 border-2 border-gray-200 rounded-xl focus:border-purple-500 focus:outline-none transition-colors"
-                          value={formData.password}
-                          onChange={(e) =>
-                            setFormData({ ...formData, password: e.target.value })
-                          }
-                          placeholder={editingUser ? "השאר ריק אם לא משנה" : "הזן סיסמה"}
-                        />
-                        <button
-                          type="button"
-                          onClick={() => setShowPassword(!showPassword)}
-                          className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500 hover:text-purple-600"
-                        >
-                          {showPassword ? <EyeOff size={20} /> : <Eye size={20} />}
-                        </button>
-                      </div>
-                    </div>
-
-                    <div>
-                      <label className="block mb-2 font-semibold text-gray-700">אימייל</label>
-                      <input
-                        type="email"
-                        className="w-full p-3 border-2 border-gray-200 rounded-xl focus:border-purple-500 focus:outline-none transition-colors"
-                        value={formData.email}
-                        onChange={(e) =>
-                          setFormData({ ...formData, email: e.target.value })
-                        }
-                        placeholder="example@domain.com"
-                      />
-                    </div>
-
-                    <div>
-                      <label className="block mb-2 font-semibold text-gray-700">תפקיד</label>
-                      <select
-                        className="w-full p-3 border-2 border-gray-200 rounded-xl focus:border-purple-500 focus:outline-none transition-colors"
-                        value={formData.role}
-                        onChange={(e) =>
-                          setFormData({ ...formData, role: e.target.value })
-                        }
+                      <button
+                        type="button"
+                        onClick={() => setShowPassword(!showPassword)}
+                        className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500 hover:text-orange-500 cursor-pointer"
                       >
-                        <option value="user">משתמש רגיל</option>
-                        <option value="admin">מנהל מערכת</option>
-                      </select>
+                        {showPassword ? (
+                          <EyeOff className="w-5 h-5" />
+                        ) : (
+                          <Eye className="w-5 h-5" />
+                        )}
+                      </button>
                     </div>
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-semibold text-gray-700 mb-2">
+                      אימייל
+                    </label>
+                    <input
+                      type="email"
+                      value={formData.email}
+                      onChange={(e) =>
+                        setFormData({ ...formData, email: e.target.value })
+                      }
+                      placeholder="example@domain.com"
+                      className="w-full p-3 border-2 border-orange-200 rounded-xl focus:border-orange-400 focus:outline-none transition-colors"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-semibold text-gray-700 mb-2">
+                      תפקיד
+                    </label>
+                    <select
+                      value={formData.role}
+                      onChange={(e) =>
+                        setFormData({ ...formData, role: e.target.value })
+                      }
+                      className="w-full p-3 border-2 border-orange-200 rounded-xl focus:border-orange-400 focus:outline-none transition-colors cursor-pointer"
+                    >
+                      <option value="user">משתמש רגיל</option>
+                      <option value="admin">מנהל מערכת</option>
+                    </select>
                   </div>
                 </div>
 
-                {/* PROJECT PERMISSIONS */}
-                {formData.role !== "admin" && (
-                  <div className="space-y-4">
-                    <div className="flex items-center gap-3 mb-4">
-                      <div className="bg-gradient-to-br from-amber-500 to-orange-500 p-3 rounded-xl">
-                        <FolderKanban className="text-white" size={24} />
-                      </div>
-                      <h3 className="text-2xl font-bold text-gray-800">הרשאות פרויקטים</h3>
+                {/* Active Status Toggle */}
+                <div className="mt-4 flex items-center gap-3">
+                  <input
+                    type="checkbox"
+                    id="isActive"
+                    checked={formData.isActive}
+                    onChange={(e) =>
+                      setFormData({ ...formData, isActive: e.target.checked })
+                    }
+                    className="w-5 h-5 text-black rounded focus:ring-orange-400 cursor-pointer"
+                  />
+                  <label
+                    htmlFor="isActive"
+                    className="text-sm font-semibold text-gray-700 cursor-pointer"
+                  >
+                    משתמש פעיל
+                  </label>
+                </div>
+              </div>
+
+              {/* PROJECT PERMISSIONS */}
+              {formData.role !== "admin" && (
+                <div className="bg-gradient-to-br from-orange-50 to-amber-50 rounded-xl p-6 border border-orange-200">
+                  <div className="flex items-center justify-between mb-4">
+                    <h3 className="text-lg font-bold text-gray-800 flex items-center gap-2">
+                      <FolderKanban className="w-5 h-5 text-black" />
+                      הרשאות פרויקטים
+                    </h3>
+                    <div className="flex items-center gap-2">
+                      <TrendingUp className="w-4 h-4 text-black" />
+                      <span className="text-sm font-semibold text-gray-600">
+                        {formData.permissions.length} מתוך {projects.length}{" "}
+                        נבחרו
+                      </span>
+                      <span className="text-xs text-gray-500">
+                        ({selectedPercentage}%)
+                      </span>
+                    </div>
+                  </div>
+
+                  {/* Search + Bulk Actions */}
+                  <div className="space-y-3 mb-4">
+                    {/* Search Bar */}
+                    <div className="relative">
+                      <Search className="absolute right-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
+                      <input
+                        type="text"
+                        value={projectSearch}
+                        onChange={(e) => setProjectSearch(e.target.value)}
+                        placeholder="חפש פרויקט..."
+                        className="w-full pr-10 p-3 border-2 border-orange-200 rounded-xl focus:border-orange-400 focus:outline-none transition-colors"
+                      />
                     </div>
 
-                    <div className="space-y-4">
-                      {projects.map((p) => {
-                        const selected = isProjectSelected(p._id);
-                        const proj = formData.permissions.find(
-                          (x) => String(x.project) === String(p._id)
-                        );
+                    {/* Bulk Action Buttons */}
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <button
+                        type="button"
+                        onClick={() => {
+                          const allSelected = filteredProjects.every((p) =>
+                            formData.permissions.some(
+                              (perm) => String(perm.project) === String(p._id)
+                            )
+                          );
 
-                        return (
-                          <div
-                            key={p._id}
-                            className={`border-2 rounded-2xl transition-all duration-300 ${
-                              selected
-                                ? "bg-gradient-to-br from-blue-50 to-purple-50 border-purple-300 shadow-lg"
-                                : "bg-white border-gray-200 hover:border-gray-300"
-                            }`}
-                          >
-                            <div className="p-5">
-                              <div className="flex justify-between items-center mb-4">
-                                <label className="flex gap-3 items-center cursor-pointer group">
-                                  <input
-                                    type="checkbox"
-                                    className="w-6 h-6 rounded border-2 border-gray-300 text-purple-600 focus:ring-purple-500"
-                                    checked={selected}
-                                    onChange={() => toggleProject(p._id)}
-                                  />
-                                  <span className="font-bold text-xl text-gray-800 group-hover:text-purple-600 transition-colors">
-                                    {p.name}
-                                  </span>
-                                </label>
+                          if (allSelected) {
+                            deselectAllProjects(); // אם כולם נבחרו → בטל הכל
+                          } else {
+                            selectAllProjects(); // אחרת → בחר הכל
+                          }
+                        }}
+                        className="px-4 py-2 bg-orange-100 text-orange-700 rounded-lg hover:bg-orange-200 transition-all flex items-center gap-2 text-sm font-semibold"
+                      >
+                        <CheckSquare className="w-4 h-4" />
+                        {filteredProjects.every((p) =>
+                          formData.permissions.some(
+                            (perm) => String(perm.project) === String(p._id)
+                          )
+                        )
+                          ? "בטל הכל"
+                          : `בחר הכל (${filteredProjects.length})`}
+                      </button>
 
-                                {selected && (
-                                  <div className="flex gap-3">
-                                    {[
-                                      { value: "view", label: "צפייה", color: "blue" },
-                                      { value: "edit", label: "עריכה", color: "green" },
-                                      { value: "none", label: "ללא גישה", color: "gray" },
-                                    ].map((opt) => (
-                                      <label
-                                        key={opt.value}
-                                        className="flex gap-2 items-center cursor-pointer group"
-                                      >
-                                        <input
-                                          type="radio"
-                                          name={`access-${p._id}`}
-                                          className={`w-5 h-5 text-${opt.color}-600`}
-                                          checked={proj.access === opt.value}
-                                          onChange={() => setProjectAccess(p._id, opt.value)}
-                                        />
-                                        <span className="text-sm font-medium group-hover:text-purple-600 transition-colors">
-                                          {opt.label}
-                                        </span>
-                                      </label>
-                                    ))}
-                                  </div>
-                                )}
-                              </div>
+                      <button
+                        type="button"
+                        onClick={deselectAllProjects}
+                        className="px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-all flex items-center gap-2 text-sm font-semibold"
+                      >
+                        <Square className="w-4 h-4" />
+                        בטל הכל
+                      </button>
+                      <div className="h-6 w-px bg-gray-300"></div>
+                      <span className="text-xs text-gray-600 font-semibold">
+                        הגדר לכולם:
+                      </span>
+                      <button
+                        type="button"
+                        onClick={() => applyPresetToAll("view-all")}
+                        disabled={formData.permissions.length === 0}
+                        className="px-3 py-1.5 bg-blue-100 text-blue-700 rounded-lg hover:bg-blue-200 transition-all text-xs font-semibold disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-1"
+                      >
+                        <Eye className="w-3 h-3" />
+                        צפייה
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => applyPresetToAll("edit-all")}
+                        disabled={formData.permissions.length === 0}
+                        className="px-3 py-1.5 bg-green-100 text-green-700 rounded-lg hover:bg-green-200 transition-all text-xs font-semibold disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-1"
+                      >
+                        <Edit2 className="w-3 h-3" />
+                        עריכה
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => applyPresetToAll("none-all")}
+                        disabled={formData.permissions.length === 0}
+                        className="px-3 py-1.5 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-all text-xs font-semibold disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-1"
+                      >
+                        <X className="w-3 h-3" />
+                        חסום
+                      </button>
+                    </div>
+                  </div>
 
+                  <div className="space-y-4 max-h-96 overflow-y-auto">
+                    {filteredProjects.length === 0 && (
+                      <div className="text-center text-gray-500 py-8">
+                        לא נמצאו פרויקטים
+                      </div>
+                    )}
+
+                    {filteredProjects.map((p) => {
+                      const selected = isProjectSelected(p._id);
+                      const proj = formData.permissions.find(
+                        (x) => String(x.project) === String(p._id)
+                      );
+
+                      return (
+                        <div
+                          key={p._id}
+                          className={`rounded-xl border-2 transition-all ${
+                            selected
+                              ? "border-orange-400 bg-white shadow-md"
+                              : "border-orange-200 bg-white/50"
+                          }`}
+                        >
+                          {/* Project Header */}
+                          <div className="p-4">
+                            <div className="flex items-center gap-3">
+                              <input
+                                type="checkbox"
+                                checked={selected}
+                                onChange={() => toggleProject(p._id)}
+                                className="w-5 h-5 text-black rounded focus:ring-orange-400 cursor-pointer"
+                              />
+                              <FolderKanban className="w-5 h-5 text-black" />
+                              <span className="font-bold text-gray-800 flex-1">
+                                {p.name}
+                              </span>
                               {selected && (
-                                <div className="grid grid-cols-2 md:grid-cols-4 gap-3 p-4 bg-white rounded-xl border border-purple-100">
+                                <div className="flex items-center gap-2">
                                   {[
-                                    { key: "invoices", label: "חשבוניות", icon: "📄" },
-                                    { key: "orders", label: "הזמנות", icon: "📦" },
-                                    { key: "suppliers", label: "ספקים", icon: "🏢" },
-                                    { key: "files", label: "קבצים", icon: "📁" },
-                                  ].map((m) => (
-                                    <div key={m.key}>
-                                      <label className="block mb-2 font-semibold text-sm text-gray-700">
-                                        {m.icon} {m.label}
-                                      </label>
-                                      <select
-                                        className="w-full border-2 border-gray-200 p-2 rounded-lg focus:border-purple-500 focus:outline-none text-sm"
-                                        value={proj.modules[m.key]}
-                                        onChange={(e) =>
-                                          setModuleAccess(p._id, m.key, e.target.value)
+                                    {
+                                      value: "view",
+                                      label: "צפייה",
+                                      icon: Eye,
+                                    },
+                                    {
+                                      value: "edit",
+                                      label: "עריכה",
+                                      icon: Edit2,
+                                    },
+                                    { value: "none", label: "חסום", icon: X },
+                                  ].map((opt) => {
+                                    const Icon = opt.icon;
+                                    return (
+                                      <button
+                                        key={opt.value}
+                                        type="button"
+                                        onClick={() =>
+                                          setProjectAccess(p._id, opt.value)
                                         }
+                                        className={`px-3 py-1.5 rounded-lg text-sm font-semibold transition-all flex items-center gap-1 ${
+                                          proj?.access === opt.value
+                                            ? "bg-gradient-to-r from-orange-400 to-amber-400  shadow-md"
+                                            : "bg-gray-100 text-gray-600 hover:bg-gray-200"
+                                        }`}
                                       >
-                                        <option value="view">צפייה</option>
-                                        <option value="edit">עריכה</option>
-                                        <option value="none">ללא גישה</option>
-                                      </select>
-                                    </div>
-                                  ))}
+                                        <Icon className="w-3.5 h-3.5" />
+                                        {opt.label}
+                                      </button>
+                                    );
+                                  })}
                                 </div>
                               )}
                             </div>
                           </div>
-                        );
-                      })}
-                    </div>
+
+                          {/* Quick Actions */}
+                          {selected && (
+                            <div className="px-4 pb-3 flex items-center gap-2 flex-wrap">
+                              <Zap className="w-4 h-4 text-black" />
+                              <span className="text-sm text-gray-600 font-semibold">
+                                פעולות מהירות:
+                              </span>
+                              <button
+                                type="button"
+                                onClick={() =>
+                                  setAllModulesInProject(p._id, "view")
+                                }
+                                className="px-3 py-1 rounded-lg text-xs font-semibold bg-blue-100 text-blue-700 hover:bg-blue-200 transition-all"
+                              >
+                                צפייה בכל
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() =>
+                                  setAllModulesInProject(p._id, "edit")
+                                }
+                                className="px-3 py-1 rounded-lg text-xs font-semibold bg-green-100 text-green-700 hover:bg-green-200 transition-all"
+                              >
+                                עריכה בכל
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() =>
+                                  setAllModulesInProject(p._id, "none")
+                                }
+                                className="px-3 py-1 rounded-lg text-xs font-semibold bg-gray-100 text-gray-700 hover:bg-gray-200 transition-all"
+                              >
+                                ללא גישה לכל
+                              </button>
+                            </div>
+                          )}
+
+                          {/* Modules Grid */}
+                          {selected && (
+                            <div className="px-4 pb-4">
+                              <div className="grid grid-cols-2 gap-3">
+                                {Object.entries(moduleLabels).map(
+                                  ([key, label]) => {
+                                    const Icon = moduleIcons[key];
+                                    return (
+                                      <div
+                                        key={key}
+                                        className="bg-gradient-to-br from-gray-50 to-gray-100 p-3 rounded-lg border border-gray-200"
+                                      >
+                                        <div className="flex items-center gap-2 mb-2">
+                                          <Icon className="w-4 h-4 text-black" />
+                                          <span className="text-sm font-semibold text-gray-700">
+                                            {label}
+                                          </span>
+                                        </div>
+                                        <select
+                                          value={proj?.modules?.[key] || "none"}
+                                          onChange={(e) =>
+                                            setModuleAccess(
+                                              p._id,
+                                              key,
+                                              e.target.value
+                                            )
+                                          }
+                                          className="w-full p-2 border-2 border-gray-200 rounded-lg text-sm focus:border-orange-400 focus:outline-none cursor-pointer"
+                                        >
+                                          <option value="view">צפייה</option>
+                                          <option value="edit">עריכה</option>
+                                          <option value="none">ללא גישה</option>
+                                        </select>
+                                      </div>
+                                    );
+                                  }
+                                )}
+                              </div>
+                            </div>
+                          )}
+                        </div>
+                      );
+                    })}
                   </div>
-                )}
-              </form>
-            </div>
+                </div>
+              )}
+            </form>
 
             {/* Modal Footer */}
-            <div className="bg-gray-50 border-t p-6 flex gap-4">
-              <button
-                onClick={saveUser}
-                className="flex-1 bg-gradient-to-r from-green-500 to-emerald-500 text-white p-4 rounded-xl hover:from-green-600 hover:to-emerald-600 flex items-center justify-center gap-2 font-semibold shadow-lg hover:shadow-xl transition-all"
-              >
-                <Save size={20} />
-                שמור שינויים
-              </button>
-
-              <button
-                onClick={() => setShowModal(false)}
-                className="flex-1 bg-gradient-to-r from-gray-400 to-gray-500 text-white p-4 rounded-xl hover:from-gray-500 hover:to-gray-600 flex items-center justify-center gap-2 font-semibold shadow-lg hover:shadow-xl transition-all"
-              >
-                <X size={20} />
-                ביטול
-              </button>
+            <div className="border-t border-gray-200 p-6 bg-gray-50">
+              <div className="flex gap-4">
+                <button
+                  type="submit"
+                  onClick={saveUser}
+                  className="flex-1 bg-gradient-to-r from-orange-400 to-amber-400  p-4 rounded-xl hover:from-orange-500 hover:to-amber-500 flex items-center justify-center gap-2 font-semibold shadow-lg hover:shadow-xl transition-all"
+                >
+                  <Save className="w-5 h-5" />
+                  שמור שינויים
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setShowModal(false)}
+                  className="flex-1 bg-gradient-to-r from-gray-400 to-gray-500  p-4 rounded-xl hover:from-gray-500 hover:to-gray-600 flex items-center justify-center gap-2 font-semibold shadow-lg hover:shadow-xl transition-all"
+                >
+                  <X className="w-5 h-5" />
+                  ביטול
+                </button>
+              </div>
             </div>
           </div>
         </div>
@@ -576,35 +949,39 @@ export default function UserManagement() {
 
       {/* DELETE MODAL */}
       {deleteModal.show && (
-        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex justify-center items-center p-6 z-50">
-          <div className="bg-white p-8 rounded-2xl shadow-2xl max-w-md w-full">
-            <div className="bg-red-100 w-20 h-20 rounded-full flex items-center justify-center mx-auto mb-6">
-              <Trash2 size={40} className="text-red-600" />
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4 z-50">
+          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md overflow-hidden">
+            <div className="bg-gradient-to-r from-red-500 to-red-600 p-6">
+              <h2 className="text-2xl font-bold  flex items-center gap-3">
+                <Trash2 className="w-8 h-8" />
+                מחיקת משתמש
+              </h2>
             </div>
-
-            <h2 className="text-2xl font-bold text-gray-800 mb-3 text-center">
-              מחיקת משתמש
-            </h2>
-
-            <p className="text-gray-600 text-center mb-6 text-lg">
-              האם אתה בטוח שברצונך למחוק את המשתמש
-              <br />
-              <strong className="text-red-600">{deleteModal.user.username}</strong>?
-            </p>
-
-            <div className="flex gap-4">
-              <button
-                onClick={deleteUser}
-                className="flex-1 bg-gradient-to-r from-red-500 to-red-600 text-white p-4 rounded-xl hover:from-red-600 hover:to-red-700 font-semibold shadow-lg hover:shadow-xl transition-all"
-              >
-                מחק משתמש
-              </button>
-              <button
-                onClick={() => setDeleteModal({ show: false, user: null })}
-                className="flex-1 bg-gradient-to-r from-gray-400 to-gray-500 text-white p-4 rounded-xl hover:from-gray-500 hover:to-gray-600 font-semibold shadow-lg hover:shadow-xl transition-all"
-              >
-                ביטול
-              </button>
+            <div className="p-6">
+              <p className="text-gray-700 text-lg">
+                האם אתה בטוח שברצונך למחוק את המשתמש{" "}
+                <span className="font-bold text-orange-500">
+                  {deleteModal.user.username}
+                </span>{" "}
+                ?
+              </p>
+            </div>
+            <div className="border-t border-gray-200 p-6 bg-gray-50">
+              <div className="flex gap-4">
+                <button
+                  onClick={deleteUser}
+                  className="flex-1 bg-gradient-to-r from-red-500 to-red-600  p-4 rounded-xl hover:from-red-600 hover:to-red-700 font-semibold shadow-lg hover:shadow-xl transition-all flex items-center justify-center gap-2"
+                >
+                  <Trash2 className="w-5 h-5" />
+                  מחק משתמש
+                </button>
+                <button
+                  onClick={() => setDeleteModal({ show: false, user: null })}
+                  className="flex-1 bg-gradient-to-r from-gray-400 to-gray-500  p-4 rounded-xl hover:from-gray-500 hover:to-gray-600 font-semibold shadow-lg hover:shadow-xl transition-all"
+                >
+                  ביטול
+                </button>
+              </div>
             </div>
           </div>
         </div>

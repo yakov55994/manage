@@ -207,12 +207,12 @@ const SummaryPage = () => {
 
   if (loading) {
     return (
-      <div className="flex flex-col justify-center items-center min-h-screen bg-gradient-to-br from-orange-50 via-amber-50 to-orange-100">
+      <div className="flex flex-col justify-center items-center min-h-screen bg-gradient-to-br from-orange-50 via-amber-50 to-orange-50">
         <div className="relative">
-          <div className="absolute inset-0 bg-orange-500/20 blur-3xl rounded-full"></div>
-          <ClipLoader size={80} color="#f97316" loading={loading} />
+          <div className="absolute inset-0 bg-orange-400/20 blur-3xl rounded-full"></div>
+          <ClipLoader size={80} color="#fb923c" loading={loading} />
         </div>
-        <h1 className="mt-6 font-bold text-2xl text-orange-900">
+        <h1 className="mt-6 font-bold text-2xl text-orange-800">
           טוען נתונים...
         </h1>
       </div>
@@ -230,17 +230,17 @@ const SummaryPage = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-orange-50 via-amber-50 to-orange-100 py-8 px-4">
+    <div className="min-h-screen bg-gradient-to-br from-orange-50 via-amber-50 to-orange-50 py-8 px-4">
       <div className="max-w-7xl mx-auto">
         {/* Header */}
-        <div className="bg-white rounded-2xl shadow-xl p-6 mb-8">
+        <div className="bg-white rounded-2xl shadow-xl p-6 mb-8 border border-orange-100">
           <div className="flex items-center justify-center gap-3 mb-2">
-            <div className="bg-gradient-to-br from-orange-500 to-amber-500 p-3 rounded-xl shadow-lg">
+            <div className="bg-gradient-to-br from-orange-400 to-amber-400 p-3 rounded-xl shadow-lg">
               <BarChart3 className="text-white w-8 h-8" />
             </div>
             <h1 className="text-4xl font-bold text-gray-900">סיכום כללי</h1>
           </div>
-          <div className="h-1 w-32 bg-gradient-to-r from-orange-500 to-amber-500 rounded-full mx-auto"></div>
+          <div className="h-1 w-32 bg-gradient-to-r from-orange-400 to-amber-400 rounded-full mx-auto"></div>
         </div>
 
         {/* כרטיסים סטטיסטיים */}
@@ -248,16 +248,16 @@ const SummaryPage = () => {
           {/* פרויקטים */}
           <div
             onClick={() => navigate("/projects")}
-            className="group bg-white rounded-2xl shadow-lg hover:shadow-2xl transition-all duration-300 p-6 cursor-pointer border-2 border-transparent hover:border-orange-400"
+            className="group bg-white rounded-2xl shadow-lg hover:shadow-2xl transition-all duration-300 p-6 cursor-pointer border-2 border-transparent hover:border-orange-300"
           >
             <div className="flex items-center justify-between mb-4">
-              <div className="bg-gradient-to-br from-blue-500 to-cyan-500 p-3 rounded-xl shadow-md group-hover:scale-110 transition-transform">
+              <div className="bg-gradient-to-br from-orange-400 to-amber-400 p-3 rounded-xl shadow-md group-hover:scale-110 transition-transform">
                 <FolderKanban className="text-white w-8 h-8" />
               </div>
               <Eye className="w-5 h-5 text-gray-400 group-hover:text-orange-500 transition-colors" />
             </div>
             <h3 className="text-lg font-bold text-gray-700 mb-2">פרויקטים</h3>
-            <p className="text-4xl font-bold bg-gradient-to-r from-blue-600 to-cyan-600 bg-clip-text text-transparent">
+            <p className="text-4xl font-bold bg-gradient-to-r from-orange-500 to-amber-500 bg-clip-text text-transparent">
               {projects.length}
             </p>
           </div>
@@ -265,16 +265,16 @@ const SummaryPage = () => {
           {/* הזמנות */}
           <div
             onClick={() => navigate("/orders")}
-            className="group bg-white rounded-2xl shadow-lg hover:shadow-2xl transition-all duration-300 p-6 cursor-pointer border-2 border-transparent hover:border-orange-400"
+            className="group bg-white rounded-2xl shadow-lg hover:shadow-2xl transition-all duration-300 p-6 cursor-pointer border-2 border-transparent hover:border-orange-300"
           >
             <div className="flex items-center justify-between mb-4">
-              <div className="bg-gradient-to-br from-green-500 to-emerald-500 p-3 rounded-xl shadow-md group-hover:scale-110 transition-transform">
+              <div className="bg-gradient-to-br from-orange-400 to-amber-400 p-3 rounded-xl shadow-md group-hover:scale-110 transition-transform">
                 <ShoppingCart className="text-white w-8 h-8" />
               </div>
               <Eye className="w-5 h-5 text-gray-400 group-hover:text-orange-500 transition-colors" />
             </div>
             <h3 className="text-lg font-bold text-gray-700 mb-2">הזמנות</h3>
-            <p className="text-4xl font-bold bg-gradient-to-r from-green-600 to-emerald-600 bg-clip-text text-transparent">
+            <p className="text-4xl font-bold bg-gradient-to-r from-orange-500 to-amber-500 bg-clip-text text-transparent">
               {orders.length}
             </p>
           </div>
@@ -282,16 +282,16 @@ const SummaryPage = () => {
           {/* חשבוניות */}
           <div
             onClick={() => navigate("/invoices")}
-            className="group bg-white rounded-2xl shadow-lg hover:shadow-2xl transition-all duration-300 p-6 cursor-pointer border-2 border-transparent hover:border-orange-400"
+            className="group bg-white rounded-2xl shadow-lg hover:shadow-2xl transition-all duration-300 p-6 cursor-pointer border-2 border-transparent hover:border-orange-300"
           >
             <div className="flex items-center justify-between mb-4">
-              <div className="bg-gradient-to-br from-amber-500 to-yellow-500 p-3 rounded-xl shadow-md group-hover:scale-110 transition-transform">
+              <div className="bg-gradient-to-br from-orange-400 to-amber-400 p-3 rounded-xl shadow-md group-hover:scale-110 transition-transform">
                 <FileText className="text-white w-8 h-8" />
               </div>
               <Eye className="w-5 h-5 text-gray-400 group-hover:text-orange-500 transition-colors" />
             </div>
             <h3 className="text-lg font-bold text-gray-700 mb-2">חשבוניות</h3>
-            <p className="text-4xl font-bold bg-gradient-to-r from-amber-600 to-yellow-600 bg-clip-text text-transparent">
+            <p className="text-4xl font-bold bg-gradient-to-r from-orange-500 to-amber-500 bg-clip-text text-transparent">
               {invoices.length}
             </p>
           </div>
@@ -299,29 +299,29 @@ const SummaryPage = () => {
           {/* ספקים */}
           <div
             onClick={() => navigate("/suppliers")}
-            className="group bg-white rounded-2xl shadow-lg hover:shadow-2xl transition-all duration-300 p-6 cursor-pointer border-2 border-transparent hover:border-orange-400"
+            className="group bg-white rounded-2xl shadow-lg hover:shadow-2xl transition-all duration-300 p-6 cursor-pointer border-2 border-transparent hover:border-orange-300"
           >
             <div className="flex items-center justify-between mb-4">
-              <div className="bg-gradient-to-br from-purple-500 to-pink-500 p-3 rounded-xl shadow-md group-hover:scale-110 transition-transform">
+              <div className="bg-gradient-to-br from-orange-400 to-amber-400 p-3 rounded-xl shadow-md group-hover:scale-110 transition-transform">
                 <Users className="text-white w-8 h-8" />
               </div>
               <Eye className="w-5 h-5 text-gray-400 group-hover:text-orange-500 transition-colors" />
             </div>
             <h3 className="text-lg font-bold text-gray-700 mb-2">ספקים</h3>
-            <p className="text-4xl font-bold bg-gradient-to-r from-purple-600 to-pink-600 bg-clip-text text-transparent">
+            <p className="text-4xl font-bold bg-gradient-to-r from-orange-500 to-amber-500 bg-clip-text text-transparent">
               {suppliers.length}
             </p>
           </div>
         </div>
 
         {/* סרגל כלים */}
-        <div className="bg-white rounded-2xl shadow-xl p-6 mb-8">
+        <div className="bg-white rounded-2xl shadow-xl p-6 mb-8 border border-orange-100">
           <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-6">
             {/* פילטרים ומיונים */}
             <div className="flex flex-wrap items-end gap-4">
               <div>
                 <label className="flex items-center gap-2 text-sm font-semibold text-gray-700 mb-2">
-                  <Filter className="w-4 h-4 text-orange-600" />
+                  <Filter className="w-4 h-4 text-orange-500" />
                   סטטוס
                 </label>
                 <select
@@ -337,12 +337,12 @@ const SummaryPage = () => {
 
               <div>
                 <label className="flex items-center gap-2 text-sm font-semibold text-gray-700 mb-2">
-                  <BarChart3 className="w-4 h-4 text-blue-600" />
+                  <BarChart3 className="w-4 h-4 text-orange-500" />
                   מיין לפי
                 </label>
                 <select
                   onChange={(e) => setSortBy(e.target.value)}
-                  className="px-4 py-3 bg-gradient-to-br from-blue-50 to-cyan-50 border-2 border-blue-200 rounded-xl focus:border-blue-400 focus:outline-none focus:ring-2 focus:ring-blue-200 transition-all font-medium cursor-pointer min-w-[180px]"
+                  className="px-4 py-3 bg-gradient-to-br from-orange-50 to-amber-50 border-2 border-orange-200 rounded-xl focus:border-orange-400 focus:outline-none focus:ring-2 focus:ring-orange-200 transition-all font-medium cursor-pointer min-w-[180px]"
                 >
                   <option value="name">שם</option>
                   <option value="budget">תקציב/סכום</option>
@@ -352,16 +352,16 @@ const SummaryPage = () => {
               <div>
                 <label className="flex items-center gap-2 text-sm font-semibold text-gray-700 mb-2">
                   {sortOrder === "desc" ? (
-                    <TrendingDown className="w-4 h-4 text-purple-600" />
+                    <TrendingDown className="w-4 h-4 text-orange-500" />
                   ) : (
-                    <TrendingUp className="w-4 h-4 text-purple-600" />
+                    <TrendingUp className="w-4 h-4 text-orange-500" />
                   )}
                   סדר
                 </label>
                 <select
                   onChange={(e) => setSortOrder(e.target.value)}
                   value={sortOrder}
-                  className="px-4 py-3 bg-gradient-to-br from-purple-50 to-pink-50 border-2 border-purple-200 rounded-xl focus:border-purple-400 focus:outline-none focus:ring-2 focus:ring-purple-200 transition-all font-medium cursor-pointer min-w-[120px]"
+                  className="px-4 py-3 bg-gradient-to-br from-orange-50 to-amber-50 border-2 border-orange-200 rounded-xl focus:border-orange-400 focus:outline-none focus:ring-2 focus:ring-orange-200 transition-all font-medium cursor-pointer min-w-[120px]"
                 >
                   <option value="desc">יורד</option>
                   <option value="asc">עולה</option>
@@ -372,7 +372,7 @@ const SummaryPage = () => {
             {/* כפתור ייצוא */}
             <button
               onClick={exportToExcel}
-              className="flex items-center justify-center gap-2 px-6 py-3 bg-gradient-to-r from-orange-500 to-amber-500 text-white rounded-xl hover:from-orange-600 hover:to-amber-600 transition-all duration-300 shadow-lg hover:shadow-xl font-medium w-full lg:w-auto"
+              className="flex items-center justify-center gap-2 px-6 py-3 bg-gradient-to-r from-orange-400 to-amber-400 text-white rounded-xl hover:from-orange-500 hover:to-amber-500 transition-all duration-300 shadow-lg hover:shadow-xl font-medium w-full lg:w-auto"
             >
               <DownloadCloud className="w-5 h-5" />
               <span>ייצוא הכל לאקסל</span>
@@ -381,8 +381,8 @@ const SummaryPage = () => {
         </div>
 
         {/* טבלת פרויקטים */}
-        <div className="bg-white rounded-2xl shadow-xl overflow-hidden mb-8">
-          <div className="bg-gradient-to-r from-blue-500 to-cyan-500 p-6">
+        <div className="bg-white rounded-2xl shadow-xl overflow-hidden mb-8 border border-orange-100">
+          <div className="bg-gradient-to-r from-orange-300 to-amber-300 p-6">
             <div className="flex items-center gap-3">
               <FolderKanban className="text-white w-7 h-7" />
               <h2 className="text-2xl font-bold text-white">פרויקטים</h2>
@@ -391,7 +391,7 @@ const SummaryPage = () => {
           <div className="overflow-x-auto">
             <table className="w-full">
               <thead>
-                <tr className="bg-gradient-to-r from-blue-100 to-cyan-100 text-blue-900">
+                <tr className="bg-gradient-to-r from-orange-100 to-amber-100 text-orange-900">
                   <th className="px-6 py-4 text-right font-bold">שם פרויקט</th>
                   <th className="px-6 py-4 text-right font-bold">תקציב</th>
                   <th className="px-6 py-4 text-right font-bold">
@@ -411,8 +411,8 @@ const SummaryPage = () => {
                       onClick={() => moveToProjectDetails(project)}
                       className={`cursor-pointer border-b border-gray-200 transition-all duration-200 ${
                         index % 2 === 0
-                          ? "bg-gradient-to-r from-blue-50/30 to-cyan-50/30 hover:from-blue-100 hover:to-cyan-100"
-                          : "bg-white hover:bg-gradient-to-r hover:from-blue-50 hover:to-cyan-50"
+                          ? "bg-gradient-to-r from-orange-50/30 to-amber-50/30 hover:from-orange-100 hover:to-amber-100"
+                          : "bg-white hover:bg-gradient-to-r hover:from-orange-50 hover:to-amber-50"
                       }`}
                     >
                       <td className="px-6 py-4 font-semibold text-gray-900">
@@ -460,8 +460,8 @@ const SummaryPage = () => {
         </div>
 
         {/* טבלת הזמנות */}
-        <div className="bg-white rounded-2xl shadow-xl overflow-hidden mb-8">
-          <div className="bg-gradient-to-r from-green-500 to-emerald-500 p-6">
+        <div className="bg-white rounded-2xl shadow-xl overflow-hidden mb-8 border border-orange-100">
+          <div className="bg-gradient-to-r from-orange-300 to-amber-300 p-6">
             <div className="flex items-center gap-3">
               <ShoppingCart className="text-white w-7 h-7" />
               <h2 className="text-2xl font-bold text-white">הזמנות</h2>
@@ -470,7 +470,7 @@ const SummaryPage = () => {
           <div className="overflow-x-auto">
             <table className="w-full">
               <thead>
-                <tr className="bg-gradient-to-r from-green-100 to-emerald-100 text-green-900">
+                <tr className="bg-gradient-to-r from-orange-100 to-amber-100 text-orange-900">
                   <th className="px-6 py-4 text-right font-bold">מספר הזמנה</th>
                   <th className="px-6 py-4 text-right font-bold">פרויקט</th>
                   <th className="px-6 py-4 text-right font-bold">סכום</th>
@@ -486,8 +486,8 @@ const SummaryPage = () => {
                       onClick={() => moveToOrderDetails(order)}
                       className={`cursor-pointer border-b border-gray-200 transition-all duration-200 ${
                         index % 2 === 0
-                          ? "bg-gradient-to-r from-green-50/30 to-emerald-50/30 hover:from-green-100 hover:to-emerald-100"
-                          : "bg-white hover:bg-gradient-to-r hover:from-green-50 hover:to-emerald-50"
+                          ? "bg-gradient-to-r from-orange-50/30 to-amber-50/30 hover:from-orange-100 hover:to-amber-100"
+                          : "bg-white hover:bg-gradient-to-r hover:from-orange-50 hover:to-amber-50"
                       }`}
                     >
                       <td className="px-6 py-4 font-semibold text-gray-900">
@@ -533,8 +533,8 @@ const SummaryPage = () => {
         </div>
 
         {/* טבלת חשבוניות */}
-        <div className="bg-white rounded-2xl shadow-xl overflow-hidden mb-8">
-          <div className="bg-gradient-to-r from-amber-500 to-yellow-500 p-6">
+        <div className="bg-white rounded-2xl shadow-xl overflow-hidden mb-8 border border-orange-100">
+          <div className="bg-gradient-to-r from-orange-300 to-amber-300 p-6">
             <div className="flex items-center gap-3">
               <FileText className="text-white w-7 h-7" />
               <h2 className="text-2xl font-bold text-white">חשבוניות</h2>
@@ -543,7 +543,7 @@ const SummaryPage = () => {
           <div className="overflow-x-auto">
             <table className="w-full">
               <thead>
-                <tr className="bg-gradient-to-r from-amber-100 to-yellow-100 text-amber-900">
+                <tr className="bg-gradient-to-r from-orange-100 to-amber-100 text-orange-900">
                   <th className="px-6 py-4 text-right font-bold">
                     מספר חשבונית
                   </th>
@@ -561,8 +561,8 @@ const SummaryPage = () => {
                       onClick={() => moveToInvoiceDetails(invoice)}
                       className={`cursor-pointer border-b border-gray-200 transition-all duration-200 ${
                         index % 2 === 0
-                          ? "bg-gradient-to-r from-amber-50/30 to-yellow-50/30 hover:from-amber-100 hover:to-yellow-100"
-                          : "bg-white hover:bg-gradient-to-r hover:from-amber-50 hover:to-yellow-50"
+                          ? "bg-gradient-to-r from-orange-50/30 to-amber-50/30 hover:from-orange-100 hover:to-amber-100"
+                          : "bg-white hover:bg-gradient-to-r hover:from-orange-50 hover:to-amber-50"
                       }`}
                     >
                       <td className="px-6 py-4 font-semibold text-gray-900">
@@ -608,8 +608,8 @@ const SummaryPage = () => {
         </div>
 
         {/* טבלת ספקים */}
-        <div className="bg-white rounded-2xl shadow-xl overflow-hidden mb-8">
-          <div className="bg-gradient-to-r from-purple-500 to-pink-500 p-6">
+        <div className="bg-white rounded-2xl shadow-xl overflow-hidden mb-8 border border-orange-100">
+          <div className="bg-gradient-to-r from-orange-300 to-amber-300 p-6">
             <div className="flex items-center gap-3">
               <Users className="text-white w-7 h-7" />
               <h2 className="text-2xl font-bold text-white">ספקים</h2>
@@ -618,7 +618,7 @@ const SummaryPage = () => {
           <div className="overflow-x-auto">
             <table className="w-full">
               <thead>
-                <tr className="bg-gradient-to-r from-purple-100 to-pink-100 text-purple-900">
+                <tr className="bg-gradient-to-r from-orange-100 to-amber-100 text-orange-900">
                   <th className="px-6 py-4 text-right font-bold">שם הספק</th>
                   <th className="px-6 py-4 text-right font-bold">מספר עוסק</th>
                   <th className="px-6 py-4 text-right font-bold">טלפון</th>
@@ -637,8 +637,8 @@ const SummaryPage = () => {
                       onClick={() => moveToSupplierDetails(supplier)}
                       className={`cursor-pointer border-b border-gray-200 transition-all duration-200 ${
                         index % 2 === 0
-                          ? "bg-gradient-to-r from-purple-50/30 to-pink-50/30 hover:from-purple-100 hover:to-pink-100"
-                          : "bg-white hover:bg-gradient-to-r hover:from-purple-50 hover:to-pink-50"
+                          ? "bg-gradient-to-r from-orange-50/30 to-amber-50/30 hover:from-orange-100 hover:to-amber-100"
+                          : "bg-white hover:bg-gradient-to-r hover:from-orange-50 hover:to-amber-50"
                       }`}
                     >
                       <td className="px-6 py-4 font-semibold text-gray-900">
@@ -652,7 +652,7 @@ const SummaryPage = () => {
                       </td>
                       <td className="px-6 py-4 font-medium">
                         {supplier.email ? (
-                          <span className="text-blue-600">
+                          <span className="text-orange-600">
                             {supplier.email}
                           </span>
                         ) : (
@@ -661,7 +661,7 @@ const SummaryPage = () => {
                       </td>
                       <td className="px-6 py-4 font-medium">
                         {supplier.bankDetails?.bankName ? (
-                          <span className="text-green-600">
+                          <span className="text-orange-600">
                             {supplier.bankDetails.bankName}
                           </span>
                         ) : (
