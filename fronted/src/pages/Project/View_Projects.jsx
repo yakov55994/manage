@@ -544,41 +544,56 @@ const ProjectsPage = ({ initialProjects = [] }) => {
   };
 
   useEffect(() => {
-    console.log("🔍 ProjectsPage useEffect:", { user, authLoading });
-
     const fetchProjects = async () => {
       try {
-        console.log("📡 Fetching projects...");
-        const response = await api.get("/projects");
-        console.log("📦 Response:", response.data);
-
         setLoading(true);
+        const response = await api.get("/projects");
+        console.log("Raw response:", response.data); // לוג זמני לבדיקה
 
-        // 🔥 תמיד נסה לקרוא נתונים, גם בלי user
         const data = Array.isArray(response.data?.data)
           ? response.data.data
           : Array.isArray(response.data)
           ? response.data
           : [];
 
-        // אם אין משתמש או עדיין טוען - הצג הכל (או סנן אחר כך)
-        if (!user || authLoading) {
+        // אם עדיין טוען את המשתמש – אל תסנן כלום, תציג את כל הפרויקטים זמנית
+        if (authLoading) {
           setProjects(data);
           setAllProjects(data);
           return;
         }
 
-        // 🟥 אם Admin אמיתי
-        if (user?.role === "admin") {
+        // אם אין משתמש בכלל (לוגאאוט) – תציג ריק
+        if (!user) {
+          setProjects([]);
+          setAllProjects([]);
+          return;
+        }
+
+        // אם זה אדמין – מציג הכל
+        if (user.role === "admin") {
           setProjects(data);
           setAllProjects(data);
           return;
         }
 
-        // 🟩 משתמש רגיל - סנן לפי הרשאות
-        const allowedProjectIds = (user.permissions || []).map((p) =>
-          String(p.project?._id || p.project)
-        );
+        // === כאן ה-fallback החשוב ביותר ===
+        // אם יש user אבל אין לו permissions (או שהם עדיין לא נטענו)
+        if (
+          !user.permissions ||
+          !Array.isArray(user.permissions) ||
+          user.permissions.length === 0
+        ) {
+          setProjects([]);
+          setAllProjects([]);
+
+          return;
+        }
+
+        // רק אם יש permissions תקינים – נסנן
+        const allowedProjectIds = user.permissions
+          .map((p) => String(p.project?._id || p.project))
+          .filter(Boolean);
 
         const filtered = data.filter((p) =>
           allowedProjectIds.includes(String(p._id))
@@ -588,17 +603,16 @@ const ProjectsPage = ({ initialProjects = [] }) => {
         setAllProjects(filtered);
       } catch (error) {
         console.error("Error fetching projects:", error);
-        toast.error("שגיאה בשליפת פרויקטים", {
-          className: "sonner-toast error rtl",
-        });
+        toast.error("שגיאה בשליפת פרויקטים");
+        setProjects([]);
+        setAllProjects([]);
       } finally {
         setLoading(false);
       }
     };
 
     fetchProjects();
-  }, []); // 🔥 הסר תלות ב-user ו-authLoading
-
+  }, [user, authLoading]); // חשוב! תלוי ב-user וב-authLoading
   useEffect(() => {
     if (!showReportModal) return;
     const onKeyDown = (e) => {

@@ -324,20 +324,17 @@ const OrdersPage = () => {
       : Array.isArray(res?.data)
       ? res.data
       : Array.isArray(res)
-      ? res 
+      ? res
       : [];
 
   const authUser = JSON.parse(localStorage.getItem("user") || "{}");
   const selectedProjectId = authUser?.selectedProject;
-
+ 
   useEffect(() => {
     const fetchOrders = async () => {
       try {
         setLoading(true);
-
-        const res = await api.get(`/orders`);
-
-        // 🔥 תקן את הטיפול בנתונים
+        const res = await api.get("/orders");
         const ordersData = Array.isArray(res.data?.data)
           ? res.data.data
           : Array.isArray(res.data)
@@ -348,16 +345,14 @@ const OrdersPage = () => {
         setOrders(ordersData);
       } catch (error) {
         console.error("Error fetching orders:", error);
-        toast.error("שגיאה בטעינת הזמנות", {
-          className: "sonner-toast error rtl",
-        });
+        toast.error("שגיאה בטעינת הזמנות");
       } finally {
         setLoading(false);
       }
     };
 
     fetchOrders();
-  }, []);
+  }, [user, authLoading]); // גם כאן תוסיף תלות – למקרה שתוסיף סינון בעתיד
 
   useEffect(() => {
     if (!showReportModal) return;
