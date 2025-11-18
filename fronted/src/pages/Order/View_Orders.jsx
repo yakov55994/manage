@@ -20,6 +20,7 @@ import {
 } from "lucide-react";
 import api from "../../api/api.js";
 import { toast } from "sonner";
+import { useAuth } from "../../context/AuthContext.jsx";
 
 const OrdersPage = () => {
   const [orders, setOrders] = useState([]);
@@ -68,6 +69,8 @@ const OrdersPage = () => {
       day: "2-digit",
     });
   };
+    const { user, loading: authLoading } = useAuth();
+  
 
   const availableColumns = [
     { key: "orderNumber", label: "מספר הזמנה" },
