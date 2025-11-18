@@ -543,51 +543,51 @@ const ProjectsPage = ({ initialProjects = [] }) => {
     );
   };
 
-  useEffect(() => {
-    if (authLoading) return;
-    if (!user) return;
+useEffect(() => {
+  if (authLoading) return;
+  if (!user) return;
 
-    const fetchProjects = async () => {
-      try {
-        setLoading(true);
+  const fetchProjects = async () => {
+    try {
+      setLoading(true);
 
-        const response = await api.get("/projects");
+      const response = await api.get("/projects");
 
-        const data = Array.isArray(response.data?.data)
-          ? response.data.data
-          : [];
+      const data = Array.isArray(response.data?.data)
+        ? response.data.data
+        : [];
 
-        // 🟥 אם Admin — רואה הכל
-        if (isAdmin) {
-          setProjects(data);
-          setAllProjects(data);
-          return;
-        }
-
-        // 🟩 משתמש רגיל — סינון לפי הרשאות
-        // user.permissions = מערך ולא אובייקט!
-        const allowedProjectIds = user?.permissions?.map((p) =>
-          String(p.project?._id || p.project)
-        );
-
-        const filtered = data.filter((p) =>
-          allowedProjectIds.includes(String(p._id))
-        );
-
-        setProjects(filtered);
-        setAllProjects(filtered);
-      } catch (error) {
-        console.error("Error fetching projects:", error);
-        toast.error("שגיאה בשליפת פרויקטים", {
-          className: "sonner-toast error rtl",
-        });
-      } finally {
-        setLoading(false);
+      // 🟥 אם Admin אמיתי — רואה הכל (בלי קשר ל־isAdmin!)
+      if (user?.role === "admin") {
+        setProjects(data);
+        setAllProjects(data);
+        return;
       }
-    };
 
-    fetchProjects();
-  }, [user, isAdmin]);
+      // 🟩 משתמש רגיל — מסנן לפי הרשאות
+      const allowedProjectIds = (user.permissions || []).map((p) =>
+        String(p.project?._id || p.project)
+      );
+
+      const filtered = data.filter((p) =>
+        allowedProjectIds.includes(String(p._id))
+      );
+
+      setProjects(filtered);
+      setAllProjects(filtered);
+
+    } catch (error) {
+      console.error("Error fetching projects:", error);
+      toast.error("שגיאה בשליפת פרויקטים", {
+        className: "sonner-toast error rtl",
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  fetchProjects();
+}, [user, authLoading]);
 
   useEffect(() => {
     if (!showReportModal) return;
