@@ -1,90 +1,82 @@
-// context/AuthContext.jsx
-import { createContext, useState, useContext, useEffect, useRef } from "react";
+// =============================
+// AuthContext.jsx – FIXED FULL VERSION
+// =============================
+import {
+  createContext,
+  useState,
+  useContext,
+  useEffect,
+  useRef,
+} from "react";
 import api from "../api/api.js";
 
 const AuthContext = createContext();
 
-const [loading, setLoading] = useState(true);
-
-useEffect(() => {
-  const checkAuth = async () => {
-    try {
-      const token = localStorage.getItem("token");
-      if (!token) {
-        setUser(null);
-        return;
-      }
-
-      const res = await api.get("/auth/me");
-      setUser(res.data.user);
-    } catch (err) {
-      setUser(null);
-    } finally {
-      setLoading(false); // <---- הכי חשוב
-    }
-  };
-
-  checkAuth();
-}, []);
-
-
-// =========================
+// =====================================
 // NORMALIZE USER PERMISSIONS
-// =========================
+// =====================================
 const normalizeUser = (u) => {
   if (!u) return null;
 
   return {
     ...u,
-    permissions: Array.isArray(u.permissions) ? u.permissions : [], 
+    permissions: Array.isArray(u.permissions) ? u.permissions : [],
   };
 };
 
-// =========================
-// PERMISSION HELPERS
-// =========================
+// =====================================
+// PERMISSION LEVELS
+// =====================================
 const levels = { none: 0, view: 1, edit: 2 };
 
-// מקבל הרשאת פרויקט לפי ה־ID
+// מביא הרשאת פרויקט לפי ID
 const getProjectPerm = (user, projectId) => {
   if (!user || !projectId) return null;
-  return user.permissions.find(
-    (p) => String(p.project) === String(projectId)
+
+  return (
+    user.permissions?.find(
+      (p) => String(p.project) === String(projectId)
+    ) || null
   );
 };
 
-// האם המשתמש יכול לראות פרויקט
+// האם המשתמש יכול לראות פרויקט?
 const canViewProject = (user, projectId) => {
   if (user?.role === "admin") return true;
 
   const perm = getProjectPerm(user, projectId);
-  return perm && levels[perm.access] >= levels["view"];
+  return perm && levels[perm.access] >= levels.view;
 };
 
-// האם המשתמש יכול לערוך פרויקט
+// האם המשתמש יכול לערוך פרויקט?
 const canEditProject = (user, projectId) => {
   if (user?.role === "admin") return true;
 
   const perm = getProjectPerm(user, projectId);
-  return perm && levels[perm.access] >= levels["edit"];
+  return perm && levels[perm.access] >= levels.edit;
 };
 
-// האם המשתמש יכול לבצע פעולה על מודול (invoices/orders/...)
-const canAccessModule = (user, projectId, moduleName, required = "view") => {
+// האם המשתמש יכול לעבוד על מודול מסוים (חשבוניות / הזמנות וכו)
+const canAccessModule = (
+  user,
+  projectId,
+  moduleName,
+  required = "view"
+) => {
   if (user?.role === "admin") return true;
 
   const perm = getProjectPerm(user, projectId);
-  if (!perm) return false;
+  if (!perm || !perm.modules) return false;
 
-  return (
-    perm.modules &&
-    levels[perm.modules[moduleName]] >= levels[required]
-  );
+  return levels[perm.modules[moduleName]] >= levels[required];
 };
 
+// =====================================
+// AUTH PROVIDER
+// =====================================
 export const AuthProvider = ({ children }) => {
-  const [user, setUser] = useState(null);
-  const [loading, setLoading] = useState(true);
+  const [user, setUser] = useState(null); // יוזר מחובר
+  const [loading, setLoading] = useState(true); // טעינת מצב התחברות
   const logoutInProgress = useRef(false);
 
   // =========================
@@ -104,7 +96,7 @@ export const AuthProvider = ({ children }) => {
   };
 
   // =========================
-  // LOAD USER ON START
+  // LOAD USER ON APP START
   // =========================
   useEffect(() => {
     const token = localStorage.getItem("token");
@@ -136,21 +128,32 @@ export const AuthProvider = ({ children }) => {
 
     localStorage.setItem("token", token);
     localStorage.setItem("user", JSON.stringify(normalized));
+
     api.defaults.headers.common["Authorization"] = `Bearer ${token}`;
+
     setUser(normalized);
   };
 
+  // =========================
+  // FLAGS
+  // =========================
   const isAdmin = user?.role === "admin";
   const isAuthenticated = !!user;
 
+  // =========================
+  // DEBUGGER
+  // =========================
   useEffect(() => {
-  console.log("==== USER DEBUG ====");
-  console.log("USER:", user);
-  console.log("IS ADMIN:", isAdmin);
-  console.log("USER PERMISSIONS:", user?.permissions);
-  console.log("TOKEN:", localStorage.getItem("token"));
-}, [user]);
+    console.log("==== USER DEBUG ====");
+    console.log("USER:", user);
+    console.log("IS ADMIN:", isAdmin);
+    console.log("USER PERMISSIONS:", user?.permissions);
+    console.log("TOKEN:", localStorage.getItem("token"));
+  }, [user]);
 
+  // =========================
+  // EXPORT TO CONTEXT
+  // =========================
   return (
     <AuthContext.Provider
       value={{
@@ -161,11 +164,16 @@ export const AuthProvider = ({ children }) => {
         isAuthenticated,
         loading,
 
-        // 🔥 פונקציות הרשאה חדשות
-        canViewProject: (projectId) => canViewProject(user, projectId),
-        canEditProject: (projectId) => canEditProject(user, projectId),
+        // פונקציות הרשאה
+        canViewProject: (projectId) =>
+          canViewProject(user, projectId),
+
+        canEditProject: (projectId) =>
+          canEditProject(user, projectId),
+
         canViewModule: (projectId, module) =>
           canAccessModule(user, projectId, module, "view"),
+
         canEditModule: (projectId, module) =>
           canAccessModule(user, projectId, module, "edit"),
       }}
