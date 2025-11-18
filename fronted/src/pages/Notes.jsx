@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import api from '../api/api.jsx';
+import api from '../api/api.js';
 import { ClipLoader } from "react-spinners";
 import { toast } from "sonner";
 import { Plus, Edit3, Trash2, Check, X, CheckCircle2, Circle, Target, FileText } from "lucide-react";
