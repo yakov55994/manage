@@ -68,7 +68,7 @@ const ProjectsPage = ({ initialProjects = [] }) => {
     fileCount: true,
   });
 
-  const { user, isAdmin, loading: authLoading } = useAuth();
+  const { user, loading: authLoading } = useAuth();
 
   const navigate = useNavigate();
 
