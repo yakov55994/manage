@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { ChevronDown, User } from 'lucide-react';
-import api from '../api/api';
+import api from '../api/api.js';
 import { toast } from 'sonner';
 
 const SupplierSelector = ({ 

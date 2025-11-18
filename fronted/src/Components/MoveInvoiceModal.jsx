@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { X, Search, FolderCog } from "lucide-react";
-import api from "../api/api";
+import api from "../api/api.js";
 import { toast } from "sonner";
 
 export default function MoveInvoiceModal({
