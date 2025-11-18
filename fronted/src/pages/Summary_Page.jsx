@@ -14,7 +14,7 @@ import {
   BarChart3,
   Eye,
 } from "lucide-react";
-import api from "../api/api.jsx";
+import api from "../api/api.js";
 import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 

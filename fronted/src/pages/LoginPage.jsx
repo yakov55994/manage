@@ -1,7 +1,14 @@
 import { useState } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
-import { KeyRound, Loader2, ChevronLeft, Eye, EyeOff, User } from "lucide-react";
-import api from "../api/api.jsx";
+import {
+  KeyRound,
+  Loader2,
+  ChevronLeft,
+  Eye,
+  EyeOff,
+  User,
+} from "lucide-react";
+import api from "../api/api.js";
 import { toast } from "sonner";
 import "../Components/toastStyles.css";
 import { useAuth } from "../context/AuthContext.jsx";
@@ -16,55 +23,55 @@ const Login = () => {
   const location = useLocation();
   const { login } = useAuth();
 
-const handleSubmit = async (e) => {
-  e?.preventDefault?.();
-  
-  if (!username.trim() || !password) {
-    toast.error("נא להזין שם משתמש וסיסמה", { className: "sonner-toast error rtl" });
-    return;
-  }
-  
-  setLoading(true);
-  
-  try {
-    
-    const { data } = await api.post("/users/login", { username, password });
-    
-    
-    if (!data?.token) {
-      throw new Error("לא התקבל טוקן מהשרת");
+  const handleSubmit = async (e) => {
+    e?.preventDefault?.();
+
+    if (!username.trim() || !password) {
+      toast.error("נא להזין שם משתמש וסיסמה", {
+        className: "sonner-toast error rtl",
+      });
+      return;
     }
-    
-    // 🆕 שמור ישירות ב-localStorage לפני הקריאה ל-login
-    localStorage.setItem('token', data.token);
-    localStorage.setItem('user', JSON.stringify(data.user));
-    api.defaults.headers.common['Authorization'] = `Bearer ${data.token}`;
-    
-    // עדכן את ה-context
-    await login({ token: data.token, user: data.user });
-    
-    // 🆕 המתן 100ms כדי לוודא שהכל נשמר
-    await new Promise(resolve => setTimeout(resolve, 100));
-    
-    
-    toast.success("ברוך/ה הבא/ה 🙂", { className: "sonner-toast success rtl" });
-    
-    const from = location.state?.from?.pathname || "/projects";
-    navigate(from, { replace: true });
-    
-  } catch (err) {
-    console.error('❌ Login error:', err);
-    
-    const msg =
-      err?.response?.data?.message ||
-      (typeof err?.response?.data === "string" ? err.response.data : null) ||
-      "שם משתמש או סיסמה שגויים";
-    
-    toast.error(msg, { className: "sonner-toast error rtl" });
-  } finally {
-    setLoading(false);
-  }
-};
+
+    setLoading(true);
+
+    try {
+      const { data } = await api.post("/users/login", { username, password });
+
+      if (!data?.token) {
+        throw new Error("לא התקבל טוקן מהשרת");
+      }
+
+      // 🆕 שמור ישירות ב-localStorage לפני הקריאה ל-login
+      localStorage.setItem("token", data.token);
+      localStorage.setItem("user", JSON.stringify(data.user));
+      api.defaults.headers.common["Authorization"] = `Bearer ${data.token}`;
+
+      // עדכן את ה-context
+      await login({ token: data.token, user: data.user });
+
+      // 🆕 המתן 100ms כדי לוודא שהכל נשמר
+      await new Promise((resolve) => setTimeout(resolve, 100));
+
+      toast.success("ברוך/ה הבא/ה 🙂", {
+        className: "sonner-toast success rtl",
+      });
+
+      const from = location.state?.from?.pathname || "/projects";
+      navigate(from, { replace: true });
+    } catch (err) {
+      console.error("❌ Login error:", err);
+
+      const msg =
+        err?.response?.data?.message ||
+        (typeof err?.response?.data === "string" ? err.response.data : null) ||
+        "שם משתמש או סיסמה שגויים";
+
+      toast.error(msg, { className: "sonner-toast error rtl" });
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const onKeyDown = (e) => {
     if (e.key === "Enter" && !loading) handleSubmit(e);
@@ -84,7 +91,9 @@ const handleSubmit = async (e) => {
             <h2 className="text-3xl font-bold text-center mb-2 bg-gradient-to-r from-slate-800 to-slate-500 bg-clip-text text-transparent">
               התחברות למערכת
             </h2>
-            <p className="text-center text-gray-500 text-sm font-bold">שם משתמש וסיסמה</p>
+            <p className="text-center text-gray-500 text-sm font-bold">
+              שם משתמש וסיסמה
+            </p>
           </div>
 
           <form className="px-8 pb-8 space-y-5" onSubmit={handleSubmit}>
@@ -123,7 +132,11 @@ const handleSubmit = async (e) => {
                   className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-500 hover:text-lime-900"
                   aria-label={showPassword ? "הסתר סיסמה" : "הצג סיסמה"}
                 >
-                  {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
+                  {showPassword ? (
+                    <EyeOff className="w-5 h-5" />
+                  ) : (
+                    <Eye className="w-5 h-5" />
+                  )}
                 </button>
               </div>
             </div>
