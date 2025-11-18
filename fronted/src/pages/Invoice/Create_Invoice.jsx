@@ -23,7 +23,6 @@ import {
   AlertCircle,
 } from "lucide-react";
 import { useSearchParams } from "react-router-dom";
-import { useAuth } from "../../context/AuthContext.jsx";
 
 const PAYMENT_METHODS = [
   { value: "bank_transfer", label: "העברה בנקאית" },
@@ -40,14 +39,10 @@ const CreateInvoice = () => {
   const [searchParams] = useSearchParams();
 
   const navigate = useNavigate();
-  const { user, isAdmin, loading: authLoading } = useAuth();
 
   useEffect(() => {
     const fetchProjects = async () => {
-      if (authLoading) return; // ⛔ מחכים לאימות
-      if (!user) return; // ⛔ אין משתמש → אין מה להביא
-
-      try {
+           try {
         const response = await api.get("/projects");
         setProjects(response.data?.data || []);
       } catch (err) {
@@ -855,20 +850,19 @@ const CreateInvoice = () => {
                         <label className="text-sm font-bold text-slate-700 mb-2 block">
                           תאריך תשלום
                         </label>
-                        <input
-                          type="date"
-                          value={invoice.paymentDate}
-                          onChange={(e) =>
-                            handleInvoiceChange(
-                              index,
-                              "paymentDate",
-                              e.target.value
-                            )
-                          }
-                          className="w-full p-3 border-2 border-slate-200 rounded-xl bg-white font-medium focus:border-emerald-500 focus:outline-none focus:ring-4 focus:ring-emerald-500/20 transition-all group-hover:border-emerald-300"
-                          required
-                          onFocus={(e) => e.target.showPicker()}
-                        />
+
+    <DateField
+                        type="date"
+                        value={invoice.paymentDate}
+                        className="w-full p-3 border-2 border-slate-200 rounded-xl bg-white font-medium focus:border-orange-500 focus:outline-none focus:ring-4 focus:ring-orange-500/20 transition-all group-hover:border-orange-300"
+                        placeholder="yyyy-mm-dd"
+                        required
+                        onChange={(val) =>
+                          handleInvoiceChange(index, "paymentDate", val)
+                        }
+                      />
+
+                   
                       </div>
                     )}
 

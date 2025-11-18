@@ -68,9 +68,116 @@ const ProjectsPage = ({ initialProjects = [] }) => {
     fileCount: true,
   });
 
+  const [showPrintModal, setShowPrintModal] = useState(false);
+
+const [selectedProject, setSelectedProject] = useState("");
+const [selectedSupplier, setSelectedSupplier] = useState("");
+const [fromDate, setFromDate] = useState("");
+const [toDate, setToDate] = useState("");
+const [suppliers, setSuppliers] = useState([]);
+
+useEffect(() => {
+  const fetchSuppliers = async () => {
+    try {
+      const res = await api.get("/suppliers");
+      setSuppliers(res.data.data || res.data); // תלוי מה ה־controller מחזיר לך
+    } catch (err) {
+      console.error("❌ שגיאה בטעינת ספקים:", err);
+    }
+  };
+
+  fetchSuppliers();
+}, []);
+
+
+
   const { user, loading: authLoading } = useAuth();
 
   const navigate = useNavigate();
+
+const generatePrint = async () => {
+  try {
+    const res = await api.post("/documents/collect", {
+      projectId: selectedProject || null,
+      supplierId: selectedSupplier || null,
+      fromDate: fromDate || null,
+      toDate: toDate || null,
+    });
+
+const docs = res.data.documents || [];
+    console.log("docs ", docs);
+    if (!docs || docs.length === 0) {
+      toast.error("לא נמצאו מסמכים להדפסה");
+      return;
+    }
+
+    // פתיחת חלון חדש
+    const printWindow = window.open("", "_blank");
+
+    // כתיבת HTML
+    printWindow.document.write(`
+      <html dir="rtl" lang="he">
+        <head>
+          <title>הדפסת מסמכים</title>
+          <style>
+            body { font-family: Arial, sans-serif; padding: 20px; }
+            h1 { text-align: center; margin-bottom: 30px; }
+            table { width: 100%; border-collapse: collapse; margin-top: 20px; }
+            th, td { border: 1px solid #ccc; padding: 10px; font-size: 14px; }
+            th { background: #f4f4f4; }
+          </style>
+        </head>
+        <body>
+          <h1>דוח מסמכים מרוכז</h1>
+
+          <table>
+            <thead>
+              <tr>
+                <th>סוג</th>
+                <th>מספר</th>
+                <th>פרויקט</th>
+                <th>ספק</th>
+                <th>תאריך</th>
+                <th>סכום</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${docs
+                .map((d) => {
+                  console.log(d)
+                  return `
+                    <tr>
+                      <td>${d.type || "-"}</td>
+                      <td>${d.number || "-"}</td>
+                      <td>${d.project || "-"}</td>
+                      <td>${d.supplier.name || "-"}</td>
+                      <td>${new Date(d.date).toLocaleDateString("he-IL")}</td>
+                      <td>${d.total ? d.total.toLocaleString("he-IL") + " ₪" : "-"}</td>
+                    </tr>
+                  `;
+                })
+                .join("")}
+            </tbody>
+          </table>
+
+          <script>
+            window.print();
+            setTimeout(() => window.close(), 500);
+          </script>
+        </body>
+      </html>
+    `);
+
+    printWindow.document.close();
+    setShowPrintModal(false);
+
+  } catch (err) {
+    console.error(err);
+    toast.error("שגיאה בשליפת המסמכים");
+  }
+};
+
+
 
   const formatNumber = (num) => num?.toLocaleString("he-IL");
   const formatDate = (dateTime) => {
@@ -759,8 +866,15 @@ const ProjectsPage = ({ initialProjects = [] }) => {
             {/* Export Buttons */}
             <div className="flex gap-3">
               <button
+  onClick={() => setShowPrintModal(true)}
+  className="px-4 py-2 bg-orange-500 text-white rounded-xl font-medium hover:bg-orange-600"
+>
+  הדפסת מסמכים
+</button>
+
+              <button
                 onClick={() => setShowReportModal(true)}
-                className="flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-purple-600 to-indigo-600 text-white font-bold rounded-xl hover:from-purple-700 hover:to-indigo-700 transition-all shadow-lg shadow-purple-500/30"
+                className="flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-orange-600 to-orange-600 text-white font-bold rounded-xl hover:from-orange-700 hover:to-orange-700 transition-all shadow-lg shadow-purple-500/30"
               >
                 <FileSpreadsheet className="w-5 h-5" />
                 <span>מחולל דוחות</span>
@@ -768,7 +882,7 @@ const ProjectsPage = ({ initialProjects = [] }) => {
 
               <button
                 onClick={exportToExcel}
-                className="flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-emerald-600 to-teal-600 text-white font-bold rounded-xl hover:from-emerald-700 hover:to-teal-700 transition-all shadow-lg shadow-emerald-500/30"
+                className="flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-orange-600 to-orange-600 text-white font-bold rounded-xl hover:from-orange-700 hover:to-orange-700 transition-all shadow-lg shadow-emerald-500/30"
               >
                 <DownloadCloud className="w-5 h-5" />
                 <span>ייצוא מהיר</span>
@@ -1218,6 +1332,74 @@ const ProjectsPage = ({ initialProjects = [] }) => {
             </div>
           </div>
         )}
+
+{showPrintModal && (
+  <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50">
+    <div className="bg-white p-6 rounded-2xl w-[480px]">
+
+      <h2 className="text-xl font-bold mb-4">הפקת מסמכים</h2>
+
+      {/* בחירת פרויקט */}
+      <label className="font-medium">בחירת פרויקט</label>
+      <select
+        className="w-full p-3 border rounded-xl mb-3"
+        value={selectedProject}
+        onChange={(e) => setSelectedProject(e.target.value)}
+      >
+        <option value="">כל הפרויקטים</option>
+        {projects.map((p) => (
+          <option key={p._id} value={p._id}>{p.name}</option>
+        ))}
+      </select>
+
+      {/* בחירת ספק */}
+      <label className="font-medium">בחירת ספק</label>
+      <select
+        className="w-full p-3 border rounded-xl mb-3"
+        value={selectedSupplier}
+        onChange={(e) => setSelectedSupplier(e.target.value)}
+      >
+        <option value="">כל הספקים</option>
+        {suppliers.map((s) => (
+          <option key={s._id} value={s._id}>{s.name}</option>
+        ))}
+      </select>
+
+      {/* תאריכים */}
+      <label className="font-medium">טווח תאריכים</label>
+      <div className="flex gap-3 mb-4">
+        <input
+          type="date"
+          className="w-1/2 border p-2 rounded-xl"
+          value={fromDate}
+          onChange={(e) => setFromDate(e.target.value)}
+        />
+        <input
+          type="date"
+          className="w-1/2 border p-2 rounded-xl"
+          value={toDate}
+          onChange={(e) => setToDate(e.target.value)}
+        />
+      </div>
+
+      <div className="flex justify-between mt-4">
+        <button
+          className="px-4 py-2 bg-gray-300 rounded-xl"
+          onClick={() => setShowPrintModal(false)}
+        >
+          ביטול
+        </button>
+
+        <button
+          className="px-4 py-2 bg-orange-500 text-white rounded-xl"
+          onClick={generatePrint}
+        >
+          הפק PDF
+        </button>
+      </div>
+    </div>
+  </div>
+)}
 
         {/* Delete Modal */}
         {showModal && (

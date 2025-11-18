@@ -12,6 +12,7 @@ import orderRoutes from './routes/orderRoutes.js';
 import notesRoutes from './routes/NotesRoutes.js';
 import uploadRoute from './routes/uploadRoute.js';
 import suppliersRoutes from './routes/supplierRoutes.js';
+import documentsRoutes from './routes/documentRoutes.js';
 
 dotenv.config();
 const app = express();
@@ -75,6 +76,8 @@ app.use('/api/users', usersRoutes);
 // Notes + Uploads
 app.use('/api/notes', notesRoutes);
 app.use('/api/upload', uploadRoute);
+
+app.use('/api/documents', documentsRoutes);
 
 // Error handler
 app.use((err, req, res, next) => {
