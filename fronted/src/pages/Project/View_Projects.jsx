@@ -94,8 +94,14 @@ useEffect(() => {
   const { user, loading: authLoading } = useAuth();
 
   const navigate = useNavigate();
-
 const generatePrint = async () => {
+  const printWindow = window.open("", "_blank");
+
+  if (!printWindow) {
+    toast.error("הדפדפן חסם את חלון ההדפסה — תאפשר פופאפים");
+    return;
+  }
+
   try {
     const res = await api.post("/documents/collect", {
       projectId: selectedProject || null,
@@ -104,78 +110,274 @@ const generatePrint = async () => {
       toDate: toDate || null,
     });
 
-const docs = res.data.documents || [];
-    console.log("docs ", docs);
+    const docs = res.data?.documents;
     if (!docs || docs.length === 0) {
       toast.error("לא נמצאו מסמכים להדפסה");
+      printWindow.close();
       return;
     }
 
-    // פתיחת חלון חדש
-    const printWindow = window.open("", "_blank");
+    // חישוב סכום כולל
+    const totalSum = docs.reduce((sum, d) => sum + (d.total || 0), 0);
 
-    // כתיבת HTML
     printWindow.document.write(`
       <html dir="rtl" lang="he">
-        <head>
-          <title>הדפסת מסמכים</title>
-          <style>
-            body { font-family: Arial, sans-serif; padding: 20px; }
-            h1 { text-align: center; margin-bottom: 30px; }
-            table { width: 100%; border-collapse: collapse; margin-top: 20px; }
-            th, td { border: 1px solid #ccc; padding: 10px; font-size: 14px; }
-            th { background: #f4f4f4; }
-          </style>
-        </head>
-        <body>
-          <h1>דוח מסמכים מרוכז</h1>
+      <head>
+        <meta charset="UTF-8">
+        <title>הדפסת מסמכים - ניהולון</title>
+        <style>
+          * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+          }
 
-          <table>
-            <thead>
+          body {
+            font-family: 'Segoe UI', Tahoma, Arial, sans-serif;
+            padding: 30px;
+            background: #fff;
+            color: #1f2937;
+          }
+
+          .header {
+            text-align: center;
+            margin-bottom: 40px;
+            padding-bottom: 20px;
+            border-bottom: 3px solid #f97316;
+          }
+
+          .logo {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 12px;
+            margin-bottom: 15px;
+          }
+
+          .logo-text {
+            font-size: 36px;
+            font-weight: 700;
+            color: #6b7280;
+            letter-spacing: 2px;
+          }
+
+          .logo-icon {
+            width: 45px;
+            height: 45px;
+            background: #f97316;
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            position: relative;
+          }
+
+          .logo-icon::before {
+            content: "⚙";
+            font-size: 28px;
+            color: white;
+          }
+
+          .header h1 {
+            font-size: 24px;
+            color: #1f2937;
+            margin-bottom: 10px;
+            font-weight: 600;
+          }
+
+          .header .date {
+            color: #6b7280;
+            font-size: 14px;
+          }
+
+          .filters {
+            background: #fff7ed;
+            padding: 15px 20px;
+            border-radius: 8px;
+            margin-bottom: 30px;
+            border-right: 4px solid #f97316;
+          }
+
+          .filters h3 {
+            color: #f97316;
+            margin-bottom: 10px;
+            font-size: 16px;
+          }
+
+          .filters p {
+            color: #6b7280;
+            font-size: 14px;
+            margin: 5px 0;
+          }
+
+          table {
+            width: 100%;
+            border-collapse: collapse;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+          }
+
+          thead {
+            background: linear-gradient(135deg, #f97316 0%, #fb923c 100%);
+            color: white;
+          }
+
+          thead th {
+            padding: 15px 12px;
+            font-weight: 600;
+            font-size: 14px;
+            text-align: right;
+            letter-spacing: 0.3px;
+          }
+
+          tbody tr {
+            border-bottom: 1px solid #e5e7eb;
+            transition: background 0.2s;
+          }
+
+          tbody tr:nth-child(even) {
+            background: #f9fafb;
+          }
+
+          tbody tr:hover {
+            background: #fff7ed;
+          }
+
+          tbody td {
+            padding: 12px;
+            font-size: 13px;
+            color: #374151;
+          }
+
+          .total-row {
+            background: #fff7ed !important;
+            font-weight: 700;
+            border-top: 2px solid #f97316;
+          }
+
+          .total-row td {
+            padding: 15px 12px;
+            font-size: 16px;
+            color: #1f2937;
+          }
+
+          .footer {
+            margin-top: 40px;
+            text-align: center;
+            color: #9ca3af;
+            font-size: 12px;
+            padding-top: 20px;
+            border-top: 1px solid #e5e7eb;
+          }
+
+          @media print {
+            body {
+              padding: 20px;
+            }
+            
+            .filters {
+              break-inside: avoid;
+            }
+
+            table {
+              page-break-inside: auto;
+            }
+
+            tr {
+              page-break-inside: avoid;
+              page-break-after: auto;
+            }
+
+            thead {
+              display: table-header-group;
+            }
+          }
+        </style>
+      </head>
+      <body>
+        <div class="header">
+          <div class="logo">
+            <div class="logo-icon"></div>
+            <div class="logo-text">ניהולון</div>
+          </div>
+          <h1>📋 דוח מסמכים</h1>
+          <div class="date">תאריך הפקה: ${new Date().toLocaleDateString("he-IL", {
+            year: "numeric",
+            month: "long",
+            day: "numeric",
+            hour: "2-digit",
+            minute: "2-digit"
+          })}</div>
+        </div>
+
+        ${
+          selectedProject || selectedSupplier || fromDate || toDate
+            ? `
+        <div class="filters">
+          <h3>🔍 פילטרים</h3>
+          ${selectedProject ? `<p><strong>פרויקט:</strong> ${selectedProject}</p>` : ""}
+          ${selectedSupplier ? `<p><strong>ספק:</strong> ${selectedSupplier}</p>` : ""}
+          ${fromDate ? `<p><strong>מתאריך:</strong> ${new Date(fromDate).toLocaleDateString("he-IL")}</p>` : ""}
+          ${toDate ? `<p><strong>עד תאריך:</strong> ${new Date(toDate).toLocaleDateString("he-IL")}</p>` : ""}
+        </div>
+        `
+            : ""
+        }
+
+        <table>
+          <thead>
+            <tr>
+              <th>מס׳</th>
+              <th>סוג מסמך</th>
+              <th>מספר מסמך</th>
+              <th>פרויקט</th>
+              <th>ספק</th>
+              <th>תאריך</th>
+              <th>סכום</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${docs
+              .map(
+                (d, idx) => `
               <tr>
-                <th>סוג</th>
-                <th>מספר</th>
-                <th>פרויקט</th>
-                <th>ספק</th>
-                <th>תאריך</th>
-                <th>סכום</th>
-              </tr>
-            </thead>
-            <tbody>
-              ${docs
-                .map((d) => {
-                  console.log(d)
-                  return `
-                    <tr>
-                      <td>${d.type || "-"}</td>
-                      <td>${d.number || "-"}</td>
-                      <td>${d.project || "-"}</td>
-                      <td>${d.supplier.name || "-"}</td>
-                      <td>${new Date(d.date).toLocaleDateString("he-IL")}</td>
-                      <td>${d.total ? d.total.toLocaleString("he-IL") + " ₪" : "-"}</td>
-                    </tr>
-                  `;
-                })
-                .join("")}
-            </tbody>
-          </table>
+                <td>${idx + 1}</td>
+                <td>${d.type}</td>
+                <td>${d.number}</td>
+                <td>${d.project || "-"}</td>
+                <td>${d.supplier.name || "-"}</td>
+                <td>${new Date(d.date).toLocaleDateString("he-IL")}</td>
+                <td>₪${(d.total || 0).toLocaleString("he-IL")}</td>
+              </tr>`
+              )
+              .join("")}
+            <tr class="total-row">
+              <td colspan="6" style="text-align: left;">סה״כ כולל:</td>
+              <td>₪${totalSum.toLocaleString("he-IL")}</td>
+            </tr>
+          </tbody>
+        </table>
 
-          <script>
-            window.print();
-            setTimeout(() => window.close(), 500);
-          </script>
-        </body>
+        <div class="footer">
+          <p>מסמך זה הופק אוטומטית ממערכת ניהולון ⚙ | נכון לתאריך ${new Date().toLocaleDateString("he-IL")}</p>
+        </div>
+
+        <script>
+          window.onload = () => {
+            setTimeout(() => window.print(), 250);
+          };
+        </script>
+      </body>
       </html>
     `);
 
     printWindow.document.close();
-    setShowPrintModal(false);
-
-  } catch (err) {
-    console.error(err);
-    toast.error("שגיאה בשליפת המסמכים");
+  } catch (e) {
+    console.error(e);
+    toast.error("שגיאה בהפקת ההדפסה");
+    printWindow.close();
   }
 };
+
 
 
 

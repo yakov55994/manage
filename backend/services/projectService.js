@@ -71,13 +71,39 @@ export default {
   },
 
   async updateProject(user, projectId, data) {
-    return Project.findByIdAndUpdate(projectId, data, { new: true });
-  },
+  const project = await Project.findById(projectId);
+  if (!project) throw new Error("פרויקט לא נמצא");
 
-  async deleteProject(user, projectId) {
-    if (user.role !== "admin")
-      throw new Error("אין הרשאה");
+  // אם משנים את השם - לעדכן בכל המקומות
+  if (data.name && data.name !== project.name) {
+    // עדכון projectName בכל ההזמנות
+    await Order.updateMany(
+      { projectId: projectId },
+      { $set: { projectName: data.name } }
+    );
 
-    return Project.findByIdAndDelete(projectId);
+    // עדכון projectName בכל החשבוניות
+    await Invoice.updateMany(
+      { projectId: projectId },
+      { $set: { projectName: data.name } }
+    );
   }
+
+  // עדכון הפרויקט עצמו
+  return Project.findByIdAndUpdate(projectId, data, { new: true });
+},
+
+async deleteProject(user, projectId) {
+  if (user.role !== "admin")
+    throw new Error("אין הרשאה");
+
+  const project = await Project.findById(projectId);
+  if (!project) throw new Error("פרויקט לא נמצא");
+
+  // השתמש ב-deleteOne במקום findByIdAndDelete כדי להפעיל את ה-middleware
+  // ה-middleware בפרויקט כבר דואג למחיקת החשבוניות וההזמנות
+  await project.deleteOne();
+
+  return project;
+}
 };

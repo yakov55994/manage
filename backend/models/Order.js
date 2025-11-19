@@ -32,7 +32,13 @@ const orderSchema = new mongoose.Schema({
       publicId: String,
       resourceType: String
     }
-  ]
+  ],
+  supplierId: {
+  type: mongoose.Schema.Types.ObjectId,
+  ref: "Supplier",
+  required: false
+},
+
 });
 
 // 💡 אין צורך ב-pre-save כפילות כי אנחנו עושים זאת ב-service — הרבה יותר נכון!

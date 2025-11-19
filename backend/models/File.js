@@ -5,7 +5,13 @@ const fileSchema = new mongoose.Schema({
   url: String,
   folder: String,
   type: String,
-  size: Number
+  size: Number,
+  supplierId: {
+  type: mongoose.Schema.Types.ObjectId,
+  ref: "Supplier",
+  required: false
+},
+
 });
 
 const File = mongoose.model("File", fileSchema);
