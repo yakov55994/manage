@@ -18,6 +18,20 @@ function canEditProject(user, projectId) {
 
 export default {
 
+  async searchInvoices (query) {
+  const regex = new RegExp(query, "i");
+
+  return Invoice.find({
+    $or: [
+      { invoiceNumber: regex },
+      { projectName: regex },
+      { invitingName: regex },
+      { detail: regex },
+      { status: regex },
+    ],
+  }).limit(50);
+},
+
   async getAllInvoices(user) {
     if (user.role === "admin") {
       return Invoice.find().sort({ createdAt: -1 });

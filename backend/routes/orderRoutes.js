@@ -5,6 +5,8 @@ import { checkAccess } from "../middleware/auth.js";
 
 const router = express.Router();
 
+router.get("/search", protect, orderController.searchOrders);
+
 // 🟢 קודם ROUTES שיש להם שמות ייחודיים
 router.post(
   "/bulk",

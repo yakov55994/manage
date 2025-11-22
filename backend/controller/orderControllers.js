@@ -4,6 +4,17 @@ import { sendError } from "../utils/sendError.js";
 
 const orderController = {
 
+  async searchOrders (req, res) {
+  try {
+    const q = req.query.query || "";
+    const results = await orderService.searchOrders(q);
+    res.json(results);
+  } catch (e) {
+    console.error("❌ searchOrders ERROR:", e);
+    res.status(500).json({ message: "Search failed" });
+  }
+},
+
   // ✔ שליפה מלאה (שימוש פנימי בלבד)
   async getAllOrdersWithoutRestrictions(req, res) {
     try {

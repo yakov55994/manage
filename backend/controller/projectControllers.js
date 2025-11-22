@@ -6,6 +6,18 @@ import { sendError } from "../utils/sendError.js";
 
 const projectController = {
 
+  async searchProjects (req, res) {
+    try {
+    const q = req.query.query || "";
+    const results = await projectService.searchProjects(q);
+    res.json(results);
+  } catch (e) {
+    console.error("❌ searchProjects ERROR:", e);
+    res.status(500).json({ message: "Search failed" });
+  }
+},
+
+
   async getAllProjects(req, res) {
     try {
       const projects = await projectService.getAllProjects(req.user);

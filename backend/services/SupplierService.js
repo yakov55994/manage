@@ -16,6 +16,20 @@ function canEdit(user, projectId) {
 
 export default {
 
+  async searchSuppliers (query) {
+  const regex = new RegExp(query, "i");
+
+  return Supplier.find({
+    $or: [
+      { name: regex },
+      { address: regex },
+      { email: regex },
+      { phone: regex },
+      { "bankDetails.bankName": regex },
+    ],
+  }).limit(50);
+},
+
   async getAllSuppliers(user) {
     if (user.role === "admin") return Supplier.find();
 

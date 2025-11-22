@@ -3,6 +3,18 @@ import invoiceService from "../services/invoiceService.js";
 import { sendError } from "../utils/sendError.js";
 
 const invoiceController = {
+
+  async searchInvoices (req, res) {
+  try {
+    const q = req.query.query || "";
+    const results = await invoiceService.searchInvoices(q);
+    res.json(results);
+  } catch (e) {
+    console.error("❌ searchInvoices ERROR:", e);
+    res.status(500).json({ message: "Search failed" });
+  }
+},
+
   async getInvoices(req, res) {
     try {
       const data = await invoiceService.getAllInvoices(req.user);

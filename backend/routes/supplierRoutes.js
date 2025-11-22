@@ -5,6 +5,8 @@ import { checkAccess } from "../middleware/auth.js";
 
 const router = express.Router();
 
+router.get("/search", protect, supplierController.searchSuppliers);
+
 router.get(
   "/",
   protect,

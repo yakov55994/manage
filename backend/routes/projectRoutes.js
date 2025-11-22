@@ -5,6 +5,8 @@ import { can } from "../middleware/auth.js";
 
 const router = express.Router();
 
+router.get("/search", protect, projectController.searchProjects);  
+
 router.get("/",
   protect,
   projectController.getAllProjects // כבר מסודר לפי הרשאות

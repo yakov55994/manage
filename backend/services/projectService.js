@@ -5,6 +5,19 @@ import Project from "../models/Project.js";
 
 export default {
 
+  async searchProjects (query) {
+  const regex = new RegExp(query, "i");
+
+  return Project.find({
+    $or: [
+      { name: regex },
+      { invitingName: regex },
+      { Contact_person: regex },
+    ],
+  }).limit(50);
+},
+
+
   async getAllProjects(user) {
     console.log("PERMISSIONS:", user.permissions);
     let query = {};

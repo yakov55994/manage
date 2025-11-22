@@ -5,6 +5,9 @@ import { checkAccess } from "../middleware/auth.js";
 
 const router = express.Router();
 
+
+router.get("/search", protect, invoiceController.searchInvoices);
+
 // 🟢 תמיד קודם ROUTES עם שמות!
 router.get(
   "/check/duplicate",

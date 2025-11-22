@@ -16,6 +16,18 @@ function canEdit(user, projectId) {
 
 export default {
 
+  async searchOrders (query) {
+  const regex = new RegExp(query, "i");
+
+  return Order.find({
+    $or: [
+      { projectName: regex },
+      { invitingName: regex },
+      { detail: regex },
+      { status: regex },
+    ],
+  }).limit(50);
+},
   async getOrders(user) {
     if (user.role === "admin") return Order.find();
 
