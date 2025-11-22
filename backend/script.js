@@ -2,13 +2,13 @@
 import mongoose from 'mongoose';
 import User from './models/User.js';
 
-mongoose.connect('mongodb+srv://yakov1020:Yakov7470893@management-app.qrrmy.mongodb.net/?retryWrites=true&w=majority&appName=Management-App');
+mongoose.connect('mongodb+srv://yakov1:Yakov7470893@cluster0.5spt3.mongodb.net/?appName=Cluster0');
 
 async function createAdmin() {
   try {
     const admin = new User({
-      username: 'admin',
-      password: '123456', // תשתנה אחרי ההתחברות הראשונה!
+      username: 'מנהל',
+      password: '123', // תשתנה אחרי ההתחברות הראשונה!
       email: 'admin@example.com',
       role: 'admin',
       isActive: true
