@@ -1,48 +1,54 @@
+// services/invoiceService.js
 import Invoice from "../models/Invoice.js";
 import Project from "../models/Project.js";
 
 function canViewProject(user, projectId) {
   if (user.role === "admin") return true;
-  return user.permissions.some(p => String(p.project) === String(projectId));
+  return user.permissions.some(
+    (p) => String(p.project) === String(projectId)
+  );
 }
 
 function canEditProject(user, projectId) {
   if (user.role === "admin") return true;
 
   return user.permissions.some(
-    p =>
+    (p) =>
       String(p.project) === String(projectId) &&
       p.modules?.invoices === "edit"
   );
 }
 
 export default {
+  // 🔎 חיפוש
+  async searchInvoices(query) {
+    const regex = new RegExp(query, "i");
 
-  async searchInvoices (query) {
-  const regex = new RegExp(query, "i");
+    return Invoice.find({
+      $or: [
+        { invoiceNumber: regex },
+        { projectName: regex },
+        { invitingName: regex },
+        { detail: regex },
+        { status: regex },
+      ],
+    }).limit(50);
+  },
 
-  return Invoice.find({
-    $or: [
-      { invoiceNumber: regex },
-      { projectName: regex },
-      { invitingName: regex },
-      { detail: regex },
-      { status: regex },
-    ],
-  }).limit(50);
-},
-
+  // כל החשבוניות לפי הרשאות
   async getAllInvoices(user) {
     if (user.role === "admin") {
       return Invoice.find().sort({ createdAt: -1 });
     }
 
-    const allowedProjects = user.permissions.map(p => p.project);
+    const allowedProjects = user.permissions.map((p) => p.project);
 
-    return Invoice.find({ projectId: { $in: allowedProjects } })
-      .sort({ createdAt: -1 });
+    return Invoice.find({ projectId: { $in: allowedProjects } }).sort({
+      createdAt: -1,
+    });
   },
 
+  // לפי פרויקט
   async getInvoicesByProject(user, projectId) {
     if (!canViewProject(user, projectId))
       throw new Error("אין לך הרשאה לפרויקט זה");
@@ -50,6 +56,7 @@ export default {
     return Invoice.find({ projectId }).sort({ createdAt: -1 });
   },
 
+  // לפי ID
   async getInvoiceById(user, invoiceId) {
     const invoice = await Invoice.findById(invoiceId);
     if (!invoice) return null;
@@ -60,9 +67,19 @@ export default {
     return invoice;
   },
 
-  // ============================
-  // ✔ יצירת חשבונית – מעלה remainingBudget מורידה budget
-  // ============================
+    async checkDuplicate(user, query) {
+      const { projectId, supplierId, invoiceNumber } = query;
+  
+      if (!projectId || !supplierId || !invoiceNumber) return false;
+  
+      return Invoice.findOne({
+        projectId,
+        supplierId,
+        invoiceNumber,
+      });
+    },
+  
+  // יצירת חשבונית — מורידה תקציב!
   async createInvoice(user, data) {
     const { projectId, sum } = data;
 
@@ -72,20 +89,24 @@ export default {
     const project = await Project.findById(projectId);
     if (!project) throw new Error("פרויקט לא נמצא");
 
-    // 🟧 חשבונית מבטלת את ההזמנה → מחזירה תקציב פנוי
-    project.remainingBudget += Number(sum);
-
-    // 🟥 ואז מורידה תקציב אמיתי
-    project.budget -= Number(sum);
-
+    // ✔ חשבונית מורידה תקציב
+    project.remainingBudget -= Number(sum);
     await project.save();
 
     return Invoice.create(data);
   },
 
-  // ============================
-  // ✔ עדכון חשבונית – להחזיר הישן, להחיל חדש
-  // ============================
+  // bulk
+  async createBulkInvoices(user, invoices) {
+    const created = [];
+    for (const data of invoices) {
+      const invoice = await this.createInvoice(user, data);
+      created.push(invoice);
+    }
+    return created;
+  },
+
+  // עדכון חשבונית
   async updateInvoice(user, invoiceId, data) {
     const invoice = await Invoice.findById(invoiceId);
     if (!invoice) throw new Error("לא נמצא");
@@ -95,13 +116,11 @@ export default {
 
     const project = await Project.findById(invoice.projectId);
 
-    // 🟧 מחזירים את הנתונים הישנים
-    project.remainingBudget -= Number(invoice.sum);
-    project.budget += Number(invoice.sum);
+    // ✔ להחזיר השפעת הישן = להוסיף אותו חזרה
+    project.remainingBudget += Number(invoice.sum);
 
-    // 🟥 מחילים את החדשים
-    project.remainingBudget += Number(data.sum);
-    project.budget -= Number(data.sum);
+    // ✔ להחיל חדש = להוריד את החדש
+    project.remainingBudget -= Number(data.sum);
 
     await project.save();
 
@@ -109,9 +128,7 @@ export default {
     return invoice.save();
   },
 
-  // ============================
-  // ✔ מחיקת חשבונית – לבצע החזרת פעולות
-  // ============================
+  // מחיקה
   async deleteInvoice(user, invoiceId) {
     const invoice = await Invoice.findById(invoiceId);
     if (!invoice) throw new Error("לא נמצא");
@@ -121,24 +138,25 @@ export default {
 
     const project = await Project.findById(invoice.projectId);
 
-    // 🟦 מבטלים השפעת חשבונית
-    project.remainingBudget -= Number(invoice.sum);
-    project.budget += Number(invoice.sum);
+    // ✔ מחיקת חשבונית = להחזיר את מה שהורידה
+    project.remainingBudget += Number(invoice.sum);
 
     await project.save();
-
     await invoice.deleteOne();
+
     return true;
   },
+
+  // העברת חשבונית בין פרויקטים
   async moveInvoice(user, invoiceId, toProjectId) {
     const invoice = await Invoice.findById(invoiceId);
     if (!invoice) throw new Error("חשבונית לא נמצאה");
 
     const fromProjectId = String(invoice.projectId);
 
-    // הרשאות
     const isAdmin = user.role === "admin";
 
+    // הרשאות
     if (!isAdmin) {
       if (!canEditProject(user, fromProjectId)) {
         throw new Error("אין הרשאה להזיז חשבונית מהפרויקט הנוכחי");
@@ -149,38 +167,36 @@ export default {
       }
     }
 
-    // פרויקטים
     const fromProject = await Project.findById(fromProjectId);
     const toProject = await Project.findById(toProjectId);
-
     if (!toProject) throw new Error("פרויקט היעד לא נמצא");
 
     const sum = Number(invoice.sum);
 
-    // =============================
-    // 🟥 1. ביטול השפעת החשבונית בפרויקט המקורי
-    // =============================
-    fromProject.remainingBudget -= sum;
-    fromProject.budget += sum;
+    // לבטל השפעה ישנה
+    fromProject.remainingBudget += sum;
+
+    // להפעיל השפעה חדשה
+    toProject.remainingBudget -= sum;
 
     await fromProject.save();
-
-    // =============================
-    // 🟩 2. החלת השפעת החשבונית בפרויקט החדש
-    // =============================
-    toProject.remainingBudget += sum;
-    toProject.budget -= sum;
-
     await toProject.save();
 
-    // =============================
-    // 🟦 3. עדכון החשבונית עצמה
-    // =============================
     invoice.projectId = toProjectId;
     invoice.projectName = toProject.name;
 
-    const updated = await invoice.save();
-    return updated;
-  }
+    return invoice.save();
+  },
 
+  // עדכון סטטוס תשלום
+  async updatePaymentStatus(user, invoiceId, data) {
+    const invoice = await Invoice.findById(invoiceId);
+    if (!invoice) throw new Error("חשבונית לא נמצאה");
+
+    if (!canEditProject(user, invoice.projectId))
+      throw new Error("אין הרשאה לעדכן סטטוס תשלום");
+
+    Object.assign(invoice, data);
+    return invoice.save();
+  },
 };
