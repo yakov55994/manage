@@ -289,6 +289,23 @@ export default function UserManagement() {
     setShowModal(true);
   };
 
+const autoFixProjectAccess = (perm) => {
+  const levels = { none: 0, view: 1, edit: 2 };
+  const maxLevel = Math.max(
+    levels[perm.modules.invoices],
+    levels[perm.modules.orders],
+    levels[perm.modules.suppliers],
+    levels[perm.modules.files]
+  );
+
+  const names = ["none", "view", "edit"];
+  return {
+    ...perm,
+    access: names[maxLevel],
+  };
+};
+
+
   // SAVE USER
   const saveUser = async (e) => {
     e.preventDefault();
@@ -298,11 +315,14 @@ export default function UserManagement() {
       email: formData.email,
       role: formData.role,
       isActive: formData.isActive,
-   permissions: formData.permissions.map((p) => ({
-  project: normalizeId(p.project),
-  access: p.access || "none",
-  modules: p.modules,
-}))
+permissions: formData.permissions.map((p) =>
+  autoFixProjectAccess({
+    project: normalizeId(p.project),
+    access: p.access,
+    modules: p.modules,
+  })
+)
+
 
     };
 

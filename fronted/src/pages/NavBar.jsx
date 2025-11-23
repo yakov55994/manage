@@ -118,10 +118,6 @@ const Sidebar = () => {
                     path: "/Notes",
                     desc: "רשימת משימות",
                   },
-                ]
-              : []),
-            ...(isAdmin
-              ? [
                   {
                     icon: ListTodo,
                     text: "ניהול משתמשים",
