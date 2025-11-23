@@ -8,7 +8,7 @@ router.get(
   "/",
   protect,
   checkAccess("supplier", "view"),
-  supplierController.getAllSuppliers
+  supplierController.getAllSuppliersWithoutRestrictions
 );
 
 router.get(
