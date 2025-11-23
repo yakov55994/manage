@@ -114,19 +114,17 @@ export function canAccessModule(user, projectId, moduleName, action) {
 
 
 export const checkAccess = (type, action) => {
-  
   return async (req, res, next) => {
     try {
-
       const user = req.user;
 
-      // 🔥 אדמין תמיד עובר
+      // 🔥 Admin always wins
       if (user.role === "admin") return next();
 
       let item;
       const id = req.params.id || req.params.projectId;
 
-      // טעינת האייטם
+      // Load correct item
       switch (type) {
         case "invoice": item = await Invoice.findById(id); break;
         case "order": item = await Order.findById(id); break;
@@ -140,7 +138,7 @@ export const checkAccess = (type, action) => {
         return res.status(404).json({ message: "לא נמצא" });
       }
 
-      // זיהוי פרויקט
+      // Detect projectId on item
       const projectId =
         item.projectId ||
         item.project ||
@@ -150,27 +148,24 @@ export const checkAccess = (type, action) => {
         return res.status(400).json({ message: "לא נמצא projectId" });
       }
 
-      // בדיקת גישה לפרויקט
+      // 1️⃣ בדיקת גישה לפרויקט
       if (!canAccessProject(user, projectId)) {
         return res.status(403).json({ message: "אין הרשאה לפרויקט" });
       }
 
-      // בדיקת גישה למודול
-    const moduleName = 
-  type === "order" ? "orders" :
-  type === "invoice" ? "invoices" :
-  type === "supplier" ? "suppliers" :
-  type === "project" ? "projects" :
-  null;
+      // 2️⃣ בדיקת מודול — רק אם יש מודול כזה
+      const moduleName =
+        type === "invoice" ? "invoices" :
+        type === "order" ? "orders" :
+        type === "supplier" ? "suppliers" :
+        null; // ❗ פרויקט — אין מודול projects
 
-if (!moduleName) {
-  return res.status(500).json({ message: "שגיאה בהרשאות" });
-}
-
-if (!canAccessModule(user, projectId, moduleName, action)) {
-  return res.status(403).json({ message: "אין הרשאה" });
-}
-
+      // If module exists → check access
+      if (moduleName) {
+        if (!canAccessModule(user, projectId, moduleName, action)) {
+          return res.status(403).json({ message: "אין הרשאה" });
+        }
+      }
 
       next();
     } catch (err) {
@@ -178,6 +173,7 @@ if (!canAccessModule(user, projectId, moduleName, action)) {
     }
   };
 };
+
 
 // המשתמש חייב שיהיה לו הרשאה לפרויקט
 export function canAccessProject(user, projectId) {
