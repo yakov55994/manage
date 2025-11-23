@@ -29,7 +29,6 @@ const CreateOrder = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [orderIndexToDelete, setOrderIndexToDelete] = useState(null);
   const [showModal, setShowModal] = useState(false);
-  const { user, isAdmin, loading: authLoading } = useAuth();
 
   const navigate = useNavigate();
 
