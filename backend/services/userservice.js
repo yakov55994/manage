@@ -25,26 +25,38 @@ export const createNewUser = async (data) => {
 
 
 export const updateUser = async (id, data) => {
+  const user = await User.findById(id);
+  if (!user) return null;
 
-  // Hash password if updated
+  // עדכון שדות רגילים
+  if (data.username) user.username = data.username;
+  if (data.email) user.email = data.email;
+  if (data.role) user.role = data.role;
+  if (data.isActive !== undefined) user.isActive = data.isActive;
+
+  // עדכון סיסמה
   if (data.password) {
-    data.password = await bcryptjs.hash(data.password, 10);
+    user.password = await bcryptjs.hash(data.password, 10);
   }
 
-  // ❗ אל תמחק/תמיר permissions
-  // אתה מקבל מה-Frontend בדיוק מה שהסכמה דורשת
+  // עדכון הרשאות — כאן הקסם:
+  if (data.permissions) {
+    user.permissions = data.permissions.map(p => ({
+      project: p.project,
+      access: p.access || "none",
+      modules: {
+        invoices: p.modules?.invoices || "none",
+        orders: p.modules?.orders || "none",
+        suppliers: p.modules?.suppliers || "none",
+        files: p.modules?.files || "none",
+      }
+    }));
+  }
 
-  const updated = await User.findByIdAndUpdate(
-    id,
-    data,
-    { new: true, runValidators: true }
-  )
-    // .populate("permissions.project", "_id name")
-
-    .select("-password");
-
-  return updated;
+  await user.save();
+  return user.toObject({ getters: true, virtuals: false });
 };
+
 
 
 export const deleteUser = async (id) => {

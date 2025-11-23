@@ -48,7 +48,6 @@ const defaultProjPerm = (projectId) => ({
   },
 });
 
-
 export default function UserManagement() {
   const { user: currentUser, isAdmin, loading: authLoading } = useAuth();
   const [users, setUsers] = useState([]);
@@ -78,27 +77,28 @@ export default function UserManagement() {
 
   // TOGGLE project
   const toggleProject = (projectId) => {
-  const id = normalizeId(projectId);
+    const id = normalizeId(projectId);
 
-  setFormData((prev) => {
-    const exists = prev.permissions.some((p) => normalizeId(p.project) === id);
+    setFormData((prev) => {
+      const exists = prev.permissions.some(
+        (p) => normalizeId(p.project) === id
+      );
 
-    if (exists) {
+      if (exists) {
+        return {
+          ...prev,
+          permissions: prev.permissions.filter(
+            (p) => normalizeId(p.project) !== id
+          ),
+        };
+      }
+
       return {
         ...prev,
-        permissions: prev.permissions.filter(
-          (p) => normalizeId(p.project) !== id
-        ),
+        permissions: [...prev.permissions, defaultProjPerm(id)],
       };
-    }
-
-    return {
-      ...prev,
-      permissions: [...prev.permissions, defaultProjPerm(id)],
-    };
-  });
-};
-
+    });
+  };
 
   // NEW: Select all filtered projects
   const selectAllProjects = () => {
@@ -178,8 +178,6 @@ export default function UserManagement() {
     };
     toast.success(messages[preset]);
   };
-
-
 
   // SET module access
   const setModuleAccess = (projectId, moduleKey, value) => {
@@ -262,68 +260,70 @@ export default function UserManagement() {
 
   // EDIT USER
   const openEdit = (user) => {
-  const normalizedPermissions = (user.permissions || []).map((p) => ({
-    project: normalizeId(p.project),
-    modules: {
-      invoices: p.modules?.invoices || "none",
-      orders: p.modules?.orders || "none",
-      suppliers: p.modules?.suppliers || "none",
-      files: p.modules?.files || "none",
-    },
-  }));
-
-  setEditingUser(user);
-
-  setFormData({
-    username: user.username,
-    password: "",
-    email: user.email || "",
-    role: user.role,
-    isActive: user.isActive,
-    permissions: normalizedPermissions,
-  });
-
-  setProjectSearch("");
-  setShowModal(true);
-};
+ const normalizedPermissions = (user.permissions || []).map((p) => ({
+  project: normalizeId(p.project),
+  access: p.access || "none",
+  modules: {
+    invoices: p.modules?.invoices || "none",
+    orders: p.modules?.orders || "none",
+    suppliers: p.modules?.suppliers || "none",
+    files: p.modules?.files || "none",
+  },
+}));
 
 
-  // SAVE USER
-const saveUser = async (e) => {
-  e.preventDefault();
+    setEditingUser(user);
 
-  const payload = {
-    username: formData.username,
-    email: formData.email,
-    role: formData.role,
-    isActive: formData.isActive,
-    permissions: formData.permissions.map((p) => ({
-      project: normalizeId(p.project),
-      modules: p.modules,
-    })),
+    setFormData({
+      username: user.username,
+      password: "",
+      email: user.email || "",
+      role: user.role,
+      isActive: user.isActive,
+      permissions: normalizedPermissions,
+    });
+
+    setProjectSearch("");
+    setShowModal(true);
   };
 
-  if (formData.password) {
-    payload.password = formData.password;
-  }
+  // SAVE USER
+  const saveUser = async (e) => {
+    e.preventDefault();
 
-  try {
-    if (editingUser) {
-      await api.put(`/users/${editingUser._id}`, payload);
-      toast.success("המשתמש עודכן בהצלחה");
-    } else {
-      await api.post(`/users`, payload);
-      toast.success("המשתמש נוצר בהצלחה");
+    const payload = {
+      username: formData.username,
+      email: formData.email,
+      role: formData.role,
+      isActive: formData.isActive,
+   permissions: formData.permissions.map((p) => ({
+  project: normalizeId(p.project),
+  access: p.access || "none",
+  modules: p.modules,
+}))
+
+    };
+
+    if (formData.password) {
+      payload.password = formData.password;
     }
 
-    setShowModal(false);
-    loadEverything();
-  } catch (err) {
-    console.error(err);
-    toast.error(err.response?.data?.message || "שגיאה בשמירת המשתמש");
-  }
-};
+    try {
+      if (editingUser) {
+        await api.put(`/users/${editingUser._id}`, payload);
+        toast.success("המשתמש עודכן בהצלחה");
+      } else {
+        await api.post(`/users`, payload);
+        toast.success("המשתמש נוצר בהצלחה");
+      }
 
+      setShowModal(false);
+      loadEverything();
+    } catch (err) {
+      console.error(err);
+      toast.error(err.response?.data?.message || "שגיאה בשמירת המשתמש");
+    }
+  };
 
   const deleteUser = async () => {
     try {
@@ -386,6 +386,24 @@ const saveUser = async (e) => {
       </div>
     );
   }
+
+  const setProjectAccess = (projectId, accessValue) => {
+  setFormData((prev) => {
+    const list = [...prev.permissions];
+    const idx = list.findIndex(
+      (p) => String(p.project) === String(projectId)
+    );
+    if (idx < 0) return prev;
+
+    list[idx] = {
+      ...list[idx],
+      access: accessValue,
+    };
+
+    return { ...prev, permissions: list };
+  });
+};
+
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-orange-50 via-amber-50 to-orange-50 p-8">
