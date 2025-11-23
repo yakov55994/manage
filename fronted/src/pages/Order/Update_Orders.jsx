@@ -286,7 +286,7 @@ const OrderEditPage = () => {
         files: uploadedFiles,
       };
 
-      await api.put(`/orders/${id}/edit`, formData);
+      await api.put(`/orders/${id}`, formData);
       toast.success("הזמנה עודכנה בהצלחה", {
         className: "sonner-toast success rtl",
       });

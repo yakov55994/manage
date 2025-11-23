@@ -675,7 +675,7 @@ const InvoicesPage = () => {
   };
 
   const handleEdit = (id) => {
-    navigate(`/invoices/${id}/edit`);
+    navigate(`/invoices/${id}`);
   };
 
   const handleView = (id) => {

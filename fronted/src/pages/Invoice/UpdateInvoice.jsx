@@ -398,7 +398,7 @@ const InvoiceEditPage = () => {
         paymentMethod: paid === "כן" ? paymentMethod : "",
       };
 
-      const res = await api.put(`/invoices/${id}/edit`, formData);
+      const res = await api.put(`/invoices/${id}`, formData);
 
       toast.success("החשבונית עודכנה בהצלחה!", {
         className: "sonner-toast success rtl",

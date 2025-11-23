@@ -183,7 +183,7 @@ const AppContent = () => {
               }
             />
             <Route
-              path="/invoices/:id/edit"
+              path="/invoices/:id"
               element={
                 <ProtectedRoute>
                   <UpdateInvoice />
@@ -191,7 +191,7 @@ const AppContent = () => {
               }
             />
             <Route
-              path="orders/:id/edit"
+              path="orders/:id"
               element={
                 <ProtectedRoute>
                   <UpdateOrder />
