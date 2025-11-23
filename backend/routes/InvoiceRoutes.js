@@ -4,70 +4,70 @@ import invoiceController from "../controller/invoiceControllers.js";
 
 const router = express.Router();
 
-// ============ SEARCH ============
+// חיפוש
 router.get("/search", protect, invoiceController.searchInvoices);
 
-// ============ CHECK DUPLICATE ============
+// בדיקת כפילות
 router.get(
   "/check/duplicate",
   protect,
-  checkAccess("invoices", "view"),
+  checkAccess("invoice", "view"),
   invoiceController.checkDuplicate
 );
 
-// ============ GET ALL ============
+// כל החשבוניות לפי הרשאות
 router.get(
   "/",
   protect,
-  checkAccess("invoices", "view"),
+  checkAccess("invoice", "view"),
   invoiceController.getInvoices
 );
 
-// ============ GET BY ID ============
+// חשבונית לפי ID
 router.get(
   "/:invoiceId",
   protect,
-  checkAccess("invoices", "view"),
+  checkAccess("invoice", "view"),
   invoiceController.getInvoiceById
 );
 
-// ============ CREATE ============
+// יצירה
 router.post(
   "/",
   protect,
-  checkAccess("invoices", "edit"),
+  checkAccess("invoice", "edit"),
   invoiceController.createInvoice
 );
 
-// ============ UPDATE ============
+// עדכון
 router.put(
   "/:invoiceId",
   protect,
-  checkAccess("invoices", "edit"),
+  checkAccess("invoice", "edit"),
   invoiceController.updateInvoice
 );
 
-// ============ UPDATE STATUS ============
+// עדכון סטטוס תשלום
 router.put(
   "/:invoiceId/status",
   protect,
-  checkAccess("invoices", "edit"),
+  checkAccess("invoice", "edit"),
   invoiceController.updatePaymentStatus
 );
 
-// ============ MOVE ============
+// העברה בין פרויקטים
 router.put(
   "/:invoiceId/move",
   protect,
-  checkAccess("invoices", "edit"),
+  checkAccess("invoice", "edit"),
   invoiceController.moveInvoice
 );
 
-// ============ DELETE ============
+// מחיקה
 router.delete(
   "/:invoiceId",
   protect,
-  checkAccess("invoices", "edit"),
+  checkAccess("invoice", "edit"),
   invoiceController.deleteInvoice
 );
 

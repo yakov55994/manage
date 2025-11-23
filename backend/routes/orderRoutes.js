@@ -4,14 +4,14 @@ import orderController from "../controller/orderControllers.js";
 
 const router = express.Router();
 
-// 🔍 חיפוש
+// 🔍 חיפוש הזמנות
 router.get("/search", protect, orderController.searchOrders);
 
-// כל ההזמנות למשתמש לפי הרשאות
+// כל ההזמנות למשתמש (לפי permissions)
 router.get(
   "/",
   protect,
-  checkAccess("orders", "view"),
+  checkAccess("order", "view"),
   orderController.getOrders
 );
 
@@ -19,31 +19,31 @@ router.get(
 router.get(
   "/:orderId",
   protect,
-  checkAccess("orders", "view"),
+  checkAccess("order", "view"),
   orderController.getOrderById
 );
 
-// יצירה
+// יצירת הזמנה
 router.post(
   "/",
   protect,
-  checkAccess("orders", "edit"),
+  checkAccess("order", "edit"),
   orderController.createOrder
 );
 
-// עדכון
+// עדכון הזמנה
 router.put(
   "/:orderId",
   protect,
-  checkAccess("orders", "edit"),
+  checkAccess("order", "edit"),
   orderController.updateOrder
 );
 
-// סטטוס תשלום
+// עדכון סטטוס תשלום
 router.put(
   "/:orderId/status",
   protect,
-  checkAccess("orders", "edit"),
+  checkAccess("order", "edit"),
   orderController.updatePaymentStatus
 );
 
@@ -51,7 +51,7 @@ router.put(
 router.delete(
   "/:orderId",
   protect,
-  checkAccess("orders", "edit"),
+  checkAccess("order", "edit"),
   orderController.deleteOrder
 );
 

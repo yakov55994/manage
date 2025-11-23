@@ -1,41 +1,22 @@
 import express from "express";
 import { protect } from "../middleware/auth.js";
-import supplierController from "../controller/SupplierController.js";
-import { checkAccess } from "../middleware/auth.js";
+import supplierController from "../controller/supplierControllers.js";
 
 const router = express.Router();
 
-router.get("/search", protect, supplierController.searchSuppliers);
+// כל הספקים – זמין לכל משתמש מחובר
+router.get("/", protect, supplierController.getAllSuppliers);
 
-router.get(
-  "/",
-  protect,
-  supplierController.getSuppliers
-);
+// ספק בודד (אם תרצה future permissions)
+router.get("/:supplierId", protect, supplierController.getSupplierById);
 
-router.get("/:id",
-  protect,
-  checkAccess("supplier", "view"),
-  supplierController.getSupplierById
-);
+// הוספת ספק (רק אדמין)
+router.post("/", protect, supplierController.createSupplier);
 
-router.post("/",
-  protect,
-  checkAccess("supplier", "edit"),
-  supplierController.createSupplier
-);
+// עדכון ספק (רק אדמין)
+router.put("/:supplierId", protect, supplierController.updateSupplier);
 
-router.put("/:id",
-  protect,
-  checkAccess("supplier", "edit"),
-  supplierController.updateSupplier
-);
-
-router.delete("/:id",
-  protect,
-  checkAccess("supplier", "edit"),
-  supplierController.deleteSupplier
-);
-
+// מחיקה (רק אדמין)
+router.delete("/:supplierId", protect, supplierController.deleteSupplier);
 
 export default router;
