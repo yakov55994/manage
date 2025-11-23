@@ -4,14 +4,13 @@ import invoiceController from "../controller/invoiceControllers.js";
 
 const router = express.Router();
 
-// חיפוש
+// חיפוש חשבוניות
 router.get("/search", protect, invoiceController.searchInvoices);
 
-// בדיקת כפילות
+// בדיקת כפילות – לא לפי invoiceId ולכן לא צריך checkAccess
 router.get(
   "/check/duplicate",
   protect,
-  checkAccess("invoice", "view"),
   invoiceController.checkDuplicate
 );
 

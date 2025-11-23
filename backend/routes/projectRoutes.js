@@ -1,8 +1,7 @@
 import express from "express";
 import {
+  checkAccess,
   protect,
-  requireAdmin,
-  requireProjectAccess
 } from "../middleware/auth.js";
 
 import projectController from "../controller/projectControllers.js";
@@ -19,7 +18,7 @@ router.get("/", protect, projectController.getAllProjects);
 router.get(
   "/:projectId",
   protect,
-  requireProjectAccess("view"),
+  checkAccess("project", "view"),
   projectController.getProjectById
 );
 
@@ -27,7 +26,6 @@ router.get(
 router.post(
   "/",
   protect,
-  requireAdmin,
   projectController.createProject
 );
 
@@ -35,7 +33,7 @@ router.post(
 router.put(
   "/:projectId",
   protect,
-  requireProjectAccess("edit"),
+  checkAccess("project", "edit"),
   projectController.updateProject
 );
 
@@ -43,7 +41,6 @@ router.put(
 router.delete(
   "/:projectId",
   protect,
-  requireAdmin,
   projectController.deleteProject
 );
 

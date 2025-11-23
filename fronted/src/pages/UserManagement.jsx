@@ -40,14 +40,15 @@ const normalizeId = (id) => String(id?._id || id || "");
 
 const defaultProjPerm = (projectId) => ({
   project: normalizeId(projectId),
-  access: "none", // ← ← ← זה הסעיף שחסר ומחרבן הכול
+  access: "view", // כללית
   modules: {
-    invoices: "none",
-    orders: "none",
-    suppliers: "none",
-    files: "none",
-  },
+    invoices: "view",
+    orders: "view",
+    suppliers: "view",
+    files: "view",
+  }
 });
+
 
 export default function UserManagement() {
   const { user: currentUser, isAdmin, loading: authLoading } = useAuth();
