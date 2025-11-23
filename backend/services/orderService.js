@@ -55,18 +55,26 @@ export default {
     return order;
   },
 async createBulkOrders(user, orders) {
+
   const normalizeId = (val) => {
-    return val?._id ? String(val._id) : String(val);
+    if (!val) return "";
+    if (typeof val === "string") return val;
+    if (val._id) return String(val._id);
+    return String(val);
   };
 
   const created = [];
 
   for (const data of orders) {
 
-    const allowed = user.permissions.map(p => normalizeId(p.project));
+    const allowed = user.permissions.map(
+      (p) => normalizeId(p.project)
+    );
 
-    if (!allowed.includes(normalizeId(data.projectId))) {
-      throw new Error("אין הרשאה לפרויקט");
+    const userProjectId = normalizeId(data.projectId);
+
+    if (!allowed.includes(userProjectId)) {
+      throw new Error(`אין הרשאה לפרויקט ${userProjectId}`);
     }
 
     const project = await Project.findById(data.projectId);
@@ -78,6 +86,7 @@ async createBulkOrders(user, orders) {
 
   return created;
 },
+
   async createOrder(user, data) {
     if (user.role !== "admin") {
       const allowed = user.permissions.map(
