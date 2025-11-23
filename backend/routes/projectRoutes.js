@@ -1,5 +1,6 @@
 import express from "express";
 import {
+  checkAccess,
   protect,
   requireAdmin,
 } from "../middleware/auth.js";
