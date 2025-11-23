@@ -1,7 +1,10 @@
 import Order from "../models/Order.js";
 import Project from "../models/Project.js";
 
+
+
 export default {
+
 
   async searchOrders(query) {
     const regex = new RegExp(query, "i");
@@ -51,13 +54,18 @@ export default {
 
     return order;
   },
-  async createBulkOrders(user, orders) {
+async createBulkOrders(user, orders) {
+  const normalizeId = (val) => {
+    return val?._id ? String(val._id) : String(val);
+  };
+
   const created = [];
 
   for (const data of orders) {
 
-    const allowed = user.permissions.map(p => String(p.project));
-    if (!allowed.includes(String(data.projectId))) {
+    const allowed = user.permissions.map(p => normalizeId(p.project));
+
+    if (!allowed.includes(normalizeId(data.projectId))) {
       throw new Error("אין הרשאה לפרויקט");
     }
 
@@ -70,7 +78,6 @@ export default {
 
   return created;
 },
-
   async createOrder(user, data) {
     if (user.role !== "admin") {
       const allowed = user.permissions.map(
