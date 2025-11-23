@@ -55,7 +55,6 @@ export default {
     return order;
   },
 async createBulkOrders(user, orders) {
-
   const normalizeId = (val) => {
     if (!val) return "";
     if (typeof val === "string") return val;
@@ -66,15 +65,17 @@ async createBulkOrders(user, orders) {
   const created = [];
 
   for (const data of orders) {
+    // ✅ אם המשתמש הוא admin - אין צורך בבדיקת הרשאות
+    if (user.role !== "admin") {
+      const allowed = user.permissions.map(
+        (p) => normalizeId(p.project)
+      );
 
-    const allowed = user.permissions.map(
-      (p) => normalizeId(p.project)
-    );
+      const userProjectId = normalizeId(data.projectId);
 
-    const userProjectId = normalizeId(data.projectId);
-
-    if (!allowed.includes(userProjectId)) {
-      throw new Error(`אין הרשאה לפרויקט ${userProjectId}`);
+      if (!allowed.includes(userProjectId)) {
+        throw new Error(`אין הרשאה לפרויקט ${userProjectId}`);
+      }
     }
 
     const project = await Project.findById(data.projectId);
