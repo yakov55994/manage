@@ -31,6 +31,14 @@ router.post(
   orderController.createOrder
 );
 
+router.post(
+  "/bulk",
+  protect,
+  checkAccess("order", "edit"),
+  orderController.createBulkOrders
+);
+
+
 // עדכון הזמנה
 router.put(
   "/:orderId",

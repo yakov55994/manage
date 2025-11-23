@@ -51,6 +51,25 @@ export default {
 
     return order;
   },
+  async createBulkOrders(user, orders) {
+  const created = [];
+
+  for (const data of orders) {
+
+    const allowed = user.permissions.map(p => String(p.project));
+    if (!allowed.includes(String(data.projectId))) {
+      throw new Error("אין הרשאה לפרויקט");
+    }
+
+    const project = await Project.findById(data.projectId);
+    if (!project) throw new Error("פרויקט לא נמצא");
+
+    const order = await Order.create(data);
+    created.push(order);
+  }
+
+  return created;
+},
 
   async createOrder(user, data) {
     if (user.role !== "admin") {

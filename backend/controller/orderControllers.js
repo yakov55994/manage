@@ -39,6 +39,14 @@ const orderController = {
     }
   },
 
+  async createBulkOrders(req, res) {
+  try {
+    const orders = await orderService.createBulkOrders(req.user, req.body.orders);
+    res.json({ success: true, data: orders });
+  } catch (e) {
+    sendError(res, e);
+  }
+},
   async createOrder(req, res) {
     try {
       const order = await orderService.createOrder(req.user, req.body);
