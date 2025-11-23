@@ -40,7 +40,7 @@ const normalizeId = (id) => String(id?._id || id || "");
 
 const defaultProjPerm = (projectId) => ({
   project: normalizeId(projectId),
-  access: "none",   // ← ← ← זה הסעיף שחסר ומחרבן הכול
+  access: "none", // ← ← ← זה הסעיף שחסר ומחרבן הכול
   modules: {
     invoices: "none",
     orders: "none",
@@ -48,7 +48,6 @@ const defaultProjPerm = (projectId) => ({
     files: "none",
   },
 });
-
 
 export default function UserManagement() {
   const { user: currentUser, isAdmin, loading: authLoading } = useAuth();
@@ -262,17 +261,16 @@ export default function UserManagement() {
 
   // EDIT USER
   const openEdit = (user) => {
- const normalizedPermissions = (user.permissions || []).map((p) => ({
-  project: normalizeId(p.project),
-  access: p.access || "none",
-  modules: {
-    invoices: p.modules?.invoices || "none",
-    orders: p.modules?.orders || "none",
-    suppliers: p.modules?.suppliers || "none",
-    files: p.modules?.files || "none",
-  },
-}));
-
+    const normalizedPermissions = (user.permissions || []).map((p) => ({
+      project: normalizeId(p.project),
+      access: p.access || "none",
+      modules: {
+        invoices: p.modules?.invoices || "none",
+        orders: p.modules?.orders || "none",
+        suppliers: p.modules?.suppliers || "none",
+        files: p.modules?.files || "none",
+      },
+    }));
 
     setEditingUser(user);
 
@@ -289,22 +287,21 @@ export default function UserManagement() {
     setShowModal(true);
   };
 
-const autoFixProjectAccess = (perm) => {
-  const levels = { none: 0, view: 1, edit: 2 };
-  const maxLevel = Math.max(
-    levels[perm.modules.invoices],
-    levels[perm.modules.orders],
-    levels[perm.modules.suppliers],
-    levels[perm.modules.files]
-  );
+  const autoFixProjectAccess = (perm) => {
+    const levels = { none: 0, view: 1, edit: 2 };
+    const maxLevel = Math.max(
+      levels[perm.modules.invoices],
+      levels[perm.modules.orders],
+      levels[perm.modules.suppliers],
+      levels[perm.modules.files]
+    );
 
-  const names = ["none", "view", "edit"];
-  return {
-    ...perm,
-    access: names[maxLevel],
+    const names = ["none", "view", "edit"];
+    return {
+      ...perm,
+      access: names[maxLevel],
+    };
   };
-};
-
 
   // SAVE USER
   const saveUser = async (e) => {
@@ -315,15 +312,13 @@ const autoFixProjectAccess = (perm) => {
       email: formData.email,
       role: formData.role,
       isActive: formData.isActive,
-permissions: formData.permissions.map((p) =>
-  autoFixProjectAccess({
-    project: normalizeId(p.project),
-    access: p.access,
-    modules: p.modules,
-  })
-)
-
-
+      permissions: formData.permissions.map((p) =>
+        autoFixProjectAccess({
+          project: normalizeId(p.project),
+          access: p.access,
+          modules: p.modules,
+        })
+      ),
     };
 
     if (formData.password) {
@@ -410,22 +405,21 @@ permissions: formData.permissions.map((p) =>
   }
 
   const setProjectAccess = (projectId, accessValue) => {
-  setFormData((prev) => {
-    const list = [...prev.permissions];
-    const idx = list.findIndex(
-      (p) => String(p.project) === String(projectId)
-    );
-    if (idx < 0) return prev;
+    setFormData((prev) => {
+      const list = [...prev.permissions];
+      const idx = list.findIndex(
+        (p) => String(p.project) === String(projectId)
+      );
+      if (idx < 0) return prev;
 
-    list[idx] = {
-      ...list[idx],
-      access: accessValue,
-    };
+      list[idx] = {
+        ...list[idx],
+        access: accessValue,
+      };
 
-    return { ...prev, permissions: list };
-  });
-};
-
+      return { ...prev, permissions: list };
+    });
+  };
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-orange-50 via-amber-50 to-orange-50 p-8">
