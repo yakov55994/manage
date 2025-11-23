@@ -54,7 +54,7 @@ export default {
 
     return order;
   },
-async createBulkOrders(user, orders) {
+  async createBulkOrders(user, orders) {
   const normalizeId = (val) => {
     if (!val) return "";
     if (typeof val === "string") return val;
@@ -65,8 +65,13 @@ async createBulkOrders(user, orders) {
   const created = [];
 
   for (const data of orders) {
-    // ✅ אם המשתמש הוא admin - אין צורך בבדיקת הרשאות
+    // ✅ אדמין - דלג על בדיקת הרשאות
     if (user.role !== "admin") {
+      // ✅ בדוק שיש permissions לפני map
+      if (!user.permissions || !Array.isArray(user.permissions)) {
+        throw new Error("למשתמש אין הרשאות מוגדרות");
+      }
+
       const allowed = user.permissions.map(
         (p) => normalizeId(p.project)
       );
