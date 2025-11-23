@@ -181,14 +181,13 @@ if (!canAccessModule(user, projectId, moduleName, action)) {
 
 // המשתמש חייב שיהיה לו הרשאה לפרויקט
 export function canAccessProject(user, projectId) {
-  const allowedProjects = user.permissions.map(p => {
-    return String(p.project?._id || p.project);
-  });
+  if (!user?.permissions) return false;
 
-  const current = String(projectId);
+  const pid = String(projectId);
 
-  return allowedProjects.includes(current);
+  return user.permissions.some(p => String(p.project) === pid);
 }
+
 
 
 
