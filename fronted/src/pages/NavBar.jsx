@@ -110,12 +110,16 @@ const Sidebar = () => {
               path: "/summary-page",
               desc: "סיכום כללי",
             },
-            {
-              icon: ListTodo,
-              text: "משימות",
-              path: "/Notes",
-              desc: "רשימת משימות",
-            },
+            ...(isAdmin
+              ? [
+                  {
+                    icon: ListTodo,
+                    text: "משימות",
+                    path: "/Notes",
+                    desc: "רשימת משימות",
+                  },
+                ]
+              : []),
             ...(isAdmin
               ? [
                   {
