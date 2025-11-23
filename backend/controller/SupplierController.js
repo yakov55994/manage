@@ -1,5 +1,5 @@
 import Supplier from "../models/Supplier.js";
-import supplierService from "../services/supplierService.js";
+import supplierService from "../services/SupplierService.js";
 import { sendError } from "../utils/sendError.js";
 
 const supplierController = {
