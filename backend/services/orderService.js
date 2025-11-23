@@ -94,27 +94,42 @@ export default {
 },
 
   async createOrder(user, data) {
-    if (user.role !== "admin") {
-      const allowed = user.permissions.map(
-        (p) => String(p.project?._id || p.project)
-      );
-      if (!allowed.includes(String(data.projectId))) {
-        throw new Error("אין הרשאה להוסיף הזמנה לפרויקט זה");
-      }
+
+  if (user.role !== "admin") {
+    const allowed = user.permissions.map(
+      (p) => String(p.project?._id || p.project)
+    );
+    if (!allowed.includes(String(data.projectId))) {
+      throw new Error("אין הרשאה להוסיף הזמנה לפרויקט זה");
     }
+  }
 
-    const project = await Project.findById(data.projectId);
-    if (!project) throw new Error("פרויקט לא נמצא");
+  const project = await Project.findById(data.projectId);
+  if (!project) throw new Error("פרויקט לא נמצא");
 
-    return Order.create(data);
-  },
+  // 🔺 הוספת סכום ההזמנה לתקציב הנותר
+  project.remainingBudget += Number(data.sum);
+  await project.save();
+
+  return Order.create(data);
+},
 
   async updateOrder(user, orderId, data) {
-    const order = await Order.findById(orderId);
-    if (!order) throw new Error("הזמנה לא נמצאה");
+  const order = await Order.findById(orderId);
+  if (!order) throw new Error("הזמנה לא נמצאה");
 
-    return Order.findByIdAndUpdate(orderId, data, { new: true });
-  },
+  const project = await Project.findById(order.projectId);
+
+  const oldSum = Number(order.sum);
+  const newSum = Number(data.sum ?? order.sum);
+  const diff = newSum - oldSum;
+
+  // 🔺 אם diff חיובי — להוסיף / אם שלילי — להוריד (כלומר מבטל)
+  project.remainingBudget += diff;
+  await project.save();
+
+  return Order.findByIdAndUpdate(orderId, data, { new: true });
+},
 
   async updatePaymentStatus(user, orderId, status, paymentDate) {
     const order = await Order.findById(orderId);
@@ -127,10 +142,15 @@ export default {
     );
   },
 
-  async deleteOrder(user, orderId) {
-    const order = await Order.findById(orderId);
-    if (!order) throw new Error("הזמנה לא נמצאה");
+async deleteOrder(user, orderId) {
+  const order = await Order.findById(orderId);
+  if (!order) throw new Error("הזמנה לא נמצאה");
 
-    return Order.findByIdAndDelete(orderId);
-  }
+  const project = await Project.findById(order.projectId);
+  project.remainingBudget -= Number(order.sum); // מבטל את התוספת
+  await project.save();
+
+  return Order.findByIdAndDelete(orderId);
+}
+
 };

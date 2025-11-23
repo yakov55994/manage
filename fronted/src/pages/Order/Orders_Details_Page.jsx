@@ -148,7 +148,7 @@ const OrderDetailsPage = () => {
   };
 
   const handleEdit = (id) => {
-    navigate(`/orders/${id}`);
+    navigate(`/update-order/${id}`);
   };
 
   const handleDelete = async () => {

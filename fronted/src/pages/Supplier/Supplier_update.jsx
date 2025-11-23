@@ -1,34 +1,34 @@
-import { useEffect, useState } from 'react';
-import { useNavigate, useParams } from 'react-router-dom';
-import api from '../../api/api.js';
-import { ClipLoader } from 'react-spinners';
-import { toast } from 'sonner';
-import { 
-  UserCog, 
-  Save, 
-  ArrowRight, 
-  User, 
-  Hash, 
-  Phone, 
-  Mail, 
+import { useEffect, useState } from "react";
+import { useNavigate, useParams } from "react-router-dom";
+import api from "../../api/api.js";
+import { ClipLoader } from "react-spinners";
+import { toast } from "sonner";
+import {
+  UserCog,
+  Save,
+  ArrowRight,
+  User,
+  Hash,
+  Phone,
+  Mail,
   MapPin,
   Building2,
   CreditCard,
   AlertCircle,
   CheckCircle,
-  X
-} from 'lucide-react';
-import banksData from '../../../public/data/banks_and_branches.json';
-import Select from 'react-select';
-import BankSelector from '../../Components/BankSelector';
+  X,
+} from "lucide-react";
+import banksData from "../../../public/data/banks_and_branches.json";
+import Select from "react-select";
+import BankSelector from "../../Components/BankSelector";
 
 const SupplierEditPage = () => {
   const [supplier, setSupplier] = useState({
-    name: '',
-    business_tax: '',
-    address: '',
-    phone: '',
-    email: '',
+    name: "",
+    business_tax: "",
+    address: "",
+    phone: "",
+    email: "",
     bankDetails: {
       bankName: "",
       branchNumber: "",
@@ -41,7 +41,7 @@ const SupplierEditPage = () => {
   const [banks, setBanks] = useState([]);
   const { id } = useParams();
   const navigate = useNavigate();
-  
+
   useEffect(() => {
     setBanks(banksData);
   }, []);
@@ -52,29 +52,30 @@ const SupplierEditPage = () => {
       try {
         const response = await api.get(`/suppliers/${id}`);
         const supplierData = response.data.data;
-        
-        const bankObj = banksData.find(b => b.bankName === supplierData.bankDetails?.bankName);
+
+        const bankObj = banksData.find(
+          (b) => b.bankName === supplierData.bankDetails?.bankName
+        );
 
         setSupplier({
-          name: supplierData.name || '',
-          business_tax: supplierData.business_tax || '',
-          address: supplierData.address || '',
-          phone: supplierData.phone || '',
-          email: supplierData.email || '',
+          name: supplierData.name || "",
+          business_tax: supplierData.business_tax || "",
+          address: supplierData.address || "",
+          phone: supplierData.phone || "",
+          email: supplierData.email || "",
           bankDetails: {
-            bankName: supplierData.bankDetails?.bankName || '',
+            bankName: supplierData.bankDetails?.bankName || "",
             bankObj: bankObj || null,
-            branchNumber: supplierData.bankDetails?.branchNumber || '',
-            accountNumber: supplierData.bankDetails?.accountNumber || ''
-          }
+            branchNumber: supplierData.bankDetails?.branchNumber || "",
+            accountNumber: supplierData.bankDetails?.accountNumber || "",
+          },
         });
-
       } catch (error) {
-        console.error('Error fetching supplier:', error);
-        toast.error('שגיאה בטעינת פרטי הספק', {
-          className: "sonner-toast error rtl"
+        console.error("Error fetching supplier:", error);
+        toast.error("שגיאה בטעינת פרטי הספק", {
+          className: "sonner-toast error rtl",
         });
-        navigate('/suppliers');
+        navigate("/suppliers");
       } finally {
         setInitialLoading(false);
       }
@@ -84,39 +85,39 @@ const SupplierEditPage = () => {
   }, [id, navigate]);
 
   const handleInputChange = (field, value) => {
-    setSupplier(prev => ({
+    setSupplier((prev) => ({
       ...prev,
-      [field]: value
+      [field]: value,
     }));
   };
 
   const handleBankDetailsChange = (field, value) => {
-    setSupplier(prev => ({
+    setSupplier((prev) => ({
       ...prev,
       bankDetails: {
         ...prev.bankDetails,
-        [field]: value
-      }
+        [field]: value,
+      },
     }));
   };
 
   const validateForm = () => {
-    const requiredFields = ['name', 'business_tax'];
+    const requiredFields = ["name", "business_tax"];
 
     for (let field of requiredFields) {
-      if (!supplier[field] || supplier[field].toString().trim() === '') {
+      if (!supplier[field] || supplier[field].toString().trim() === "") {
         toast.error(`יש למלא את השדה: ${getFieldName(field)}`, {
-          className: "sonner-toast error rtl"
+          className: "sonner-toast error rtl",
         });
         return false;
       }
     }
 
-    if (supplier.email && supplier.email.trim() !== '') {
+    if (supplier.email && supplier.email.trim() !== "") {
       const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
       if (!emailRegex.test(supplier.email)) {
-        toast.error('אימייל לא תקין', {
-          className: "sonner-toast error rtl"
+        toast.error("אימייל לא תקין", {
+          className: "sonner-toast error rtl",
         });
         return false;
       }
@@ -124,7 +125,7 @@ const SupplierEditPage = () => {
 
     const { bankName, branchNumber, accountNumber } = supplier.bankDetails;
     const hasBankInfo = bankName || branchNumber || accountNumber;
-    
+
     if (hasBankInfo) {
       if (!bankName || !branchNumber || !accountNumber) {
         toast.error("אם מזינים פרטי בנק, יש למלא את כל השדות", {
@@ -139,10 +140,10 @@ const SupplierEditPage = () => {
 
   const getFieldName = (field) => {
     const fieldNames = {
-      name: 'שם הספק',
-      business_tax: 'מספר עוסק',
-      address: 'כתובת',
-      email: 'אימייל'
+      name: "שם הספק",
+      business_tax: "מספר עוסק",
+      address: "כתובת",
+      email: "אימייל",
     };
     return fieldNames[field] || field;
   };
@@ -173,19 +174,18 @@ const SupplierEditPage = () => {
         };
       }
 
-
       await api.put(`/suppliers/${id}`, supplierData);
 
-      toast.success('הספק עודכן בהצלחה!', {
-        className: "sonner-toast success rtl"
+      toast.success("הספק עודכן בהצלחה!", {
+        className: "sonner-toast success rtl",
       });
-      
+
       navigate(`/suppliers/${id}`);
     } catch (error) {
-      console.error('Update error:', error.response?.data);
-      const errorMessage = error.response?.data?.message || 'שגיאה בעדכון הספק';
+      console.error("Update error:", error.response?.data);
+      const errorMessage = error.response?.data?.message || "שגיאה בעדכון הספק";
       toast.error(errorMessage, {
-        className: "sonner-toast error rtl"
+        className: "sonner-toast error rtl",
       });
     } finally {
       setLoading(false);
@@ -199,7 +199,9 @@ const SupplierEditPage = () => {
           <div className="absolute inset-0 bg-orange-500/20 blur-3xl rounded-full"></div>
           <ClipLoader size={80} color="#f97316" loading={initialLoading} />
         </div>
-        <h1 className="mt-6 font-bold text-2xl text-orange-900">טוען פרטי ספק...</h1>
+        <h1 className="mt-6 font-bold text-2xl text-orange-900">
+          טוען פרטי ספק...
+        </h1>
       </div>
     );
   }
@@ -230,7 +232,10 @@ const SupplierEditPage = () => {
         </div>
 
         {/* טופס עריכה */}
-        <form onSubmit={handleSubmit} className="bg-white rounded-2xl shadow-xl p-8">
+        <form
+          onSubmit={handleSubmit}
+          className="bg-white rounded-2xl shadow-xl p-8"
+        >
           {/* פרטי ספק עיקריים */}
           <div className="mb-8">
             <div className="flex items-center gap-3 mb-6 pb-4 border-b-2 border-gradient-to-r from-orange-200 to-amber-200">
@@ -239,7 +244,7 @@ const SupplierEditPage = () => {
               </div>
               <h2 className="text-2xl font-bold text-gray-900">פרטי הספק</h2>
             </div>
-            
+
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
               {/* שם הספק */}
               <div className="space-y-2">
@@ -253,7 +258,7 @@ const SupplierEditPage = () => {
                 <input
                   type="text"
                   value={supplier.name}
-                  onChange={(e) => handleInputChange('name', e.target.value)}
+                  onChange={(e) => handleInputChange("name", e.target.value)}
                   className="w-full px-4 py-3 bg-gradient-to-br from-orange-50 to-amber-50 border-2 border-orange-200 rounded-xl font-medium focus:border-orange-400 focus:outline-none focus:ring-2 focus:ring-orange-200 transition-all"
                   placeholder="הזן שם ספק"
                 />
@@ -271,7 +276,9 @@ const SupplierEditPage = () => {
                 <input
                   type="text"
                   value={supplier.business_tax}
-                  onChange={(e) => handleInputChange('business_tax', e.target.value)}
+                  onChange={(e) =>
+                    handleInputChange("business_tax", e.target.value)
+                  }
                   className="w-full px-4 py-3 bg-gradient-to-br from-blue-50 to-cyan-50 border-2 border-blue-200 rounded-xl font-medium focus:border-blue-400 focus:outline-none focus:ring-2 focus:ring-blue-200 transition-all"
                   placeholder="הזן מספר עוסק"
                 />
@@ -289,7 +296,7 @@ const SupplierEditPage = () => {
                 <input
                   type="tel"
                   value={supplier.phone}
-                  onChange={(e) => handleInputChange('phone', e.target.value)}
+                  onChange={(e) => handleInputChange("phone", e.target.value)}
                   className="w-full px-4 py-3 bg-gradient-to-br from-green-50 to-emerald-50 border-2 border-green-200 rounded-xl font-medium focus:border-green-400 focus:outline-none focus:ring-2 focus:ring-green-200 transition-all"
                   placeholder="הזן מספר טלפון"
                 />
@@ -306,7 +313,7 @@ const SupplierEditPage = () => {
                 <input
                   type="email"
                   value={supplier.email}
-                  onChange={(e) => handleInputChange('email', e.target.value)}
+                  onChange={(e) => handleInputChange("email", e.target.value)}
                   className="w-full px-4 py-3 bg-gradient-to-br from-purple-50 to-pink-50 border-2 border-purple-200 rounded-xl font-medium focus:border-purple-400 focus:outline-none focus:ring-2 focus:ring-purple-200 transition-all"
                   placeholder="הזן כתובת אימייל"
                 />
@@ -323,7 +330,7 @@ const SupplierEditPage = () => {
                 <input
                   type="text"
                   value={supplier.address}
-                  onChange={(e) => handleInputChange('address', e.target.value)}
+                  onChange={(e) => handleInputChange("address", e.target.value)}
                   className="w-full px-4 py-3 bg-gradient-to-br from-indigo-50 to-blue-50 border-2 border-indigo-200 rounded-xl font-medium focus:border-indigo-400 focus:outline-none focus:ring-2 focus:ring-indigo-200 transition-all"
                   placeholder="הזן כתובת מלאה"
                 />
@@ -337,19 +344,24 @@ const SupplierEditPage = () => {
               <div className="bg-gradient-to-br from-green-500 to-emerald-500 p-2 rounded-lg shadow-md">
                 <Building2 className="text-white w-6 h-6" />
               </div>
-              <h2 className="text-2xl font-bold text-gray-900">פרטי חשבון בנק</h2>
-              <span className="text-sm text-gray-500 bg-gray-100 px-3 py-1 rounded-full font-medium">אופציונלי</span>
+              <h2 className="text-2xl font-bold text-gray-900">
+                פרטי חשבון בנק
+              </h2>
+              <span className="text-sm text-gray-500 bg-gray-100 px-3 py-1 rounded-full font-medium">
+                אופציונלי
+              </span>
             </div>
 
             <div className="bg-gradient-to-br from-amber-50 to-orange-50 p-6 rounded-xl border-2 border-amber-200 mb-6">
               <div className="flex items-start gap-3">
                 <AlertCircle className="w-5 h-5 text-amber-600 flex-shrink-0 mt-0.5" />
                 <p className="text-sm text-gray-700 font-medium">
-                  פרטי הבנק הם אופציונליים. אם תבחר למלא - יש למלא את כל השדות (בנק, סניף ומספר חשבון).
+                  פרטי הבנק הם אופציונליים. אם תבחר למלא - יש למלא את כל השדות
+                  (בנק, סניף ומספר חשבון).
                 </p>
               </div>
             </div>
-            
+
             {/* בחירת בנק */}
             <div className="mb-6">
               <label className="flex items-center gap-2 text-sm font-semibold text-gray-700 mb-2">
@@ -363,9 +375,9 @@ const SupplierEditPage = () => {
                   banks={banks}
                   selectedBank={supplier.bankDetails.bankObj}
                   onChange={(bank) => {
-                    handleBankDetailsChange('bankName', bank?.bankName || '');
-                    handleBankDetailsChange('bankObj', bank || null);
-                    handleBankDetailsChange('branchNumber', '');
+                    handleBankDetailsChange("bankName", bank?.bankName || "");
+                    handleBankDetailsChange("bankObj", bank || null);
+                    handleBankDetailsChange("branchNumber", "");
                   }}
                   placeholder="בחר בנק מהרשימה"
                 />
@@ -385,47 +397,73 @@ const SupplierEditPage = () => {
                   styles={{
                     control: (provided, state) => ({
                       ...provided,
-                      fontWeight: '500',
-                      fontSize: '15px',
-                      padding: '6px',
-                      borderRadius: '0.75rem',
-                      border: state.isFocused ? '2px solid #06b6d4' : '2px solid #a5f3fc',
-                      background: 'linear-gradient(to bottom right, #ecfeff, #cffafe)',
-                      boxShadow: state.isFocused ? '0 0 0 3px rgba(6, 182, 212, 0.1)' : 'none',
-                      '&:hover': {
-                        border: '2px solid #06b6d4'
-                      }
+                      fontWeight: "500",
+                      fontSize: "15px",
+                      padding: "6px",
+                      borderRadius: "0.75rem",
+                      border: state.isFocused
+                        ? "2px solid #06b6d4"
+                        : "2px solid #a5f3fc",
+                      background:
+                        "linear-gradient(to bottom right, #ecfeff, #cffafe)",
+                      boxShadow: state.isFocused
+                        ? "0 0 0 3px rgba(6, 182, 212, 0.1)"
+                        : "none",
+                      "&:hover": {
+                        border: "2px solid #06b6d4",
+                      },
                     }),
                     option: (provided, state) => ({
                       ...provided,
-                      fontWeight: '500',
-                      fontSize: '15px',
-                      backgroundColor: state.isSelected ? '#f97316' : state.isFocused ? '#fed7aa' : 'white',
-                      color: state.isSelected ? 'white' : '#1f2937',
+                      fontWeight: "500",
+                      fontSize: "15px",
+                      backgroundColor: state.isSelected
+                        ? "#f97316"
+                        : state.isFocused
+                        ? "#fed7aa"
+                        : "white",
+                      color: state.isSelected ? "white" : "#1f2937",
                     }),
                     placeholder: (provided) => ({
                       ...provided,
-                      fontWeight: '500',
-                      fontSize: '15px',
-                      color: '#9ca3af'
+                      fontWeight: "500",
+                      fontSize: "15px",
+                      color: "#9ca3af",
+                    }),
+                  }}
+                  options={supplier.bankDetails.bankObj.branches.map(
+                    (branch) => ({
+                      value: branch.branchCode,
+                      label: `${branch.branchCode} - ${branch.city} - ${branch.address}`,
                     })
-                  }}      
-                  options={supplier.bankDetails.bankObj.branches.map(branch => ({
-                    value: branch.branchCode,
-                    label: `${branch.branchCode} - ${branch.city} - ${branch.address}`
-                  }))}
+                  )}
                   value={
                     supplier.bankDetails.branchNumber
                       ? {
                           value: supplier.bankDetails.branchNumber,
-                          label: supplier.bankDetails.bankObj.branches.find(b => b.branchCode === supplier.bankDetails.branchNumber)
-                            ? `${supplier.bankDetails.branchNumber} - ${supplier.bankDetails.bankObj.branches.find(b => b.branchCode === supplier.bankDetails.branchNumber).city} - ${supplier.bankDetails.bankObj.branches.find(b => b.branchCode === supplier.bankDetails.branchNumber).address}`
-                            : supplier.bankDetails.branchNumber
+                          label: supplier.bankDetails.bankObj.branches.find(
+                            (b) =>
+                              b.branchCode === supplier.bankDetails.branchNumber
+                          )
+                            ? `${supplier.bankDetails.branchNumber} - ${
+                                supplier.bankDetails.bankObj.branches.find(
+                                  (b) =>
+                                    b.branchCode ===
+                                    supplier.bankDetails.branchNumber
+                                ).city
+                              } - ${
+                                supplier.bankDetails.bankObj.branches.find(
+                                  (b) =>
+                                    b.branchCode ===
+                                    supplier.bankDetails.branchNumber
+                                ).address
+                              }`
+                            : supplier.bankDetails.branchNumber,
                         }
                       : null
                   }
-                  onChange={opt =>
-                    handleBankDetailsChange('branchNumber', opt?.value || '')
+                  onChange={(opt) =>
+                    handleBankDetailsChange("branchNumber", opt?.value || "")
                   }
                   placeholder="בחר סניף מהרשימה"
                   isSearchable
@@ -447,7 +485,7 @@ const SupplierEditPage = () => {
                   type="text"
                   value={supplier.bankDetails.accountNumber}
                   onChange={(e) =>
-                    handleBankDetailsChange('accountNumber', e.target.value)
+                    handleBankDetailsChange("accountNumber", e.target.value)
                   }
                   className="w-full px-4 py-3 bg-gradient-to-br from-emerald-50 to-green-50 border-2 border-emerald-200 rounded-xl font-medium focus:border-emerald-400 focus:outline-none focus:ring-2 focus:ring-emerald-200 transition-all"
                   placeholder="הזן מספר חשבון"
@@ -490,7 +528,10 @@ const SupplierEditPage = () => {
           {/* הערת שדות חובה */}
           <div className="mt-6 flex items-center gap-2 text-sm text-gray-600 bg-gray-50 p-4 rounded-lg">
             <AlertCircle className="w-5 h-5 text-gray-500" />
-            <span>שדות המסומנים ב-<span className="text-red-500 font-bold">*</span> הם שדות חובה</span>
+            <span>
+              שדות המסומנים ב-<span className="text-red-500 font-bold">*</span>{" "}
+              הם שדות חובה
+            </span>
           </div>
         </form>
       </div>

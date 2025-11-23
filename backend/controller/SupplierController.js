@@ -48,7 +48,7 @@ const supplierController = {
 
   async getSupplierById(req, res) {
     try {
-      const supplier = await supplierService.getSupplierById(req.user, req.params.id);
+      const supplier = await supplierService.getSupplierById(req.user, req.params.supplierId);
       if (!supplier) throw new Error("לא נמצא");
       res.json({ success: true, data: supplier });
     } catch (e) {
@@ -67,7 +67,7 @@ const supplierController = {
 
   async updateSupplier(req, res) {
     try {
-      const supplier = await supplierService.updateSupplier(req.user, req.params.id, req.body);
+      const supplier = await supplierService.updateSupplier(req.user, req.params.supplierId, req.body);
       res.json({ success: true, data: supplier });
     } catch (e) {
       sendError(res, e);
@@ -76,7 +76,7 @@ const supplierController = {
 
   async deleteSupplier(req, res) {
     try {
-      await supplierService.deleteSupplier(req.user, req.params.id);
+      await supplierService.deleteSupplier(req.user, req.params.supplierId);
       res.json({ success: true, message: "נמחק" });
     } catch (e) {
       sendError(res, e);

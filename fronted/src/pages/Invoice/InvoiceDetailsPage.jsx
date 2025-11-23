@@ -272,7 +272,7 @@ const InvoiceDetailsPage = () => {
   };
 
   const handleEdit = (id) => {
-    navigate(`/invoices/${id}`);
+    navigate(`/update-invoice/${id}`);
   };
 
   const handleDelete = async () => {

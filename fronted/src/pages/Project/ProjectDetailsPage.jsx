@@ -37,33 +37,54 @@ const ProjectDetailsPage = () => {
 
   const navigate = useNavigate();
 
-  useEffect(() => {
-    const fetchProjectDetails = async () => {
-      try {
-        setLoadingProject(true);
-        setLoadingOrders(true);
-        setLoadingInvoices(true);
+useEffect(() => {
+  const fetchProjectDetails = async () => {
+    try {
+      setLoadingProject(true);
+      setLoadingOrders(true);
+      setLoadingInvoices(true);
 
-        const response = await api.get(`/projects/${id}`);
-        const projectData = response.data?.data || {};
+      // 1️⃣ שלוף את הפרויקט
+      const projectResponse = await api.get(`/projects/${id}`);
+      const projectData = projectResponse.data?.data || {};
+      setProject(projectData);
+      setLoadingProject(false);
 
-        setProject(projectData);
-        setOrders(projectData.orders || []);
-        setInvoices(projectData.invoices || []);
-      } catch (error) {
-        console.error("Error fetching project details:", error);
-        toast.error("שגיאה בשליפת פרטי הפרויקט", {
-          className: "sonner-toast error rtl",
-        });
-      } finally {
-        setLoadingProject(false);
-        setLoadingOrders(false);
-        setLoadingInvoices(false);
-      }
-    };
+      // 2️⃣ שלוף את כל ההזמנות וסנן לפי פרויקט
+      const ordersResponse = await api.get("/orders");
+      const allOrders = Array.isArray(ordersResponse.data?.data)
+        ? ordersResponse.data.data
+        : [];
+      const projectOrders = allOrders.filter(
+        (order) => String(order.projectId?._id || order.projectId) === String(id)
+      );
+      setOrders(projectOrders);
+      setLoadingOrders(false);
 
-    fetchProjectDetails();
-  }, [id]);
+      // 3️⃣ שלוף את כל החשבוניות וסנן לפי פרויקט
+      const invoicesResponse = await api.get("/invoices");
+      const allInvoices = Array.isArray(invoicesResponse.data?.data)
+        ? invoicesResponse.data.data
+        : [];
+      const projectInvoices = allInvoices.filter(
+        (invoice) => String(invoice.projectId?._id || invoice.projectId) === String(id)
+      );
+      setInvoices(projectInvoices);
+      setLoadingInvoices(false);
+
+    } catch (error) {
+      console.error("Error fetching project details:", error);
+      toast.error("שגיאה בשליפת פרטי הפרויקט", {
+        className: "sonner-toast error rtl",
+      });
+      setLoadingProject(false);
+      setLoadingOrders(false);
+      setLoadingInvoices(false);
+    }
+  };
+
+  fetchProjectDetails();
+}, [id]);
 
   // עכשיו אין צורך בסינון לפי projectId:
   const filteredOrders = orders
