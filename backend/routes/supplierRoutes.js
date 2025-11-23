@@ -5,7 +5,7 @@ import supplierController from "../controller/SupplierController.js";
 const router = express.Router();
 
 // כל הספקים – זמין לכל משתמש מחובר
-router.get("/", protect, supplierController.getAllSuppliers);
+router.get("/", protect, supplierController.getAllSuppliersWithoutRestrictions);
 
 // ספק בודד (אם תרצה future permissions)
 router.get("/:supplierId", protect, supplierController.getSupplierById);
