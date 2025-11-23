@@ -33,22 +33,61 @@ const CreateOrder = () => {
 
   const navigate = useNavigate();
 
-  useEffect(() => {
-    if (authLoading) return; // ⛔ מחכים לאימות
-    if (!user) return; // ⛔ אין משתמש → אין מה להביא
+const { user, loading: authLoading } = useAuth();
 
-    const fetchProjects = async () => {
-      try {
-        const response = await api.get("/projects");
-        setProjects(response.data.data || []);
-      } catch (err) {
-        toast.error("שגיאה בהבאת הפרויקטים", {
-          className: "sonner-toast error rtl",
-        });
+useEffect(() => {
+  const fetchProjects = async () => {
+    try {
+      const response = await api.get("/projects");
+
+      const data = Array.isArray(response.data?.data)
+        ? response.data.data
+        : Array.isArray(response.data)
+        ? response.data
+        : [];
+
+      // אם ה־Auth עדיין בטעינה — תראה הכל זמנית
+      if (authLoading) {
+        setProjects(data);
+        return;
       }
-    };
-    fetchProjects();
-  }, []);
+
+      // משתמש לא מחובר
+      if (!user) {
+        setProjects([]);
+        return;
+      }
+
+      // אדמין → רואה הכל
+      if (user.role === "admin") {
+        setProjects(data);
+        return;
+      }
+
+      // משתמש רגיל → סינון לפי הרשות המותרות
+      if (!user.permissions || !Array.isArray(user.permissions)) {
+        setProjects([]);
+        return;
+      }
+
+      const allowedProjectIds = user.permissions
+        .map((p) => String(p.project?._id || p.project))
+        .filter(Boolean);
+
+      const filtered = data.filter((p) =>
+        allowedProjectIds.includes(String(p._id))
+      );
+
+      setProjects(filtered);
+    } catch (err) {
+      console.error("❌ שגיאה בטעינת פרויקטים להזמנה:", err);
+      setProjects([]);
+    }
+  };
+
+  fetchProjects();
+}, [user, authLoading]);
+
 
   const handleProjectChange = (e) => {
     const projectId = e.target.value;

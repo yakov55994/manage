@@ -40,7 +40,6 @@ const normalizeId = (id) => String(id?._id || id || "");
 
 const defaultProjPerm = (projectId) => ({
   project: normalizeId(projectId),
-  access: "view",
   modules: {
     invoices: "none",
     orders: "none",
@@ -48,6 +47,7 @@ const defaultProjPerm = (projectId) => ({
     files: "none",
   },
 });
+
 
 export default function UserManagement() {
   const { user: currentUser, isAdmin, loading: authLoading } = useAuth();
@@ -78,18 +78,27 @@ export default function UserManagement() {
 
   // TOGGLE project
   const toggleProject = (projectId) => {
-    const id = normalizeId(projectId);
-    setFormData((prev) => {
-      const list = [...prev.permissions];
-      const idx = list.findIndex((p) => String(p.project) === id);
-      if (idx >= 0) {
-        list.splice(idx, 1);
-      } else {
-        list.push(defaultProjPerm(id));
-      }
-      return { ...prev, permissions: list };
-    });
-  };
+  const id = normalizeId(projectId);
+
+  setFormData((prev) => {
+    const exists = prev.permissions.some((p) => normalizeId(p.project) === id);
+
+    if (exists) {
+      return {
+        ...prev,
+        permissions: prev.permissions.filter(
+          (p) => normalizeId(p.project) !== id
+        ),
+      };
+    }
+
+    return {
+      ...prev,
+      permissions: [...prev.permissions, defaultProjPerm(id)],
+    };
+  });
+};
+
 
   // NEW: Select all filtered projects
   const selectAllProjects = () => {
@@ -170,18 +179,7 @@ export default function UserManagement() {
     toast.success(messages[preset]);
   };
 
-  // SET access level
-  const setProjectAccess = (projectId, access) => {
-    setFormData((prev) => {
-      const list = [...prev.permissions];
-      const idx = list.findIndex(
-        (p) => String(p.project) === String(projectId)
-      );
-      if (idx < 0) return prev;
-      list[idx] = { ...list[idx], access };
-      return { ...prev, permissions: list };
-    });
-  };
+
 
   // SET module access
   const setModuleAccess = (projectId, moduleKey, value) => {
@@ -264,59 +262,68 @@ export default function UserManagement() {
 
   // EDIT USER
   const openEdit = (user) => {
-    const normalized = (user.permissions || []).map((p) => {
-      const projectId =
-        typeof p.project === "string" ? p.project : p.project?._id || "";
-      return {
-        project: projectId,
-        access: p?.access || "view",
-        modules: {
-          invoices: p?.modules?.invoices || "view",
-          orders: p?.modules?.orders || "view",
-          suppliers: p?.modules?.suppliers || "view",
-          files: p?.modules?.files || "view",
-        },
-      };
-    });
-    setEditingUser(user);
-    setFormData({
-      username: user.username,
-      password: "",
-      email: user.email || "",
-      role: user.role,
-      isActive: user.isActive,
-      permissions: normalized,
-    });
-    setProjectSearch("");
-    setShowModal(true);
-  };
+  const normalizedPermissions = (user.permissions || []).map((p) => ({
+    project: normalizeId(p.project),
+    modules: {
+      invoices: p.modules?.invoices || "none",
+      orders: p.modules?.orders || "none",
+      suppliers: p.modules?.suppliers || "none",
+      files: p.modules?.files || "none",
+    },
+  }));
+
+  setEditingUser(user);
+
+  setFormData({
+    username: user.username,
+    password: "",
+    email: user.email || "",
+    role: user.role,
+    isActive: user.isActive,
+    permissions: normalizedPermissions,
+  });
+
+  setProjectSearch("");
+  setShowModal(true);
+};
+
 
   // SAVE USER
-  const saveUser = async (e) => {
-    e.preventDefault();
-    const payload = {
-      username: formData.username,
-      email: formData.email,
-      role: formData.role,
-      isActive: formData.isActive,
-      permissions: formData.permissions,
-    };
-    if (formData.password) payload.password = formData.password;
+const saveUser = async (e) => {
+  e.preventDefault();
 
-    try {
-      if (editingUser) {
-        await api.put(`/users/${editingUser._id}`, payload);
-        toast.success("המשתמש עודכן בהצלחה");
-      } else {
-        await api.post(`/users`, payload);
-        toast.success("המשתמש נוצר בהצלחה");
-      }
-      setShowModal(false);
-      loadEverything();
-    } catch (error) {
-      toast.error(error.response?.data?.message || "שגיאה בשמירת המשתמש");
-    }
+  const payload = {
+    username: formData.username,
+    email: formData.email,
+    role: formData.role,
+    isActive: formData.isActive,
+    permissions: formData.permissions.map((p) => ({
+      project: normalizeId(p.project),
+      modules: p.modules,
+    })),
   };
+
+  if (formData.password) {
+    payload.password = formData.password;
+  }
+
+  try {
+    if (editingUser) {
+      await api.put(`/users/${editingUser._id}`, payload);
+      toast.success("המשתמש עודכן בהצלחה");
+    } else {
+      await api.post(`/users`, payload);
+      toast.success("המשתמש נוצר בהצלחה");
+    }
+
+    setShowModal(false);
+    loadEverything();
+  } catch (err) {
+    console.error(err);
+    toast.error(err.response?.data?.message || "שגיאה בשמירת המשתמש");
+  }
+};
+
 
   const deleteUser = async () => {
     try {

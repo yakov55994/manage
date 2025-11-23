@@ -40,20 +40,61 @@ const CreateInvoice = () => {
 
   const navigate = useNavigate();
 
-  useEffect(() => {
-    const fetchProjects = async () => {
-           try {
-        const response = await api.get("/projects");
-        setProjects(response.data?.data || []);
-      } catch (err) {
-        toast.error("שגיאה בטעינת הפרויקטים", {
-          className: "sonner-toast error rtl",
-        });
-        setProjects([]);
+const { user, loading: authLoading } = useAuth();
+
+useEffect(() => {
+  const fetchProjects = async () => {
+    try {
+      const response = await api.get("/projects");
+
+      const data = Array.isArray(response.data?.data)
+        ? response.data.data
+        : Array.isArray(response.data)
+        ? response.data
+        : [];
+
+      // אם ההרשאות עדיין נטענות — תציג הכל זמנית
+      if (authLoading) {
+        setProjects(data);
+        return;
       }
-    };
-    fetchProjects();
-  }, []);
+
+      // אין משתמש
+      if (!user) {
+        setProjects([]);
+        return;
+      }
+
+      // אדמין → רואה הכל
+      if (user.role === "admin") {
+        setProjects(data);
+        return;
+      }
+
+      // משתמש רגיל → מסנן לפי ההרשאות
+      if (!user.permissions || !Array.isArray(user.permissions)) {
+        setProjects([]);
+        return;
+      }
+
+      const allowedProjectIds = user.permissions
+        .map((p) => String(p.project?._id || p.project))
+        .filter(Boolean);
+
+      const filtered = data.filter((p) =>
+        allowedProjectIds.includes(String(p._id))
+      );
+
+      setProjects(filtered);
+    } catch (err) {
+      console.error("❌ שגיאה בטעינת פרויקטים:", err);
+      setProjects([]);
+    }
+  };
+
+  fetchProjects();
+}, [user, authLoading]);
+
 
   useEffect(() => {
     const draftStr = sessionStorage.getItem("invoiceDraft");

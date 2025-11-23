@@ -1,53 +1,57 @@
 import express from "express";
-import { protect } from "../middleware/auth.js";
+import { protect, checkAccess } from "../middleware/auth.js";
 import orderController from "../controller/orderControllers.js";
-import { checkAccess } from "../middleware/auth.js";
 
 const router = express.Router();
 
+// 🔍 חיפוש
 router.get("/search", protect, orderController.searchOrders);
 
-// 🟢 קודם ROUTES שיש להם שמות ייחודיים
-router.post(
-  "/bulk",
-  protect,
-  checkAccess("order", "edit"),
-  orderController.createBulkOrders
-);
-
-// 🟢 root
+// כל ההזמנות למשתמש לפי הרשאות
 router.get(
   "/",
   protect,
+  checkAccess("orders", "view"),
   orderController.getOrders
 );
 
-// 🟢 לבסוף ID
+// הזמנה לפי ID
 router.get(
-  "/:id",
+  "/:orderId",
   protect,
-  checkAccess("order", "view"),
+  checkAccess("orders", "view"),
   orderController.getOrderById
 );
 
+// יצירה
 router.post(
   "/",
   protect,
-  checkAccess("order", "edit"),
+  checkAccess("orders", "edit"),
   orderController.createOrder
 );
 
+// עדכון
 router.put(
-  "/:id/edit",
+  "/:orderId",
   protect,
-  checkAccess("order", "edit"),
+  checkAccess("orders", "edit"),
   orderController.updateOrder
 );
 
-router.delete(
-  "/:id",
+// סטטוס תשלום
+router.put(
+  "/:orderId/status",
   protect,
-  checkAccess("order", "edit"),
+  checkAccess("orders", "edit"),
+  orderController.updatePaymentStatus
+);
+
+// מחיקה
+router.delete(
+  "/:orderId",
+  protect,
+  checkAccess("orders", "edit"),
   orderController.deleteOrder
 );
 

@@ -19,7 +19,6 @@ export default {
 
 
   async getAllProjects(user) {
-    console.log("PERMISSIONS:", user.permissions);
     let query = {};
 
     if (user.role !== "admin") {
@@ -36,34 +35,36 @@ export default {
   },
   async getProjectById(user, projectId) {
 
-    // הרשאות
-    if (user.role !== "admin") {
-      const allowedProjectIds = user.permissions.flatMap(p =>
-        (p.projects || []).map(id => String(id))
-      );
+  // הרשאות
+  if (user.role !== "admin") {
+    const allowedProjectIds = user.permissions.map(
+      (p) => String(p.project?._id || p.project)
+    );
 
-      if (!allowedProjectIds.includes(String(projectId))) {
-        throw new Error("אין הרשאה לפרויקט זה");
-      }
+    if (!allowedProjectIds.includes(String(projectId))) {
+      throw new Error("אין הרשאה לפרויקט זה");
     }
+  }
 
-    // טעינת פרויקט עם כל ה-populates
-    const project = await Project.findById(projectId)
-      .populate({
-        path: "invoices",
-        select:
-          "invoiceNumber projectName sum status invitingName detail paid paymentDate documentType paymentMethod files supplierId",
-        populate: [
-          { path: "supplierId", select: "name" }
-        ]
-      })
-      .populate({
-        path: "orders",
-        select: "orderNumber sum status paid paymentDate",
-      });
+  // טעינת פרויקט עם כל ה-populates
+  const project = await Project.findById(projectId)
+    .populate({
+      path: "invoices",
+      model: "Invoice",
+      select:
+        "invoiceNumber projectName sum status invitingName detail paid paymentDate documentType paymentMethod files supplierId",
+      populate: { path: "supplierId", select: "name" }
+    })
+    .populate({
+      path: "orders",
+      model: "Order",
+      select: "orderNumber sum status paid paymentDate supplierId",
+      populate: { path: "supplierId", select: "name" }
+    });
 
-    return project;
-  },
+  return project;
+}
+,
 
   async createBulkInvoices(user, projectId, invoicesData) {
     const results = [];

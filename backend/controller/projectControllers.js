@@ -28,24 +28,21 @@ const projectController = {
   },
 
   async getProjectById(req, res) {
+  try {
     const projectId = req.params.projectId;
 
-    try {
-      const project = await Project.findById(projectId);
-      if (!project) throw new Error("פרויקט לא נמצא");
+    const project = await projectService.getProjectById(req.user, projectId);
 
-      const invoices = await Invoice.find({ projectId }).populate("supplierId", "name");
-      const orders = await Order.find({ projectId });
-
-      res.json({
-        success: true,
-        data: { ...project.toObject(), invoices, orders },
-      });
-
-    } catch (e) {
-      sendError(res, e);
+    if (!project) {
+      return res.status(404).json({ message: "פרויקט לא נמצא" });
     }
-  },
+
+    res.json({ success: true, data: project });
+
+  } catch (e) {
+    sendError(res, e);
+  }
+},
 
   async createBulkInvoices(req, res) {
     try {

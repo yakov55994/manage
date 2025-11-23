@@ -1,63 +1,73 @@
 import express from "express";
-import { protect } from "../middleware/auth.js";
+import { protect, checkAccess } from "../middleware/auth.js";
 import invoiceController from "../controller/invoiceControllers.js";
-import { checkAccess } from "../middleware/auth.js";
 
 const router = express.Router();
 
-
+// ============ SEARCH ============
 router.get("/search", protect, invoiceController.searchInvoices);
 
-// 🟢 תמיד קודם ROUTES עם שמות!
+// ============ CHECK DUPLICATE ============
 router.get(
   "/check/duplicate",
   protect,
+  checkAccess("invoices", "view"),
   invoiceController.checkDuplicate
 );
 
-// 🟢 אח"כ ה־root
-router.get("/", protect, invoiceController.getInvoices);
-
-// 🟢 ואז כל ה־id
+// ============ GET ALL ============
 router.get(
-  "/:id",
+  "/",
   protect,
-  checkAccess("invoice", "view"),
+  checkAccess("invoices", "view"),
+  invoiceController.getInvoices
+);
+
+// ============ GET BY ID ============
+router.get(
+  "/:invoiceId",
+  protect,
+  checkAccess("invoices", "view"),
   invoiceController.getInvoiceById
 );
 
+// ============ CREATE ============
 router.post(
   "/",
   protect,
-  checkAccess("invoice", "edit"),
+  checkAccess("invoices", "edit"),
   invoiceController.createInvoice
 );
 
+// ============ UPDATE ============
 router.put(
-  "/:id/edit",
+  "/:invoiceId",
   protect,
-  checkAccess("invoice", "edit"),
+  checkAccess("invoices", "edit"),
   invoiceController.updateInvoice
 );
 
+// ============ UPDATE STATUS ============
 router.put(
-  "/:id/status",
+  "/:invoiceId/status",
   protect,
-  checkAccess("invoice", "edit"),
+  checkAccess("invoices", "edit"),
   invoiceController.updatePaymentStatus
 );
 
+// ============ MOVE ============
 router.put(
-  "/:id/move",
+  "/:invoiceId/move",
   protect,
-  checkAccess("invoice", "edit"),
+  checkAccess("invoices", "edit"),
   invoiceController.moveInvoice
 );
 
+// ============ DELETE ============
 router.delete(
-  "/:id",
+  "/:invoiceId",
   protect,
-  checkAccess("invoice", "edit"),
+  checkAccess("invoices", "edit"),
   invoiceController.deleteInvoice
 );
 
