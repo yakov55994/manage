@@ -46,9 +46,8 @@ const defaultProjPerm = (projectId) => ({
     orders: "view",
     suppliers: "view",
     files: "view",
-  }
+  },
 });
-
 
 export default function UserManagement() {
   const { user: currentUser, isAdmin, loading: authLoading } = useAuth();

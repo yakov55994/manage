@@ -39,12 +39,13 @@ api.interceptors.response.use(
     });
 
     // הפניה לדף אין גישה
-    if (error.response?.status === 403) {
+    if (error.response?.status === 403 && error.response?.data?.message === "אין הרשאה") {
       window.location.href = "/no-access";
-      return;
+      return Promise.reject(error);
     }
 
     return Promise.reject(error);
+
   }
 );
 

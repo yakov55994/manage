@@ -4,63 +4,28 @@ import orderController from "../controller/orderControllers.js";
 
 const router = express.Router();
 
-// 🔍 חיפוש הזמנות
+// 🔍 חיפוש — לא לפי פרויקט ספציפי → אין checkAccess
 router.get("/search", protect, orderController.searchOrders);
 
-// כל ההזמנות למשתמש (לפי permissions)
-router.get(
-  "/",
-  protect,
-  checkAccess("order", "view"),
-  orderController.getOrders
-);
+// 📌 רשימת כל ההזמנות של המשתמש — ההרשאה בפנים בשירות
+router.get("/", protect, orderController.getOrders);
 
-// הזמנה לפי ID
-router.get(
-  "/:orderId",
-  protect,
-  checkAccess("order", "view"),
-  orderController.getOrderById
-);
+// 📌 הזמנה בודדת לפי ID — כן checkAccess
+router.get("/:orderId", protect, checkAccess("orders", "view"), orderController.getOrderById);
 
-// יצירת הזמנה
-router.post(
-  "/",
-  protect,
-  checkAccess("order", "edit"),
-  orderController.createOrder
-);
+// 📌 יצירת הזמנה — כן checkAccess (בגלל module = "orders")
+router.post("/", protect, checkAccess("orders", "edit"), orderController.createOrder);
 
-router.post(
-  "/bulk",
-  protect,
-  checkAccess("order", "edit"),
-  orderController.createBulkOrders
-);
+// 📌 יצירת הרבה הזמנות — כן checkAccess
+router.post("/bulk", protect, checkAccess("orders", "edit"), orderController.createBulkOrders);
 
+// 📌 עדכון הזמנה — כן checkAccess
+router.put("/:orderId", protect, checkAccess("orders", "edit"), orderController.updateOrder);
 
-// עדכון הזמנה
-router.put(
-  "/:orderId",
-  protect,
-  checkAccess("order", "edit"),
-  orderController.updateOrder
-);
+// 📌 עדכון סטטוס תשלום — כן
+router.put("/:orderId/status", protect, checkAccess("orders", "edit"), orderController.updatePaymentStatus);
 
-// עדכון סטטוס תשלום
-router.put(
-  "/:orderId/status",
-  protect,
-  checkAccess("order", "edit"),
-  orderController.updatePaymentStatus
-);
-
-// מחיקה
-router.delete(
-  "/:orderId",
-  protect,
-  checkAccess("order", "edit"),
-  orderController.deleteOrder
-);
+// 📌 מחיקה — כן
+router.delete("/:orderId", protect, checkAccess("orders", "edit"), orderController.deleteOrder);
 
 export default router;

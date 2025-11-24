@@ -1,17 +1,29 @@
 import React, { useState } from 'react';
 import { toast } from 'sonner';
+import { Lock } from 'lucide-react'; // אייקון לנעילה
 
 function FileUploader({
     onUploadSuccess,
     folder = 'general',
     label = 'העלה קובץ',
     maxSize = 5 * 1024 * 1024,
-    onDeleteSuccess
+    onDeleteSuccess,
+    disabled = false, // 🔥 הוספתי prop חדש
+    disabledMessage = "אין הרשאה להעלות קבצים" // 🔥 הודעה מותאמת אישית
 }) {
     const [loading, setLoading] = useState(false);
     const [files, setFiles] = useState([]);
 
     const handleUpload = async (e) => {
+        // 🔥 בדיקה ראשונית
+        if (disabled) {
+            toast.error(disabledMessage, {
+                className: "sonner-toast error rtl"
+            });
+            e.target.value = null; // נקה את הבחירה
+            return;
+        }
+
         const selectedFiles = Array.from(e.target.files);
         if (selectedFiles.length === 0) return;
 
@@ -27,24 +39,20 @@ function FileUploader({
                 continue;
             }
 
-            // במקום להעלות לקלאודינרי, רק שמור את הקובץ במקומי
             const localFile = {
-                file: file,                    // הקובץ המקורי
+                file: file,
                 name: file.name,
                 type: file.type,
                 size: file.size,
-                isLocal: true,                 // סימון שזה קובץ מקומי
-                url: URL.createObjectURL(file), // URL זמני לתצוגה מקדימה
+                isLocal: true,
+                url: URL.createObjectURL(file),
                 folder: folder
             };
 
             localFiles.push(localFile);
         }
 
-        // Update local state
         setFiles((prev) => [...prev, ...localFiles]);
-
-        // העבר את הקבצים המקומיים לקומפוננטה האב
         onUploadSuccess(localFiles);
         
         toast.success(`${localFiles.length} קבצים נבחרו (יועלו בעת השמירה)`, {
@@ -56,18 +64,32 @@ function FileUploader({
 
     return (
         <div className="mt-4">
-            <label className="block text-sm font-medium mb-2">
+            {/* <label className="block text-sm font-medium mb-2 flex items-center gap-2"> */}
+            <label className="text-sm font-medium mb-2 flex items-center gap-2">
                 {label}
+                {disabled && <Lock className="w-4 h-4 text-gray-400" />}
             </label>
+            
+            {/* 🔥 הודעת אזהרה אם אין הרשאה */}
+            {disabled && (
+                <div className="mb-2 p-3 bg-yellow-50 border border-yellow-200 rounded-lg">
+                    <p className="text-sm text-yellow-800 flex items-center gap-2">
+                        <Lock className="w-4 h-4" />
+                        {disabledMessage}
+                    </p>
+                </div>
+            )}
+
             <input
                 type="file"
                 multiple
                 accept=".xlsx, .xls, .pdf, .docx"
                 onChange={handleUpload}
-                disabled={loading}
-                className="block w-full text-sm file:mr-4 file:py-2 file:px-4
-    file:rounded-md file:border-0 file:text-sm file:font-semibold
-    file:bg-slate-50 file:text-slate-700 hover:file:bg-slate-100"
+                disabled={disabled || loading} // 🔥 השבת אם אין הרשאה או בטעינה
+                className={`block w-full text-sm file:mr-4 file:py-2 file:px-4
+                    file:rounded-md file:border-0 file:text-sm file:font-semibold
+                    file:bg-slate-50 file:text-slate-700 hover:file:bg-slate-100
+                    ${disabled ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}`}
             />
 
             {loading && (

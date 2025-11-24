@@ -4,70 +4,25 @@ import invoiceController from "../controller/invoiceControllers.js";
 
 const router = express.Router();
 
-// חיפוש חשבוניות
+// 🔍 חיפוש — אין checkAccess
 router.get("/search", protect, invoiceController.searchInvoices);
 
-// בדיקת כפילות – לא לפי invoiceId ולכן לא צריך checkAccess
-router.get(
-  "/check/duplicate",
-  protect,
-  invoiceController.checkDuplicate
-);
+// 📌 רשימת חשבוניות — אין checkAccess
+router.get("/", protect, invoiceController.getInvoices);
 
-// כל החשבוניות לפי הרשאות
-router.get(
-  "/",
-  protect,
-  checkAccess("invoice", "view"),
-  invoiceController.getInvoices
-);
+// 📌 בדיקת כפילות — אין checkAccess
+router.get("/check/duplicate", protect, invoiceController.checkDuplicate);
 
-// חשבונית לפי ID
-router.get(
-  "/:invoiceId",
-  protect,
-  checkAccess("invoice", "view"),
-  invoiceController.getInvoiceById
-);
+// 📌 חשבונית בודדת — כן
+router.get("/:invoiceId", protect, checkAccess("invoices", "view"), invoiceController.getInvoiceById);
 
-// יצירה
-router.post(
-  "/",
-  protect,
-  checkAccess("invoice", "edit"),
-  invoiceController.createInvoice
-);
+// 📌 יצירה — כן
+router.post("/", protect, checkAccess("invoices", "edit"), invoiceController.createInvoice);
 
-// עדכון
-router.put(
-  "/:invoiceId",
-  protect,
-  checkAccess("invoice", "edit"),
-  invoiceController.updateInvoice
-);
+// 📌 עדכון — כן
+router.put("/:invoiceId", protect, checkAccess("invoices", "edit"), invoiceController.updateInvoice);
 
-// עדכון סטטוס תשלום
-router.put(
-  "/:invoiceId/status",
-  protect,
-  checkAccess("invoice", "edit"),
-  invoiceController.updatePaymentStatus
-);
-
-// העברה בין פרויקטים
-router.put(
-  "/:invoiceId/move",
-  protect,
-  checkAccess("invoice", "edit"),
-  invoiceController.moveInvoice
-);
-
-// מחיקה
-router.delete(
-  "/:invoiceId",
-  protect,
-  checkAccess("invoice", "edit"),
-  invoiceController.deleteInvoice
-);
+// 📌 עדכון סטטוס תשלום — כן
+router.put("/:invoiceId/status", protect, checkAccess("invoices", "edit"), invoiceController.updatePaymentStatus);
 
 export default router;

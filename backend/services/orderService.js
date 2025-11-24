@@ -54,7 +54,7 @@ export default {
 
     return order;
   },
-  async createBulkOrders(user, orders) {
+ async createBulkOrders(user, orders) {
   const normalizeId = (val) => {
     if (!val) return "";
     if (typeof val === "string") return val;
@@ -65,9 +65,8 @@ export default {
   const created = [];
 
   for (const data of orders) {
-    // ✅ אדמין - דלג על בדיקת הרשאות
+    // 🔐 הרשאות
     if (user.role !== "admin") {
-      // ✅ בדוק שיש permissions לפני map
       if (!user.permissions || !Array.isArray(user.permissions)) {
         throw new Error("למשתמש אין הרשאות מוגדרות");
       }
@@ -83,9 +82,25 @@ export default {
       }
     }
 
+    // 📌 שליפת הפרויקט
     const project = await Project.findById(data.projectId);
     if (!project) throw new Error("פרויקט לא נמצא");
 
+    // 📌 סכום
+    const sum = Number(data.sum);
+    if (isNaN(sum) || sum <= 0) {
+      throw new Error("סכום ההזמנה אינו תקין");
+    }
+
+    // 📌 ודא שתקציב מוגדר
+    project.remainingBudget = Number(project.remainingBudget || 0);
+
+    // 📌 הוסף סכום ההזמנה לתקציב הנותר
+    project.remainingBudget += sum;
+
+    await project.save();
+
+    // 📌 יצירת ההזמנה
     const order = await Order.create(data);
     created.push(order);
   }
@@ -94,42 +109,56 @@ export default {
 },
 
   async createOrder(user, data) {
+    console.log("🔥🔥🔥 SERVICE createOrder RUNNING 🔥🔥🔥");
 
-  if (user.role !== "admin") {
-    const allowed = user.permissions.map(
-      (p) => String(p.project?._id || p.project)
-    );
-    if (!allowed.includes(String(data.projectId))) {
-      throw new Error("אין הרשאה להוסיף הזמנה לפרויקט זה");
+
+    if (user.role !== "admin") {
+      const allowed = user.permissions.map(
+        (p) => String(p.project?._id || p.project)
+      );
+      if (!allowed.includes(String(data.projectId))) {
+        throw new Error("אין הרשאה להוסיף הזמנה לפרויקט זה");
+      }
     }
-  }
 
-  const project = await Project.findById(data.projectId);
-  if (!project) throw new Error("פרויקט לא נמצא");
+    const project = await Project.findById(data.projectId);
+    if (!project) throw new Error("פרויקט לא נמצא");
 
-  // 🔺 הוספת סכום ההזמנה לתקציב הנותר
-  project.remainingBudget += Number(data.sum);
-  await project.save();
+    // 🔺 הוספת סכום ההזמנה לתקציב הנותר
+    // ודא שסכום קיים
+    const sum = Number(data.sum);
+    if (isNaN(sum)) throw new Error("סכום ההזמנה אינו תקין");
 
-  return Order.create(data);
-},
+    // ודא שתקציב מוגדר
+    project.remainingBudget = Number(project.remainingBudget || 0);
+
+    // הוסף סכום להזמנה
+    project.remainingBudget = project.remainingBudget + sum;
+
+    await project.save();
+
+    console.log("ORDER SUM RAW:", data.sum);
+    console.log("ORDER SUM NUM:", Number(data.sum));
+    return Order.create(data);
+
+  },
 
   async updateOrder(user, orderId, data) {
-  const order = await Order.findById(orderId);
-  if (!order) throw new Error("הזמנה לא נמצאה");
+    const order = await Order.findById(orderId);
+    if (!order) throw new Error("הזמנה לא נמצאה");
 
-  const project = await Project.findById(order.projectId);
+    const project = await Project.findById(order.projectId);
 
-  const oldSum = Number(order.sum);
-  const newSum = Number(data.sum ?? order.sum);
-  const diff = newSum - oldSum;
+    const oldSum = Number(order.sum);
+    const newSum = Number(data.sum ?? order.sum);
+    const diff = newSum - oldSum;
 
-  // 🔺 אם diff חיובי — להוסיף / אם שלילי — להוריד (כלומר מבטל)
-  project.remainingBudget += diff;
-  await project.save();
+    // 🔺 אם diff חיובי — להוסיף / אם שלילי — להוריד (כלומר מבטל)
+    project.remainingBudget += diff;
+    await project.save();
 
-  return Order.findByIdAndUpdate(orderId, data, { new: true });
-},
+    return Order.findByIdAndUpdate(orderId, data, { new: true });
+  },
 
   async updatePaymentStatus(user, orderId, status, paymentDate) {
     const order = await Order.findById(orderId);
@@ -142,15 +171,15 @@ export default {
     );
   },
 
-async deleteOrder(user, orderId) {
-  const order = await Order.findById(orderId);
-  if (!order) throw new Error("הזמנה לא נמצאה");
+  async deleteOrder(user, orderId) {
+    const order = await Order.findById(orderId);
+    if (!order) throw new Error("הזמנה לא נמצאה");
 
-  const project = await Project.findById(order.projectId);
-  project.remainingBudget -= Number(order.sum); // מבטל את התוספת
-  await project.save();
+    const project = await Project.findById(order.projectId);
+    project.remainingBudget -= Number(order.sum); // מבטל את התוספת
+    await project.save();
 
-  return Order.findByIdAndDelete(orderId);
-}
+    return Order.findByIdAndDelete(orderId);
+  }
 
 };

@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import api from "../../api/api.js";
 import FileUploader from "../../Components/FileUploader";
 import { toast } from "sonner";
+import { useModulePermission } from "../../hooks/useModulePermission";
 import {
   ShoppingCart,
   FileText,
@@ -32,61 +33,66 @@ const CreateOrder = () => {
 
   const navigate = useNavigate();
 
-const { user, loading: authLoading } = useAuth();
+  const { user, loading: authLoading } = useAuth();
 
-useEffect(() => {
-  const fetchProjects = async () => {
-    try {
-      const response = await api.get("/projects");
+  // בתוך הקומפוננטה
+  const { canEdit: canEditOrders } = useModulePermission(
+    selectedProject?._id,
+    "orders"
+  );
 
-      const data = Array.isArray(response.data?.data)
-        ? response.data.data
-        : Array.isArray(response.data)
-        ? response.data
-        : [];
+  useEffect(() => {
+    const fetchProjects = async () => {
+      try {
+        const response = await api.get("/projects");
 
-      // אם ה־Auth עדיין בטעינה — תראה הכל זמנית
-      if (authLoading) {
-        setProjects(data);
-        return;
-      }
+        const data = Array.isArray(response.data?.data)
+          ? response.data.data
+          : Array.isArray(response.data)
+          ? response.data
+          : [];
 
-      // משתמש לא מחובר
-      if (!user) {
+        // אם ה־Auth עדיין בטעינה — תראה הכל זמנית
+        if (authLoading) {
+          setProjects(data);
+          return;
+        }
+
+        // משתמש לא מחובר
+        if (!user) {
+          setProjects([]);
+          return;
+        }
+
+        // אדמין → רואה הכל
+        if (user.role === "admin") {
+          setProjects(data);
+          return;
+        }
+
+        // משתמש רגיל → סינון לפי הרשות המותרות
+        if (!user.permissions || !Array.isArray(user.permissions)) {
+          setProjects([]);
+          return;
+        }
+
+        const allowedProjectIds = user.permissions
+          .map((p) => String(p.project?._id || p.project))
+          .filter(Boolean);
+
+        const filtered = data.filter((p) =>
+          allowedProjectIds.includes(String(p._id))
+        );
+
+        setProjects(filtered);
+      } catch (err) {
+        console.error("❌ שגיאה בטעינת פרויקטים להזמנה:", err);
         setProjects([]);
-        return;
       }
+    };
 
-      // אדמין → רואה הכל
-      if (user.role === "admin") {
-        setProjects(data);
-        return;
-      }
-
-      // משתמש רגיל → סינון לפי הרשות המותרות
-      if (!user.permissions || !Array.isArray(user.permissions)) {
-        setProjects([]);
-        return;
-      }
-
-      const allowedProjectIds = user.permissions
-        .map((p) => String(p.project?._id || p.project))
-        .filter(Boolean);
-
-      const filtered = data.filter((p) =>
-        allowedProjectIds.includes(String(p._id))
-      );
-
-      setProjects(filtered);
-    } catch (err) {
-      console.error("❌ שגיאה בטעינת פרויקטים להזמנה:", err);
-      setProjects([]);
-    }
-  };
-
-  fetchProjects();
-}, [user, authLoading]);
-
+    fetchProjects();
+  }, [user, authLoading]);
 
   const handleProjectChange = (e) => {
     const projectId = e.target.value;
@@ -634,6 +640,8 @@ useEffect(() => {
                           }
                           folder="orders"
                           label="העלה קבצי הזמנה"
+                          disabled={!canEditOrders}
+                          disabledMessage="אין לך הרשאת עריכה להעלות קבצים להזמנה זו"
                         />
                       </div>
 

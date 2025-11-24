@@ -4,7 +4,7 @@ const projectSchema = new mongoose.Schema({
   name: { type: String, required: true },
 
   budget: { type: Number },
-  remainingBudget: { type: Number },
+  remainingBudget: { type: Number, default: 0 },
 
   invitingName: { type: String, required: true },
   Contact_person: { type: String, required: true },
@@ -16,14 +16,7 @@ const projectSchema = new mongoose.Schema({
   createdAt: { type: Date, default: Date.now }
 });
 
-// Auto-init remainingBudget
-projectSchema.pre("save", function (next) {
-  if (this.isNew) {
-    this.remainingBudget =
-      this.budget && !isNaN(this.budget) ? this.budget : 0;
-  }
-  next();
-});
+
 
 // Cascade delete invoices + orders when project is deleted
 projectSchema.pre(

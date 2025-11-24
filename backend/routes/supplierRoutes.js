@@ -1,42 +1,22 @@
 import express from "express";
-import { checkAccess, protect } from "../middleware/auth.js";
+import { protect, checkAccess } from "../middleware/auth.js";
 import supplierController from "../controller/SupplierController.js";
 
 const router = express.Router();
 
-router.get(
-  "/",
-  protect,
-  checkAccess("supplier", "view"),
-  supplierController.getAllSuppliersWithoutRestrictions
-);
+// 📌 רשימת ספקים — ללא checkAccess
+router.get("/", protect, supplierController.getSuppliers);
 
-router.get(
-  "/:supplierId",
-  protect,
-  checkAccess("supplier", "view"),
-  supplierController.getSupplierById
-);
+// 📌 ספק יחיד — כן
+router.get("/:supplierId", protect, checkAccess("suppliers", "view"), supplierController.getSupplierById);
 
-router.post(
-  "/",
-  protect,
-  checkAccess("supplier", "edit"),
-  supplierController.createSupplier
-);
+// 📌 יצירה — כן
+router.post("/", protect, checkAccess("suppliers", "edit"), supplierController.createSupplier);
 
-router.put(
-  "/:supplierId",
-  protect,
-  checkAccess("supplier", "edit"),
-  supplierController.updateSupplier
-);
+// 📌 עדכון — כן
+router.put("/:supplierId", protect, checkAccess("suppliers", "edit"), supplierController.updateSupplier);
 
-router.delete(
-  "/:supplierId",
-  protect,
-  checkAccess("supplier", "edit"),
-  supplierController.deleteSupplier
-);
+// 📌 מחיקה — כן
+router.delete("/:supplierId", protect, checkAccess("suppliers", "edit"), supplierController.deleteSupplier);
 
 export default router;

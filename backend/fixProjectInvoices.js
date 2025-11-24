@@ -1,64 +1,63 @@
 import mongoose from "mongoose";
+import User from "./models/User.js";
 import dotenv from "dotenv";
+
 dotenv.config();
 
-import Project from "./models/Project.js";
-import Invoice from "./models/Invoice.js";
-
-mongoose.set("strictQuery", false);
-
 const run = async () => {
-  console.log("🔧 Connecting to DB…");
-  await mongoose.connect("mongodb+srv://yakov1020:Yakov7470893@management-app.qrrmy.mongodb.net/?retryWrites=true&w=majority&appName=Management-App");
+  try {
+    console.log("🚀 Connecting to DB...");
+    await mongoose.connect("mongodb+srv://yakov1020:Yakov7470893@management-app.qrrmy.mongodb.net/?retryWrites=true&w=majority&appName=Management-App");
 
-  const invoices = await Invoice.find({});
-  const projects = await Project.find({});
+    console.log("🔄 Updating permissions...");
 
-  let fixed = 0;
+    const users = await User.find();
 
-  for (const inv of invoices) {
-    // אם כבר יש projectId – לדלג
-    if (inv.projectId) continue;
+    for (const user of users) {
+      let changed = false;
 
-    const invName = (inv.projectName || "").trim();
+      for (const perm of user.permissions) {
+        if (!perm.modules) continue;
 
-    if (!invName) continue;
+        // שינוי השמות
+        if (perm.modules.invoices !== undefined) {
+          perm.modules.invoice = perm.modules.invoices;
+          delete perm.modules.invoices;
+          changed = true;
+        }
 
-    // 1️⃣ התאמה מלאה
-    let project = projects.find(
-      (p) => p.name.trim() === invName
-    );
+        if (perm.modules.orders !== undefined) {
+          perm.modules.order = perm.modules.orders;
+          delete perm.modules.orders;
+          changed = true;
+        }
 
-    // 2️⃣ התאמה חלקית
-    if (!project) {
-      project = projects.find(
-        (p) =>
-          invName.includes(p.name.trim()) ||
-          p.name.trim().includes(invName)
-      );
+        if (perm.modules.suppliers !== undefined) {
+          perm.modules.supplier = perm.modules.suppliers;
+          delete perm.modules.suppliers;
+          changed = true;
+        }
+
+        if (perm.modules.files !== undefined) {
+          perm.modules.file = perm.modules.files;
+          delete perm.modules.files;
+          changed = true;
+        }
+      }
+
+      if (changed) {
+        await user.save();
+        console.log(`✔ Updated user: ${user.username}`);
+      }
     }
 
-    if (!project) {
-      console.log("⚠️ לא נמצא פרויקט ל:", inv._id, invName);
-      continue;
-    }
+    console.log("🎉 Done! All permissions updated.");
+    process.exit(0);
 
-    // עדכון החשבונית
-    inv.projectId = project._id;
-    await inv.save();
-
-    // הוספה לפרויקט
-    if (!project.invoices.includes(inv._id)) {
-      project.invoices.push(inv._id);
-      await project.save();
-    }
-
-    console.log(`✔ fixed invoice ${inv._id} → project ${project._id}`);
-    fixed++;
+  } catch (err) {
+    console.error("❌ Error:", err);
+    process.exit(1);
   }
-
-  console.log(`🎉 DONE! Fixed ${fixed} invoices`);
-  process.exit();
 };
 
 run();

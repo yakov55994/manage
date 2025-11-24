@@ -19,8 +19,10 @@ const permissionSchema = new mongoose.Schema({
     invoices: { type: String, enum: ["none", "view", "edit"], default: "none" },
     orders: { type: String, enum: ["none", "view", "edit"], default: "none" },
     suppliers: { type: String, enum: ["none", "view", "edit"], default: "none" },
-    files: { type: String, enum: ["none", "view", "edit"], default: "none" }
+    files: { type: String, enum: ["none", "view", "edit"], default: "none" },
   }
+
+
 });
 
 
@@ -28,7 +30,7 @@ const userSchema = new mongoose.Schema(
   {
     username: { type: String, required: true, unique: true },
     password: { type: String, required: true },
-    email: String,
+    email: { type: String, required: false },
     role: { type: String, enum: ["admin", "user"], default: "user" },
     isActive: { type: Boolean, default: true },
 

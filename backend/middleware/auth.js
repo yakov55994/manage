@@ -82,15 +82,24 @@ function canAccessModule(user, projectId, moduleName, action) {
 // ---------------------------------------------
 // 🔥 checkAccess – הרשאות חזקות לפי מודול
 // ---------------------------------------------
+// במידלוור authMiddleware.js - תקן את checkAccess:
+
 export const checkAccess = (type, action) => {
   return async (req, res, next) => {
     try {
       const user = req.user;
 
-      // אדמין תמיד עובר
-      if (user.role === "admin") return next();
+      console.log("\n========== CHECK ACCESS ==========");
+      console.log("TYPE:", type);
+      console.log("ACTION:", action);
+      console.log("USER ID:", user._id);
+      console.log("USER PERMISSIONS:", JSON.stringify(user.permissions, null, 2));
 
-      // ID מהנתיב
+      if (user.role === "admin") {
+        console.log("ADMIN → PASS\n");
+        return next();
+      }
+
       const id =
         req.params.id ||
         req.params.invoiceId ||
@@ -98,59 +107,102 @@ export const checkAccess = (type, action) => {
         req.params.supplierId ||
         req.params.projectId;
 
-      let item;
+      console.log("ITEM ID FROM PARAMS:", id);
+
+      let item = null;
       let moduleName = null;
 
       switch (type) {
+        case "invoices":
         case "invoice":
           item = await Invoice.findById(id);
           moduleName = "invoices";
           break;
 
+        case "orders":
         case "order":
           item = await Order.findById(id);
           moduleName = "orders";
           break;
 
+        case "suppliers":
         case "supplier":
           item = await Supplier.findById(id);
           moduleName = "suppliers";
           break;
 
+        case "projects":
         case "project":
           item = await Project.findById(id);
+          moduleName = null;
           break;
-
-        default:
-          return res.status(500).json({ message: "שגיאת הרשאות" });
       }
 
-      if (!item) return res.status(404).json({ message: "לא נמצא" });
+      console.log("FOUND ITEM:", item ? "YES" : "NO");
 
-      // זיהוי projectId
-      const projectId =
+      if (!item) {
+        console.log("❌ ITEM NOT FOUND → 404\n");
+        return res.status(404).json({ message: "לא נמצא" });
+      }
+
+      const projectId = String(
         item.projectId ||
         item.project ||
-        (type === "project" ? item._id : null);
+        (type === "project" || type === "projects" ? item._id : "")
+      );
 
-      if (!projectId)
-        return res.status(400).json({ message: "projectId לא נמצא" });
+      console.log("PROJECT ID DETECTED:", projectId);
 
-      // 1️⃣ המשתמש חייב להיות משויך לפרויקט
-      if (!isInProject(user, projectId)) {
+      // 🔥 FIX: השתמש ב-toString() במקום String()
+      const hasProject = user.permissions.some((p) => {
+        const permProjectId = p.project?.toString() || String(p.project);
+        console.log(`Comparing: ${permProjectId} === ${projectId}`);
+        return permProjectId === projectId;
+      });
+
+      console.log("HAS PROJECT ACCESS:", hasProject);
+
+      if (!hasProject) {
+        console.log("❌ NO PROJECT ACCESS → 403\n");
         return res.status(403).json({ message: "אין גישה לפרויקט" });
       }
 
-      // 2️⃣ אם יש מודול – בדיקת מודול
-      if (moduleName) {
-        const ok = canAccessModule(user, projectId, moduleName, action);
-        if (!ok) return res.status(403).json({ message: "אין הרשאה" });
+      // אם אין modules — אין מה לבדוק
+      if (!moduleName) {
+        console.log("NO MODULE CHECK NEEDED → PASS\n");
+        return next();
       }
 
+      // בדיקת מודולים
+      const perm = user.permissions.find((p) => {
+        const permProjectId = p.project?.toString() || String(p.project);
+        return permProjectId === projectId;
+      });
+
+      const level = perm.modules?.[moduleName];
+
+      console.log("MODULE NAME:", moduleName);
+      console.log("MODULE LEVEL:", level);
+
+      if (action === "view") {
+        if (level === "none" || !level) {
+          console.log("❌ VIEW DENIED\n");
+          return res.status(403).json({ message: "אין הרשאה" });
+        }
+      }
+
+      if (action === "edit") {
+        if (level !== "edit") {
+          console.log("❌ EDIT DENIED\n");
+          return res.status(403).json({ message: "אין הרשאה" });
+        }
+      }
+
+      console.log("✔ ACCESS GRANTED!\n");
       next();
     } catch (err) {
-      console.log(err);
-      return res.status(403).json({ message: "אין הרשאה" });
+      console.log("❌ CHECK ACCESS ERROR:", err, "\n");
+      return res.status(500).json({ message: "שגיאת הרשאות" });
     }
   };
 };

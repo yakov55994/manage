@@ -5,7 +5,8 @@ import FileUploader from "../../Components/FileUploader";
 import { toast } from "sonner";
 import SupplierSelector from "../../Components/SupplierSelector.jsx";
 import DateField from "../../Components/DateField.jsx";
-import {useAuth} from '../../context/AuthContext.jsx' 
+import { useAuth } from "../../context/AuthContext.jsx";
+import { useModulePermission } from "../../hooks/useModulePermission";
 import {
   FileText,
   ClipboardList,
@@ -41,61 +42,65 @@ const CreateInvoice = () => {
 
   const navigate = useNavigate();
 
-const { user, loading: authLoading } = useAuth();
+  const { user, loading: authLoading } = useAuth();
 
-useEffect(() => {
-  const fetchProjects = async () => {
-    try {
-      const response = await api.get("/projects");
+  // בתוך הקומפוננטה, אחרי const { user, loading: authLoading } = useAuth();
+  const { canEdit: canEditInvoices } = useModulePermission(
+    selectedProject?._id,
+    "invoices"
+  );
+  useEffect(() => {
+    const fetchProjects = async () => {
+      try {
+        const response = await api.get("/projects");
 
-      const data = Array.isArray(response.data?.data)
-        ? response.data.data
-        : Array.isArray(response.data)
-        ? response.data
-        : [];
+        const data = Array.isArray(response.data?.data)
+          ? response.data.data
+          : Array.isArray(response.data)
+          ? response.data
+          : [];
 
-      // אם ההרשאות עדיין נטענות — תציג הכל זמנית
-      if (authLoading) {
-        setProjects(data);
-        return;
-      }
+        // אם ההרשאות עדיין נטענות — תציג הכל זמנית
+        if (authLoading) {
+          setProjects(data);
+          return;
+        }
 
-      // אין משתמש
-      if (!user) {
+        // אין משתמש
+        if (!user) {
+          setProjects([]);
+          return;
+        }
+
+        // אדמין → רואה הכל
+        if (user.role === "admin") {
+          setProjects(data);
+          return;
+        }
+
+        // משתמש רגיל → מסנן לפי ההרשאות
+        if (!user.permissions || !Array.isArray(user.permissions)) {
+          setProjects([]);
+          return;
+        }
+
+        const allowedProjectIds = user.permissions
+          .map((p) => String(p.project?._id || p.project))
+          .filter(Boolean);
+
+        const filtered = data.filter((p) =>
+          allowedProjectIds.includes(String(p._id))
+        );
+
+        setProjects(filtered);
+      } catch (err) {
+        console.error("❌ שגיאה בטעינת פרויקטים:", err);
         setProjects([]);
-        return;
       }
+    };
 
-      // אדמין → רואה הכל
-      if (user.role === "admin") {
-        setProjects(data);
-        return;
-      }
-
-      // משתמש רגיל → מסנן לפי ההרשאות
-      if (!user.permissions || !Array.isArray(user.permissions)) {
-        setProjects([]);
-        return;
-      }
-
-      const allowedProjectIds = user.permissions
-        .map((p) => String(p.project?._id || p.project))
-        .filter(Boolean);
-
-      const filtered = data.filter((p) =>
-        allowedProjectIds.includes(String(p._id))
-      );
-
-      setProjects(filtered);
-    } catch (err) {
-      console.error("❌ שגיאה בטעינת פרויקטים:", err);
-      setProjects([]);
-    }
-  };
-
-  fetchProjects();
-}, [user, authLoading]);
-
+    fetchProjects();
+  }, [user, authLoading]);
 
   useEffect(() => {
     const draftStr = sessionStorage.getItem("invoiceDraft");
@@ -893,18 +898,16 @@ useEffect(() => {
                           תאריך תשלום
                         </label>
 
-    <DateField
-                        type="date"
-                        value={invoice.paymentDate}
-                        className="w-full p-3 border-2 border-slate-200 rounded-xl bg-white font-medium focus:border-orange-500 focus:outline-none focus:ring-4 focus:ring-orange-500/20 transition-all group-hover:border-orange-300"
-                        placeholder="yyyy-mm-dd"
-                        required
-                        onChange={(val) =>
-                          handleInvoiceChange(index, "paymentDate", val)
-                        }
-                      />
-
-                   
+                        <DateField
+                          type="date"
+                          value={invoice.paymentDate}
+                          className="w-full p-3 border-2 border-slate-200 rounded-xl bg-white font-medium focus:border-orange-500 focus:outline-none focus:ring-4 focus:ring-orange-500/20 transition-all group-hover:border-orange-300"
+                          placeholder="yyyy-mm-dd"
+                          required
+                          onChange={(val) =>
+                            handleInvoiceChange(index, "paymentDate", val)
+                          }
+                        />
                       </div>
                     )}
 
@@ -945,7 +948,9 @@ useEffect(() => {
                             handleInvoiceUpload(index, files)
                           }
                           folder="invoices"
-                          label="העלה קבצי חשבונית"
+                          label="העלאת קבצים"
+                          disabled={!canEditInvoices}
+                          disabledMessage="אין לך הרשאת עריכה להעלות קבצים לחשבונית זו"
                         />
                       </div>
 

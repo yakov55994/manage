@@ -1,50 +1,22 @@
 import express from "express";
-import {
-  checkAccess,
-  protect,
-  requireAdmin,
-} from "../middleware/auth.js";
-
+import { protect, requireAdmin, checkAccess } from "../middleware/auth.js";
 import projectController from "../controller/projectControllers.js";
 
 const router = express.Router();
 
-// חיפוש
-router.get("/search", protect, projectController.searchProjects);
-
-// כל הפרויקטים עם סינון הרשאות פנימי
+// 📌 רשימת פרויקטים — ללא checkAccess
 router.get("/", protect, projectController.getAllProjects);
 
-// פרויקט לפי ID
-router.get(
-  "/:projectId",
-  protect,
-  checkAccess("project", "view"),
-  projectController.getProjectById
-);
+// 📌 פרויקט ספציפי — כן
+router.get("/:projectId", protect, checkAccess("projects", "view"), projectController.getProjectById);
 
-// יצירה – רק אדמין!
-router.post(
-  "/",
-  protect,
-  requireAdmin,
-  projectController.createProject
-);
+// 📌 יצירה — רק אדמין
+router.post("/", protect, requireAdmin, projectController.createProject);
 
-// עדכון – requires edit
-router.put(
-  "/:projectId",
-  protect,
-    checkAccess("project", "edit"),
-  projectController.updateProject
-);
+// 📌 עדכון — כן
+router.put("/:projectId", protect, checkAccess("projects", "edit"), projectController.updateProject);
 
-// מחיקה – רק אדמין
-router.delete(
-  "/:projectId",
-  protect,
-  requireAdmin,
-  projectController.deleteProject
-);
+// 📌 מחיקה — כן
+router.delete("/:projectId", protect, checkAccess("projects", "edit"), projectController.deleteProject);
 
 export default router;

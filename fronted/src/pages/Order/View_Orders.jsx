@@ -33,6 +33,15 @@ const OrdersPage = () => {
   const [allOrders, setAllOrders] = useState([]);
   const [showReportModal, setShowReportModal] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
+  const [showPrintModal, setShowPrintModal] = useState(false);
+
+  // 🆕 State להדפסה
+  const [selectedProjectForPrint, setSelectedProjectForPrint] = useState("");
+  const [selectedSupplierForPrint, setSelectedSupplierForPrint] = useState("");
+  const [fromDatePrint, setFromDatePrint] = useState("");
+  const [toDatePrint, setToDatePrint] = useState("");
+  const [projectsForPrint, setProjectsForPrint] = useState([]);
+  const [suppliersForPrint, setSuppliersForPrint] = useState([]);
 
   const [advancedFilters, setAdvancedFilters] = useState({
     dateFrom: "",
@@ -60,6 +69,7 @@ const OrdersPage = () => {
   });
 
   const navigate = useNavigate();
+  const { user, loading: authLoading } = useAuth();
 
   const formatNumber = (num) => num?.toLocaleString("he-IL");
   const formatDate = (dateTime) => {
@@ -69,8 +79,13 @@ const OrdersPage = () => {
       day: "2-digit",
     });
   };
-    const { user, loading: authLoading } = useAuth();
-  
+
+  const normalizeDate = (d) => {
+    if (!d) return null;
+    const raw = d?.$date || d;
+    const dt = new Date(raw);
+    return isNaN(dt.getTime()) ? null : dt;
+  };
 
   const availableColumns = [
     { key: "orderNumber", label: "מספר הזמנה" },
@@ -85,10 +100,40 @@ const OrdersPage = () => {
     { key: "daysSinceCreated", label: "ימים מיצירה" },
   ];
 
+  // 🆕 useEffect לטעינת פרויקטים וספקים להדפסה
+  useEffect(() => {
+    const fetchProjectsAndSuppliers = async () => {
+      try {
+        const [projectsRes, suppliersRes] = await Promise.all([
+          api.get("/projects"),
+          api.get("/suppliers"),
+        ]);
+
+        const projectsData = Array.isArray(projectsRes.data?.data)
+          ? projectsRes.data.data
+          : Array.isArray(projectsRes.data)
+          ? projectsRes.data
+          : [];
+
+        const suppliersData = Array.isArray(suppliersRes.data?.data)
+          ? suppliersRes.data.data
+          : Array.isArray(suppliersRes.data)
+          ? suppliersRes.data
+          : [];
+
+        setProjectsForPrint(projectsData);
+        setSuppliersForPrint(suppliersData);
+      } catch (error) {
+        console.error("Error fetching projects/suppliers:", error);
+      }
+    };
+
+    fetchProjectsAndSuppliers();
+  }, []);
+
   const getFilteredOrders = () => {
     let filtered = [...allOrders];
 
-    // חיפוש כללי
     if (searchTerm) {
       filtered = filtered.filter(
         (order) =>
@@ -168,6 +213,372 @@ const OrdersPage = () => {
     const formattedSum = formatNumber(order.sum) + " ₪";
     const formattedDate = formatDate(order.createdAt);
     return { daysSinceCreated, formattedSum, formattedDate };
+  };
+
+  // 🆕 פונקציית הדפסה להזמנות
+  const generateOrdersPrint = () => {
+    let filteredForPrint = [...allOrders];
+
+    // סינון לפי פרויקט
+    if (selectedProjectForPrint) {
+      filteredForPrint = filteredForPrint.filter(
+        (ord) =>
+          ord.projectId === selectedProjectForPrint ||
+          ord.project?._id === selectedProjectForPrint
+      );
+    }
+
+    // סינון לפי ספק (אם יש שדה ספק בהזמנות)
+    if (selectedSupplierForPrint) {
+      filteredForPrint = filteredForPrint.filter(
+        (ord) => ord.supplier?._id === selectedSupplierForPrint
+      );
+    }
+
+    // סינון לפי תאריך התחלה
+    if (fromDatePrint) {
+      const fromDate = new Date(fromDatePrint);
+      filteredForPrint = filteredForPrint.filter((ord) => {
+        const ordDate = normalizeDate(ord.createdAt);
+        return ordDate && ordDate >= fromDate;
+      });
+    }
+
+    // סינון לפי תאריך סיום
+    if (toDatePrint) {
+      const toDate = new Date(toDatePrint);
+      filteredForPrint = filteredForPrint.filter((ord) => {
+        const ordDate = normalizeDate(ord.createdAt);
+        return ordDate && ordDate <= toDate;
+      });
+    }
+
+    if (filteredForPrint.length === 0) {
+      toast.error("לא נמצאו הזמנות מתאימות לפילטרים שנבחרו", {
+        className: "sonner-toast error rtl",
+      });
+      return;
+    }
+
+    // חישוב סיכומים
+    const totalSum = filteredForPrint.reduce(
+      (sum, ord) => sum + (ord.sum || 0),
+      0
+    );
+
+    // מציאת שמות לפילטרים
+    const selectedProjectName = selectedProjectForPrint
+      ? projectsForPrint.find((p) => p._id === selectedProjectForPrint)?.name ||
+        ""
+      : "";
+    const selectedSupplierName = selectedSupplierForPrint
+      ? suppliersForPrint.find((s) => s._id === selectedSupplierForPrint)
+          ?.name || ""
+      : "";
+
+    const printWindow = window.open("", "_blank");
+
+    if (!printWindow) {
+      toast.error("הדפדפן חסם את חלון ההדפסה — תאפשר פופאפים", {
+        className: "sonner-toast error rtl",
+      });
+      return;
+    }
+
+    printWindow.document.write(`
+      <!DOCTYPE html>
+      <html dir="rtl" lang="he">
+      <head>
+        <meta charset="UTF-8">
+        <title>דוח הזמנות - ניהולון</title>
+        <style>
+          * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+          }
+
+          body {
+            font-family: 'Segoe UI', Tahoma, Arial, sans-serif;
+            padding: 30px;
+            background: #fff;
+            color: #1f2937;
+          }
+
+          .header {
+            text-align: center;
+            margin-bottom: 40px;
+            padding-bottom: 20px;
+            border-bottom: 3px solid #f97316;
+          }
+
+          .logo {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 12px;
+            margin-bottom: 15px;
+          }
+
+          .logo-text {
+            font-size: 36px;
+            font-weight: 700;
+            color: #6b7280;
+            letter-spacing: 2px;
+          }
+
+          .logo-icon {
+            width: 45px;
+            height: 45px;
+            background: #f97316;
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+          }
+
+          .logo-icon::before {
+            content: "⚙";
+            font-size: 28px;
+            color: white;
+          }
+
+          .header h1 {
+            font-size: 24px;
+            color: #1f2937;
+            margin-bottom: 10px;
+            font-weight: 600;
+          }
+
+          .header .date {
+            color: #6b7280;
+            font-size: 14px;
+          }
+
+          .filters {
+            background: #fff7ed;
+            padding: 15px 20px;
+            border-radius: 8px;
+            margin-bottom: 30px;
+            border-right: 4px solid #f97316;
+          }
+
+          .filters h3 {
+            color: #f97316;
+            margin-bottom: 10px;
+            font-size: 16px;
+          }
+
+          .filters p {
+            color: #6b7280;
+            font-size: 14px;
+            margin: 5px 0;
+          }
+
+          table {
+            width: 100%;
+            border-collapse: collapse;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+            margin-bottom: 30px;
+          }
+
+          thead {
+            background: linear-gradient(135deg, #f97316 0%, #fb923c 100%);
+            color: white;
+          }
+
+          thead th {
+            padding: 15px 12px;
+            font-weight: 600;
+            font-size: 13px;
+            text-align: center;
+          }
+
+          tbody tr {
+            border-bottom: 1px solid #e5e7eb;
+          }
+
+          tbody tr:nth-child(even) {
+            background: #f9fafb;
+          }
+
+          tbody tr:hover {
+            background: #fff7ed;
+          }
+
+          tbody td {
+            padding: 12px;
+            font-size: 12px;
+            color: #374151;
+            text-align: center;
+          }
+
+          .summary {
+            background: linear-gradient(135deg, #fff7ed 0%, #ffedd5 100%);
+            border: 2px solid #fdba74;
+            border-radius: 12px;
+            padding: 20px;
+            margin-top: 30px;
+          }
+
+          .summary h3 {
+            color: #f97316;
+            margin-bottom: 15px;
+            font-size: 20px;
+          }
+
+          .summary-row {
+            display: flex;
+            justify-content: space-between;
+            padding: 10px 0;
+            border-bottom: 1px solid #fdba74;
+            font-size: 15px;
+          }
+
+          .summary-row:last-child {
+            border-bottom: none;
+          }
+
+          .summary-row.total {
+            font-size: 18px;
+            font-weight: bold;
+            color: #ea580c;
+            margin-top: 10px;
+          }
+
+          .footer {
+            margin-top: 40px;
+            text-align: center;
+            color: #9ca3af;
+            font-size: 12px;
+            padding-top: 20px;
+            border-top: 1px solid #e5e7eb;
+          }
+
+          @media print {
+            body {
+              padding: 15mm;
+            }
+
+            table {
+              page-break-inside: auto;
+            }
+
+            tr {
+              page-break-inside: avoid;
+              page-break-after: auto;
+            }
+
+            thead {
+              display: table-header-group;
+            }
+          }
+        </style>
+      </head>
+      <body>
+        <div class="header">
+          <div class="logo">
+            <div class="logo-icon"></div>
+            <div class="logo-text">ניהולון</div>
+          </div>
+          <h1>📋 דוח הזמנות</h1>
+          <div class="date">תאריך הפקה: ${new Date().toLocaleDateString(
+            "he-IL",
+            {
+              year: "numeric",
+              month: "long",
+              day: "numeric",
+              hour: "2-digit",
+              minute: "2-digit",
+            }
+          )}</div>
+        </div>
+
+        ${
+          selectedProjectName ||
+          selectedSupplierName ||
+          fromDatePrint ||
+          toDatePrint
+            ? `
+        <div class="filters">
+          <h3>🔍 פילטרים</h3>
+          ${selectedProjectName ? `<p><strong>פרויקט:</strong> ${selectedProjectName}</p>` : ""}
+          ${selectedSupplierName ? `<p><strong>ספק:</strong> ${selectedSupplierName}</p>` : ""}
+          ${fromDatePrint ? `<p><strong>מתאריך:</strong> ${new Date(fromDatePrint).toLocaleDateString("he-IL")}</p>` : ""}
+          ${toDatePrint ? `<p><strong>עד תאריך:</strong> ${new Date(toDatePrint).toLocaleDateString("he-IL")}</p>` : ""}
+        </div>
+        `
+            : ""
+        }
+
+        <table>
+          <thead>
+            <tr>
+              <th>מס׳</th>
+              <th>מספר הזמנה</th>
+              <th>שם המזמין</th>
+              <th>פרויקט</th>
+              <th>סכום</th>
+              <th>תאריך</th>
+              <th>סטטוס</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${filteredForPrint
+              .map(
+                (order, idx) => `
+              <tr>
+                <td><strong>${idx + 1}</strong></td>
+                <td><strong>${order.orderNumber || "-"}</strong></td>
+                <td>${order.invitingName || "לא צוין"}</td>
+                <td>${order.projectName || "-"}</td>
+                <td><strong>${formatNumber(order.sum)} ₪</strong></td>
+                <td>${formatDate(order.createdAt)}</td>
+                <td>${order.status || "-"}</td>
+              </tr>`
+              )
+              .join("")}
+          </tbody>
+        </table>
+
+        <div class="summary">
+          <h3>📊 סיכום</h3>
+          <div class="summary-row">
+            <span>סה"כ הזמנות:</span>
+            <strong>${filteredForPrint.length}</strong>
+          </div>
+          <div class="summary-row total">
+            <span>סה"כ סכום כולל:</span>
+            <strong>${formatNumber(totalSum)} ₪</strong>
+          </div>
+        </div>
+
+        <div class="footer">
+          <p>מסמך זה הופק אוטומטית ממערכת ניהולון</p>
+          <p>© ${new Date().getFullYear()} כל הזכויות שמורות</p>
+        </div>
+
+        <script>
+          window.onload = function() {
+            setTimeout(() => window.print(), 250);
+          }
+        </script>
+      </body>
+      </html>
+    `);
+
+    printWindow.document.close();
+
+    toast.success(`נפתח חלון הדפסה עם ${filteredForPrint.length} הזמנות!`, {
+      className: "sonner-toast success rtl",
+      duration: 3000,
+    });
+
+    setShowPrintModal(false);
+    setSelectedProjectForPrint("");
+    setSelectedSupplierForPrint("");
+    setFromDatePrint("");
+    setToDatePrint("");
   };
 
   const toggleColumn = (columnKey) => {
@@ -355,7 +766,7 @@ const OrdersPage = () => {
     };
 
     fetchOrders();
-  }, [user, authLoading]); // גם כאן תוסיף תלות – למקרה שתוסיף סינון בעתיד
+  }, [user, authLoading]);
 
   useEffect(() => {
     if (!showReportModal) return;
@@ -530,8 +941,15 @@ const OrdersPage = () => {
             {/* Export Buttons */}
             <div className="flex gap-3">
               <button
+                onClick={() => setShowPrintModal(true)}
+                className="px-4 py-2 bg-orange-500 text-white rounded-xl font-medium hover:bg-orange-600"
+              >
+                הדפסת מסמכים
+              </button>
+
+              <button
                 onClick={() => setShowReportModal(true)}
-                className="flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-purple-600 to-indigo-600 text-white font-bold rounded-xl hover:from-purple-700 hover:to-indigo-700 transition-all shadow-lg shadow-purple-500/30"
+                className="flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-orange-600 to-orange-600 text-white font-bold rounded-xl hover:from-orange-700 hover:to-orange-700 transition-all shadow-lg shadow-orange-500/30"
               >
                 <FileSpreadsheet className="w-5 h-5" />
                 <span>מחולל דוחות</span>
@@ -539,7 +957,7 @@ const OrdersPage = () => {
 
               <button
                 onClick={exportToExcel}
-                className="flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-emerald-600 to-teal-600 text-white font-bold rounded-xl hover:from-emerald-700 hover:to-teal-700 transition-all shadow-lg shadow-emerald-500/30"
+                className="flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-orange-600 to-orange-600 text-white font-bold rounded-xl hover:from-orange-700 hover:to-orange-700 transition-all shadow-lg shadow-orange-500/30"
               >
                 <DownloadCloud className="w-5 h-5" />
                 <span>ייצוא מהיר</span>
@@ -636,7 +1054,7 @@ const OrdersPage = () => {
           </div>
         )}
 
-        {/* Delete Modal - keeping existing modals */}
+        {/* Delete Modal */}
         {showModal && (
           <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4">
             <div className="relative">
@@ -672,28 +1090,108 @@ const OrdersPage = () => {
           </div>
         )}
 
+        {/* 🆕 Print Modal */}
+        {showPrintModal && (
+          <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50">
+            <div className="relative">
+              <div className="absolute -inset-4 bg-gradient-to-r from-orange-500 to-amber-500 rounded-3xl opacity-20 blur-2xl"></div>
+
+              <div className="relative bg-white p-6 rounded-2xl w-[480px]">
+                <h2 className="text-xl font-bold mb-4 text-center">
+                  הפקת מסמכים להדפסה
+                </h2>
+
+                {/* בחירת פרויקט */}
+                <label className="block font-medium mb-2">בחירת פרויקט</label>
+                <select
+                  className="w-full p-3 border-2 border-gray-200 rounded-xl mb-3 focus:border-orange-500 focus:outline-none"
+                  value={selectedProjectForPrint}
+                  onChange={(e) => setSelectedProjectForPrint(e.target.value)}
+                >
+                  <option value="">כל הפרויקטים</option>
+                  {projectsForPrint.map((p) => (
+                    <option key={p._id} value={p._id}>
+                      {p.name}
+                    </option>
+                  ))}
+                </select>
+
+                {/* בחירת ספק */}
+                <label className="block font-medium mb-2">בחירת ספק</label>
+                <select
+                  className="w-full p-3 border-2 border-gray-200 rounded-xl mb-3 focus:border-orange-500 focus:outline-none"
+                  value={selectedSupplierForPrint}
+                  onChange={(e) => setSelectedSupplierForPrint(e.target.value)}
+                >
+                  <option value="">כל הספקים</option>
+                  {suppliersForPrint.map((s) => (
+                    <option key={s._id} value={s._id}>
+                      {s.name}
+                    </option>
+                  ))}
+                </select>
+
+                {/* תאריכים */}
+                <label className="block font-medium mb-2">טווח תאריכים</label>
+                <div className="flex gap-3 mb-4">
+                  <input
+                    type="date"
+                    className="w-1/2 border-2 border-gray-200 p-2 rounded-xl focus:border-orange-500 focus:outline-none"
+                    value={fromDatePrint}
+                    onChange={(e) => setFromDatePrint(e.target.value)}
+                  />
+                  <input
+                    type="date"
+                    className="w-1/2 border-2 border-gray-200 p-2 rounded-xl focus:border-orange-500 focus:outline-none"
+                    value={toDatePrint}
+                    onChange={(e) => setToDatePrint(e.target.value)}
+                  />
+                </div>
+
+                <div className="flex justify-between mt-4 gap-3">
+                  <button
+                    className="flex-1 px-4 py-2 bg-gray-300 text-gray-700 rounded-xl hover:bg-gray-400 transition-all font-bold"
+                    onClick={() => {
+                      setShowPrintModal(false);
+                      setSelectedProjectForPrint("");
+                      setSelectedSupplierForPrint("");
+                      setFromDatePrint("");
+                      setToDatePrint("");
+                    }}
+                  >
+                    ביטול
+                  </button>
+
+                  <button
+                    className="flex-1 px-4 py-2 bg-orange-500 text-white rounded-xl hover:bg-orange-600 transition-all font-bold"
+                    onClick={generateOrdersPrint}
+                  >
+                    הפק PDF
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Report Modal */}
         {showReportModal && (
           <div className="fixed inset-0 z-50">
-            {/* רקע + סגירה בלחיצה בחוץ */}
             <div
               className="absolute inset-0 bg-black/60 backdrop-blur-sm"
               onClick={() => setShowReportModal(false)}
             />
 
-            {/* מעטפת עם גלילה */}
             <div className="fixed inset-0 flex items-center justify-center p-4 overflow-y-auto">
-              {/* קופסת המודאל */}
               <div
                 className="relative w-full max-w-4xl mt-20"
                 onClick={(e) => e.stopPropagation()}
                 role="dialog"
                 aria-modal="true"
               >
-                {/* זוהר עדין */}
                 <div className="pointer-events-none absolute -inset-2 bg-gradient-to-r from-orange-500 to-amber-500 rounded-3xl opacity-20 blur-xl"></div>
 
                 <div className="relative bg-white rounded-3xl shadow-2xl overflow-hidden">
-                  {/* כותרת + כפתור סגירה */}
                   <div className="bg-gradient-to-r from-orange-500 to-amber-500 text-white p-6">
                     <div className="flex items-center justify-between">
                       <div className="flex items-center gap-3">
@@ -718,7 +1216,6 @@ const OrdersPage = () => {
                     </p>
                   </div>
 
-                  {/* תוכן המודאל */}
                   <div className="max-h-[calc(85vh-8rem)] overflow-y-auto p-6">
                     {/* Advanced Filters */}
                     <div className="mb-6">
@@ -736,7 +1233,6 @@ const OrdersPage = () => {
                       </div>
 
                       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                        {/* Date From */}
                         <div>
                           <label className="block text-sm font-semibold text-gray-700 mb-2">
                             תאריך מ-
@@ -754,7 +1250,6 @@ const OrdersPage = () => {
                           />
                         </div>
 
-                        {/* Date To */}
                         <div>
                           <label className="block text-sm font-semibold text-gray-700 mb-2">
                             תאריך עד-
@@ -772,7 +1267,6 @@ const OrdersPage = () => {
                           />
                         </div>
 
-                        {/* Sum Min */}
                         <div>
                           <label className="block text-sm font-semibold text-gray-700 mb-2">
                             סכום מינימום
@@ -791,7 +1285,6 @@ const OrdersPage = () => {
                           />
                         </div>
 
-                        {/* Sum Max */}
                         <div>
                           <label className="block text-sm font-semibold text-gray-700 mb-2">
                             סכום מקסימום
@@ -810,7 +1303,6 @@ const OrdersPage = () => {
                           />
                         </div>
 
-                        {/* Project Name */}
                         <div>
                           <label className="block text-sm font-semibold text-gray-700 mb-2">
                             שם פרויקט
@@ -829,7 +1321,6 @@ const OrdersPage = () => {
                           />
                         </div>
 
-                        {/* Inviting Name */}
                         <div>
                           <label className="block text-sm font-semibold text-gray-700 mb-2">
                             שם מזמין
@@ -848,7 +1339,6 @@ const OrdersPage = () => {
                           />
                         </div>
 
-                        {/* Order Number */}
                         <div>
                           <label className="block text-sm font-semibold text-gray-700 mb-2">
                             מספר הזמנה
@@ -867,7 +1357,6 @@ const OrdersPage = () => {
                           />
                         </div>
 
-                        {/* Status */}
                         <div>
                           <label className="block text-sm font-semibold text-gray-700 mb-2">
                             סטטוס
@@ -889,7 +1378,6 @@ const OrdersPage = () => {
                           </select>
                         </div>
 
-                        {/* Detail contains */}
                         <div>
                           <label className="block text-sm font-semibold text-gray-700 mb-2">
                             מילת מפתח בפירוט
@@ -909,7 +1397,6 @@ const OrdersPage = () => {
                         </div>
                       </div>
 
-                      {/* Filter Summary */}
                       <div className="mt-4 p-4 bg-gradient-to-br from-blue-50 to-cyan-50 rounded-xl border-2 border-blue-200">
                         <p className="text-sm font-bold text-gray-700">
                           מסננים: {getFilteredOrders().length} הזמנות מתוך{" "}
@@ -972,7 +1459,6 @@ const OrdersPage = () => {
                       </div>
                     </div>
 
-                    {/* כפתורי פעולה */}
                     <div className="flex gap-3">
                       <button
                         onClick={() => setShowReportModal(false)}

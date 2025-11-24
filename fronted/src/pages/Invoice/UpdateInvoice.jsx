@@ -4,6 +4,7 @@ import api from "../../api/api.js";
 import { ClipLoader } from "react-spinners";
 import { toast } from "sonner";
 import FileUploader from "../../Components/FileUploader";
+import { useModulePermission } from "../../hooks/useModulePermission";
 
 // Icons (lucide-react)
 import {
@@ -44,6 +45,8 @@ const InvoiceEditPage = () => {
   const { projectId, id } = useParams();
   const navigate = useNavigate();
 
+  // בתוך הקומפוננטה, אחרי useState של invoice
+  const { canEdit } = useModulePermission(invoice?.projectId, "invoices");
   useEffect(() => {
     const fetchInvoice = async () => {
       setLoading(true);
@@ -773,6 +776,8 @@ const InvoiceEditPage = () => {
                       onUploadSuccess={handleFileUpload}
                       folder="invoices"
                       label="העלה קבצים"
+                      disabled={!canEdit}
+                      disabledMessage="אין לך הרשאת עריכה להעלות קבצים לחשבונית זו"
                     />
                   </div>
 
