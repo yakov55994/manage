@@ -17,22 +17,26 @@ import documentsRoutes from './routes/documentRoutes.js';
 dotenv.config();
 const app = express();
 
-// CORS
+// ✅ CORS - עודכן
 const allowedOrigins = [
   'http://localhost:5173',
+  'http://localhost:3000',
   'https://manage-46b.pages.dev',
-  'https://manage-2dkj.onrender.com'
+  'https://manage-2dkj.onrender.com',
+  'https://management-zcer.onrender.com',
+  'https://management-server-owna.onrender.com'
 ];
 
 const corsOptions = {
   origin(origin, callback) {
-    if (!origin) return callback(null, true); // Postman, Server-to-server
+    // אפשר בקשות ללא origin (Postman, server-to-server)
+    if (!origin) return callback(null, true);
 
     if (allowedOrigins.includes(origin)) {
-      return callback(null, true);          // מותר
+      return callback(null, true);
     } else {
       console.log("❌ BLOCKED ORIGIN:", origin);
-      return callback(new Error("Not allowed by CORS")); // לא מותר
+      return callback(new Error("Not allowed by CORS"));
     }
   },
   credentials: true,
@@ -46,7 +50,6 @@ const corsOptions = {
     "Cache-Control",
   ],
 };
-
 
 app.use(cors(corsOptions));
 app.options('*', cors(corsOptions));
@@ -94,6 +97,7 @@ const connectDB = async () => {
     app.listen(port, () => {
       console.log(`🚀 Server running on port ${port}`);
       console.log(`🌐 API at http://localhost:${port}/api`);
+      console.log('📋 Allowed Origins:', allowedOrigins); // ✅ לוג לבדיקה
     });
   } catch (err) {
     console.error('❌ Error connecting to MongoDB', err);

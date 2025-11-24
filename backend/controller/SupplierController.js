@@ -4,14 +4,12 @@ import { sendError } from "../utils/sendError.js";
 
 const supplierController = {
 
-  async searchSuppliers (req, res) {
+ async getAllSuppliers(req, res) {
   try {
-    const q = req.query.query || "";
-    const results = await supplierService.searchSuppliers(q);
-    res.json(results);
-  } catch (e) {
-    console.error("❌ searchSuppliers ERROR:", e);
-    res.status(500).json({ message: "Search failed" });
+    const suppliers = await supplierService.getAllSuppliers();
+    res.json({ success: true, data: suppliers });
+  } catch (err) {
+    res.status(500).json({ success: false, message: err.message });
   }
 },
 

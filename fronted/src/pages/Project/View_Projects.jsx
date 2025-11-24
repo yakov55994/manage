@@ -19,10 +19,13 @@ import {
   Search,
   CheckSquare,
   Square,
+  Eye,
 } from "lucide-react";
 import { toast } from "sonner";
 
 const ProjectsPage = ({ initialProjects = [] }) => {
+  const { isAdmin } = useAuth();
+
   const [projects, setProjects] = useState(initialProjects);
   const [allProjects, setAllProjects] = useState([]);
   const [loading, setLoading] = useState(false);
@@ -70,57 +73,55 @@ const ProjectsPage = ({ initialProjects = [] }) => {
 
   const [showPrintModal, setShowPrintModal] = useState(false);
 
-const [selectedProject, setSelectedProject] = useState("");
-const [selectedSupplier, setSelectedSupplier] = useState("");
-const [fromDate, setFromDate] = useState("");
-const [toDate, setToDate] = useState("");
-const [suppliers, setSuppliers] = useState([]);
+  const [selectedProject, setSelectedProject] = useState("");
+  const [selectedSupplier, setSelectedSupplier] = useState("");
+  const [fromDate, setFromDate] = useState("");
+  const [toDate, setToDate] = useState("");
+  const [suppliers, setSuppliers] = useState([]);
 
-useEffect(() => {
-  const fetchSuppliers = async () => {
-    try {
-      const res = await api.get("/suppliers");
-      setSuppliers(res.data.data || res.data); // תלוי מה ה־controller מחזיר לך
-    } catch (err) {
-      console.error("❌ שגיאה בטעינת ספקים:", err);
-    }
-  };
+  useEffect(() => {
+    const fetchSuppliers = async () => {
+      try {
+        const res = await api.get("/suppliers");
+        setSuppliers(res.data.data || res.data); // תלוי מה ה־controller מחזיר לך
+      } catch (err) {
+        console.error("❌ שגיאה בטעינת ספקים:", err);
+      }
+    };
 
-  fetchSuppliers();
-}, []);
-
-
+    fetchSuppliers();
+  }, []);
 
   const { user, loading: authLoading } = useAuth();
 
   const navigate = useNavigate();
-const generatePrint = async () => {
-  const printWindow = window.open("", "_blank");
+  const generatePrint = async () => {
+    const printWindow = window.open("", "_blank");
 
-  if (!printWindow) {
-    toast.error("הדפדפן חסם את חלון ההדפסה — תאפשר פופאפים");
-    return;
-  }
-
-  try {
-    const res = await api.post("/documents/collect", {
-      projectId: selectedProject || null,
-      supplierId: selectedSupplier || null,
-      fromDate: fromDate || null,
-      toDate: toDate || null,
-    });
-
-    const docs = res.data?.documents;
-    if (!docs || docs.length === 0) {
-      toast.error("לא נמצאו מסמכים להדפסה");
-      printWindow.close();
+    if (!printWindow) {
+      toast.error("הדפדפן חסם את חלון ההדפסה — תאפשר פופאפים");
       return;
     }
 
-    // חישוב סכום כולל
-    const totalSum = docs.reduce((sum, d) => sum + (d.total || 0), 0);
+    try {
+      const res = await api.post("/documents/collect", {
+        projectId: selectedProject || null,
+        supplierId: selectedSupplier || null,
+        fromDate: fromDate || null,
+        toDate: toDate || null,
+      });
 
-    printWindow.document.write(`
+      const docs = res.data?.documents;
+      if (!docs || docs.length === 0) {
+        toast.error("לא נמצאו מסמכים להדפסה");
+        printWindow.close();
+        return;
+      }
+
+      // חישוב סכום כולל
+      const totalSum = docs.reduce((sum, d) => sum + (d.total || 0), 0);
+
+      printWindow.document.write(`
       <html dir="rtl" lang="he">
       <head>
         <meta charset="UTF-8">
@@ -300,13 +301,16 @@ const generatePrint = async () => {
             <div class="logo-text">ניהולון</div>
           </div>
           <h1>📋 דוח מסמכים</h1>
-          <div class="date">תאריך הפקה: ${new Date().toLocaleDateString("he-IL", {
-            year: "numeric",
-            month: "long",
-            day: "numeric",
-            hour: "2-digit",
-            minute: "2-digit"
-          })}</div>
+          <div class="date">תאריך הפקה: ${new Date().toLocaleDateString(
+            "he-IL",
+            {
+              year: "numeric",
+              month: "long",
+              day: "numeric",
+              hour: "2-digit",
+              minute: "2-digit",
+            }
+          )}</div>
         </div>
 
         ${
@@ -314,10 +318,30 @@ const generatePrint = async () => {
             ? `
         <div class="filters">
           <h3>🔍 פילטרים</h3>
-          ${selectedProject ? `<p><strong>פרויקט:</strong> ${selectedProject}</p>` : ""}
-          ${selectedSupplier ? `<p><strong>ספק:</strong> ${selectedSupplier}</p>` : ""}
-          ${fromDate ? `<p><strong>מתאריך:</strong> ${new Date(fromDate).toLocaleDateString("he-IL")}</p>` : ""}
-          ${toDate ? `<p><strong>עד תאריך:</strong> ${new Date(toDate).toLocaleDateString("he-IL")}</p>` : ""}
+          ${
+            selectedProject
+              ? `<p><strong>פרויקט:</strong> ${selectedProject}</p>`
+              : ""
+          }
+          ${
+            selectedSupplier
+              ? `<p><strong>ספק:</strong> ${selectedSupplier}</p>`
+              : ""
+          }
+          ${
+            fromDate
+              ? `<p><strong>מתאריך:</strong> ${new Date(
+                  fromDate
+                ).toLocaleDateString("he-IL")}</p>`
+              : ""
+          }
+          ${
+            toDate
+              ? `<p><strong>עד תאריך:</strong> ${new Date(
+                  toDate
+                ).toLocaleDateString("he-IL")}</p>`
+              : ""
+          }
         </div>
         `
             : ""
@@ -358,7 +382,9 @@ const generatePrint = async () => {
         </table>
 
         <div class="footer">
-          <p>מסמך זה הופק אוטומטית ממערכת ניהולון ⚙ | נכון לתאריך ${new Date().toLocaleDateString("he-IL")}</p>
+          <p>מסמך זה הופק אוטומטית ממערכת ניהולון ⚙ | נכון לתאריך ${new Date().toLocaleDateString(
+            "he-IL"
+          )}</p>
         </div>
 
         <script>
@@ -370,16 +396,13 @@ const generatePrint = async () => {
       </html>
     `);
 
-    printWindow.document.close();
-  } catch (e) {
-    console.error(e);
-    toast.error("שגיאה בהפקת ההדפסה");
-    printWindow.close();
-  }
-};
-
-
-
+      printWindow.document.close();
+    } catch (e) {
+      console.error(e);
+      toast.error("שגיאה בהפקת ההדפסה");
+      printWindow.close();
+    }
+  };
 
   const formatNumber = (num) => num?.toLocaleString("he-IL");
   const formatDate = (dateTime) => {
@@ -1068,11 +1091,11 @@ const generatePrint = async () => {
             {/* Export Buttons */}
             <div className="flex gap-3">
               <button
-  onClick={() => setShowPrintModal(true)}
-  className="px-4 py-2 bg-orange-500 text-white rounded-xl font-medium hover:bg-orange-600"
->
-  הדפסת מסמכים
-</button>
+                onClick={() => setShowPrintModal(true)}
+                className="px-4 py-2 bg-orange-500 text-white rounded-xl font-medium hover:bg-orange-600"
+              >
+                הדפסת מסמכים
+              </button>
 
               <button
                 onClick={() => setShowReportModal(true)}
@@ -1126,91 +1149,80 @@ const generatePrint = async () => {
                     <th className="px-4 py-4 text-sm font-bold text-white">
                       מס' קבצים
                     </th>
-                    <th className="px-4 py-4 text-sm font-bold text-white">
-                      פעולות
-                    </th>
+                    {isAdmin && (
+                      <th className="px-4 py-4 text-sm font-bold text-white">
+                        פעולות
+                      </th>
+                    )}
                   </tr>
                 </thead>
-                <tbody>
-                  {sortedProjects.map((project) => {
-                    const stats = invoiceStats(project); // 🔥 חשוב מאוד! קרא לפונקציה כאן
-
-                    return (
-                      <tr
-                        key={project._id}
-                        onClick={() => handleView(project._id)}
-                        className="cursor-pointer border-t border-orange-100 hover:bg-orange-50 transition-colors"
-                      >
-                        <td className="px-4 py-4 text-sm font-bold text-center text-slate-900">
-                          {project.name}
-                        </td>
-                        <td className="px-4 py-4 text-sm font-bold text-center text-slate-900">
-                          {project.budget
-                            ? formatNumber(project.budget) + " ₪"
-                            : "אין תקציב"}
-                        </td>
-                        <td className="px-4 py-4 text-sm font-bold text-center">
-                          {project.remainingBudget !== undefined ? (
-                            project.remainingBudget < 0 ? (
-                              <span className="text-red-600 flex items-center justify-center gap-1">
-                                {formatNumber(project.remainingBudget)} ₪
-                                <AlertCircle className="w-4 h-4" />
-                              </span>
-                            ) : (
-                              <span className="text-emerald-600">
-                                {formatNumber(project.remainingBudget)} ₪
-                              </span>
-                            )
-                          ) : (
-                            "אין תקציב"
-                          )}
-                        </td>
-                        <td className="px-4 py-4 text-sm font-medium text-center text-slate-900">
-                          {project.invitingName}
-                        </td>
-                        <td className="px-4 py-4 text-sm text-center text-slate-600">
-                          {formatDate(project.createdAt)}
-                        </td>
-                        <td className="px-4 py-4 text-sm text-center text-slate-600">
-                          {project.Contact_person || "—"}
-                        </td>
-                        {/* 🔥 עמודת מספר קבצים - עכשיו עם החישוב הנכון */}
-                        <td className="px-4 py-4 text-sm font-bold text-center text-slate-900">
-                          <span className="inline-flex items-center justify-center gap-1">
-                            {stats.fileCount}{" "}
-                            {/* ⚠️ וודא שזה stats.fileCount ולא משהו אחר */}
-                            {stats.fileCount > 0 && (
-                              <FileSpreadsheet className="w-4 h-4 text-orange-500" />
-                            )}
-                          </span>
-                        </td>
-                        <td className="px-4 py-4">
-                          <div className="flex justify-center gap-2">
-                            <button
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                handleEdit(project._id);
-                              }}
-                              className="p-2 text-orange-600 hover:bg-orange-100 rounded-lg transition-all"
-                            >
-                              <Edit2 className="w-5 h-5" />
-                            </button>
-                            <button
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                setProjectToDelete(project._id);
-                                setShowModal(true);
-                              }}
-                              className="p-2 text-red-600 hover:bg-red-100 rounded-lg transition-all"
-                            >
-                              <Trash2 className="w-5 h-5" />
-                            </button>
-                          </div>
-                        </td>
-                      </tr>
-                    );
-                  })}
-                </tbody>
+               <tbody>
+  {sortedProjects.map((project, index) => (
+    <tr
+      key={project._id}
+      onClick={() => handleView(project._id)}
+      className="cursor-pointer border-t border-orange-100 hover:bg-orange-50 transition-colors"
+    >
+      <td className="px-4 py-4 text-sm font-bold text-center text-slate-900">
+        {project.name}
+      </td>
+      <td className="px-4 py-4 text-sm font-bold text-center text-slate-900">
+        {formatNumber(project.budget)} ₪
+      </td>
+      <td className="px-4 py-4 text-sm font-bold text-center text-slate-900">
+        {formatNumber(project.remainingBudget)} ₪
+      </td>
+      <td className="px-4 py-4 text-sm font-medium text-center text-slate-900">
+        {project.invitingName}
+      </td>
+      <td className="px-4 py-4 text-sm font-medium text-center text-slate-900">
+        {formatDate(project.createdAt)}
+      </td>
+      <td className="px-4 py-4 text-sm font-medium text-center text-slate-900">
+        {project.Contact_person}
+      </td>
+      <td className="px-4 py-4 text-sm font-medium text-center text-slate-900">
+        {project.files?.length || 0}
+      </td>
+      
+      {/* 🔥 גם פה צריך את התנאי! */}
+      {isAdmin && (
+        <td className="px-4 py-4">
+          <div className="flex justify-center gap-2">
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                handleView(project._id);
+              }}
+              className="p-2 text-blue-600 hover:bg-blue-100 rounded-lg"
+            >
+              <Eye className="w-5 h-5" />
+            </button>
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                handleEdit(project._id);
+              }}
+              className="p-2 text-orange-600 hover:bg-orange-100 rounded-lg"
+            >
+              <Edit2 className="w-5 h-5" />
+            </button>
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                setProjectToDelete(project._id);
+                setShowModal(true);
+              }}
+              className="p-2 text-red-600 hover:bg-red-100 rounded-lg"
+            >
+              <Trash2 className="w-5 h-5" />
+            </button>
+          </div>
+        </td>
+      )}
+    </tr>
+  ))}
+</tbody>
               </table>
             </div>
           </div>
@@ -1535,73 +1547,76 @@ const generatePrint = async () => {
           </div>
         )}
 
-{showPrintModal && (
-  <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50">
-    <div className="bg-white p-6 rounded-2xl w-[480px]">
+        {showPrintModal && (
+          <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50">
+            <div className="bg-white p-6 rounded-2xl w-[480px]">
+              <h2 className="text-xl font-bold mb-4">הפקת מסמכים</h2>
 
-      <h2 className="text-xl font-bold mb-4">הפקת מסמכים</h2>
+              {/* בחירת פרויקט */}
+              <label className="font-medium">בחירת פרויקט</label>
+              <select
+                className="w-full p-3 border rounded-xl mb-3"
+                value={selectedProject}
+                onChange={(e) => setSelectedProject(e.target.value)}
+              >
+                <option value="">כל הפרויקטים</option>
+                {projects.map((p) => (
+                  <option key={p._id} value={p._id}>
+                    {p.name}
+                  </option>
+                ))}
+              </select>
 
-      {/* בחירת פרויקט */}
-      <label className="font-medium">בחירת פרויקט</label>
-      <select
-        className="w-full p-3 border rounded-xl mb-3"
-        value={selectedProject}
-        onChange={(e) => setSelectedProject(e.target.value)}
-      >
-        <option value="">כל הפרויקטים</option>
-        {projects.map((p) => (
-          <option key={p._id} value={p._id}>{p.name}</option>
-        ))}
-      </select>
+              {/* בחירת ספק */}
+              <label className="font-medium">בחירת ספק</label>
+              <select
+                className="w-full p-3 border rounded-xl mb-3"
+                value={selectedSupplier}
+                onChange={(e) => setSelectedSupplier(e.target.value)}
+              >
+                <option value="">כל הספקים</option>
+                {suppliers.map((s) => (
+                  <option key={s._id} value={s._id}>
+                    {s.name}
+                  </option>
+                ))}
+              </select>
 
-      {/* בחירת ספק */}
-      <label className="font-medium">בחירת ספק</label>
-      <select
-        className="w-full p-3 border rounded-xl mb-3"
-        value={selectedSupplier}
-        onChange={(e) => setSelectedSupplier(e.target.value)}
-      >
-        <option value="">כל הספקים</option>
-        {suppliers.map((s) => (
-          <option key={s._id} value={s._id}>{s.name}</option>
-        ))}
-      </select>
+              {/* תאריכים */}
+              <label className="font-medium">טווח תאריכים</label>
+              <div className="flex gap-3 mb-4">
+                <input
+                  type="date"
+                  className="w-1/2 border p-2 rounded-xl"
+                  value={fromDate}
+                  onChange={(e) => setFromDate(e.target.value)}
+                />
+                <input
+                  type="date"
+                  className="w-1/2 border p-2 rounded-xl"
+                  value={toDate}
+                  onChange={(e) => setToDate(e.target.value)}
+                />
+              </div>
 
-      {/* תאריכים */}
-      <label className="font-medium">טווח תאריכים</label>
-      <div className="flex gap-3 mb-4">
-        <input
-          type="date"
-          className="w-1/2 border p-2 rounded-xl"
-          value={fromDate}
-          onChange={(e) => setFromDate(e.target.value)}
-        />
-        <input
-          type="date"
-          className="w-1/2 border p-2 rounded-xl"
-          value={toDate}
-          onChange={(e) => setToDate(e.target.value)}
-        />
-      </div>
+              <div className="flex justify-between mt-4">
+                <button
+                  className="px-4 py-2 bg-gray-300 rounded-xl"
+                  onClick={() => setShowPrintModal(false)}
+                >
+                  ביטול
+                </button>
 
-      <div className="flex justify-between mt-4">
-        <button
-          className="px-4 py-2 bg-gray-300 rounded-xl"
-          onClick={() => setShowPrintModal(false)}
-        >
-          ביטול
-        </button>
-
-        <button
-          className="px-4 py-2 bg-orange-500 text-white rounded-xl"
-          onClick={generatePrint}
-        >
-          הפק PDF
-        </button>
-      </div>
-    </div>
-  </div>
-)}
+                <button
+                  className="px-4 py-2 bg-orange-500 text-white rounded-xl"
+                  onClick={generatePrint}
+                >
+                  הפק PDF
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
 
         {/* Delete Modal */}
         {showModal && (

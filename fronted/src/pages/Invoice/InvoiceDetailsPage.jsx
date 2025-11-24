@@ -23,6 +23,8 @@ import {
 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
+import { useModulePermission } from "../../hooks/useModulePermission.js";
+import { useAuth } from "../../context/AuthContext.jsx";
 
 const InvoiceDetailsPage = () => {
   const { projectId, id } = useParams();
@@ -32,6 +34,9 @@ const InvoiceDetailsPage = () => {
   const [loading, setLoading] = useState(true);
 
   const navigate = useNavigate();
+
+  const { canView, canEdit } = useModulePermission(projectId, "invoices");
+  const { isAdmin } = useAuth();
 
   useEffect(() => {
     const fetchInvoiceDetails = async () => {
@@ -337,20 +342,26 @@ const InvoiceDetailsPage = () => {
                   <ArrowRight className="w-4 h-4" />
                   <span>חזור לרשימה</span>
                 </button>
-                <button
-                  onClick={() => handleEdit(invoice._id)}
-                  className="flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-orange-600 to-amber-600 text-white font-bold rounded-xl hover:from-orange-700 hover:to-amber-700 transition-all shadow-xl shadow-orange-500/30"
-                >
-                  <Edit2 className="w-4 h-4" />
-                  <span>ערוך חשבונית</span>
-                </button>
-                <button
-                  onClick={() => setConfirmOpen(true)}
-                  className="flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-red-500 to-rose-500 text-white font-bold rounded-xl hover:from-red-600 hover:to-rose-600 transition-all shadow-xl shadow-red-500/30"
-                >
-                  <Trash2 className="w-4 h-4" />
-                  <span>מחק חשבונית</span>
-                </button>
+
+                {canEdit && (
+                  <button
+                    onClick={() => handleEdit(invoice._id)}
+                    className="flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-orange-600 to-amber-600 text-white font-bold rounded-xl hover:from-orange-700 hover:to-amber-700 transition-all shadow-xl shadow-orange-500/30"
+                  >
+                    <Edit2 className="w-4 h-4" />
+                    <span>ערוך חשבונית</span>
+                  </button>
+                )}
+
+                {isAdmin && (
+                  <button
+                    onClick={() => setConfirmOpen(true)}
+                    className="flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-red-500 to-rose-500 text-white font-bold rounded-xl hover:from-red-600 hover:to-rose-600 transition-all shadow-xl shadow-red-500/30"
+                  >
+                    <Trash2 className="w-4 h-4" />
+                    <span>מחק חשבונית</span>
+                  </button>
+                )}
               </div>
             </div>
           </div>

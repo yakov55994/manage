@@ -30,13 +30,9 @@ export default {
   }).limit(50);
 },
 
-  async getAllSuppliers(user) {
-    if (user.role === "admin") return Supplier.find();
-
-    const allowed = user.permissions.map(p => p.project);
-
-    return Supplier.find({ projects: { $in: allowed } });
-  },
+  async getAllSuppliers() {
+    return Supplier.find();
+},
 
   async getSuppliersByProject(user, projectId) {
     if (!canView(user, projectId)) throw new Error("אין גישה");

@@ -17,6 +17,7 @@ import {
   X,
 } from "lucide-react";
 import { toast } from "sonner";
+import { useAuth } from "../../context/AuthContext";
 
 const OrderDetailsPage = () => {
   const { projectId, id } = useParams();
@@ -25,6 +26,17 @@ const OrderDetailsPage = () => {
   const [deleting, setDeleting] = useState(false);
   const [loading, setLoading] = useState(true);
   const navigate = useNavigate();
+  
+  const { canViewModule, canEditModule, isAdmin } = useAuth();
+
+  const canViewOrders = canViewModule(projectId, "orders");
+  const canEditOrders = canEditModule(projectId, "orders");
+
+  useEffect(() => {
+    if (!canViewOrders) {
+      navigate("/no-access");
+    }
+  }, [canViewOrders]);
 
   useEffect(() => {
     const fetchInvoiceDetails = async () => {
@@ -217,21 +229,27 @@ const OrderDetailsPage = () => {
 
             {/* Action Buttons */}
             <div className="flex items-center gap-3">
-              <button
-                onClick={() => handleEdit(order._id)}
-                className="inline-flex items-center gap-2 px-5 py-3 bg-gradient-to-r from-blue-500 to-cyan-500 text-white rounded-xl hover:from-blue-600 hover:to-cyan-600 transition-all duration-300 shadow-lg hover:shadow-xl font-medium"
-              >
-                <Edit className="w-5 h-5" />
-                <span>עריכת הזמנה</span>
-              </button>
+              {canEditOrders && (
+                <button
+                  onClick={() => handleEdit(order._id)}
 
-              <button
-                onClick={() => setConfirmOpen(true)}
-                className="inline-flex items-center gap-2 px-5 py-3 bg-gradient-to-r from-red-500 to-rose-500 text-white rounded-xl hover:from-red-600 hover:to-rose-600 transition-all duration-300 shadow-lg hover:shadow-xl font-medium"
-              >
-                <Trash2 className="w-5 h-5" />
-                <span>מחק הזמנה</span>
-              </button>
+                  className="inline-flex items-center gap-2 px-5 py-3 bg-gradient-to-r from-blue-500 to-cyan-500 text-white rounded-xl hover:from-blue-600 hover:to-cyan-600 transition-all duration-300 shadow-lg hover:shadow-xl font-medium"
+                >
+                  <Edit className="w-5 h-5" />
+                  <span>עריכת הזמנה</span>
+                </button>
+              )}
+
+              {isAdmin && (
+                <button
+                onClick={() => handleDelete(order._id)}
+
+                  className="inline-flex items-center gap-2 px-5 py-3 bg-gradient-to-r from-red-500 to-rose-500 text-white rounded-xl hover:from-red-600 hover:to-rose-600 transition-all duration-300 shadow-lg hover:shadow-xl font-medium"
+                >
+                  <Trash2 className="w-5 h-5" />
+                  <span>מחק הזמנה</span>
+                </button>
+              )}
             </div>
           </div>
         </div>

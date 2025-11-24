@@ -25,6 +25,7 @@ import {
 import { toast } from "sonner";
 import MoveInvoiceModal from "../../Components/MoveInvoiceModal.jsx";
 import PaymentCaptureModal from "../../Components/PaymentCaptureModal.jsx";
+import { useAuth } from "../../context/AuthContext.jsx";
 
 const InvoicesPage = () => {
   const [invoices, setInvoices] = useState([]);
@@ -89,6 +90,18 @@ const InvoicesPage = () => {
     supplierBranchNumber: false,
     supplierAccountNumber: false,
   });
+
+  const { user, isAdmin, canEditModule, canViewModule } = useAuth();
+
+  // קבל את הפרויקט הנוכחי
+  const authUser = JSON.parse(localStorage.getItem("user") || "{}");
+  const selectedProjectId = authUser?.selectedProject;
+
+  // בדיקות הרשאות
+  const canEditInvoices =
+    isAdmin || canEditModule(selectedProjectId, "invoices");
+  const canViewInvoices =
+    isAdmin || canViewModule(selectedProjectId, "invoices");
 
   const availableColumns = [
     { key: "invoiceNumber", label: "מספר חשבונית" },
@@ -1422,7 +1435,14 @@ const InvoicesPage = () => {
             <div className="overflow-x-auto">
               <table className="w-full">
                 <thead>
-                  <tr className="bg-gradient-to-r from-orange-500 via-amber-500 to-yellow-500">
+                  <tr
+                    className={
+                      "bg-gradient-to-r from-orange-500 via-amber-500 to-yellow-500 " +
+                      (canEditInvoices
+                        ? "grid grid-cols-10"
+                        : "grid grid-cols-8")
+                    }
+                  >
                     <th className="px-4 py-4 text-sm font-bold text-center">
                       סטטוס
                     </th>
@@ -1447,110 +1467,107 @@ const InvoicesPage = () => {
                     <th className="px-4 py-4 text-sm font-bold text-white">
                       תשלום
                     </th>
-                    <th className="px-4 py-4 text-sm font-bold text-white">
-                      סימון תשלום
-                    </th>
-                    <th className="px-4 py-4 text-sm font-bold text-white">
-                      פעולות
-                    </th>
+
+                    {canEditInvoices && (
+                      <>
+                        <th className="px-4 py-4 text-sm font-bold text-white">
+                          סימון תשלום
+                        </th>
+                        <th className="px-4 py-4 text-sm font-bold text-white">
+                          פעולות
+                        </th>
+                      </>
+                    )}
                   </tr>
                 </thead>
+
                 <tbody>
-                  {sortedInvoices.map((invoice) => {
-                    const missingFields = checkMissingFields(invoice);
-                    const hasMissingData = missingFields.length > 0;
-
-                    return (
-                      <tr
-                        key={invoice._id}
-                        className="cursor-pointer border-t border-orange-100 hover:bg-orange-50 transition-colors"
-                        onClick={(e) => {
-                          if (!e.target.closest("label")) {
-                            handleView(invoice._id);
-                          }
-                        }}
-                      >
-                        {/* עמודת סטטוס */}
-                        <td className="px-4 py-4 text-center">
-                          {(() => {
-                            const a = getActionState(invoice);
-                            return (
-                              <span
-                                className={`inline-flex items-center gap-2 px-3 py-1 rounded-full text-xs font-bold border ${a.color}`}
-                              >
-                                <span>{a.status}</span>
-                                <span className="opacity-70">•</span>
-                                <span>{a.label}</span>
-                              </span>
-                            );
-                          })()}
-                        </td>
-
-                        <td className="px-4 py-4 text-sm font-bold text-center text-slate-900">
-                          {invoice.invitingName || (
-                            <span className="text-red-500 italic flex items-center justify-center gap-1">
-                              <AlertTriangle className="w-3 h-3" />
-                              חסר
+                  {sortedInvoices.map((invoice) => (
+                    <tr
+                      key={invoice._id}
+                      className={
+                        "cursor-pointer border-t border-orange-100 hover:bg-orange-50 transition-colors " +
+                        (canEditInvoices
+                          ? "grid grid-cols-10"
+                          : "grid grid-cols-8")
+                      }
+                      onClick={(e) => {
+                        if (!e.target.closest("label")) handleView(invoice._id);
+                      }}
+                    >
+                      {/* סטטוס */}
+                      <td className="px-4 py-4 text-center">
+                        {(() => {
+                          const a = getActionState(invoice);
+                          return (
+                            <span
+                              className={`inline-flex items-center gap-2 px-3 py-1 rounded-full text-xs font-bold border ${a.color}`}
+                            >
+                              <span>{a.status}</span>
+                              <span className="opacity-70">•</span>
+                              <span>{a.label}</span>
                             </span>
-                          )}
-                        </td>
+                          );
+                        })()}
+                      </td>
 
-                        <td className="px-4 py-4 text-sm font-bold text-center text-slate-900">
-                          {invoice.invoiceNumber || (
-                            <span className="text-red-500 italic flex items-center justify-center gap-1">
-                              <AlertTriangle className="w-3 h-3" />
-                              חסר
-                            </span>
-                          )}
-                        </td>
+                      {/* ספק */}
+                      <td className="px-4 py-4 text-sm font-bold text-center text-slate-900">
+                        {invoice.invitingName || (
+                          <span className="text-red-500 italic">חסר</span>
+                        )}
+                      </td>
 
-                        <td className="px-4 py-4 text-sm font-bold text-slate-900">
-                          {invoice.sum ? (
-                            `${formatNumber(invoice.sum)} ₪`
-                          ) : (
-                            <span className="text-red-500 italic flex items-center gap-1">
-                              <AlertTriangle className="w-3 h-3" />
-                              חסר
-                            </span>
-                          )}
-                        </td>
+                      {/* מספר חשבונית */}
+                      <td className="px-4 py-4 text-sm font-bold text-center text-slate-900">
+                        {invoice.invoiceNumber || (
+                          <span className="text-red-500 italic">חסר</span>
+                        )}
+                      </td>
 
-                        <td className="px-4 py-4 text-sm text-slate-600 text-center">
-                          {formatDate(invoice.createdAt)}
-                        </td>
+                      {/* סכום */}
+                      <td className="px-4 py-4 text-sm font-bold text-slate-900">
+                        {invoice.sum ? (
+                          `${formatNumber(invoice.sum)} ₪`
+                        ) : (
+                          <span className="text-red-500 italic">חסר</span>
+                        )}
+                      </td>
 
-                        <td className="px-4 py-4 text-sm font-medium text-center text-slate-900">
-                          {invoice.status || (
-                            <span className="text-red-500 italic flex items-center justify-center gap-1">
-                              <AlertTriangle className="w-3 h-3" />
-                              חסר
-                            </span>
-                          )}
-                        </td>
+                      {/* תאריך */}
+                      <td className="px-4 py-4 text-sm text-slate-600 text-center">
+                        {formatDate(invoice.createdAt)}
+                      </td>
 
-                        <td className="px-4 py-4 text-sm font-medium text-slate-900">
-                          {invoice.projectName || (
-                            <span className="text-red-500 italic flex items-center gap-1">
-                              <AlertTriangle className="w-3 h-3" />
-                              חסר
-                            </span>
-                          )}
-                        </td>
+                      {/* סטטוס הגשה */}
+                      <td className="px-4 py-4 text-sm font-medium text-center text-slate-900">
+                        {invoice.status || (
+                          <span className="text-red-500 italic">חסר</span>
+                        )}
+                      </td>
 
-                        <td className="px-4 py-4 text-center">
-                          {invoice.paid === "כן" ? (
-                            <span className="inline-flex items-center gap-1 px-3 py-1 rounded-full text-xs font-bold bg-emerald-100 text-emerald-700 border border-emerald-200">
-                              <CheckCircle2 className="w-3 h-3" />
-                              שולם
-                            </span>
-                          ) : (
-                            <span className="inline-flex items-center gap-1 px-3 py-1 rounded-full text-xs font-bold bg-red-100 text-red-700 border border-red-200">
-                              <XCircle className="w-3 h-3" />
-                              לא שולם
-                            </span>
-                          )}
-                        </td>
+                      {/* פרויקט */}
+                      <td className="px-4 py-4 text-sm font-medium text-slate-900">
+                        {invoice.projectName || (
+                          <span className="text-red-500 italic">חסר</span>
+                        )}
+                      </td>
 
+                      {/* תשלום */}
+                      <td className="px-4 py-4 text-center">
+                        {invoice.paid === "כן" ? (
+                          <span className="bg-emerald-100 text-emerald-700 px-3 py-1 rounded-full text-xs font-bold border border-emerald-200">
+                            ✓ שולם
+                          </span>
+                        ) : (
+                          <span className="bg-red-100 text-red-700 px-3 py-1 rounded-full text-xs font-bold border border-red-200">
+                            ✗ לא שולם
+                          </span>
+                        )}
+                      </td>
+
+                      {/* סימון תשלום — רק למשתמש עם EDIT */}
+                      {canEditInvoices && (
                         <td className="px-4 py-4 text-center">
                           <label className="relative inline-block cursor-pointer">
                             <input
@@ -1563,22 +1580,20 @@ const InvoicesPage = () => {
                               className="absolute opacity-0 cursor-pointer"
                             />
                             <span
-                              className={`w-7 h-7 inline-block border-2 rounded-full transition-all duration-300 
-                  ${
-                    invoice.paid === "כן"
-                      ? "bg-emerald-500 border-emerald-500"
-                      : "bg-gray-200 border-gray-400"
-                  }
-                  flex items-center justify-center relative`}
+                              className={`w-7 h-7 inline-block border-2 rounded-full transition-all 
+                ${
+                  invoice.paid === "כן"
+                    ? "bg-emerald-500 border-emerald-500"
+                    : "bg-gray-200 border-gray-400"
+                }
+                flex items-center justify-center`}
                             >
                               {invoice.paid === "כן" && (
                                 <svg
-                                  xmlns="http://www.w3.org/2000/svg"
                                   viewBox="0 0 24 24"
-                                  fill="none"
+                                  className="w-5 h-5"
                                   stroke="white"
                                   strokeWidth="2"
-                                  className="w-5 h-5"
                                 >
                                   <path d="M20 6L9 17l-5-5" />
                                 </svg>
@@ -1586,7 +1601,10 @@ const InvoicesPage = () => {
                             </span>
                           </label>
                         </td>
+                      )}
 
+                      {/* פעולות — EDIT בלבד */}
+                      {canEditInvoices && (
                         <td className="px-4 py-4">
                           <div className="flex justify-center gap-2">
                             <button
@@ -1594,34 +1612,38 @@ const InvoicesPage = () => {
                                 e.stopPropagation();
                                 handleEdit(invoice._id);
                               }}
-                              className="p-2 text-orange-600 hover:bg-orange-100 rounded-lg transition-all"
+                              className="p-2 text-orange-600 hover:bg-orange-100 rounded-lg"
                             >
                               <Edit2 className="w-5 h-5" />
                             </button>
-                            <button
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                handleConfirmDelete(invoice);
-                              }}
-                              className="p-2 text-red-600 hover:bg-red-100 rounded-lg transition-all"
-                            >
-                              <Trash2 className="w-5 h-5" />
-                            </button>
-                            <button
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                setMoveModal({ open: true, invoice });
-                              }}
-                              className="p-2 text-slate-600 hover:bg-slate-100 rounded-lg transition-all"
-                              title="העבר לפרויקט"
-                            >
-                              <ArrowLeftRight className="w-5 h-5" />
-                            </button>
+                            {isAdmin && (
+                              <>
+                                <button
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    setMoveModal({ open: true, invoice });
+                                  }}
+                                  className="p-2 text-blue-600 hover:bg-blue-100 rounded-lg transition-colors"
+                                  title="העבר לפרויקט אחר"
+                                >
+                                  <ArrowLeftRight className="w-5 h-5" />
+                                </button>
+                                <button
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    handleConfirmDelete(invoice);
+                                  }}
+                                  className="p-2 text-red-600 hover:bg-red-100 rounded-lg"
+                                >
+                                  <Trash2 className="w-5 h-5" />
+                                </button>
+                              </>
+                            )}
                           </div>
                         </td>
-                      </tr>
-                    );
-                  })}
+                      )}
+                    </tr>
+                  ))}
                 </tbody>
               </table>
             </div>

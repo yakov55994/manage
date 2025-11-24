@@ -1,13 +1,7 @@
 // =============================
 // AuthContext.jsx – FIXED FULL VERSION
 // =============================
-import {
-  createContext,
-  useState,
-  useContext,
-  useEffect,
-  useRef,
-} from "react";
+import { createContext, useState, useContext, useEffect, useRef } from "react";
 import api from "../api/api.js";
 
 const AuthContext = createContext();
@@ -20,7 +14,13 @@ const normalizeUser = (u) => {
 
   return {
     ...u,
-    permissions: Array.isArray(u.permissions) ? u.permissions : [],
+    permissions: Array.isArray(u.permissions)
+      ? u.permissions.map((p) => ({
+          ...p,
+          // ✅ אם project הוא אובייקט, קח רק את ה-_id
+          project: typeof p.project === "object" ? p.project._id : p.project,
+        }))
+      : [],
   };
 };
 
@@ -29,41 +29,72 @@ const normalizeUser = (u) => {
 // =====================================
 const levels = { none: 0, view: 1, edit: 2 };
 
-// מביא הרשאת פרויקט לפי ID
+// context/AuthContext.jsx
+
 const getProjectPerm = (user, projectId) => {
   if (!user || !projectId) return null;
 
+  // ✅ נרמל את projectId שמקבלים
+  const normalizedSearchId = typeof projectId === "object" 
+    ? (projectId._id || projectId.$oid) 
+    : projectId;
+
   return (
-    user.permissions?.find(
-      (p) => String(p.project) === String(projectId)
-    ) || null
+    user.permissions?.find((p) => {
+      // ✅ נרמל את project בהרשאה
+      let permProjectId = p.project;
+      
+      if (typeof permProjectId === "object") {
+        permProjectId = permProjectId._id || permProjectId.$oid;
+      }
+
+      // ✅ השווה כ-strings
+      return String(permProjectId) === String(normalizedSearchId);
+    }) || null
   );
 };
 
-// האם המשתמש יכול לראות פרויקט?
+// ✅ תקן את הפונקציה להחזיר תמיד boolean
 const canViewProject = (user, projectId) => {
+  if (!user) return false;
   if (user?.role === "admin") return true;
 
   const perm = getProjectPerm(user, projectId);
-  return perm && levels[perm.access] >= levels.view;
+  if (!perm) return false;
+
+  const accessLevel = levels[perm.access];
+  if (accessLevel === undefined) return false;
+
+  return accessLevel >= levels.view;
 };
 
-// האם המשתמש יכול לערוך פרויקט?
+// ✅ תקן גם את canEditProject
 const canEditProject = (user, projectId) => {
+  if (!user) return false;
   if (user?.role === "admin") return true;
 
   const perm = getProjectPerm(user, projectId);
-  return perm && levels[perm.access] >= levels.edit;
+  if (!perm) return false;
+
+  const accessLevel = levels[perm.access];
+  if (accessLevel === undefined) return false;
+
+  return accessLevel >= levels.edit;
 };
 
 // האם המשתמש יכול לעבוד על מודול מסוים (חשבוניות / הזמנות וכו)
-const canAccessModule = (
-  user,
-  projectId,
-  moduleName,
-  required = "view"
-) => {
-  if (user?.role === "admin") return true;
+const canAccessModule = (user, projectId, moduleName, required = "view") => {
+  if (!user) return false;
+  if (!user.permissions) return false;
+
+  if (user.role === "admin") return true;
+
+  // אם אין projectId – נבדוק האם יש פרויקט כלשהו עם הרשאה
+  if (!projectId) {
+    return user.permissions.some(
+      (p) => levels[p.modules?.[moduleName]] >= levels[required]
+    );
+  }
 
   const perm = getProjectPerm(user, projectId);
   if (!perm || !perm.modules) return false;
@@ -75,8 +106,8 @@ const canAccessModule = (
 // AUTH PROVIDER
 // =====================================
 export const AuthProvider = ({ children }) => {
-  const [user, setUser] = useState(null); // יוזר מחובר
-  const [loading, setLoading] = useState(true); // טעינת מצב התחברות
+  const [user, setUser] = useState(null);
+  const [loading, setLoading] = useState(true);
   const logoutInProgress = useRef(false);
 
   // =========================
@@ -100,19 +131,35 @@ export const AuthProvider = ({ children }) => {
   // =========================
   useEffect(() => {
     const token = localStorage.getItem("token");
-    const userData = localStorage.getItem("user");
-
-    if (token && userData) {
+    const userDataString = localStorage.getItem("user");
+    
+    console.log("Token:", token ? "EXISTS" : "MISSING");
+    console.log("User string:", userDataString ? "EXISTS" : "MISSING");
+    
+    if (token && userDataString) {
       try {
-        const parsed = JSON.parse(userData);
-        const normalized = normalizeUser(parsed);
+        const userData = JSON.parse(userDataString);
+        
+        console.log("First permission:", userData?.permissions?.[0]);
+        console.log("Project field:", userData?.permissions?.[0]?.project);
+        console.log(
+          "Is object?",
+          typeof userData?.permissions?.[0]?.project === "object"
+        );
+        
+        const normalized = normalizeUser(userData);
 
         api.defaults.headers.common["Authorization"] = `Bearer ${token}`;
         setUser(normalized);
+        
+        console.log("✅ User loaded successfully from localStorage!");
       } catch (err) {
+        console.error("❌ Error parsing user data:", err);
         localStorage.removeItem("token");
         localStorage.removeItem("user");
       }
+    } else {
+      console.log("⚠️ No token or user in localStorage");
     }
 
     setLoading(false);
@@ -164,18 +211,40 @@ export const AuthProvider = ({ children }) => {
         isAuthenticated,
         loading,
 
-        // פונקציות הרשאה
-        canViewProject: (projectId) =>
-          canViewProject(user, projectId),
-
-        canEditProject: (projectId) =>
-          canEditProject(user, projectId),
-
+        // פונקציות הרשאה כלליות
+        canViewProject: (projectId) => canViewProject(user, projectId),
+        canEditProject: (projectId) => canEditProject(user, projectId),
         canViewModule: (projectId, module) =>
           canAccessModule(user, projectId, module, "view"),
-
         canEditModule: (projectId, module) =>
           canAccessModule(user, projectId, module, "edit"),
+        canViewAnyProject: () => {
+          if (isAdmin) return true;
+          return user?.permissions?.some(
+            (p) => p.access === "view" || p.access === "edit"
+          );
+        },
+
+        // ✅ פונקציות נוחות למודולים ספציפיים
+        canViewInvoices: (projectId) => 
+          canAccessModule(user, projectId, "invoices", "view"),
+        canEditInvoices: (projectId) => 
+          canAccessModule(user, projectId, "invoices", "edit"),
+        
+        canViewOrders: (projectId) => 
+          canAccessModule(user, projectId, "orders", "view"),
+        canEditOrders: (projectId) => 
+          canAccessModule(user, projectId, "orders", "edit"),
+        
+        canViewSuppliers: (projectId) => 
+          canAccessModule(user, projectId, "suppliers", "view"),
+        canEditSuppliers: (projectId) => 
+          canAccessModule(user, projectId, "suppliers", "edit"),
+        
+        canViewFiles: (projectId) => 
+          canAccessModule(user, projectId, "files", "view"),
+        canEditFiles: (projectId) => 
+          canAccessModule(user, projectId, "files", "edit"),
       }}
     >
       {children}

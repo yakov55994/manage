@@ -1,5 +1,5 @@
 import express from "express";
-import { protect, checkAccess } from "../middleware/auth.js";
+import { protect, checkAccess, requireAdmin } from "../middleware/auth.js";
 import orderController from "../controller/orderControllers.js";
 
 const router = express.Router();
@@ -26,6 +26,6 @@ router.put("/:orderId", protect, checkAccess("orders", "edit"), orderController.
 router.put("/:orderId/status", protect, checkAccess("orders", "edit"), orderController.updatePaymentStatus);
 
 // 📌 מחיקה — כן
-router.delete("/:orderId", protect, checkAccess("orders", "edit"), orderController.deleteOrder);
+router.delete("/:orderId", protect, requireAdmin, checkAccess("orders", "edit"), orderController.deleteOrder);
 
 export default router;

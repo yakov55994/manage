@@ -1,5 +1,5 @@
 import express from "express";
-import { protect, checkAccess } from "../middleware/auth.js";
+import { protect, checkAccess, requireAdmin } from "../middleware/auth.js";
 import supplierController from "../controller/SupplierController.js";
 
 const router = express.Router();
@@ -17,6 +17,6 @@ router.post("/", protect, checkAccess("suppliers", "edit"), supplierController.c
 router.put("/:supplierId", protect, checkAccess("suppliers", "edit"), supplierController.updateSupplier);
 
 // 📌 מחיקה — כן
-router.delete("/:supplierId", protect, checkAccess("suppliers", "edit"), supplierController.deleteSupplier);
+router.delete("/:supplierId", protect, requireAdmin, checkAccess("suppliers", "edit"), supplierController.deleteSupplier);
 
 export default router;

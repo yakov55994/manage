@@ -23,6 +23,7 @@ import {
 } from "lucide-react";
 import api from "../../api/api.js";
 import { toast } from "sonner";
+import { useAuth } from "../../context/AuthContext.jsx";
 
 const SuppliersPage = () => {
   const [suppliers, setSuppliers] = useState([]);
@@ -60,7 +61,7 @@ const SuppliersPage = () => {
   });
 
   const navigate = useNavigate();
-
+  const { isAdmin } = useAuth()
   // תאריך תקני מהספק (תומך גם ב-createdAt וגם ב-date)
   const getSupplierDate = (supplier) => {
     const d = supplier?.createdAt || supplier?.date;
@@ -461,6 +462,8 @@ const SuppliersPage = () => {
 
             {/* כפתורי פעולה */}
             <div className="flex gap-3 w-full lg:w-auto">
+              {isAdmin && (
+                <>
               <button
                 onClick={() => navigate("/create-supplier")}
                 className="flex-1 lg:flex-none flex items-center justify-center gap-2 px-6 py-3 bg-gradient-to-r from-green-500 to-emerald-500 text-white rounded-xl hover:from-green-600 hover:to-emerald-600 transition-all duration-300 shadow-lg hover:shadow-xl font-medium"
@@ -468,6 +471,8 @@ const SuppliersPage = () => {
                 <Plus className="w-5 h-5" />
                 <span>הוסף ספק</span>
               </button>
+                </>
+              )}
 
               <button
                 onClick={() => setShowReportModal(true)}
@@ -709,6 +714,8 @@ const SuppliersPage = () => {
                           >
                             <Edit2 className="w-5 h-5" />
                           </button>
+                          {isAdmin && (
+                            <>
                           <button
                             onClick={(e) => {
                               e.stopPropagation();
@@ -720,6 +727,8 @@ const SuppliersPage = () => {
                           >
                             <Trash2 className="w-5 h-5" />
                           </button>
+                            </>
+                          )}
                         </div>
                       </td>
                     </tr>

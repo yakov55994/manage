@@ -1,20 +1,27 @@
 // hooks/useModulePermission.js
-
 import { useMemo } from "react";
 import { useAuth } from "../context/AuthContext";
 
 export function useModulePermission(projectId, moduleName) {
   const { user, isAdmin } = useAuth();
 
-  const permission = useMemo(() => {
+  return useMemo(() => {
+    // אם האדמין מחובר — יש הכל
     if (isAdmin) {
       return { canView: true, canEdit: true, level: "edit" };
     }
 
-    if (!user || !user.permissions || !projectId) {
+    // אם עוד אין user (בטעינה ראשונית של Auth)
+    if (!user) {
       return { canView: false, canEdit: false, level: "none" };
     }
 
+    // אם אין הרשאות או אין פרויקט
+    if (!Array.isArray(user.permissions) || !projectId) {
+      return { canView: false, canEdit: false, level: "none" };
+    }
+
+    // מוצא את ההרשאות לפרויקט הספציפי
     const projectPerm = user.permissions.find(
       (p) => String(p.project) === String(projectId)
     );
@@ -31,6 +38,4 @@ export function useModulePermission(projectId, moduleName) {
       level,
     };
   }, [user, isAdmin, projectId, moduleName]);
-
-  return permission;
 }

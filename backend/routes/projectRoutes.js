@@ -17,6 +17,6 @@ router.post("/", protect, requireAdmin, projectController.createProject);
 router.put("/:projectId", protect, checkAccess("projects", "edit"), projectController.updateProject);
 
 // 📌 מחיקה — כן
-router.delete("/:projectId", protect, checkAccess("projects", "edit"), projectController.deleteProject);
+router.delete("/:projectId", protect, requireAdmin, checkAccess("projects", "edit"), projectController.deleteProject);
 
 export default router;

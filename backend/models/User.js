@@ -6,25 +6,18 @@ const permissionSchema = new mongoose.Schema({
     type: mongoose.Schema.Types.ObjectId,
     ref: "Project"
   },
-
-  // גישה כללית לפרויקט
   access: {
     type: String,
     enum: ["none", "view", "edit"],
     default: "none"
   },
-
-  // הרשאות לפי מודול
   modules: {
     invoices: { type: String, enum: ["none", "view", "edit"], default: "none" },
     orders: { type: String, enum: ["none", "view", "edit"], default: "none" },
     suppliers: { type: String, enum: ["none", "view", "edit"], default: "none" },
     files: { type: String, enum: ["none", "view", "edit"], default: "none" },
   }
-
-
 });
-
 
 const userSchema = new mongoose.Schema(
   {
@@ -33,12 +26,14 @@ const userSchema = new mongoose.Schema(
     email: { type: String, required: false },
     role: { type: String, enum: ["admin", "user"], default: "user" },
     isActive: { type: Boolean, default: true },
-
-    // ⭐ חשוב! מערך תקין לפי Mongoose
     permissions: {
       type: [permissionSchema],
       default: []
-    }
+    },
+    
+    // ✅ שדות חדשים לאיפוס סיסמה
+    resetPasswordToken: { type: String },
+    resetPasswordExpires: { type: Date },
   },
   { timestamps: true }
 );

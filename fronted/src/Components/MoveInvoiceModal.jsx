@@ -80,7 +80,7 @@ export default function MoveInvoiceModal({
   if (!open) return null;
 
   return (
-    <div className="fixed inset-0 z-50 bg-black/50 flex items-center justify-center" onClick={onClose}>
+    <div className="mt-20 fixed inset-0 z-50 bg-black/50 flex items-center justify-center" onClick={onClose}>
       <div
         className="bg-white rounded-xl shadow-2xl w-full max-w-lg mx-4 p-6"
         onClick={(e) => e.stopPropagation()}

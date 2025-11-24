@@ -57,7 +57,6 @@ export default function UserManagement() {
   const [showModal, setShowModal] = useState(false);
   const [editingUser, setEditingUser] = useState(null);
   const [deleteModal, setDeleteModal] = useState({ show: false, user: null });
-  const [showPassword, setShowPassword] = useState(false);
 
   // Search and filter
   const [projectSearch, setProjectSearch] = useState("");
@@ -65,13 +64,28 @@ export default function UserManagement() {
 
   const [formData, setFormData] = useState({
     username: "",
-    password: "",
     email: "",
     role: "user",
     isActive: true,
     permissions: [],
   });
 
+  // בתוך הקומפוננטה UserManagement, הוסף פונקציה:
+
+  const handleSendResetLink = async (user) => {
+    if (!user.email) {
+      toast.error("למשתמש אין כתובת אימייל");
+      return;
+    }
+
+    try {
+      await api.post("/users/send-reset-link", { userId: user._id });
+      toast.success(`קישור איפוס סיסמה נשלח ל-${user.email}`);
+    } catch (error) {
+      console.error("Error sending reset link:", error);
+      toast.error(error.response?.data?.message || "שגיאה בשליחת קישור איפוס");
+    }
+  };
   // Check if project selected
   const isProjectSelected = (projectId) =>
     formData.permissions.some((p) => String(p.project) === String(projectId));
@@ -249,7 +263,6 @@ export default function UserManagement() {
     setEditingUser(null);
     setFormData({
       username: "",
-      password: "",
       email: "",
       role: "user",
       isActive: true,
@@ -276,7 +289,6 @@ export default function UserManagement() {
 
     setFormData({
       username: user.username,
-      password: "",
       email: user.email || "",
       role: user.role,
       isActive: user.isActive,
@@ -320,10 +332,6 @@ export default function UserManagement() {
         })
       ),
     };
-
-    if (formData.password) {
-      payload.password = formData.password;
-    }
 
     try {
       if (editingUser) {
@@ -485,6 +493,22 @@ export default function UserManagement() {
                     <UserCircle className="w-10 h-10 " />
                   </div>
                   <div className="flex gap-2">
+                    {/* כפתור איפוס סיסמה */}
+                    <button
+                      onClick={() => handleSendResetLink(u)}
+                      disabled={!u.email}
+                      className={`bg-white/20 backdrop-blur-sm p-2 rounded-lg hover:bg-white/40 transition-all ${
+                        !u.email
+                          ? "opacity-50 cursor-not-allowed"
+                          : "cursor-pointer"
+                      }`}
+                      title={
+                        u.email ? "שלח קישור איפוס סיסמה" : "אין כתובת אימייל"
+                      }
+                    >
+                      <Mail className="w-4 h-4" />
+                    </button>
+
                     <button
                       onClick={() => openEdit(u)}
                       className="bg-white/20 backdrop-blur-sm p-2 rounded-lg hover:bg-white/40 transition-all cursor-pointer"
@@ -612,40 +636,43 @@ export default function UserManagement() {
                       className="w-full p-3 border-2 border-orange-200 rounded-xl focus:border-orange-400 focus:outline-none transition-colors"
                     />
                   </div>
-
-                  <div>
-                    <label className="block text-sm font-semibold text-gray-700 mb-2">
-                      סיסמה {!editingUser && "*"}
-                    </label>
-                    <div className="relative">
-                      <input
-                        type={showPassword ? "text" : "password"}
-                        required={!editingUser}
-                        value={formData.password}
-                        onChange={(e) =>
-                          setFormData({
-                            ...formData,
-                            password: e.target.value,
-                          })
-                        }
-                        placeholder={
-                          editingUser ? "השאר ריק אם לא משנה" : "הזן סיסמה"
-                        }
-                        className="w-full p-3 border-2 border-orange-200 rounded-xl focus:border-orange-400 focus:outline-none transition-colors"
-                      />
-                      <button
-                        type="button"
-                        onClick={() => setShowPassword(!showPassword)}
-                        className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500 hover:text-orange-500 cursor-pointer"
-                      >
-                        {showPassword ? (
-                          <EyeOff className="w-5 h-5" />
-                        ) : (
-                          <Eye className="w-5 h-5" />
-                        )}
-                      </button>
+                  {/* במקום שדה הסיסמה */}
+                  {!editingUser && (
+                    <div className="col-span-2">
+                      <div className="bg-blue-50 border-2 border-blue-200 rounded-xl p-4">
+                        <div className="flex items-center gap-3">
+                          <Mail className="w-5 h-5 text-blue-600" />
+                          <div>
+                            <p className="text-sm font-bold text-blue-900">
+                              שליחת מייל אוטומטית
+                            </p>
+                            <p className="text-xs text-blue-700 mt-1">
+                              המשתמש יקבל מייל עם קישור לבחירת סיסמה
+                            </p>
+                          </div>
+                        </div>
+                      </div>
                     </div>
-                  </div>
+                  )}
+
+                  {editingUser && (
+                    <div className="col-span-2">
+                      <div className="bg-amber-50 border-2 border-amber-200 rounded-xl p-4">
+                        <div className="flex items-center gap-3">
+                          <Mail className="w-5 h-5 text-amber-600" />
+                          <div>
+                            <p className="text-sm font-bold text-amber-900">
+                              לשינוי סיסמה
+                            </p>
+                            <p className="text-xs text-amber-700 mt-1">
+                              לחץ על כפתור המייל בכרטיס המשתמש לשליחת קישור
+                              איפוס סיסמה
+                            </p>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  )}
 
                   <div>
                     <label className="block text-sm font-semibold text-gray-700 mb-2">

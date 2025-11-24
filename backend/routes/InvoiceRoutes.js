@@ -1,5 +1,5 @@
 import express from "express";
-import { protect, checkAccess } from "../middleware/auth.js";
+import { protect, checkAccess, requireAdmin } from "../middleware/auth.js";
 import invoiceController from "../controller/invoiceControllers.js";
 
 const router = express.Router();
@@ -24,5 +24,7 @@ router.put("/:invoiceId", protect, checkAccess("invoices", "edit"), invoiceContr
 
 // 📌 עדכון סטטוס תשלום — כן
 router.put("/:invoiceId/status", protect, checkAccess("invoices", "edit"), invoiceController.updatePaymentStatus);
+
+router.delete("/:invoiceId/", requireAdmin, protect, checkAccess("invoices", "edit"), invoiceController.deleteInvoice);
 
 export default router;

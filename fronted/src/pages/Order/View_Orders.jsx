@@ -23,6 +23,12 @@ import { toast } from "sonner";
 import { useAuth } from "../../context/AuthContext.jsx";
 
 const OrdersPage = () => {
+  const navigate = useNavigate();
+  const { user, loading: authLoading } = useAuth();
+  const { canViewModule, canEditModule, isAdmin } = useAuth();
+
+  const canViewOrders = canViewModule(null, "orders");
+  const canEditOrders = canEditModule(null, "orders");
   const [orders, setOrders] = useState([]);
   const [loading, setLoading] = useState(false);
   const [sortBy, setSortBy] = useState("sum");
@@ -67,9 +73,11 @@ const OrdersPage = () => {
     formattedDate: false,
     daysSinceCreated: false,
   });
-
-  const navigate = useNavigate();
-  const { user, loading: authLoading } = useAuth();
+  useEffect(() => {
+    if (!canViewOrders) {
+      navigate("/no-access");
+    }
+  }, [canViewOrders]);
 
   const formatNumber = (num) => num?.toLocaleString("he-IL");
   const formatDate = (dateTime) => {
@@ -502,10 +510,30 @@ const OrdersPage = () => {
             ? `
         <div class="filters">
           <h3>🔍 פילטרים</h3>
-          ${selectedProjectName ? `<p><strong>פרויקט:</strong> ${selectedProjectName}</p>` : ""}
-          ${selectedSupplierName ? `<p><strong>ספק:</strong> ${selectedSupplierName}</p>` : ""}
-          ${fromDatePrint ? `<p><strong>מתאריך:</strong> ${new Date(fromDatePrint).toLocaleDateString("he-IL")}</p>` : ""}
-          ${toDatePrint ? `<p><strong>עד תאריך:</strong> ${new Date(toDatePrint).toLocaleDateString("he-IL")}</p>` : ""}
+          ${
+            selectedProjectName
+              ? `<p><strong>פרויקט:</strong> ${selectedProjectName}</p>`
+              : ""
+          }
+          ${
+            selectedSupplierName
+              ? `<p><strong>ספק:</strong> ${selectedSupplierName}</p>`
+              : ""
+          }
+          ${
+            fromDatePrint
+              ? `<p><strong>מתאריך:</strong> ${new Date(
+                  fromDatePrint
+                ).toLocaleDateString("he-IL")}</p>`
+              : ""
+          }
+          ${
+            toDatePrint
+              ? `<p><strong>עד תאריך:</strong> ${new Date(
+                  toDatePrint
+                ).toLocaleDateString("he-IL")}</p>`
+              : ""
+          }
         </div>
         `
             : ""
@@ -990,9 +1018,11 @@ const OrdersPage = () => {
                     <th className="px-6 py-4 text-sm font-bold text-white">
                       שם פרויקט
                     </th>
-                    <th className="px-6 py-4 text-sm font-bold text-white">
-                      פעולות
-                    </th>
+                    {(isAdmin || canEditOrders) && (
+                      <th className="px-6 py-4 text-sm font-bold text-white">
+                        פעולות
+                      </th>
+                    )}
                   </tr>
                 </thead>
                 <tbody>
@@ -1005,38 +1035,49 @@ const OrdersPage = () => {
                       <td className="px-6 py-4 text-sm font-bold text-center text-slate-900">
                         {order.orderNumber}
                       </td>
+
                       <td className="px-6 py-4 text-sm font-bold text-center text-slate-900">
                         {formatNumber(order.sum)} ₪
                       </td>
+
                       <td className="px-6 py-4 text-sm font-medium text-center text-slate-900">
                         {order.status}
                       </td>
+
                       <td className="px-6 py-4 text-sm font-medium text-center text-slate-900">
                         {order.projectName}
                       </td>
-                      <td className="px-6 py-4">
-                        <div className="flex justify-center gap-2">
-                          <button
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              handleEdit(order._id);
-                            }}
-                            className="p-2 text-orange-600 hover:bg-orange-100 rounded-lg transition-all"
-                          >
-                            <Edit2 className="w-5 h-5" />
-                          </button>
-                          <button
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              setOrderToDelete(order._id);
-                              setShowModal(true);
-                            }}
-                            className="p-2 text-red-600 hover:bg-red-100 rounded-lg transition-all"
-                          >
-                            <Trash2 className="w-5 h-5" />
-                          </button>
-                        </div>
-                      </td>
+
+                      {(isAdmin || canEditOrders) && (
+                        <td className="px-6 py-4">
+                          <div className="flex justify-center gap-2">
+                            {canEditOrders && (
+                              <button
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  handleEdit(order._id);
+                                }}
+                                className="p-2 text-orange-600 hover:bg-orange-100 rounded-lg transition-all"
+                              >
+                                <Edit2 className="w-5 h-5" />
+                              </button>
+                            )}
+
+                            {isAdmin && (
+                              <button
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  setOrderToDelete(order._id);
+                                  setShowModal(true);
+                                }}
+                                className="p-2 text-red-600 hover:bg-red-100 rounded-lg transition-all"
+                              >
+                                <Trash2 className="w-5 h-5" />
+                              </button>
+                            )}
+                          </div>
+                        </td>
+                      )}
                     </tr>
                   ))}
                 </tbody>

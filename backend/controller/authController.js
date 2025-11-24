@@ -1,8 +1,11 @@
 import User from '../models/User.js';
 import jwt from 'jsonwebtoken';
+import dotenv from 'dotenv'
+
+dotenv.config();
 
 const JWT_SECRET = process.env.JWT_SECRET;
-const JWT_EXPIRE = '30d';
+const JWT_EXPIRE = '24h';
 
 // יצירת טוקן
 const generateToken = (userId) => {
@@ -13,6 +16,14 @@ const generateToken = (userId) => {
 
 // התחברות
 export const login = async (req, res) => {
+
+  console.log("LOGIN ATTEMPT:", JSON.stringify(req.body.username));
+  console.log("USING ROUTE:", req.originalUrl);
+
+  const user = await User.findOne({ username: req.body.username });
+
+  console.log("FOUND USER IN DB?", user ? "YES" : "NO");
+
 
   try {
     const { username, password } = req.body;
@@ -26,7 +37,7 @@ export const login = async (req, res) => {
 
     // חפש משתמש
     const user = await User.findOne({ username })
-      .populate('permissions.projects', 'name')
+      .populate('permissions.project', 'name')
 
     if (!user) {
       return res.status(401).json({
@@ -118,7 +129,7 @@ export const getMe = async (req, res) => {
   try {
     const user = await User.findById(req.user.id)
       .select('-password')
-      .populate('permissions.projects', 'name')
+      .populate('permissions.project', 'name')
 
     res.json({
       success: true,

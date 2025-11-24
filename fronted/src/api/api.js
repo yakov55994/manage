@@ -27,26 +27,30 @@ api.interceptors.request.use(
 // =========================
 // RESPONSE INTERCEPTOR
 // =========================
+// =========================
+// RESPONSE INTERCEPTOR – FIXED
+// =========================
 api.interceptors.response.use(
   (response) => response,
-
   (error) => {
-    // לוג מסודר לשגיאות
-    console.error("❌ API ERROR:", {
-      url: error.config?.url,
-      status: error.response?.status,
-      message: error.response?.data?.message,
-    });
-
-    // הפניה לדף אין גישה
-    if (error.response?.status === 403 && error.response?.data?.message === "אין הרשאה") {
-      window.location.href = "/no-access";
-      return Promise.reject(error);
+    // שגיאות הרשאה - 401 (לא מחובר) או 403 (אין הרשאה)
+    if (error.response?.status === 401 || error.response?.status === 403) {
+      // אם ההודעה מכילה "הרשאה" - נווט לדף אין הרשאה
+      if (error.response?.data?.message?.includes("הרשאה") || 
+          error.response?.data?.message?.includes("אין גישה")) {
+        window.location.href = "/no-access";
+        return Promise.reject(error);
+      }
+      
+      // אחרת - נווט ללוגין (למקרה של token שפג תוקפו)
+      if (error.response?.status === 401) {
+        localStorage.removeItem("token");
+        localStorage.removeItem("user");
+        window.location.href = "/login";
+      }
     }
-
+    
     return Promise.reject(error);
-
   }
 );
-
 export default api;

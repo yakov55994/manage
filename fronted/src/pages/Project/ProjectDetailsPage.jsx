@@ -20,9 +20,48 @@ import {
   Truck,
 } from "lucide-react";
 import { toast } from "sonner";
+import { useAuth } from "../../context/AuthContext.jsx";
 
 const ProjectDetailsPage = () => {
   const { id } = useParams();
+  const navigate = useNavigate();
+
+  const { isAdmin, canViewProject, canEditProject, loading, user } = useAuth();
+
+  useEffect(() => {
+    if (loading) return;
+    if (!user) return;
+
+    console.log("🔍 CHECKING PERMISSIONS:", {
+      projectId: id,
+      user: user,
+      permissions: user?.permissions,
+      isAdmin: isAdmin,
+      canView: canViewProject(id),
+    });
+
+    // ✅ הוסף את זה:
+    console.log(
+      "📋 USER PERMISSIONS DETAILS:",
+      user?.permissions?.map((p) => ({
+        project: p.project,
+        access: p.access,
+        modules: p.modules,
+      }))
+    );
+
+    // בדוק אם יש התאמה
+    const matchingPerm = user?.permissions?.find(
+      (p) => String(p.project) === String(id)
+    );
+    console.log("🎯 MATCHING PERMISSION:", matchingPerm);
+
+    if (!isAdmin && !canViewProject(id)) {
+      console.log("❌ NO ACCESS - redirecting");
+      navigate("/no-access");
+    }
+  }, [loading, user, isAdmin, id, navigate]);
+
   const [project, setProject] = useState(null);
   const [confirmOpen, setConfirmOpen] = useState(false);
   const [deleting, setDeleting] = useState(false);
@@ -35,57 +74,58 @@ const ProjectDetailsPage = () => {
   const [loadingOrders, setLoadingOrders] = useState(true);
   const [loadingInvoices, setLoadingInvoices] = useState(true);
 
-  const navigate = useNavigate();
+  useEffect(() => {
+    if (loading) return;
+    if (!user) return;
 
-useEffect(() => {
-  const fetchProjectDetails = async () => {
-    try {
-      setLoadingProject(true);
-      setLoadingOrders(true);
-      setLoadingInvoices(true);
+    const fetchProjectDetails = async () => {
+      try {
+        setLoadingProject(true);
+        setLoadingOrders(true);
+        setLoadingInvoices(true);
 
-      // 1️⃣ שלוף את הפרויקט
-      const projectResponse = await api.get(`/projects/${id}`);
-      const projectData = projectResponse.data?.data || {};
-      setProject(projectData);
-      setLoadingProject(false);
+        // 1️⃣ שלוף את הפרויקט
+        const projectResponse = await api.get(`/projects/${id}`);
+        const projectData = projectResponse.data?.data || {};
+        setProject(projectData);
+        setLoadingProject(false);
 
-      // 2️⃣ שלוף את כל ההזמנות וסנן לפי פרויקט
-      const ordersResponse = await api.get("/orders");
-      const allOrders = Array.isArray(ordersResponse.data?.data)
-        ? ordersResponse.data.data
-        : [];
-      const projectOrders = allOrders.filter(
-        (order) => String(order.projectId?._id || order.projectId) === String(id)
-      );
-      setOrders(projectOrders);
-      setLoadingOrders(false);
+        // 2️⃣ שלוף את כל ההזמנות וסנן לפי פרויקט
+        const ordersResponse = await api.get("/orders");
+        const allOrders = Array.isArray(ordersResponse.data?.data)
+          ? ordersResponse.data.data
+          : [];
+        const projectOrders = allOrders.filter(
+          (order) =>
+            String(order.projectId?._id || order.projectId) === String(id)
+        );
+        setOrders(projectOrders);
+        setLoadingOrders(false);
 
-      // 3️⃣ שלוף את כל החשבוניות וסנן לפי פרויקט
-      const invoicesResponse = await api.get("/invoices");
-      const allInvoices = Array.isArray(invoicesResponse.data?.data)
-        ? invoicesResponse.data.data
-        : [];
-      const projectInvoices = allInvoices.filter(
-        (invoice) => String(invoice.projectId?._id || invoice.projectId) === String(id)
-      );
-      setInvoices(projectInvoices);
-      setLoadingInvoices(false);
+        // 3️⃣ שלוף את כל החשבוניות וסנן לפי פרויקט
+        const invoicesResponse = await api.get("/invoices");
+        const allInvoices = Array.isArray(invoicesResponse.data?.data)
+          ? invoicesResponse.data.data
+          : [];
+        const projectInvoices = allInvoices.filter(
+          (invoice) =>
+            String(invoice.projectId?._id || invoice.projectId) === String(id)
+        );
+        setInvoices(projectInvoices);
+        setLoadingInvoices(false);
+      } catch (error) {
+        console.error("Error fetching project details:", error);
+        toast.error("שגיאה בשליפת פרטי הפרויקט", {
+          className: "sonner-toast error rtl",
+        });
+        setLoadingProject(false);
+        setLoadingOrders(false);
+        setLoadingInvoices(false);
+      }
+    };
 
-    } catch (error) {
-      console.error("Error fetching project details:", error);
-      toast.error("שגיאה בשליפת פרטי הפרויקט", {
-        className: "sonner-toast error rtl",
-      });
-      setLoadingProject(false);
-      setLoadingOrders(false);
-      setLoadingInvoices(false);
-    }
-  };
-
-  fetchProjectDetails();
-}, [id]);
-
+    fetchProjectDetails();
+  }, [id, loading, user]); // ✅
   // עכשיו אין צורך בסינון לפי projectId:
   const filteredOrders = orders
     ?.filter((o) => !statusFilter || o.status === statusFilter)
@@ -285,27 +325,35 @@ useEffect(() => {
                   <ArrowRight className="w-4 h-4" />
                   <span>חזור לרשימה</span>
                 </button>
-                <button
-                  onClick={() => handleEdit(project._id)}
-                  className="flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-orange-600 to-amber-600 text-white font-bold rounded-xl hover:from-orange-700 hover:to-amber-700 transition-all shadow-xl shadow-orange-500/30"
-                >
-                  <Edit2 className="w-4 h-4" />
-                  <span>עריכת פרויקט</span>
-                </button>
+                {isAdmin && (
+                  <>
+                    {(isAdmin || canEditProject(id)) && (
+                      <>
+                        <button
+                          onClick={() => handleEdit(project._id)}
+                          className="flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-orange-600 to-amber-600 text-white font-bold rounded-xl hover:from-orange-700 hover:to-amber-700 transition-all shadow-xl shadow-orange-500/30"
+                        >
+                          <Edit2 className="w-4 h-4" />
+                          <span>עריכת פרויקט</span>
+                        </button>
+
+                        <button
+                          onClick={() => setConfirmOpen(true)}
+                          className="flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-red-500 to-rose-500 text-white font-bold rounded-xl hover:from-red-600 hover:to-rose-600 transition-all shadow-xl shadow-red-500/30"
+                        >
+                          <Trash2 className="w-4 h-4" />
+                          <span>מחק פרויקט</span>
+                        </button>
+                      </>
+                    )}
+                  </>
+                )}
                 <button
                   onClick={handleAddInvoiceForProject}
                   className="flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-orange-600 to-amber-600 text-white font-bold rounded-xl hover:from-orange-700 hover:to-amber-700 transition-all shadow-xl shadow-orange-500/30"
                 >
                   <Edit2 className="w-4 h-4" />
                   <span>הוספת חשבונית</span>
-                </button>
-
-                <button
-                  onClick={() => setConfirmOpen(true)}
-                  className="flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-red-500 to-rose-500 text-white font-bold rounded-xl hover:from-red-600 hover:to-rose-600 transition-all shadow-xl shadow-red-500/30"
-                >
-                  <Trash2 className="w-4 h-4" />
-                  <span>מחק פרויקט</span>
                 </button>
               </div>
             </div>
