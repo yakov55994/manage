@@ -395,10 +395,20 @@ export default function UserManagement() {
   };
 
   // UI
-  if (authLoading || loading) {
+  if (loading || authLoading) {
     return (
-      <div className="flex items-center justify-center min-h-screen bg-gradient-to-br from-orange-50 via-amber-50 to-orange-50">
-        <ClipLoader size={60} color="#fb923c" />
+      <div
+        className="min-h-screen bg-gradient-to-br from-orange-50 via-amber-50 to-orange-100 p-8"
+        dir="rtl"
+      >
+        <div className="max-w-7xl mx-auto">
+          <div className="flex flex-col items-center justify-center py-20 gap-6">
+            <ClipLoader color="#f97316" size={60} />
+            <h1 className="font-bold text-3xl text-slate-900 text-center">
+              טוען רשימת משתמשים...
+            </h1>
+          </div>
+        </div>
       </div>
     );
   }
