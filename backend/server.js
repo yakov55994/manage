@@ -97,7 +97,7 @@ const connectDB = async () => {
     app.listen(port, () => {
       console.log(`🚀 Server running on port ${port}`);
       console.log(`🌐 API at http://localhost:${port}/api`);
-      console.log('📋 Allowed Origins:', allowedOrigins); // ✅ לוג לבדיקה
+      // console.log('📋 Allowed Origins:', allowedOrigins); // ✅ לוג לבדיקה
     });
   } catch (err) {
     console.error('❌ Error connecting to MongoDB', err);

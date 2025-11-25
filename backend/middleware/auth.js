@@ -100,8 +100,14 @@ export const checkAccess = (moduleName, action) => {
         req.params.orderId ||
         req.params.projectId;
 
-      // אם הודעת create — אין עדיין ID → בודקים דרך body.projectId
       const projectIdFromBody = req.body.projectId;
+      console.log("🔍 DEBUG checkAccess:");
+      console.log("- Module:", moduleName);
+      console.log("- Action:", action);
+      console.log("- ID from params:", id);
+      console.log("- Full req.body:", JSON.stringify(req.body, null, 2)); // 👈 כאן!
+      console.log("- ProjectId from body:", projectIdFromBody);
+      console.log("- req.body.orders:", req.body.orders); // 👈 וגם את זה
 
       let projectId = null;
 
@@ -116,18 +122,28 @@ export const checkAccess = (moduleName, action) => {
       if (moduleName === "orders") {
         if (id) item = await Order.findById(id);
         projectId = item?.projectId?.toString() || projectIdFromBody;
+        console.log("- Final projectId for orders:", projectId);
+
       }
 
       if (moduleName === "projects") {
         if (id) item = await Project.findById(id);
         projectId = item?._id?.toString();
 
-        // הרשאת פרויקט לא נבדקת דרך modules — רק דרך access!
+        // 🔧 FIX: השתמש בפונקציה normalizе
         const perm = user.permissions.find(
-          (p) => p.project.toString() === projectId
+          (p) => {
+            const permProjectId = String(p.project?._id || p.project);
+            console.log(`- Comparing: ${permProjectId} === ${projectId}`);
+            return permProjectId === String(projectId);
+          }
         );
+        console.log("- Found permission:", perm);
+
 
         if (!perm) {
+          console.log("❌ No permission found!");
+
           return res.status(403).json({ message: "אין גישה לפרויקט" });
         }
 
@@ -142,16 +158,15 @@ export const checkAccess = (moduleName, action) => {
         return next();
       }
 
-
       // ----- supplier: אין הרשאת פרויקט -----
       if (moduleName === "suppliers") {
-        // לא צריך בדיקה כלל
         return next();
       }
 
       // ----- 3) בדיקת הרשאת פרויקט -----
+      // 🔧 FIX: השתמש בפונקציה normalize
       const perm = user.permissions.find(
-        (p) => p.project.toString() === String(projectId)
+        (p) => String(p.project?._id || p.project) === String(projectId)
       );
 
       if (!perm) {
@@ -169,6 +184,10 @@ export const checkAccess = (moduleName, action) => {
         return res.status(403).json({ message: "אין הרשאה לערוך" });
       }
 
+      console.log("🔍 DEBUG checkAccess:");
+      console.log("- Module:", moduleName);
+      console.log("- Action:", action);
+      console.log("- Full req.body:", JSON.stringify(req.body, null, 2)); // 👈 הוסף את זה!
       return next();
 
     } catch (err) {
@@ -177,4 +196,3 @@ export const checkAccess = (moduleName, action) => {
     }
   };
 };
-

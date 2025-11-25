@@ -77,6 +77,7 @@ const CreateOrder = () => {
         }
 
         const allowedProjectIds = user.permissions
+          .filter((p) => p.modules?.orders === "edit") // 👈 רק עם הרשאת edit ל-orders!
           .map((p) => String(p.project?._id || p.project))
           .filter(Boolean);
 

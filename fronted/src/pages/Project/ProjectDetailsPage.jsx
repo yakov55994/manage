@@ -17,7 +17,6 @@ import {
   TrendingUp,
   ArrowRight,
   Package,
-  Truck,
 } from "lucide-react";
 import { toast } from "sonner";
 import { useAuth } from "../../context/AuthContext.jsx";
@@ -28,36 +27,47 @@ const ProjectDetailsPage = () => {
 
   const { isAdmin, canViewProject, canEditProject, loading, user } = useAuth();
 
+  // ✅ פונקציות עזר לבדיקת הרשאות מודולים
+  const canViewOrders = () => {
+    if (isAdmin) return true;
+    if (!user?.permissions) return false;
+    
+    const perm = user.permissions.find(
+      (p) => String(p.project) === String(id)
+    );
+    
+    const level = perm?.modules?.orders;
+    return level === "view" || level === "edit";
+  };
+
+  const canViewInvoices = () => {
+    if (isAdmin) return true;
+    if (!user?.permissions) return false;
+    
+    const perm = user.permissions.find(
+      (p) => String(p.project) === String(id)
+    );
+    
+    const level = perm?.modules?.invoices;
+    return level === "view" || level === "edit";
+  };
+
+  const canEditInvoices = () => {
+    if (isAdmin) return true;
+    if (!user?.permissions) return false;
+    
+    const perm = user.permissions.find(
+      (p) => String(p.project) === String(id)
+    );
+    
+    return perm?.modules?.invoices === "edit";
+  };
+
   useEffect(() => {
     if (loading) return;
     if (!user) return;
 
-    console.log("🔍 CHECKING PERMISSIONS:", {
-      projectId: id,
-      user: user,
-      permissions: user?.permissions,
-      isAdmin: isAdmin,
-      canView: canViewProject(id),
-    });
-
-    // ✅ הוסף את זה:
-    console.log(
-      "📋 USER PERMISSIONS DETAILS:",
-      user?.permissions?.map((p) => ({
-        project: p.project,
-        access: p.access,
-        modules: p.modules,
-      }))
-    );
-
-    // בדוק אם יש התאמה
-    const matchingPerm = user?.permissions?.find(
-      (p) => String(p.project) === String(id)
-    );
-    console.log("🎯 MATCHING PERMISSION:", matchingPerm);
-
     if (!isAdmin && !canViewProject(id)) {
-      console.log("❌ NO ACCESS - redirecting");
       navigate("/no-access");
     }
   }, [loading, user, isAdmin, id, navigate]);
@@ -90,28 +100,32 @@ const ProjectDetailsPage = () => {
         setProject(projectData);
         setLoadingProject(false);
 
-        // 2️⃣ שלוף את כל ההזמנות וסנן לפי פרויקט
-        const ordersResponse = await api.get("/orders");
-        const allOrders = Array.isArray(ordersResponse.data?.data)
-          ? ordersResponse.data.data
-          : [];
-        const projectOrders = allOrders.filter(
-          (order) =>
-            String(order.projectId?._id || order.projectId) === String(id)
-        );
-        setOrders(projectOrders);
+        // 2️⃣ שלוף את כל ההזמנות וסנן לפי פרויקט - רק אם יש הרשאה
+        if (canViewOrders()) {
+          const ordersResponse = await api.get("/orders");
+          const allOrders = Array.isArray(ordersResponse.data?.data)
+            ? ordersResponse.data.data
+            : [];
+          const projectOrders = allOrders.filter(
+            (order) =>
+              String(order.projectId?._id || order.projectId) === String(id)
+          );
+          setOrders(projectOrders);
+        }
         setLoadingOrders(false);
 
-        // 3️⃣ שלוף את כל החשבוניות וסנן לפי פרויקט
-        const invoicesResponse = await api.get("/invoices");
-        const allInvoices = Array.isArray(invoicesResponse.data?.data)
-          ? invoicesResponse.data.data
-          : [];
-        const projectInvoices = allInvoices.filter(
-          (invoice) =>
-            String(invoice.projectId?._id || invoice.projectId) === String(id)
-        );
-        setInvoices(projectInvoices);
+        // 3️⃣ שלוף את כל החשבוניות וסנן לפי פרויקט - רק אם יש הרשאה
+        if (canViewInvoices()) {
+          const invoicesResponse = await api.get("/invoices");
+          const allInvoices = Array.isArray(invoicesResponse.data?.data)
+            ? invoicesResponse.data.data
+            : [];
+          const projectInvoices = allInvoices.filter(
+            (invoice) =>
+              String(invoice.projectId?._id || invoice.projectId) === String(id)
+          );
+          setInvoices(projectInvoices);
+        }
         setLoadingInvoices(false);
       } catch (error) {
         console.error("Error fetching project details:", error);
@@ -125,8 +139,8 @@ const ProjectDetailsPage = () => {
     };
 
     fetchProjectDetails();
-  }, [id, loading, user]); // ✅
-  // עכשיו אין צורך בסינון לפי projectId:
+  }, [id, loading, user]);
+
   const filteredOrders = orders
     ?.filter((o) => !statusFilter || o.status === statusFilter)
     ?.sort((a, b) => (sortOrder === "desc" ? b.sum - a.sum : a.sum - b.sum));
@@ -146,7 +160,6 @@ const ProjectDetailsPage = () => {
 
   const normalizeType = (t) => {
     if (!t) return "";
-    // ממיר לאותיות רגילות, מוחק רווחים כפולים, ומסיר רווחים סביב "/"
     return String(t)
       .replace(/\s+/g, " ")
       .replace(/\s*\/\s*/g, "/")
@@ -154,26 +167,13 @@ const ProjectDetailsPage = () => {
   };
 
   const extractDocTypes = (invoice) => {
-    // תומך גם ב-invoice.documents וגם ב-invoice.documentType
     let raw = invoice?.documents ?? invoice?.documentType ?? [];
-    // אם זה סטרינג בודד – נהפוך למערך
     if (typeof raw === "string") raw = [raw];
-    // אם זה לא מערך – נחזיר ריק
     if (!Array.isArray(raw)) return [];
-    // נחלץ מכל איבר את המחרוזת (אם אובייקט – ניקח d.type, אם כבר סטרינג – נשאיר)
     return raw
       .map((d) => normalizeType(typeof d === "object" ? d?.type : d))
       .filter(Boolean);
   };
-
-  const arr = (res) =>
-    Array.isArray(res?.data?.data)
-      ? res.data.data
-      : Array.isArray(res?.data)
-      ? res.data
-      : Array.isArray(res)
-      ? res
-      : [];
 
   const getActionState = (invoice) => {
     const types = extractDocTypes(invoice);
@@ -183,7 +183,6 @@ const ProjectDetailsPage = () => {
 
     const status = hasFinal ? "הושלם" : "חסר";
 
-    // תווית: אם הושלם – נציג את הצורה הקנונית של ה-final, אחרת את הביניים הראשון אם יש
     const label = hasFinal
       ? "חשבונית מס/קבלה"
       : types.find((t) => INTERIM_ALIASES.has(t)) || "";
@@ -195,7 +194,7 @@ const ProjectDetailsPage = () => {
     return { status, label, color };
   };
 
-  if (loadingProject || loadingInvoices || loadingOrders) {
+  if (loadingProject) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-orange-50 via-amber-50 to-yellow-50 flex flex-col justify-center items-center">
         <div className="relative">
@@ -348,13 +347,16 @@ const ProjectDetailsPage = () => {
                     )}
                   </>
                 )}
-                <button
-                  onClick={handleAddInvoiceForProject}
-                  className="flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-orange-600 to-amber-600 text-white font-bold rounded-xl hover:from-orange-700 hover:to-amber-700 transition-all shadow-xl shadow-orange-500/30"
-                >
-                  <Edit2 className="w-4 h-4" />
-                  <span>הוספת חשבונית</span>
-                </button>
+                {/* כפתור הוספת חשבונית - רק אם יש הרשאת edit */}
+                {canEditInvoices() && (
+                  <button
+                    onClick={handleAddInvoiceForProject}
+                    className="flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-orange-600 to-amber-600 text-white font-bold rounded-xl hover:from-orange-700 hover:to-amber-700 transition-all shadow-xl shadow-orange-500/30"
+                  >
+                    <Edit2 className="w-4 h-4" />
+                    <span>הוספת חשבונית</span>
+                  </button>
+                )}
               </div>
             </div>
           </div>
@@ -487,15 +489,28 @@ const ProjectDetailsPage = () => {
                   <h2 className="text-2xl font-bold text-slate-900">
                     הזמנות של הפרויקט
                   </h2>
-                  <span className="mr-auto px-3 py-1 rounded-full bg-blue-100 text-blue-700 text-sm font-bold">
-                    {filteredOrders?.length}
-                  </span>
+                  {canViewOrders() && (
+                    <span className="mr-auto px-3 py-1 rounded-full bg-blue-100 text-blue-700 text-sm font-bold">
+                      {filteredOrders?.length}
+                    </span>
+                  )}
                 </div>
               </div>
             </div>
 
             <div className="p-6">
-              {loadingOrders ? (
+              {!canViewOrders() ? (
+                // ❌ אין הרשאה
+                <div className="text-center py-12 text-slate-600">
+                  <AlertCircle className="w-16 h-16 mx-auto mb-4 text-red-400 opacity-50" />
+                  <p className="font-bold text-xl text-red-600">
+                    אין הרשאה לצפות בהזמנות
+                  </p>
+                  <p className="text-sm mt-2 text-slate-500">
+                    פנה למנהל המערכת לקבלת גישה
+                  </p>
+                </div>
+              ) : loadingOrders ? (
                 <div className="flex items-center gap-3 text-slate-700 justify-center py-8">
                   <ClipLoader size={26} color="#3b82f6" />
                   <span>טוען הזמנות…</span>
@@ -567,15 +582,28 @@ const ProjectDetailsPage = () => {
                   <h2 className="text-2xl font-bold text-slate-900">
                     חשבוניות של הפרויקט
                   </h2>
-                  <span className="mr-auto px-3 py-1 rounded-full bg-emerald-100 text-emerald-700 text-sm font-bold">
-                    {filteredInvoices.length}
-                  </span>
+                  {canViewInvoices() && (
+                    <span className="mr-auto px-3 py-1 rounded-full bg-emerald-100 text-emerald-700 text-sm font-bold">
+                      {filteredInvoices.length}
+                    </span>
+                  )}
                 </div>
               </div>
             </div>
 
             <div className="p-6">
-              {loadingInvoices ? (
+              {!canViewInvoices() ? (
+                // ❌ אין הרשאה
+                <div className="text-center py-12 text-slate-600">
+                  <AlertCircle className="w-16 h-16 mx-auto mb-4 text-red-400 opacity-50" />
+                  <p className="font-bold text-xl text-red-600">
+                    אין הרשאה לצפות בחשבוניות
+                  </p>
+                  <p className="text-sm mt-2 text-slate-500">
+                    פנה למנהל המערכת לקבלת גישה
+                  </p>
+                </div>
+              ) : loadingInvoices ? (
                 <div className="flex items-center gap-3 text-slate-700 justify-center py-8">
                   <ClipLoader size={26} color="#10b981" />
                   <span>טוען חשבוניות…</span>
@@ -588,13 +616,12 @@ const ProjectDetailsPage = () => {
                         <th className="px-4 py-3 text-xs font-bold text-emerald-900 text-center">
                           מספר חשבונית
                         </th>
-                        <th className="px-4 py-3 text-xs font-bold text-emerald-900 text-center ">
+                        <th className="px-4 py-3 text-xs font-bold text-emerald-900 text-center">
                           פרויקט
                         </th>
                         <th className="px-4 py-3 text-xs font-bold text-emerald-900 text-center">
                           סכום
                         </th>
-
                         <th className="px-12 py-3 text-xs font-bold text-emerald-900 text-center">
                           סטטוס
                         </th>
@@ -628,7 +655,6 @@ const ProjectDetailsPage = () => {
                           <td className="px-4 py-3 text-sm font-bold text-center">
                             {invoice.status}
                           </td>
-
                           <td className="px-4 py-3 text-sm font-bold text-center">
                             {invoice.supplierId?.name || "—"}
                           </td>

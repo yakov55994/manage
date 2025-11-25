@@ -17,7 +17,7 @@ router.get("/:orderId", protect, checkAccess("orders", "view"), orderController.
 router.post("/", protect, checkAccess("orders", "edit"), orderController.createOrder);
 
 // 📌 יצירת הרבה הזמנות — כן checkAccess
-router.post("/bulk", protect, checkAccess("orders", "edit"), orderController.createBulkOrders);
+router.post("/bulk", protect, orderController.createBulkOrders);
 
 // 📌 עדכון הזמנה — כן checkAccess
 router.put("/:orderId", protect, checkAccess("orders", "edit"), orderController.updateOrder);
