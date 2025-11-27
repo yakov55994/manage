@@ -63,8 +63,8 @@ export default {
   },
 
   // ➕ יצירה
-  async createInvoice(user, data) {
-
+async createInvoice(user, data) {
+  // בדיקת הרשאות
   if (user.role !== "admin") {
     const allowed = user.permissions.map(
       (p) => String(p.project?._id || p.project)
@@ -81,7 +81,14 @@ export default {
   project.remainingBudget -= Number(data.sum);
   await project.save();
 
-  return Invoice.create(data);
+  // ✅ הוספת פרטי המשתמש שיצר את החשבונית
+  const invoiceData = {
+    ...data,
+    createdBy: user._id,
+    createdByName: user.username || user.name || 'משתמש'
+  };
+
+  return Invoice.create(invoiceData);
 },
 
   // ✏️ עדכון חשבונית

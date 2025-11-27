@@ -46,6 +46,16 @@ const invoiceSchema = new mongoose.Schema({
     enum: ["", "check", "bank_transfer"],
     default: "",
   },
+  // ✅ הוספה חדשה
+  createdBy: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'User',
+    required: false
+  },
+  createdByName: {
+    type: String,
+    required: false
+  }
 });
 
 const Invoice = mongoose.model("Invoice", invoiceSchema);

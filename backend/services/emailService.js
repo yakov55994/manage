@@ -1,18 +1,25 @@
-import { Resend } from 'resend';
+import nodemailer from 'nodemailer';
 import dotenv from 'dotenv';
 
 dotenv.config();
 
-const resend = new Resend(process.env.RESEND_API_KEY);
+// יצירת transporter
+const transporter = nodemailer.createTransport({
+  service: 'gmail',
+  auth: {
+    user: process.env.GMAIL_USER,
+    pass: process.env.GMAIL_APP_PASSWORD
+  }
+});
 
 // ✅ איפוס סיסמה
 export const sendPasswordResetEmail = async ({ to, username, resetUrl }) => {
   try {
     console.log(`📧 Sending to: ${to}`);
 
-    const { data, error } = await resend.emails.send({
-      from: 'ניהולון <onboarding@resend.dev>',
-      to: [to],
+    await transporter.sendMail({
+      from: `"ניהולון" <${process.env.GMAIL_USER}>`,
+      to: to,
       subject: '🔐 איפוס סיסמה - ניהולון',
       html: `
         <div dir="rtl" style="font-family: Arial; max-width: 600px; margin: 0 auto; background: white; border-radius: 16px; overflow: hidden; box-shadow: 0 4px 6px rgba(0,0,0,0.1);">
@@ -52,16 +59,12 @@ export const sendPasswordResetEmail = async ({ to, username, resetUrl }) => {
           </div>
           
         </div>
-      `,
+      `
     });
 
-    if (error) {
-      console.error('❌ Resend error:', error);
-      throw new Error(error.message);
-    }
+    console.log('✅ Email sent!');
+    return { success: true };
 
-    console.log('✅ Email sent!', data.id);
-    return { success: true, messageId: data.id };
   } catch (error) {
     console.error('❌ Error:', error);
     throw new Error('שגיאה בשליחת המייל');
@@ -73,9 +76,9 @@ export const sendWelcomeEmail = async ({ to, username, resetUrl }) => {
   try {
     console.log(`📧 Sending welcome to: ${to}`);
 
-    const { data, error } = await resend.emails.send({
-      from: 'ניהולון <onboarding@resend.dev>',
-      to: [to],
+    await transporter.sendMail({
+      from: `"ניהולון" <${process.env.GMAIL_USER}>`,
+      to: to,
       subject: '🎉 ברוכים הבאים לניהולון!',
       html: `
         <div dir="rtl" style="font-family: Arial; max-width: 600px; margin: 0 auto; background: white; border-radius: 16px; overflow: hidden; box-shadow: 0 4px 6px rgba(0,0,0,0.1);">
@@ -110,15 +113,12 @@ export const sendWelcomeEmail = async ({ to, username, resetUrl }) => {
           </div>
           
         </div>
-      `,
+      `
     });
 
-    if (error) {
-      throw new Error(error.message);
-    }
+    console.log('✅ Welcome email sent!');
+    return { success: true };
 
-    console.log('✅ Welcome email sent!', data.id);
-    return { success: true, messageId: data.id };
   } catch (error) {
     console.error('❌ Error:', error);
     throw new Error('שגיאה בשליחת מייל');

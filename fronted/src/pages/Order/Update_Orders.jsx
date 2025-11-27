@@ -47,7 +47,8 @@ const OrderEditPage = () => {
         const orderData = response.data.data || response.data;
 
         // ✅ נרמל את projectId
-        let projectId = orderData.project;
+        let projectId = orderData.projectId;
+
         if (typeof projectId === "object") {
           projectId = projectId._id || projectId.$oid;
         }
@@ -78,7 +79,22 @@ const OrderEditPage = () => {
             ? new Date(orderData.createdAt).toISOString().split("T")[0]
             : ""
         );
-        setFiles(orderData.files || []);
+        const normalizedFiles = Array.isArray(orderData.files)
+          ? orderData.files
+              .map((f) => {
+                if (typeof f === "string") {
+                  try {
+                    return JSON.parse(f);
+                  } catch {
+                    return null;
+                  }
+                }
+                return f;
+              })
+              .filter(Boolean)
+          : [];
+
+        setFiles(normalizedFiles);
 
         console.log("✅ Order loaded successfully");
       } catch (error) {
@@ -93,6 +109,34 @@ const OrderEditPage = () => {
     fetchOrder();
   }, [id, navigate, canEditOrders]);
 
+  const extractPublicIdFromUrl = (url) => {
+    console.log("🔍 Extracting publicId from URL:", url);
+
+    if (!url) {
+      console.warn("⚠️ URL is empty");
+      return null;
+    }
+
+    try {
+      // Cloudinary URL format: .../upload/v123456/folder/filename.ext
+      const match = url.match(/\/upload\/(?:v\d+\/)?(.+?)$/);
+
+      console.log("🔍 Regex match result:", match);
+
+      if (match && match[1]) {
+        // הסר את הסיומת (extension)
+        const publicId = match[1].replace(/\.[^.]+$/, "");
+        console.log("✅ Extracted publicId:", publicId);
+        return publicId;
+      }
+
+      console.warn("⚠️ Could not match URL pattern");
+      return null;
+    } catch (error) {
+      console.error("❌ Error extracting publicId:", error);
+      return null;
+    }
+  };
   const handleFileUpload = (selectedFiles) => {
     if (!selectedFiles || selectedFiles.length === 0) return;
     setFiles((prev) => [...(prev || []), ...selectedFiles]);
@@ -100,13 +144,115 @@ const OrderEditPage = () => {
   };
 
   const handleRemoveFile = async (fileIndex) => {
-    const fileToDelete = files[fileIndex];
-    if (!fileToDelete) return;
+    console.log("🗑️ === START handleRemoveFile ===");
+    console.log("🗑️ fileIndex:", fileIndex);
 
-    const clone = [...files];
-    clone.splice(fileIndex, 1);
-    setFiles(clone);
-    toast.success("הקובץ הוסר");
+    const fileToDelete = files[fileIndex];
+    console.log("🗑️ fileToDelete:", fileToDelete);
+
+    if (!fileToDelete) {
+      toast.error("קובץ לא נמצא");
+      return;
+    }
+
+    // 1️⃣ קובץ מקומי - רק הסר מה-UI
+    if (fileToDelete.isLocal) {
+      console.log("📁 Local file - removing from UI only");
+      const clone = [...files];
+      clone.splice(fileIndex, 1);
+      setFiles(clone);
+
+      if (fileToDelete.tempUrl) {
+        URL.revokeObjectURL(fileToDelete.tempUrl);
+      }
+
+      toast.success("הקובץ הוסר מהרשימה");
+      return;
+    }
+
+    // 2️⃣ קובץ ב-Cloudinary
+    console.log("☁️ Cloudinary file - attempting to delete from server");
+
+    const originalFiles = [...files];
+
+    try {
+      // הסר מה-UI מיד (אופטימיסטי)
+      const clone = [...files];
+      clone.splice(fileIndex, 1);
+      setFiles(clone);
+      console.log("✅ Removed from UI (optimistically)");
+
+      // חלץ publicId
+      const fileUrl = fileToDelete.url || fileToDelete.fileUrl;
+      console.log("🔗 File URL:", fileUrl);
+
+      if (!fileUrl) {
+        console.warn("⚠️ No URL found in file object");
+        toast.warning("לא נמצא URL לקובץ");
+        return;
+      }
+
+      // נסה לקבל publicId מהשדה או מה-URL
+      let publicId = fileToDelete.publicId;
+      console.log("🔑 publicId from file object:", publicId);
+
+      if (!publicId) {
+        console.log("🔍 Attempting to extract publicId from URL...");
+        publicId = extractPublicIdFromUrl(fileUrl);
+        console.log("🔑 Extracted publicId:", publicId);
+      }
+
+      if (!publicId) {
+        console.error("❌ Could not get publicId");
+        toast.warning(
+          "הקובץ הוסר מהרשימה, אך לא ניתן למחוק מ-Cloudinary (חסר publicId)"
+        );
+        return;
+      }
+
+      console.log("📤 Sending DELETE request to /upload/delete-cloudinary");
+      console.log("📤 Request data:", {
+        publicId,
+        resourceType: fileToDelete.resourceType || "raw",
+      });
+
+      // קריאה לשרת למחיקה
+      const response = await api.delete("/upload/delete-cloudinary", {
+        data: {
+          publicId,
+          resourceType: fileToDelete.resourceType || "raw",
+        },
+      });
+
+      console.log("✅ Server response:", response.data);
+      toast.success("הקובץ נמחק מהשרת ומ-Cloudinary");
+    } catch (error) {
+      console.error("❌ Error deleting file:", error);
+      console.error("❌ Error response:", error.response?.data);
+      console.error("❌ Error status:", error.response?.status);
+
+      // בדוק אם זה 404 (קובץ כבר נמחק)
+      if (
+        error.response?.status === 404 ||
+        error.response?.data?.result === "not found"
+      ) {
+        console.log("ℹ️ File not found in Cloudinary (already deleted)");
+        toast.info("הקובץ כבר לא קיים ב-Cloudinary");
+      } else {
+        // שגיאה אמיתית - החזר את המצב המקורי
+        console.log("🔄 Restoring original files state");
+        toast.error(
+          "שגיאה במחיקת הקובץ: " +
+            (error.response?.data?.message ||
+              error.response?.data?.error ||
+              error.message)
+        );
+
+        setFiles(originalFiles);
+      }
+    }
+
+    console.log("🗑️ === END handleRemoveFile ===");
   };
 
   const handleSubmit = async (e) => {
@@ -114,11 +260,10 @@ const OrderEditPage = () => {
     setSubmitting(true);
 
     try {
-      // ✅ בדיקה נוספת לפני שמירה
       const projectId =
-        typeof order.project === "object"
-          ? order.project._id || order.project.$oid
-          : order.project;
+        typeof order.projectId === "object"
+          ? order.projectId._id || order.projectId.$oid
+          : order.projectId;
 
       if (!canEditOrders(projectId)) {
         toast.error("אין הרשאה לערוך הזמנה זו");
@@ -130,6 +275,9 @@ const OrderEditPage = () => {
 
       for (const file of files) {
         if (file.isLocal && file.file) {
+          // 1️⃣ קובץ חדש - העלאה ל-Cloudinary
+          console.log("📤 Uploading new file:", file.name);
+
           const formData = new FormData();
           formData.append("file", file.file);
           formData.append("folder", "orders");
@@ -138,37 +286,94 @@ const OrderEditPage = () => {
             headers: { "Content-Type": "multipart/form-data" },
           });
 
+          console.log("📥 Upload response:", res.data.file);
+
           uploadedFiles.push({
             name: file.name,
             url: res.data.file.url,
             publicId: res.data.file.publicId,
             resourceType: res.data.file.resourceType,
+            folder: res.data.file.folder,
             size: file.file.size,
             type: file.file.type,
           });
         } else {
-          uploadedFiles.push(file);
+          // 2️⃣ קובץ קיים - חלץ publicId מה-URL אם חסר
+          console.log("📋 Existing file:", file);
+
+          const existingFile = {
+            name: file.name,
+            url: file.url,
+            type: file.type,
+            size: file.size,
+          };
+
+          // ✅ אם יש publicId - השתמש בו
+          if (file.publicId) {
+            existingFile.publicId = file.publicId;
+          } else if (file.url) {
+            // ✅ אם אין publicId - חלץ מה-URL
+            existingFile.publicId = extractPublicIdFromUrl(file.url);
+            console.log(
+              "🔍 Extracted publicId for existing file:",
+              existingFile.publicId
+            );
+          }
+
+          // ✅ העתק שדות נוספים אם קיימים
+          if (file.resourceType) {
+            existingFile.resourceType = file.resourceType;
+          } else {
+            existingFile.resourceType = "raw"; // ברירת מחדל
+          }
+
+          if (file.folder) {
+            existingFile.folder = file.folder;
+          }
+
+          uploadedFiles.push(existingFile);
         }
       }
 
-      await api.put(`/orders/${id}`, {
+      console.log("📤 uploadedFiles type:", typeof uploadedFiles);
+      console.log("📤 uploadedFiles is Array?:", Array.isArray(uploadedFiles));
+      console.log(
+        "📤 uploadedFiles JSON:",
+        JSON.stringify(uploadedFiles, null, 2)
+      );
+
+      const payload = {
         orderNumber,
+        projectName,
+        projectId:
+          typeof order.projectId === "object"
+            ? order.projectId._id || order.projectId.$oid
+            : order.projectId,
         sum: Number(sum),
         status,
-        detail,
         invitingName,
-        projectName,
+        detail,
         Contact_person,
         createdAt,
         files: uploadedFiles,
+      };
+
+      console.log("📤 Sending payload:", payload);
+      console.log("📤 payload.files type:", typeof payload.files);
+
+      const response = await api.put(`/orders/${id}`, payload, {
+        headers: { "Content-Type": "application/json" },
       });
 
-      toast.success("הזמנה עודכנה בהצלחה");
-      navigate(`/orders/${id}`);
+      if (response.data.success) {
+        toast.success("ההזמנה עודכנה בהצלחה!");
+        navigate("/orders");
+      }
     } catch (error) {
-      console.error("Error updating order:", error);
+      console.error("❌ Error updating order:", error);
       toast.error(
-        error.response?.data?.message || "שגיאה בעדכון ההזמנה"
+        "שגיאה בעדכון ההזמנה: " +
+          (error.response?.data?.message || error.message)
       );
     } finally {
       setSubmitting(false);
@@ -386,7 +591,11 @@ const OrderEditPage = () => {
             >
               {submitting ? (
                 <>
-                  <ClipLoader size={20} color="#ffffff" className="inline mr-2" />
+                  <ClipLoader
+                    size={20}
+                    color="#ffffff"
+                    className="inline mr-2"
+                  />
                   מעדכן...
                 </>
               ) : (

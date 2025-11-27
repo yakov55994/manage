@@ -294,7 +294,7 @@ const SearchResults = () => {
                                     key={project._id}
                                     item={project}
                                     type="project"
-                                    onClick={() => navigate(`/project/${project._id}`)}
+                                    onClick={() => navigate(`/projects/${project._id}`)}
                                 />
                             ))}
                         </div>
@@ -314,7 +314,7 @@ const SearchResults = () => {
                                     key={invoice._id}
                                     item={invoice}
                                     type="invoice"
-                                    onClick={() => navigate(`/invoice/${invoice._id}`)}
+                                    onClick={() => navigate(`/invoices/${invoice._id}`)}
                                 />
                             ))}
                         </div>
@@ -355,7 +355,7 @@ const SearchResults = () => {
                                     key={supplier._id}
                                     item={supplier}
                                     type="supplier"
-                                    onClick={() => navigate(`/supplier/${supplier._id}`)}
+                                    onClick={() => navigate(`/suppliers/${supplier._id}`)}
                                 />
                             ))}
                         </div>

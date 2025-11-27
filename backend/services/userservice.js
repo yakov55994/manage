@@ -22,24 +22,24 @@ export const getAllUsers = () => {
 export const createNewUser = async (data) => {
   // ✅ יצירת סיסמה זמנית רנדומלית (אף אחד לא יודע אותה!)
   const tempPassword = crypto.randomBytes(16).toString('hex');
-  
+
   const user = await User.create({
     ...data,
     password: tempPassword, // סיסמה זמנית - אף אחד לא יודע אותה
   });
-  
+
   // ✅ שליחת מייל ברוכים הבאים עם קישור לבחירת סיסמה
   if (user.email) {
     try {
       const resetToken = await generatePasswordResetToken(user._id);
       const resetUrl = `${process.env.CLIENT_URL}/reset-password/${resetToken}`;
-      
+
       await sendWelcomeEmail({
         to: user.email,
         username: user.username,
         resetUrl,
       });
-      
+
       console.log("✅ Welcome email sent to:", user.email);
     } catch (emailError) {
       console.error("❌ Failed to send welcome email:", emailError);
@@ -48,7 +48,7 @@ export const createNewUser = async (data) => {
   } else {
     console.warn("⚠️ User created without email - cannot send welcome email");
   }
-  
+
   return { success: true, user };
 };
 
@@ -117,7 +117,7 @@ export const generatePasswordResetToken = async (userId) => {
 export const sendResetPasswordEmail = async (userId) => {
   const user = await User.findById(userId);
   if (!user) throw new Error("משתמש לא נמצא");
-  
+
   if (!user.email) {
     throw new Error("למשתמש אין כתובת אימייל");
   }
@@ -156,10 +156,10 @@ export const verifyResetToken = async (token) => {
     return { valid: false, message: "הקישור לא תקף או פג תוקפו" };
   }
 
-  return { 
-    valid: true, 
+  return {
+    valid: true,
     username: user.username,
-    userId: user._id 
+    userId: user._id
   };
 };
 
@@ -183,25 +183,30 @@ export const resetPassword = async (token, newPassword) => {
 
   // עדכון הסיסמה
   user.password = newPassword;
-  
+
   // מחיקת הטוקן
   user.resetPasswordToken = undefined;
   user.resetPasswordExpires = undefined;
-  
+
   await user.save();
 
   return { success: true, message: "הסיסמה שונתה בהצלחה" };
 };
 
 export const forgotPasswordByUsername = async (username) => {
+  console.log("🔍 Received username:", username); // הוסף את זה
+
   const user = await User.findOne({ username });
-  
+
   if (!user) {
     // לא חושפים שהמשתמש לא קיים (אבטחה)
     console.log(`⚠️ Forgot password attempt for non-existent user: ${username}`);
     return { success: true, message: "אם המשתמש קיים, מייל נשלח" };
   }
-  
+  console.log("👤 Found user:", user.username); // הוסף את זה
+  console.log("📧 User email:", user.email);    // הוסף את זה
+
+
   if (!user.email) {
     console.log(`⚠️ User ${username} has no email`);
     return { success: true, message: "אם המשתמש קיים, מייל נשלח" };
@@ -218,7 +223,7 @@ export const forgotPasswordByUsername = async (username) => {
       username: user.username,
       resetUrl,
     });
-    
+
     console.log(`✅ Password reset email sent to: ${user.email}`);
   } catch (emailError) {
     console.error(`❌ Failed to send password reset email:`, emailError);

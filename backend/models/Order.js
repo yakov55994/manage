@@ -22,22 +22,31 @@ const orderSchema = new mongoose.Schema({
 
   Contact_person: { type: String, required: true },
 
-  files: [
-    {
-      name: String,
-      url: String,
-      type: String,
-      size: Number,
-      folder: String,
-      publicId: String,
-      resourceType: String
-    }
-  ],
+  files: [{
+    name: { type: String, required: true },
+    url: { type: String, required: true },
+    type: { type: String, required: true },
+    size: { type: Number, required: true },
+    folder: { type: String, required: false },
+    _id: { type: mongoose.Schema.Types.ObjectId, ref: 'File' },
+    publicId: { type: String },
+    resourceType: { type: String }
+  }],
   supplierId: {
-  type: mongoose.Schema.Types.ObjectId,
-  ref: "Supplier",
-  required: false
-},
+    type: mongoose.Schema.Types.ObjectId,
+    ref: "Supplier",
+    required: false
+  },
+  // ✅ הוספה חדשה
+  createdBy: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'User',
+    required: false
+  },
+  createdByName: {
+    type: String,
+    required: false
+  }
 
 });
 

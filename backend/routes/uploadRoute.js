@@ -1,7 +1,7 @@
 import express from 'express';
 import multer from 'multer';
 import cloudinary from 'cloudinary';
-import fs from 'fs/promises'; // שימוש בגרסה אסינכרונית
+import fs from 'fs/promises';
 import path from 'path';
 import File from '../models/File.js';
 import dotenv from 'dotenv';
@@ -30,11 +30,9 @@ cloudinary.v2.config({
     api_secret: process.env.CLOUDINARY_API_SECRET
 });
 
-// Routes לפי סדר חשיבות - הספציפי לפני הכללי!
-
+// Routes
 router.delete('/delete-cloudinary', async (req, res) => {
   try {
-    
     const { publicId, resourceType } = req.body;
     
     if (!publicId) {
@@ -44,11 +42,9 @@ router.delete('/delete-cloudinary', async (req, res) => {
       });
     }
 
-    // מחיקה ישירה מ-Cloudinary (ללא נגיעה בDB!)
     const result = await cloudinary.v2.uploader.destroy(publicId, {
       resource_type: resourceType || 'raw'
     });
-
 
     if (result.result === 'ok') {
       res.json({ 
@@ -69,7 +65,6 @@ router.delete('/delete-cloudinary', async (req, res) => {
         result: result 
       });
     }
-
   } catch (error) {
     console.error('❌ שגיאה במחיקת קובץ מ-Cloudinary:', error);
     res.status(500).json({ 
@@ -79,7 +74,6 @@ router.delete('/delete-cloudinary', async (req, res) => {
   }
 });
 
-// 2. העלאת קובץ זמני
 router.post('/temporary', upload.single('file'), (req, res) => {
     if (!req.file) return res.status(400).json({ error: 'לא נבחר קובץ' });
 
@@ -90,17 +84,27 @@ router.post('/temporary', upload.single('file'), (req, res) => {
     });
 });
 
-// 3. העלאת קובץ ל-Cloudinary ושמירה ב-DB
+// ✅ העלאת קובץ - עם publicId ו-resourceType
 router.post('/', upload.single('file'), async (req, res) => {
     try {
-        if (!req.file) return res.status(400).json({ error: 'לא נבחר קובץ' });
+        if (!req.file) {
+            return res.status(400).json({ error: 'לא נבחר קובץ' });
+        }
 
-        const folder = req.body.folder || 'general'; // ברירת מחדל
+        const folder = req.body.folder || 'general';
         const { originalname: fileName, path: filePath, mimetype, size } = req.file;
+        
+        console.log('📤 Uploading to Cloudinary:', { fileName, folder });
         
         const result = await cloudinary.v2.uploader.upload(filePath, {
             folder,
-            resource_type: 'raw' // לא להסתמך על סוג אוטומטי
+            resource_type: 'raw'
+        });
+
+        console.log('📥 Cloudinary result:', {
+          public_id: result.public_id,
+          resource_type: result.resource_type,
+          secure_url: result.secure_url
         });
 
         const newFile = new File({
@@ -114,20 +118,38 @@ router.post('/', upload.single('file'), async (req, res) => {
         });
 
         await newFile.save();
-        await fs.unlink(filePath); // שימוש ב-async/await למחיקה
+        await fs.unlink(filePath);
+
+        // ✅ החזר אובייקט מפורש עם כל השדות!
+        const responseFile = {
+            _id: newFile._id.toString(),
+            name: newFile.name,
+            url: newFile.url,
+            publicId: newFile.publicId,           // ✅ חשוב!
+            resourceType: newFile.resourceType,   // ✅ חשוב!
+            folder: newFile.folder,
+            type: newFile.type,
+            size: newFile.size
+        };
+
+        console.log('✅ Sending response file:', responseFile);
 
         res.status(200).json({
             message: `הקובץ הועלה בהצלחה ל-${folder}`,
-            file: newFile
+            file: responseFile
         });
     } catch (error) {
-        console.error('Upload error:', error);
-        if (req.file && req.file.path) await fs.unlink(req.file.path).catch(() => {});
-        res.status(500).json({ error: 'שגיאה בהעלאה', details: error.message });
+        console.error('❌ Upload error:', error);
+        if (req.file && req.file.path) {
+            await fs.unlink(req.file.path).catch(() => {});
+        }
+        res.status(500).json({ 
+            error: 'שגיאה בהעלאה', 
+            details: error.message 
+        });
     }
 });
 
-// 4. מחיקת קובץ לפי ID (מ-DB ומ-Cloudinary)
 router.delete('/:fileId', async (req, res) => {
   try {
     const file = await File.findById(req.params.fileId);
@@ -137,17 +159,22 @@ router.delete('/:fileId', async (req, res) => {
       resource_type: file.resourceType || 'raw'
     });
 
-    // בדיקה שתוצאת Cloudinary תקינה
     if (result.result !== 'ok' && result.result !== 'not found') {
       throw new Error(`מחיקה מקלאודינרי נכשלה: ${result.result}`);
     }
 
     await File.findByIdAndDelete(req.params.fileId);
 
-    res.json({ message: 'הקובץ נמחק מהמערכת ומ־Cloudinary בהצלחה', cloudinary: result });
+    res.json({ 
+        message: 'הקובץ נמחק מהמערכת ומ־Cloudinary בהצלחה', 
+        cloudinary: result 
+    });
   } catch (error) {
     console.error('❌ שגיאה במחיקת קובץ:', error);
-    res.status(500).json({ error: 'שגיאה במחיקת הקובץ', details: error.message });
+    res.status(500).json({ 
+        error: 'שגיאה במחיקת הקובץ', 
+        details: error.message 
+    });
   }
 });
 

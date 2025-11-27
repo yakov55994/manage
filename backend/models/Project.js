@@ -13,7 +13,17 @@ const projectSchema = new mongoose.Schema({
   invoices: [{ type: mongoose.Schema.Types.ObjectId, ref: "Invoice" }],
   orders: [{ type: mongoose.Schema.Types.ObjectId, ref: "Order" }],
 
-  createdAt: { type: Date, default: Date.now }
+  createdAt: { type: Date, default: Date.now },
+  // ✅ הוספה חדשה
+  createdBy: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'User',
+    required: false
+  },
+  createdByName: {
+    type: String,
+    required: false
+  }
 });
 
 

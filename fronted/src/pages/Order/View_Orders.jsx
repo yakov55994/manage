@@ -21,6 +21,7 @@ import {
 import api from "../../api/api.js";
 import { toast } from "sonner";
 import { useAuth } from "../../context/AuthContext.jsx";
+import JSZip from "jszip";
 
 const OrdersPage = () => {
   const navigate = useNavigate();
@@ -772,6 +773,153 @@ const OrdersPage = () => {
   const authUser = JSON.parse(localStorage.getItem("user") || "{}");
   const selectedProjectId = authUser?.selectedProject;
 
+  // 🆕 פונקציית הורדת קבצים מצורפים להזמנות
+  const downloadAttachedFiles = async () => {
+    let filtered = [...allOrders];
+
+    // סינון לפי פרויקט
+    if (selectedProjectForPrint) {
+      filtered = filtered.filter(
+        (ord) =>
+          ord.projectId === selectedProjectForPrint ||
+          ord.project?._id === selectedProjectForPrint
+      );
+    }
+
+    // סינון לפי ספק
+    if (selectedSupplierForPrint) {
+      filtered = filtered.filter(
+        (ord) => ord.supplier?._id === selectedSupplierForPrint
+      );
+    }
+
+    // סינון לפי תאריך התחלה
+    if (fromDatePrint) {
+      const fromDate = new Date(fromDatePrint);
+      filtered = filtered.filter((ord) => {
+        const ordDate = normalizeDate(ord.createdAt);
+        return ordDate && ordDate >= fromDate;
+      });
+    }
+
+    // סינון לפי תאריך סיום
+    if (toDatePrint) {
+      const toDate = new Date(toDatePrint);
+      filtered = filtered.filter((ord) => {
+        const ordDate = normalizeDate(ord.createdAt);
+        return ordDate && ordDate <= toDate;
+      });
+    }
+
+    // איסוף כל הקבצים מההזמנות המסוננות
+    const allFiles = [];
+    filtered.forEach((order) => {
+      if (order.files && Array.isArray(order.files)) {
+        order.files.forEach((file) => {
+          if (file && file.url) {
+            allFiles.push({
+              url: file.url,
+              name: file.name || file.originalName || "קובץ",
+              orderNumber: order.orderNumber,
+              projectName: order.projectName || "ללא פרויקט",
+              invitingName: order.invitingName || "ללא מזמין",
+            });
+          }
+        });
+      }
+    });
+
+    if (allFiles.length === 0) {
+      toast.error("לא נמצאו קבצים מצורפים בהזמנות שנבחרו", {
+        className: "sonner-toast error rtl",
+      });
+      return;
+    }
+
+    // יצירת ZIP
+    const zip = new JSZip();
+    let successCount = 0;
+    let failCount = 0;
+
+    toast.info(`מתחיל להוריד ${allFiles.length} קבצים...`, {
+      className: "sonner-toast info rtl",
+      duration: 2000,
+    });
+
+    for (let i = 0; i < allFiles.length; i++) {
+      const file = allFiles[i];
+
+      try {
+        let response = await fetch(file.url);
+
+        // 🆕 ניסיון URL אלטרנטיבי אם 404
+        if (!response.ok && file.url.includes("/raw/upload/")) {
+          const altUrl = file.url.replace("/raw/upload/", "/image/upload/");
+          console.log(`Trying alternative URL: ${altUrl}`);
+          response = await fetch(altUrl);
+        }
+
+        if (!response.ok) {
+          console.error(`שגיאה בהורדת קובץ ${file.name}: ${response.status}`);
+          failCount++;
+          continue;
+        }
+
+        const blob = await response.blob();
+        const extension = file.name.split(".").pop() || "file";
+        const fileName = `${file.projectName}_${file.invitingName}_הזמנה_${file.orderNumber}.${extension}`;
+
+        zip.file(fileName, blob);
+        successCount++;
+      } catch (err) {
+        console.error(`שגיאה בהורדת קובץ: ${file.name}`, err);
+        failCount++;
+      }
+    }
+
+    // בדיקה שיש קבצים ב-ZIP
+    if (successCount === 0) {
+      toast.error(
+        `לא הצלחנו להוריד אף קובץ. ${failCount} קבצים לא זמינים ב-Cloudinary (נמחקו או לא הועלו)`,
+        {
+          className: "sonner-toast error rtl",
+          duration: 5000,
+        }
+      );
+      return;
+    }
+
+    // יצירת והורדת ZIP
+    const zipBlob = await zip.generateAsync({ type: "blob" });
+    saveAs(
+      zipBlob,
+      `קבצים_מצורפים_הזמנות_${new Date()
+        .toLocaleDateString("he-IL")
+        .replace(/\./g, "_")}.zip`
+    );
+
+    if (failCount > 0) {
+      toast.warning(
+        `הורדו ${successCount} קבצים. ${failCount} קבצים לא היו זמינים.`,
+        {
+          className: "sonner-toast warning rtl",
+          duration: 5000,
+        }
+      );
+    } else {
+      toast.success(`${successCount} קבצים הורדו בהצלחה!`, {
+        className: "sonner-toast success rtl",
+        duration: 3000,
+      });
+    }
+
+    // סגירת המודל ואיפוס state
+    setShowPrintModal(false);
+    setSelectedProjectForPrint("");
+    setSelectedSupplierForPrint("");
+    setFromDatePrint("");
+    setToDatePrint("");
+  };
   useEffect(() => {
     const fetchOrders = async () => {
       try {
@@ -1189,6 +1337,7 @@ const OrdersPage = () => {
                   />
                 </div>
 
+                {/* 🆕 כפתורים מעודכנים */}
                 <div className="flex justify-between mt-4 gap-3">
                   <button
                     className="flex-1 px-4 py-2 bg-gray-300 text-gray-700 rounded-xl hover:bg-gray-400 transition-all font-bold"
@@ -1201,6 +1350,15 @@ const OrdersPage = () => {
                     }}
                   >
                     ביטול
+                  </button>
+
+                  {/* 🆕 כפתור הורדת קבצים */}
+                  <button
+                    className="flex-1 px-4 py-2 bg-blue-500 text-white rounded-xl hover:bg-blue-600 transition-all font-bold flex items-center justify-center gap-2"
+                    onClick={downloadAttachedFiles}
+                  >
+                    <DownloadCloud className="w-4 h-4" />
+                    הורד קבצים
                   </button>
 
                   <button

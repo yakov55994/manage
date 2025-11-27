@@ -6,9 +6,9 @@ import Invoice from "./Invoice.js";
 const supplierSchema = new mongoose.Schema({
     name: { type: String, required: true },
     business_tax: { type: String, required: true },
-    address: {type: String, require: true},
+    address: { type: String, require: true },
     phone: String,
-    email: {type: String, require: true},
+    email: { type: String, require: true },
     date: { type: Date, default: Date.now },
 
     bankDetails: {
@@ -24,6 +24,16 @@ const supplierSchema = new mongoose.Schema({
     invoices: [
         { type: mongoose.Schema.Types.ObjectId, ref: "Invoice" }
     ],
+    // ✅ הוספה חדשה
+    createdBy: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'User',
+        required: false
+    },
+    createdByName: {
+        type: String,
+        required: false
+    }
 
 });
 

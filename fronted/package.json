@@ -16,6 +16,7 @@
     "file-saver": "^2.0.5",
     "framer-motion": "^12.6.0",
     "js-cookie": "^3.0.5",
+    "jszip": "^3.10.1",
     "lucide-react": "^0.475.0",
     "nodemon": "^3.1.9",
     "pdfjs-dist": "^3.0.279",
