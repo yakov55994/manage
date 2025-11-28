@@ -74,13 +74,20 @@ async getSupplierById(user, supplierId) {
 },
 
   async createSupplier(user, data) {
-    if (!canEdit(user, data.projectId))
-      throw new Error("אין הרשאה ליצור ספק");
+  if (!canEdit(user, data.projectId))
+    throw new Error("אין הרשאה ליצור ספק");
 
-    const supplier = await Supplier.create(data);
+  // ✅ הוספת פרטי המשתמש שיצר
+  const supplierData = {
+    ...data,
+    createdBy: user._id,
+    createdByName: user.username || user.name || 'משתמש'
+  };
 
-    return supplier;
-  },
+  const supplier = await Supplier.create(supplierData);
+
+  return supplier;
+},
 
   async updateSupplier(user, supplierId, data) {
     const supplier = await Supplier.findById(supplierId);

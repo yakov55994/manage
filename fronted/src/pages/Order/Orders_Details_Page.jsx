@@ -19,6 +19,7 @@ import {
 import { toast } from "sonner";
 import { useAuth } from "../../context/AuthContext";
 
+
 const OrderDetailsPage = () => {
   const { projectId, id } = useParams();
   const [order, setOrder] = useState(null);
@@ -346,6 +347,20 @@ const OrderDetailsPage = () => {
                 {formatHebrewDate(order.createdAt)}
               </p>
             </div>
+            {/* נוצר ע"י */}
+            <div className="group bg-gradient-to-br from-indigo-50 to-blue-50 p-5 rounded-xl border-r-4 border-indigo-500 hover:shadow-lg transition-all duration-300">
+              <div className="flex items-center gap-3 mb-2">
+                <div className="bg-white p-2 rounded-lg shadow-sm">
+                  <Calendar className="w-5 h-5 text-indigo-600" />
+                </div>
+                <span className="text-sm font-semibold text-gray-600">
+                  נוצר ע"י 
+                </span>
+              </div>
+              <p className="text-xl font-bold text-gray-900 mr-10">
+               { order.createdByName || 'לא זמין' }
+              </p>
+            </div>
 
             {/* סטטוס */}
             <div className="group bg-gradient-to-br from-orange-50 to-amber-50 p-5 rounded-xl border-r-4 border-orange-500 hover:shadow-lg transition-all duration-300">
@@ -376,7 +391,11 @@ const OrderDetailsPage = () => {
                 {order.Contact_person}
               </p>
             </div>
+            
           </div>
+
+
+
 
           {/* Files Section */}
           {order.files && order.files.length > 0 && (

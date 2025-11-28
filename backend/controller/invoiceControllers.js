@@ -84,7 +84,8 @@ const invoiceController = {
         req.user,
         req.params.invoiceId,
         req.body.status,
-        req.body.paymentDate
+        req.body.paymentDate,
+        req.body.paymentMethod 
       );
 
       res.json({ success: true, data: result });

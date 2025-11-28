@@ -30,10 +30,10 @@ export default {
       query = { projectId: { $in: allowed } };
     }
 
-    return Invoice.find(query)
-      .populate("supplierId", "name")
-      .populate("projectId", "name");
-  },
+     return Invoice.find(query)
+    .populate("supplierId")  // ✅ הסר את "name" - קבל הכל!
+    .populate("projectId", "name contactPerson");  // ✅ הוסף contactPerson
+},
 
   // ✔ בדיקת כפילות
   async checkDuplicate({ invoiceNumber, supplierId }) {
@@ -43,8 +43,9 @@ export default {
   // ✔ חשבונית לפי ID — עם הרשאות + populate
   async getInvoiceById(user, invoiceId) {
     const invoice = await Invoice.findById(invoiceId)
-      .populate({ path: "supplierId", select: "name phone email" })
-      .populate({ path: "projectId", select: "name budget remainingBudget invitingName" });
+       .populate("supplierId")  // ✅ קבל את כל פרטי הספק
+    .populate("projectId", "name budget remainingBudget contactPerson");  // ✅ הוסף contactPerson
+
 
     if (!invoice) return null;
 
@@ -111,16 +112,28 @@ async createInvoice(user, data) {
 },
 
   // 💸 עדכון סטטוס תשלום
-  async updatePaymentStatus(user, invoiceId, status, paymentDate) {
-    const invoice = await Invoice.findById(invoiceId);
-    if (!invoice) throw new Error("חשבונית לא נמצאה");
+async updatePaymentStatus(user, invoiceId, status, paymentDate, paymentMethod) {
+  console.log("==================");
+  console.log("🔍 invoiceId:", invoiceId);
+  console.log("🔍 status:", status);
+  console.log("🔍 paymentDate:", paymentDate);
+  console.log("==================");
+  
+  const invoice = await Invoice.findById(invoiceId);
+  if (!invoice) throw new Error("חשבונית לא נמצאה");
 
-    return Invoice.findByIdAndUpdate(
-      invoiceId,
-      { paid: status, paymentDate },
-      { new: true }
-    );
-  },
+  // ✅ עדכן ישירות את השדות
+  invoice.paid = status;
+  invoice.paymentDate = paymentDate;
+  invoice.paymentMethod = paymentMethod || null;
+  
+  // ✅ שמור
+  await invoice.save();
+  
+  console.log("✅ Updated invoice:", invoice);
+  
+  return invoice;
+},
 
   // 🔄 העברה בין פרויקטים
   async moveInvoice(user, invoiceId, newProjectId) {

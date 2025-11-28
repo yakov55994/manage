@@ -2,15 +2,16 @@ import notesService from '../services/notesService.js'; // מייבא את הס�
 
 const notesControllers = {
     // יצירת הערה
-    createNoteController: async (req, res) => {
-        const { text } = req.body;
-        try {
-            const newNote = await notesService.createNote(text); // קורא לפונקציה בסרוויס
-            res.status(201).json(newNote);
-        } catch (error) {
-            res.status(500).json({ message: error.message });
-        }
-    },
+createNoteController: async (req, res) => {
+    const { text } = req.body;
+    try {
+        // ✅ העבר גם את req.user!
+        const newNote = await notesService.createNote(text, req.user);
+        res.status(201).json(newNote);
+    } catch (error) {
+        res.status(500).json({ message: error.message });
+    }
+},
 
     // עדכון הערה
     updateNoteController: async (req, res) => {

@@ -17,6 +17,7 @@ import {
   AlertCircle,
   CheckSquare,
   Square,
+  Paperclip 
 } from "lucide-react";
 import api from "../../api/api.js";
 import { toast } from "sonner";
@@ -88,6 +89,24 @@ const OrdersPage = () => {
       day: "2-digit",
     });
   };
+
+  // 🆕 פונקציה לספירת קבצים בהזמנה
+const getOrderFilesCount = (order) => {
+  let count = 0;
+
+  // ספור files (מערך)
+  if (Array.isArray(order.files) && order.files.length > 0) {
+    count += order.files.length;
+  }
+
+  // ספור file יחיד (הזמנות ישנות)
+  if (order.file && typeof order.file === "string" && 
+      order.file.trim() !== "" && order.file.startsWith("http")) {
+    count += 1;
+  }
+
+  return count;
+};
 
   const normalizeDate = (d) => {
     if (!d) return null;
@@ -1149,89 +1168,102 @@ const OrdersPage = () => {
 
         {/* Orders Table */}
         {sortedOrders.length > 0 ? (
-          <div className="bg-white/90 backdrop-blur-xl rounded-2xl shadow-xl border border-white/50 overflow-hidden">
-            <div className="overflow-x-auto">
-              <table className="w-full">
-                <thead>
-                  <tr className="bg-gradient-to-r from-orange-500 via-amber-500 to-yellow-500">
-                    <th className="px-6 py-4 text-sm font-bold text-white">
-                      מספר הזמנה
-                    </th>
-                    <th className="px-6 py-4 text-sm font-bold text-white">
-                      סכום
-                    </th>
-                    <th className="px-6 py-4 text-sm font-bold text-white">
-                      סטטוס
-                    </th>
-                    <th className="px-6 py-4 text-sm font-bold text-white">
-                      שם פרויקט
-                    </th>
-                    {(isAdmin || canEditOrders) && (
-                      <th className="px-6 py-4 text-sm font-bold text-white">
-                        פעולות
-                      </th>
-                    )}
-                  </tr>
-                </thead>
-                <tbody>
-                  {sortedOrders.map((order) => (
-                    <tr
-                      key={order._id}
-                      onClick={() => handleView(order._id)}
-                      className="cursor-pointer border-t border-orange-100 hover:bg-orange-50 transition-colors"
+       <div className="bg-white/90 backdrop-blur-xl rounded-2xl shadow-xl border border-white/50 overflow-hidden">
+  <div className="overflow-x-auto">
+    <table className="w-full">
+      <thead>
+        <tr className="bg-gradient-to-r from-orange-500 via-amber-500 to-yellow-500">
+          <th className="px-6 py-4 text-sm font-bold text-center text-white">
+            מספר הזמנה
+          </th>
+          <th className="px-6 py-4 text-sm font-bold text-center text-white">
+            סכום
+          </th>
+          <th className="px-6 py-4 text-sm font-bold text-center text-white">
+            סטטוס
+          </th>
+          <th className="px-6 py-4 text-sm font-bold text-center text-white">
+            שם פרויקט
+          </th>
+          <th className="px-6 py-4 text-sm font-bold text-center text-white">
+            קבצים
+          </th>
+          {(isAdmin || canEditOrders) && (
+            <th className="px-6 py-4 text-sm font-bold text-center text-white">
+              פעולות
+            </th>
+          )}
+        </tr>
+      </thead>
+      <tbody>
+        {sortedOrders.map((order) => (
+          <tr
+            key={order._id}
+            onClick={() => handleView(order._id)}
+            className="cursor-pointer border-t border-orange-100 hover:bg-orange-50 transition-colors"
+          >
+            <td className="px-6 py-4 text-sm font-bold text-center text-slate-900">
+              {order.orderNumber}
+            </td>
+
+            <td className="px-6 py-4 text-sm font-bold text-center text-slate-900">
+              {formatNumber(order.sum)} ₪
+            </td>
+
+            <td className="px-6 py-4 text-sm font-medium text-center text-slate-900">
+              {order.status}
+            </td>
+
+            <td className="px-6 py-4 text-sm font-medium text-center text-slate-900">
+              {order.projectName}
+            </td>
+
+            {/* 🆕 עמודת קבצים */}
+            <td className="px-6 py-4 text-center">
+              <div className="flex items-center justify-center gap-2">
+                <Paperclip className="w-4 h-4 text-orange-500" />
+                <span className="font-bold text-slate-900">
+                  {getOrderFilesCount(order)}
+                </span>
+              </div>
+            </td>
+
+            {(isAdmin || canEditOrders) && (
+              <td className="px-6 py-4">
+                <div className="flex justify-center gap-2">
+                  {canEditOrders && (
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleEdit(order._id);
+                      }}
+                      className="p-2 text-orange-600 hover:bg-orange-100 rounded-lg transition-all"
                     >
-                      <td className="px-6 py-4 text-sm font-bold text-center text-slate-900">
-                        {order.orderNumber}
-                      </td>
+                      <Edit2 className="w-5 h-5" />
+                    </button>
+                  )}
 
-                      <td className="px-6 py-4 text-sm font-bold text-center text-slate-900">
-                        {formatNumber(order.sum)} ₪
-                      </td>
-
-                      <td className="px-6 py-4 text-sm font-medium text-center text-slate-900">
-                        {order.status}
-                      </td>
-
-                      <td className="px-6 py-4 text-sm font-medium text-center text-slate-900">
-                        {order.projectName}
-                      </td>
-
-                      {(isAdmin || canEditOrders) && (
-                        <td className="px-6 py-4">
-                          <div className="flex justify-center gap-2">
-                            {canEditOrders && (
-                              <button
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  handleEdit(order._id);
-                                }}
-                                className="p-2 text-orange-600 hover:bg-orange-100 rounded-lg transition-all"
-                              >
-                                <Edit2 className="w-5 h-5" />
-                              </button>
-                            )}
-
-                            {isAdmin && (
-                              <button
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  setOrderToDelete(order._id);
-                                  setShowModal(true);
-                                }}
-                                className="p-2 text-red-600 hover:bg-red-100 rounded-lg transition-all"
-                              >
-                                <Trash2 className="w-5 h-5" />
-                              </button>
-                            )}
-                          </div>
-                        </td>
-                      )}
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          </div>
+                  {isAdmin && (
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setOrderToDelete(order._id);
+                        setShowModal(true);
+                      }}
+                      className="p-2 text-red-600 hover:bg-red-100 rounded-lg transition-all"
+                    >
+                      <Trash2 className="w-5 h-5" />
+                    </button>
+                  )}
+                </div>
+              </td>
+            )}
+          </tr>
+        ))}
+      </tbody>
+    </table>
+  </div>
+</div>
         ) : (
           <div className="bg-white/90 backdrop-blur-xl rounded-2xl shadow-xl border border-white/50 p-12 text-center">
             <ShoppingCart className="w-16 h-16 text-slate-300 mx-auto mb-4" />

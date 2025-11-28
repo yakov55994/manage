@@ -1,17 +1,15 @@
 import express from 'express'
 import notesController from '../controller/notesControllers.js'
+import {protect} from '../middleware/auth.js'
 
 const router = express.Router();
 
-router.post('/', notesController.createNoteController);
+router.post('/', protect, notesController.createNoteController);
 
-// עדכון הערה
-router.put('/:id', notesController.updateNoteController);
+router.put('/:id', protect, notesController.updateNoteController);
 
-// מחיקת הערה
-router.delete('/:id', notesController.deleteNoteController);
+router.delete('/:id', protect, notesController.deleteNoteController);
 
-// קבלת כל ההערות
-router.get('/', notesController.getAllNotesController);
+router.get('/', protect, notesController.getAllNotesController);
 
 export default router;

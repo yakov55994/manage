@@ -23,6 +23,7 @@ import {
   ExternalLink,
 } from "lucide-react";
 import { toast } from "sonner";
+import CreatorInfo from '../../Components/CreatorInfo';
 
 const SupplierDetailsPage = () => {
   const { id } = useParams();
@@ -337,7 +338,7 @@ const SupplierDetailsPage = () => {
                 </div>
 
                 {/* Address */}
-                <div className="md:col-span-2 group p-4 rounded-xl bg-gradient-to-br from-orange-50 to-amber-50 border-2 border-orange-200 hover:border-orange-400 transition-all">
+                <div className="group p-4 rounded-xl bg-gradient-to-br from-orange-50 to-amber-50 border-2 border-orange-200 hover:border-orange-400 transition-all">
                   <div className="flex items-start gap-3">
                     <div className="p-2 rounded-lg bg-orange-100">
                       <MapPin className="w-4 h-4 text-orange-600" />
@@ -353,23 +354,43 @@ const SupplierDetailsPage = () => {
                   </div>
                 </div>
 
-                {/* Created Date */}
+                    {/* createdAt */}
                 <div className="group p-4 rounded-xl bg-gradient-to-br from-orange-50 to-amber-50 border-2 border-orange-200 hover:border-orange-400 transition-all">
                   <div className="flex items-start gap-3">
                     <div className="p-2 rounded-lg bg-orange-100">
-                      <Calendar className="w-4 h-4 text-orange-600" />
+                                 <Calendar className="w-5 h-5 text-orange-600" />
+                     
                     </div>
                     <div className="flex-1">
                       <p className="text-xs font-bold text-orange-600 mb-1">
                         תאריך יצירה
                       </p>
                       <p className="text-sm font-bold text-slate-900">
-                        {formatDate(supplier.date)}
+                        {formatDate(supplier.date || "לא זמין")}
                       </p>
                     </div>
                   </div>
                 </div>
-              </div>
+                    {/* createdByName */}
+                <div className="group p-4 rounded-xl bg-gradient-to-br from-orange-50 to-amber-50 border-2 border-orange-200 hover:border-orange-400 transition-all">
+                  <div className="flex items-start gap-3">
+                    <div className="p-2 rounded-lg bg-orange-100">
+                                  <User className="w-5 h-5 text-orange-600" />
+                      
+                    </div>
+                    <div className="flex-1">
+                      <p className="text-xs font-bold text-orange-600 mb-1">
+                        נוצר ע"י 
+                      </p>
+                      <p className="text-sm font-bold text-slate-900">
+                        {supplier.createdByName || "לא הוזן"}
+                      </p>
+                    </div>
+                  </div>
+                </div>
+
+        
+                </div>
             </div>
           </div>
         </div>

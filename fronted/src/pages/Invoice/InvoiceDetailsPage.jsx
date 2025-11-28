@@ -25,6 +25,7 @@ import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 import { useModulePermission } from "../../hooks/useModulePermission.js";
 import { useAuth } from "../../context/AuthContext.jsx";
+import CreatorInfo from '../../Components/CreatorInfo';
 
 const InvoiceDetailsPage = () => {
   const { projectId, id } = useParams();
@@ -438,22 +439,7 @@ const InvoiceDetailsPage = () => {
                   </div>
                 </div>
 
-                {/* Created Date */}
-                <div className="group p-4 rounded-xl bg-gradient-to-br from-orange-50 to-amber-50 border-2 border-orange-200 hover:border-orange-400 transition-all">
-                  <div className="flex items-start gap-3">
-                    <div className="p-2 rounded-lg bg-orange-100">
-                      <Calendar className="w-4 h-4 text-orange-600" />
-                    </div>
-                    <div className="flex-1">
-                      <p className="text-xs font-bold text-orange-600 mb-1">
-                        תאריך חשבונית
-                      </p>
-                      <p className="text-sm font-bold text-slate-900">
-                        {formatHebrewDate(invoice.createdAt)}
-                      </p>
-                    </div>
-                  </div>
-                </div>
+      
 
                 {/* Detail */}
                 <div className="group p-4 rounded-xl bg-gradient-to-br from-orange-50 to-amber-50 border-2 border-orange-200 hover:border-orange-400 transition-all">
@@ -562,10 +548,46 @@ const InvoiceDetailsPage = () => {
                     </div>
                   </div>
                 </div>
+
+
+                   <div className="group p-4 rounded-xl bg-gradient-to-br from-orange-50 to-amber-50 border-2 border-orange-200 hover:border-orange-400 transition-all">
+                  <div className="flex items-start gap-3">
+                    <div className="p-2 rounded-lg bg-orange-100">
+                                                       <Calendar className="w-5 h-5 text-orange-600" />
+
+                    </div>
+                    <div className="flex-1">
+                      <p className="text-xs font-bold text-orange-600 mb-1">
+                       תאריך יצירה
+                      </p>
+                      <div className="font-bold">
+                        {formatHebrewDate(invoice?.createdAt)}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+
+                <div className="group p-4 rounded-xl bg-gradient-to-br from-orange-50 to-amber-50 border-2 border-orange-200 hover:border-orange-400 transition-all">
+                  <div className="flex items-start gap-3">
+                    <div className="p-2 rounded-lg bg-orange-100">
+                      <User className="w-4 h-4 text-orange-600" />
+                    </div>
+                    <div className="flex-1">
+                      <p className="text-xs font-bold text-orange-600 mb-1">
+                       נוצר ע"י 
+                      </p>
+                      <div className="font-bold">
+                        {invoice.createdByName || "לא זמין"}
+                      </div>
+                    </div>
+                  </div>
+                </div>
               </div>
             </div>
           </div>
         </div>
+
 
         {/* Files Section */}
         <div className="relative">

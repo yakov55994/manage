@@ -1,15 +1,20 @@
 import Notes from '../models/Notes.js'; // מייבא את המודל של Notes
 
 const notesService = {
-    createNote: async (text) => {
-        try {
-            const newNote = new Notes({ text });
-            await newNote.save();
-            return newNote;
-        } catch (error) {
-            throw new Error("שגיאה ביצירת ההערה");
-        }
-    },
+createNote: async (text, user) => { // ✅ הוסף user כפרמטר
+    try {
+        const newNote = new Notes({ 
+            text,
+            // ✅ הוספה חדשה
+            createdBy: user?._id,
+            createdByName: user?.username || user?.name || 'משתמש'
+        });
+        await newNote.save();
+        return newNote;
+    } catch (error) {
+        throw new Error("שגיאה ביצירת ההערה");
+    }
+},
 
     // עדכון הערה
     updateNote: async (id, text, completed) => {

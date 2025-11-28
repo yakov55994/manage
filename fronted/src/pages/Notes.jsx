@@ -2,7 +2,7 @@ import React, { useEffect, useState } from "react";
 import api from '../api/api.js';
 import { ClipLoader } from "react-spinners";
 import { toast } from "sonner";
-import { Plus, Edit3, Trash2, Check, X, CheckCircle2, Circle, Target, FileText } from "lucide-react";
+import { Plus, Edit3, Trash2, Check, X, CheckCircle2, Circle, Target, FileText, User } from "lucide-react";
 
 const Notes = () => {
     const [inputText, setInputText] = useState("");
@@ -284,6 +284,12 @@ const Notes = () => {
                                                         )}
                                                     </div>
                                                 </div>
+                                               <div className="inline-flex items-center gap-2 bg-white/20 backdrop-blur-sm rounded-full px-4 py-2 border border-white/30">
+  <User className="w-4 h-4 text-white" />
+  <p className="text-white font-bold text-sm">
+    נוצר ע"י: {note.createdByName || "לא זמין"}
+  </p>
+</div>
                                                 
                                                 {/* כפתורי פעולה */}
                                                 <div className="flex gap-2 pt-3 border-t border-slate-600">

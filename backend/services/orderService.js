@@ -54,7 +54,7 @@ export default {
 
     return order;
   },
- async createBulkOrders(user, orders) {
+async createBulkOrders(user, orders) {
   const normalizeId = (val) => {
     if (!val) return "";
     if (typeof val === "string") return val;
@@ -100,8 +100,15 @@ export default {
 
     await project.save();
 
+    // ✅ הוספת פרטי המשתמש שיצר
+    const orderData = {
+      ...data,
+      createdBy: user._id,
+      createdByName: user.username || user.name || 'משתמש'
+    };
+
     // 📌 יצירת ההזמנה
-    const order = await Order.create(data);
+    const order = await Order.create(orderData);
     created.push(order);
   }
 
