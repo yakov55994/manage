@@ -17,13 +17,8 @@ const generateToken = (userId) => {
 // התחברות
 export const login = async (req, res) => {
 
-  console.log("LOGIN ATTEMPT:", JSON.stringify(req.body.username));
-  console.log("USING ROUTE:", req.originalUrl);
 
   const user = await User.findOne({ username: req.body.username });
-
-  console.log("FOUND USER IN DB?", user ? "YES" : "NO");
-
 
   try {
     const { username, password } = req.body;

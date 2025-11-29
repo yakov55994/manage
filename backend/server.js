@@ -35,7 +35,7 @@ const corsOptions = {
     if (allowedOrigins.includes(origin)) {
       return callback(null, true);
     } else {
-      console.log("❌ BLOCKED ORIGIN:", origin);
+      // console.log("❌ BLOCKED ORIGIN:", origin);
       return callback(new Error("Not allowed by CORS"));
     }
   },
@@ -96,8 +96,6 @@ const connectDB = async () => {
     const port = process.env.PORT || 3000;
     app.listen(port, () => {
       console.log(`🚀 Server running on port ${port}`);
-      console.log(`🌐 API at http://localhost:${port}/api`);
-      // console.log('📋 Allowed Origins:', allowedOrigins); // ✅ לוג לבדיקה
     });
   } catch (err) {
     console.error('❌ Error connecting to MongoDB', err);

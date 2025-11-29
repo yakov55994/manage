@@ -249,11 +249,6 @@ const InvoiceEditPage = () => {
           fileToDelete.publicId || extractPublicIdFromUrl(fileUrl);
 
         if (publicId) {
-          console.log("🗑️ Deleting file from Cloudinary:", {
-            publicId,
-            url: fileUrl,
-            resourceType: fileToDelete.resourceType || "raw",
-          });
 
           // ✅ שימוש ב-endpoint הקיים - לא /invoices/${id}/delete-file!
           await api.delete("/upload/delete-cloudinary", {

@@ -716,10 +716,8 @@ const downloadAllFiles = async () => {
     // סינון לפי ספק (אם צריך)
     if (selectedSupplier) {
       // כאן אפשר להוסיף לוגיקה לסינון לפי ספק
-      console.log("סינון לפי ספק:", selectedSupplier);
     }
 
-    console.log("🔍 נמצאו קבצים:", filteredFiles); // 🆕 לוג לבדיקה
 
     if (filteredFiles.length === 0) {
       toast.error("לא נמצאו קבצים להורדה בפרויקטים שנבחרו", {
@@ -762,7 +760,6 @@ const downloadAllFiles = async () => {
         zip.file(fileName, blob);
         successCount++;
         
-        console.log(`✅ הורד: ${fileName}`);
       } catch (error) {
         console.error(`❌ שגיאה בהורדת קובץ ${file.name}:`, error);
       }
@@ -1325,7 +1322,6 @@ const getTotalProjectFiles = (project) => {
       try {
         setLoading(true);
         const response = await api.get("/projects");
-        console.log("Raw response:", response.data); // לוג זמני לבדיקה
 
         const data = Array.isArray(response.data?.data)
           ? response.data.data
@@ -1629,17 +1625,11 @@ const getTotalProjectFiles = (project) => {
    <td className="px-4 py-4 text-sm font-medium text-center text-slate-900">
   {(() => {
     // 🔍 דיבוג
-    console.log("Project:", project.name);
-    console.log("Invoices:", project.invoices);
-    console.log("Orders:", project.orders);
-    
     const invoiceFiles = invoiceStats(project).fileCount;
-    console.log("Invoice files:", invoiceFiles);
     
     let orderFiles = 0;
     if (Array.isArray(project.orders)) {
       project.orders.forEach((order) => {
-        console.log("Order:", order.orderNumber, "Files:", order.files);
         
         if (Array.isArray(order.files) && order.files.length > 0) {
           orderFiles += order.files.length;
@@ -1651,9 +1641,6 @@ const getTotalProjectFiles = (project) => {
         }
       });
     }
-    
-    console.log("Order files:", orderFiles);
-    console.log("Total:", invoiceFiles + orderFiles);
     
     const total = invoiceFiles + orderFiles;
 

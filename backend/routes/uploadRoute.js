@@ -94,17 +94,9 @@ router.post('/', upload.single('file'), async (req, res) => {
         const folder = req.body.folder || 'general';
         const { originalname: fileName, path: filePath, mimetype, size } = req.file;
         
-        console.log('📤 Uploading to Cloudinary:', { fileName, folder });
-        
         const result = await cloudinary.v2.uploader.upload(filePath, {
             folder,
             resource_type: 'raw'
-        });
-
-        console.log('📥 Cloudinary result:', {
-          public_id: result.public_id,
-          resource_type: result.resource_type,
-          secure_url: result.secure_url
         });
 
         const newFile = new File({
@@ -132,7 +124,6 @@ router.post('/', upload.single('file'), async (req, res) => {
             size: newFile.size
         };
 
-        console.log('✅ Sending response file:', responseFile);
 
         res.status(200).json({
             message: `הקובץ הועלה בהצלחה ל-${folder}`,

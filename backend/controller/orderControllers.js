@@ -98,19 +98,12 @@ const orderController = {
       const orderId = req.params.orderId;
       let updateData = { ...req.body };
 
-      console.log('📥 Raw req.body:', JSON.stringify(req.body, null, 2));
-      console.log('📥 Files received - type:', typeof updateData.files);
-      console.log('📥 Files received - is Array?:', Array.isArray(updateData.files));
-      console.log('📥 Files received - value:', updateData.files);
-
       // טיפול בקבצים
       if (updateData.files) {
         // אם זה string - נסה לפענח
         if (typeof updateData.files === 'string') {
           try {
-            console.log('🔄 Parsing files from string...');
             updateData.files = JSON.parse(updateData.files);
-            console.log('✅ Files parsed:', updateData.files);
           } catch (e) {
             console.error('❌ Failed to parse files:', e);
             return res.status(400).json({
@@ -143,10 +136,7 @@ const orderController = {
           return cleanFile;
         });
 
-        console.log('✅ Cleaned files:', updateData.files);
       }
-
-      console.log('📤 Sending to service:', JSON.stringify(updateData, null, 2));
 
       const updated = await orderService.updateOrder(req.user, orderId, updateData);
 

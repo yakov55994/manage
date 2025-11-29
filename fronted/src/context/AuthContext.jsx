@@ -133,26 +133,15 @@ export const AuthProvider = ({ children }) => {
     const token = localStorage.getItem("token");
     const userDataString = localStorage.getItem("user");
     
-    console.log("Token:", token ? "EXISTS" : "MISSING");
-    console.log("User string:", userDataString ? "EXISTS" : "MISSING");
-    
     if (token && userDataString) {
       try {
         const userData = JSON.parse(userDataString);
-        
-        console.log("First permission:", userData?.permissions?.[0]);
-        console.log("Project field:", userData?.permissions?.[0]?.project);
-        console.log(
-          "Is object?",
-          typeof userData?.permissions?.[0]?.project === "object"
-        );
-        
+
         const normalized = normalizeUser(userData);
 
         api.defaults.headers.common["Authorization"] = `Bearer ${token}`;
         setUser(normalized);
         
-        console.log("✅ User loaded successfully from localStorage!");
       } catch (err) {
         console.error("❌ Error parsing user data:", err);
         localStorage.removeItem("token");
@@ -187,18 +176,6 @@ export const AuthProvider = ({ children }) => {
   const isAdmin = user?.role === "admin";
   const isAuthenticated = !!user;
 
-  // =========================
-  // DEBUGGER
-  // =========================
-  useEffect(() => {
-    console.log("==== USER DEBUG ====");
-    console.log("USER:", user);
-    console.log("IS ADMIN:", isAdmin);
-    console.log("USER PERMISSIONS:", user?.permissions);
-    console.log("TOKEN:", localStorage.getItem("token"));
-  }, [user]);
-
-  // =========================
   // EXPORT TO CONTEXT
   // =========================
   return (

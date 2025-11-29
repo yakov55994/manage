@@ -116,7 +116,6 @@ async createBulkOrders(user, orders) {
 },
 
   async createOrder(user, data) {
-    console.log("🔥🔥🔥 SERVICE createOrder RUNNING 🔥🔥🔥");
 
 
     if (user.role !== "admin") {
@@ -144,8 +143,6 @@ async createBulkOrders(user, orders) {
 
     await project.save();
 
-    console.log("ORDER SUM RAW:", data.sum);
-    console.log("ORDER SUM NUM:", Number(data.sum));
     return Order.create(data);
 
   },

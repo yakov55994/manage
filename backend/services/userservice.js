@@ -40,7 +40,6 @@ export const createNewUser = async (data) => {
         resetUrl,
       });
 
-      console.log("✅ Welcome email sent to:", user.email);
     } catch (emailError) {
       console.error("❌ Failed to send welcome email:", emailError);
       // לא נכשיל את יצירת המשתמש בגלל כשל במייל
@@ -56,9 +55,6 @@ export const updateUser = async (id, data) => {
   const user = await User.findById(id);
   if (!user) return null;
 
-  console.log("=== UPDATE USER DEBUG ===");
-  console.log("Incoming password:", data.password);
-
   // עדכון שדות רגילים
   if (data.username) user.username = data.username;
   if (data.email) user.email = data.email;
@@ -68,18 +64,12 @@ export const updateUser = async (id, data) => {
 
   // סיסמה — רק אם באמת קיבלנו חדשה
   if (data.password && data.password.trim() !== "") {
-    console.log("Password WILL be updated!");
     user.password = data.password.trim();
   } else {
-    console.log("Password NOT updated (empty or missing).");
   }
 
-  console.log("Password before save():", user.password);
 
   await user.save();
-
-  console.log("Password after save():", user.password);
-  console.log("=== END UPDATE USER DEBUG ===");
 
   return user.toObject({ getters: true, virtuals: false });
 };
@@ -194,21 +184,15 @@ export const resetPassword = async (token, newPassword) => {
 };
 
 export const forgotPasswordByUsername = async (username) => {
-  console.log("🔍 Received username:", username); // הוסף את זה
 
   const user = await User.findOne({ username });
 
   if (!user) {
     // לא חושפים שהמשתמש לא קיים (אבטחה)
-    console.log(`⚠️ Forgot password attempt for non-existent user: ${username}`);
     return { success: true, message: "אם המשתמש קיים, מייל נשלח" };
   }
-  console.log("👤 Found user:", user.username); // הוסף את זה
-  console.log("📧 User email:", user.email);    // הוסף את זה
-
 
   if (!user.email) {
-    console.log(`⚠️ User ${username} has no email`);
     return { success: true, message: "אם המשתמש קיים, מייל נשלח" };
   }
 
@@ -224,7 +208,6 @@ export const forgotPasswordByUsername = async (username) => {
       resetUrl,
     });
 
-    console.log(`✅ Password reset email sent to: ${user.email}`);
   } catch (emailError) {
     console.error(`❌ Failed to send password reset email:`, emailError);
     throw emailError;

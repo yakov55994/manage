@@ -15,7 +15,6 @@ const transporter = nodemailer.createTransport({
 // ✅ איפוס סיסמה
 export const sendPasswordResetEmail = async ({ to, username, resetUrl }) => {
   try {
-    console.log(`📧 Sending to: ${to}`);
 
     await transporter.sendMail({
       from: `"ניהולון" <${process.env.GMAIL_USER}>`,
@@ -62,7 +61,6 @@ export const sendPasswordResetEmail = async ({ to, username, resetUrl }) => {
       `
     });
 
-    console.log('✅ Email sent!');
     return { success: true };
 
   } catch (error) {
@@ -74,7 +72,6 @@ export const sendPasswordResetEmail = async ({ to, username, resetUrl }) => {
 // ✅ ברוכים הבאים
 export const sendWelcomeEmail = async ({ to, username, resetUrl }) => {
   try {
-    console.log(`📧 Sending welcome to: ${to}`);
 
     await transporter.sendMail({
       from: `"ניהולון" <${process.env.GMAIL_USER}>`,
@@ -116,7 +113,6 @@ export const sendWelcomeEmail = async ({ to, username, resetUrl }) => {
       `
     });
 
-    console.log('✅ Welcome email sent!');
     return { success: true };
 
   } catch (error) {

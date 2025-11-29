@@ -1217,7 +1217,6 @@ const exportToExcelWithSuppliers = () => {
 
           if (!response.ok && file.url.includes("/raw/upload/")) {
             const altUrl = file.url.replace("/raw/upload/", "/image/upload/");
-            console.log(`Trying alternative URL: ${altUrl}`);
             response = await fetch(altUrl);
           }
 
@@ -1393,7 +1392,6 @@ const togglePaymentStatus = async (invoice) => {
     // ✅ השתמש בנתונים מה-Backend
     const updatedInvoice = response.data.data || response.data;
 
-    console.log("✅ Updated invoice from backend:", updatedInvoice);
 
     setInvoices((prev) =>
       prev.map((inv) => 
@@ -1435,7 +1433,6 @@ const handleSavePaymentCapture = async ({ paymentDate, paymentMethod }) => {
     // ✅ השתמש בנתונים שחזרו מה-Backend
     const updatedInvoice = response.data.data || response.data;
 
-    console.log("✅ Updated invoice from backend:", updatedInvoice);
 
     // ✅ עדכן את ה-state עם הנתונים האמיתיים מה-Backend
     setInvoices((prev) =>

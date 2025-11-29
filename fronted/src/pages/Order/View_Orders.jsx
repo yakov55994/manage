@@ -874,7 +874,6 @@ const getOrderFilesCount = (order) => {
         // 🆕 ניסיון URL אלטרנטיבי אם 404
         if (!response.ok && file.url.includes("/raw/upload/")) {
           const altUrl = file.url.replace("/raw/upload/", "/image/upload/");
-          console.log(`Trying alternative URL: ${altUrl}`);
           response = await fetch(altUrl);
         }
 

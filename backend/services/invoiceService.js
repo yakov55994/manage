@@ -113,12 +113,6 @@ async createInvoice(user, data) {
 
   // 💸 עדכון סטטוס תשלום
 async updatePaymentStatus(user, invoiceId, status, paymentDate, paymentMethod) {
-  console.log("==================");
-  console.log("🔍 invoiceId:", invoiceId);
-  console.log("🔍 status:", status);
-  console.log("🔍 paymentDate:", paymentDate);
-  console.log("==================");
-  
   const invoice = await Invoice.findById(invoiceId);
   if (!invoice) throw new Error("חשבונית לא נמצאה");
 
@@ -129,8 +123,6 @@ async updatePaymentStatus(user, invoiceId, status, paymentDate, paymentMethod) {
   
   // ✅ שמור
   await invoice.save();
-  
-  console.log("✅ Updated invoice:", invoice);
   
   return invoice;
 },

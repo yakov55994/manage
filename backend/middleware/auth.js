@@ -101,14 +101,6 @@ export const checkAccess = (moduleName, action) => {
         req.params.projectId;
 
       const projectIdFromBody = req.body.projectId;
-      console.log("🔍 DEBUG checkAccess:");
-      console.log("- Module:", moduleName);
-      console.log("- Action:", action);
-      console.log("- ID from params:", id);
-      console.log("- Full req.body:", JSON.stringify(req.body, null, 2)); // 👈 כאן!
-      console.log("- ProjectId from body:", projectIdFromBody);
-      console.log("- req.body.orders:", req.body.orders); // 👈 וגם את זה
-
       let projectId = null;
 
       // ----- 2) קריאת פריט -----
@@ -122,7 +114,6 @@ export const checkAccess = (moduleName, action) => {
       if (moduleName === "orders") {
         if (id) item = await Order.findById(id);
         projectId = item?.projectId?.toString() || projectIdFromBody;
-        console.log("- Final projectId for orders:", projectId);
 
       }
 
@@ -134,16 +125,12 @@ export const checkAccess = (moduleName, action) => {
         const perm = user.permissions.find(
           (p) => {
             const permProjectId = String(p.project?._id || p.project);
-            console.log(`- Comparing: ${permProjectId} === ${projectId}`);
             return permProjectId === String(projectId);
           }
         );
-        console.log("- Found permission:", perm);
 
 
         if (!perm) {
-          console.log("❌ No permission found!");
-
           return res.status(403).json({ message: "אין גישה לפרויקט" });
         }
 
@@ -184,14 +171,9 @@ export const checkAccess = (moduleName, action) => {
         return res.status(403).json({ message: "אין הרשאה לערוך" });
       }
 
-      console.log("🔍 DEBUG checkAccess:");
-      console.log("- Module:", moduleName);
-      console.log("- Action:", action);
-      console.log("- Full req.body:", JSON.stringify(req.body, null, 2)); // 👈 הוסף את זה!
       return next();
 
     } catch (err) {
-      console.log("CHECK ACCESS ERROR:", err);
       return res.status(500).json({ message: "שגיאת הרשאות" });
     }
   };

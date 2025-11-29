@@ -53,14 +53,8 @@ const OrderEditPage = () => {
           projectId = projectId._id || projectId.$oid;
         }
 
-        console.log("🔍 Order projectId:", projectId);
-        console.log("🔍 User:", user);
-        console.log("🔍 User permissions:", user?.permissions);
-        console.log("🔍 Can edit orders?", canEditOrders(projectId));
-
         // ✅ בדיקת הרשאה
         if (!canEditOrders(projectId)) {
-          console.log("❌ No permission to edit this order");
           navigate("/no-access", { replace: true });
           return;
         }
@@ -96,7 +90,6 @@ const OrderEditPage = () => {
 
         setFiles(normalizedFiles);
 
-        console.log("✅ Order loaded successfully");
       } catch (error) {
         console.error("Error loading order:", error);
         toast.error("שגיאה בטעינת ההזמנה");
@@ -110,7 +103,6 @@ const OrderEditPage = () => {
   }, [id, navigate, canEditOrders]);
 
   const extractPublicIdFromUrl = (url) => {
-    console.log("🔍 Extracting publicId from URL:", url);
 
     if (!url) {
       console.warn("⚠️ URL is empty");
@@ -121,12 +113,10 @@ const OrderEditPage = () => {
       // Cloudinary URL format: .../upload/v123456/folder/filename.ext
       const match = url.match(/\/upload\/(?:v\d+\/)?(.+?)$/);
 
-      console.log("🔍 Regex match result:", match);
 
       if (match && match[1]) {
         // הסר את הסיומת (extension)
         const publicId = match[1].replace(/\.[^.]+$/, "");
-        console.log("✅ Extracted publicId:", publicId);
         return publicId;
       }
 
@@ -144,11 +134,8 @@ const OrderEditPage = () => {
   };
 
   const handleRemoveFile = async (fileIndex) => {
-    console.log("🗑️ === START handleRemoveFile ===");
-    console.log("🗑️ fileIndex:", fileIndex);
 
     const fileToDelete = files[fileIndex];
-    console.log("🗑️ fileToDelete:", fileToDelete);
 
     if (!fileToDelete) {
       toast.error("קובץ לא נמצא");
@@ -157,7 +144,6 @@ const OrderEditPage = () => {
 
     // 1️⃣ קובץ מקומי - רק הסר מה-UI
     if (fileToDelete.isLocal) {
-      console.log("📁 Local file - removing from UI only");
       const clone = [...files];
       clone.splice(fileIndex, 1);
       setFiles(clone);
@@ -171,7 +157,6 @@ const OrderEditPage = () => {
     }
 
     // 2️⃣ קובץ ב-Cloudinary
-    console.log("☁️ Cloudinary file - attempting to delete from server");
 
     const originalFiles = [...files];
 
@@ -180,11 +165,9 @@ const OrderEditPage = () => {
       const clone = [...files];
       clone.splice(fileIndex, 1);
       setFiles(clone);
-      console.log("✅ Removed from UI (optimistically)");
 
       // חלץ publicId
       const fileUrl = fileToDelete.url || fileToDelete.fileUrl;
-      console.log("🔗 File URL:", fileUrl);
 
       if (!fileUrl) {
         console.warn("⚠️ No URL found in file object");
@@ -194,12 +177,9 @@ const OrderEditPage = () => {
 
       // נסה לקבל publicId מהשדה או מה-URL
       let publicId = fileToDelete.publicId;
-      console.log("🔑 publicId from file object:", publicId);
 
       if (!publicId) {
-        console.log("🔍 Attempting to extract publicId from URL...");
         publicId = extractPublicIdFromUrl(fileUrl);
-        console.log("🔑 Extracted publicId:", publicId);
       }
 
       if (!publicId) {
@@ -210,11 +190,6 @@ const OrderEditPage = () => {
         return;
       }
 
-      console.log("📤 Sending DELETE request to /upload/delete-cloudinary");
-      console.log("📤 Request data:", {
-        publicId,
-        resourceType: fileToDelete.resourceType || "raw",
-      });
 
       // קריאה לשרת למחיקה
       const response = await api.delete("/upload/delete-cloudinary", {
@@ -224,7 +199,6 @@ const OrderEditPage = () => {
         },
       });
 
-      console.log("✅ Server response:", response.data);
       toast.success("הקובץ נמחק מהשרת ומ-Cloudinary");
     } catch (error) {
       console.error("❌ Error deleting file:", error);
@@ -236,11 +210,9 @@ const OrderEditPage = () => {
         error.response?.status === 404 ||
         error.response?.data?.result === "not found"
       ) {
-        console.log("ℹ️ File not found in Cloudinary (already deleted)");
         toast.info("הקובץ כבר לא קיים ב-Cloudinary");
       } else {
         // שגיאה אמיתית - החזר את המצב המקורי
-        console.log("🔄 Restoring original files state");
         toast.error(
           "שגיאה במחיקת הקובץ: " +
             (error.response?.data?.message ||
@@ -252,7 +224,6 @@ const OrderEditPage = () => {
       }
     }
 
-    console.log("🗑️ === END handleRemoveFile ===");
   };
 
   const handleSubmit = async (e) => {
@@ -276,7 +247,6 @@ const OrderEditPage = () => {
       for (const file of files) {
         if (file.isLocal && file.file) {
           // 1️⃣ קובץ חדש - העלאה ל-Cloudinary
-          console.log("📤 Uploading new file:", file.name);
 
           const formData = new FormData();
           formData.append("file", file.file);
@@ -286,7 +256,6 @@ const OrderEditPage = () => {
             headers: { "Content-Type": "multipart/form-data" },
           });
 
-          console.log("📥 Upload response:", res.data.file);
 
           uploadedFiles.push({
             name: file.name,
@@ -299,7 +268,6 @@ const OrderEditPage = () => {
           });
         } else {
           // 2️⃣ קובץ קיים - חלץ publicId מה-URL אם חסר
-          console.log("📋 Existing file:", file);
 
           const existingFile = {
             name: file.name,
@@ -314,10 +282,7 @@ const OrderEditPage = () => {
           } else if (file.url) {
             // ✅ אם אין publicId - חלץ מה-URL
             existingFile.publicId = extractPublicIdFromUrl(file.url);
-            console.log(
-              "🔍 Extracted publicId for existing file:",
-              existingFile.publicId
-            );
+
           }
 
           // ✅ העתק שדות נוספים אם קיימים
@@ -335,13 +300,6 @@ const OrderEditPage = () => {
         }
       }
 
-      console.log("📤 uploadedFiles type:", typeof uploadedFiles);
-      console.log("📤 uploadedFiles is Array?:", Array.isArray(uploadedFiles));
-      console.log(
-        "📤 uploadedFiles JSON:",
-        JSON.stringify(uploadedFiles, null, 2)
-      );
-
       const payload = {
         orderNumber,
         projectName,
@@ -357,9 +315,6 @@ const OrderEditPage = () => {
         createdAt,
         files: uploadedFiles,
       };
-
-      console.log("📤 Sending payload:", payload);
-      console.log("📤 payload.files type:", typeof payload.files);
 
       const response = await api.put(`/orders/${id}`, payload, {
         headers: { "Content-Type": "application/json" },
