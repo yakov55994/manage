@@ -13,6 +13,7 @@
   "description": "",
   "dependencies": {
     "@cloudinary/url-gen": "^1.21.0",
+    "@getbrevo/brevo": "^3.0.1",
     "bcrypt": "^6.0.0",
     "bcryptjs": "^3.0.3",
     "cloudinary": "^1.21.0",
@@ -35,7 +36,6 @@
     "nodemon": "^3.1.9",
     "path": "^0.12.7",
     "pdfkit": "^0.17.2",
-    "resend": "^6.5.2",
     "twilio": "^5.4.3",
     "uuid": "^11.0.5"
   }
