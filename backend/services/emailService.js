@@ -12,13 +12,17 @@ const resend = new Resend(process.env.RESEND_API_KEY);
 
 // פונקציה עזר ליצירת טוקן איפוס
 const generateResetToken = async (user) => {
+  // יצירת טוקן גולמי
   const resetToken = crypto.randomBytes(32).toString('hex');
+
+  // הצפנת הטוקן לשמירה ב-DB
   const hashedToken = crypto.createHash('sha256').update(resetToken).digest('hex');
 
   user.resetPasswordToken = hashedToken;
   user.resetPasswordExpires = Date.now() + 24 * 60 * 60 * 1000; // 24 hours
   await user.save();
 
+  // החזרת הטוקן הגולמי (לא המוצפן!) - זה מה שנשלח במייל
   return resetToken;
 };
 
@@ -30,7 +34,14 @@ export const sendPasswordResetEmail = async (user) => {
       return { success: false, message: 'Email service not configured' };
     }
 
+    if (!user.email) {
+      throw new Error('למשתמש אין כתובת אימייל');
+    }
+
+    // יצירת טוקן גולמי
     const resetToken = await generateResetToken(user);
+
+    // שימוש בטוקן הגולמי ב-URL (לא המוצפן!)
     const resetUrl = `${process.env.CLIENT_URL}/reset-password/${resetToken}`;
 
     console.log('📧 Sending password reset email via Resend to:', user.email);
@@ -104,7 +115,14 @@ export const sendWelcomeEmail = async (user) => {
       return { success: false, message: 'Email service not configured' };
     }
 
+    if (!user.email) {
+      throw new Error('למשתמש אין כתובת אימייל');
+    }
+
+    // יצירת טוקן גולמי
     const resetToken = await generateResetToken(user);
+
+    // שימוש בטוכן הגולמי ב-URL
     const resetUrl = `${process.env.CLIENT_URL}/reset-password/${resetToken}`;
 
     console.log('📧 Sending welcome email via Resend to:', user.email);

@@ -1,7 +1,8 @@
 import * as userService from "../services/userservice.js";
-import dotenv from 'dotenv'
+import dotenv from 'dotenv';
 import User from "../models/User.js";
-import jwt from 'jsonwebtoken'
+import jwt from 'jsonwebtoken';
+import crypto from 'crypto'; // ← הוסף את זה!
 
 dotenv.config();
 
@@ -26,7 +27,7 @@ export const login = async (req, res) => {
     }
 
     const user = await User.findOne({ username })
-      .populate('permissions.project', 'name')
+      .populate('permissions.project', 'name');
 
     if (!user) {
       return res.status(401).json({
@@ -83,29 +84,29 @@ export const getAllUsers = async (req, res) => {
 };
 
 export const createUser = async (req, res) => {
-  console.log("=" .repeat(50));
+  console.log("=".repeat(50));
   console.log("🎯 CREATE USER - Request received");
   console.log("📥 Body:", JSON.stringify(req.body, null, 2));
   console.log("👤 Created by:", req.user?.username);
-  
+
   try {
     const newUser = await userService.createNewUser(req.body);
-    
+
     console.log("✅ User created successfully:", newUser.username);
-    console.log("=" .repeat(50));
-    
+    console.log("=".repeat(50));
+
     res.status(201).json({
       success: true,
       data: newUser,
       message: "משתמש נוצר בהצלחה"
     });
-    
+
   } catch (error) {
     console.error("❌ CREATE USER ERROR:");
     console.error("Error message:", error.message);
     console.error("Error stack:", error.stack);
-    console.error("=" .repeat(50));
-    
+    console.error("=".repeat(50));
+
     res.status(500).json({
       success: false,
       message: error.message || "שגיאה ביצירת משתמש"
@@ -146,21 +147,27 @@ export const sendResetLink = async (req, res) => {
   try {
     const { userId } = req.body;
 
+    console.log('📧 sendResetLink - userId:', userId);
+
     if (!userId) {
-      return res.status(400).json({ 
-        success: false, 
-        message: "חסר מזהה משתמש" 
+      return res.status(400).json({
+        success: false,
+        message: "חסר מזהה משתמש"
       });
     }
 
-    const result = await userService.sendResetPasswordEmail(userId);
-    res.json(result);
+    await userService.sendResetPasswordEmail(userId);
+    
+    res.json({
+      success: true,
+      message: "קישור איפוס נשלח למייל"
+    });
 
   } catch (err) {
     console.error("Error in sendResetLink:", err);
-    res.status(500).json({ 
-      success: false, 
-      message: err.message || "שגיאה בשליחת קישור איפוס" 
+    res.status(500).json({
+      success: false,
+      message: err.message || "שגיאה בשליחת קישור איפוס"
     });
   }
 };
@@ -170,26 +177,39 @@ export const verifyResetToken = async (req, res) => {
   try {
     const { token } = req.params;
 
-    if (!token) {
-      return res.status(400).json({ 
-        valid: false, 
-        message: "חסר טוקן" 
+    console.log('🔍 Verifying reset token');
+    console.log('📝 Token received:', token);
+
+    // הצפנת הטוקן שהתקבל כדי להשוות עם מה שבדאטהבייס
+    const hashedToken = crypto.createHash('sha256').update(token).digest('hex');
+
+    console.log('🔐 Hashed token:', hashedToken);
+
+    // חיפוש משתמש עם טוקן תקף (לא פג)
+    const user = await User.findOne({
+      resetPasswordToken: hashedToken,
+      resetPasswordExpires: { $gt: Date.now() },
+    });
+
+    if (!user) {
+      console.log('❌ Token invalid or expired');
+      return res.status(400).json({
+        valid: false,
+        message: 'הקישור לא תקף או פג תוקפו',
       });
     }
 
-    const result = await userService.verifyResetToken(token);
-    
-    if (!result.valid) {
-      return res.status(400).json(result);
-    }
+    console.log('✅ Token is valid for user:', user.username);
 
-    res.json(result);
-
-  } catch (err) {
-    console.error("Error in verifyResetToken:", err);
-    res.status(500).json({ 
-      valid: false, 
-      message: "שגיאה באימות הטוקן" 
+    res.status(200).json({
+      valid: true,
+      message: 'הטוקן תקף',
+    });
+  } catch (error) {
+    console.error('❌ Error verifying token:', error);
+    res.status(500).json({
+      valid: false,
+      message: 'שגיאה באימות הטוקן',
     });
   }
 };
@@ -199,28 +219,35 @@ export const resetPassword = async (req, res) => {
   try {
     const { token, newPassword } = req.body;
 
+    console.log('🔐 resetPassword - token exists:', !!token);
+    console.log('🔐 resetPassword - password exists:', !!newPassword);
+
     if (!token || !newPassword) {
-      return res.status(400).json({ 
-        success: false, 
-        message: "חסרים פרטים נדרשים" 
+      return res.status(400).json({
+        success: false,
+        message: "חסרים פרטים נדרשים"
       });
     }
 
     if (newPassword.length < 6) {
-      return res.status(400).json({ 
-        success: false, 
-        message: "הסיסמה חייבת להכיל לפחות 6 תווים" 
+      return res.status(400).json({
+        success: false,
+        message: "הסיסמה חייבת להכיל לפחות 6 תווים"
       });
     }
 
     const result = await userService.resetPassword(token, newPassword);
-    res.json(result);
+    
+    res.json({
+      success: true,
+      message: "הסיסמה אופסה בהצלחה"
+    });
 
   } catch (err) {
     console.error("Error in resetPassword:", err);
-    res.status(400).json({ 
-      success: false, 
-      message: err.message || "שגיאה באיפוס הסיסמה" 
+    res.status(400).json({
+      success: false,
+      message: err.message || "שגיאה באיפוס הסיסמה"
     });
   }
 };
@@ -229,27 +256,29 @@ export const forgotPassword = async (req, res) => {
   try {
     const { username } = req.body;
 
+    console.log('🔍 forgotPassword - username:', username);
+
     if (!username) {
-      return res.status(400).json({ 
-        success: false, 
-        message: "נא למלא שם משתמש" 
+      return res.status(400).json({
+        success: false,
+        message: "נא למלא שם משתמש"
       });
     }
 
-    const result = await userService.forgotPasswordByUsername(username);
-    
+    await userService.forgotPasswordByUsername(username);
+
     // ✅ תמיד מחזירים הצלחה (אבטחה - לא לחשוף אם המשתמש קיים)
-    res.json({ 
-      success: true, 
-      message: "אם המשתמש קיים, מייל נשלח לכתובת המייל הרשומה" 
+    res.json({
+      success: true,
+      message: "אם המשתמש קיים, מייל נשלח לכתובת המייל הרשומה"
     });
 
   } catch (err) {
     console.error("Error in forgotPassword:", err);
     // ✅ גם בשגיאה לא חושפים אם המשתמש קיים
-    res.json({ 
-      success: true, 
-      message: "אם המשתמש קיים, מייל נשלח לכתובת המייל הרשומה" 
+    res.json({
+      success: true,
+      message: "אם המשתמש קיים, מייל נשלח לכתובת המייל הרשומה"
     });
   }
 };
