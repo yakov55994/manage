@@ -119,29 +119,112 @@ export const generatePasswordResetToken = async (userId) => {
 
 // ✅ שליחת מייל איפוס סיסמה
 export const sendResetPasswordEmail = async (userId) => {
-  const user = await User.findById(userId);
-  if (!user) throw new Error("משתמש לא נמצא");
+  try {
+    console.log('🔍 sendResetPasswordEmail service - userId:', userId);
 
-  if (!user.email) {
-    throw new Error("למשתמש אין כתובת אימייל");
+    // שליפת המשתמש מה-DB (חשוב! צריך Mongoose document עם save())
+    const user = await User.findById(userId);
+    
+    if (!user) {
+      console.error('❌ User not found:', userId);
+      throw new Error('משתמש לא נמצא');
+    }
+    
+    console.log('✅ User found:', user.username);
+    
+    if (!user.email) {
+      console.error('❌ User has no email:', user.username);
+      throw new Error('למשתמש אין כתובת אימייל');
+    }
+
+    console.log('📧 User email:', user.email);
+    console.log('🔧 Calling sendPasswordResetEmail from emailService...');
+    
+    // שליחת המייל - הפונקציה תטפל ביצירת הטוקן
+    await sendPasswordResetEmail(user);
+    
+    console.log('✅ Reset email sent successfully to:', user.email);
+    return { success: true, message: 'מייל נשלח בהצלחה' };
+    
+  } catch (error) {
+    console.error('❌ Error in sendResetPasswordEmail service:', error);
+    console.error('❌ Error stack:', error.stack);
+    throw error;
   }
+};
+export const forgotPasswordByUsername = async (username) => {
+  try {
+    console.log('🔍 forgotPasswordByUsername - username:', username);
 
-  // יצירת טוקן
-  const resetToken = await generatePasswordResetToken(userId);
+    const user = await User.findOne({ username });
 
-  // יצירת URL
-  const resetUrl = `${process.env.CLIENT_URL}/reset-password/${resetToken}`;
+    if (!user) {
+      console.log('⚠️ User not found for username:', username);
+      // לא זורקים שגיאה - אבטחה
+      return { success: false, message: 'משתמש לא נמצא' };
+    }
 
-  // שליחת המייל
-  await sendPasswordResetEmail({
-    to: user.email,
-    username: user.username,
-    resetUrl,
-  });
+    if (!user.email) {
+      console.log('⚠️ User has no email:', username);
+      // לא זורקים שגיאה - אבטחה
+      return { success: false, message: 'למשתמש אין אימייל' };
+    }
 
-  return { success: true, message: "מייל איפוס סיסמה נשלח בהצלחה" };
+    console.log('📧 Sending reset email to:', user.email);
+
+    // שליחת המייל
+    await sendPasswordResetEmail(user);
+
+    console.log('✅ Reset email sent for username:', username);
+    return { success: true, message: 'מייל נשלח בהצלחה' };
+
+  } catch (error) {
+    console.error('❌ Error in forgotPasswordByUsername:', error);
+    // לא זורקים שגיאה - אבטחה
+    return { success: false, message: 'שגיאה בשליחת מייל' };
+  }
 };
 
+// ✅ איפוס סיסמה עם טוקן
+export const resetPassword = async (token, newPassword) => {
+  try {
+    console.log('🔐 resetPassword service - token exists:', !!token);
+
+    // הצפנת הטוקן שהתקבל
+    const crypto = await import('crypto');
+    const hashedToken = crypto.default.createHash('sha256').update(token).digest('hex');
+
+    console.log('🔍 Looking for user with hashed token...');
+
+    // חיפוש משתמש עם טוקן תקף
+    const user = await User.findOne({
+      resetPasswordToken: hashedToken,
+      resetPasswordExpires: { $gt: Date.now() },
+    });
+
+    if (!user) {
+      console.log('❌ No user found with valid token');
+      throw new Error('הקישור לא תקף או פג תוקפו');
+    }
+
+    console.log('✅ User found:', user.username);
+
+    // עדכון הסיסמה
+    user.password = newPassword;
+    user.resetPasswordToken = undefined;
+    user.resetPasswordExpires = undefined;
+
+    await user.save();
+
+    console.log('✅ Password reset successfully for user:', user.username);
+
+    return { success: true, message: 'הסיסמה אופסה בהצלחה' };
+
+  } catch (error) {
+    console.error('❌ Error in resetPassword service:', error);
+    throw error;
+  }
+};
 // ✅ אימות טוקן איפוס סיסמה
 export const verifyResetToken = async (token) => {
   // הצפנת הטוקן שהתקבל
@@ -168,64 +251,3 @@ export const verifyResetToken = async (token) => {
 };
 
 // ✅ איפוס סיסמה
-export const resetPassword = async (token, newPassword) => {
-  // הצפנת הטוקן
-  const resetTokenHash = crypto
-    .createHash("sha256")
-    .update(token)
-    .digest("hex");
-
-  // חיפוש משתמש
-  const user = await User.findOne({
-    resetPasswordToken: resetTokenHash,
-    resetPasswordExpires: { $gt: Date.now() },
-  });
-
-  if (!user) {
-    throw new Error("הקישור לא תקף או פג תוקפו");
-  }
-
-  // עדכון הסיסמה
-  user.password = newPassword;
-
-  // מחיקת הטוקן
-  user.resetPasswordToken = undefined;
-  user.resetPasswordExpires = undefined;
-
-  await user.save();
-
-  return { success: true, message: "הסיסמה שונתה בהצלחה" };
-};
-
-export const forgotPasswordByUsername = async (username) => {
-
-  const user = await User.findOne({ username });
-
-  if (!user) {
-    // לא חושפים שהמשתמש לא קיים (אבטחה)
-    return { success: true, message: "אם המשתמש קיים, מייל נשלח" };
-  }
-
-  if (!user.email) {
-    return { success: true, message: "אם המשתמש קיים, מייל נשלח" };
-  }
-
-  // יצירת טוקן
-  const resetToken = await generatePasswordResetToken(user._id);
-  const resetUrl = `${process.env.CLIENT_URL}/reset-password/${resetToken}`;
-
-  // שליחת המייל
-  try {
-    await sendPasswordResetEmail({
-      to: user.email,
-      username: user.username,
-      resetUrl,
-    });
-
-  } catch (emailError) {
-    console.error(`❌ Failed to send password reset email:`, emailError);
-    throw emailError;
-  }
-
-  return { success: true, message: "מייל איפוס סיסמה נשלח בהצלחה" };
-};
