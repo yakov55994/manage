@@ -89,7 +89,7 @@ export const createUser = async (req, res) => {
   console.log("👤 Created by:", req.user?.username);
   
   try {
-    const newUser = await createNewUser(req.body);
+    const newUser = await userService.createNewUser(req.body);
     
     console.log("✅ User created successfully:", newUser.username);
     console.log("=" .repeat(50));
