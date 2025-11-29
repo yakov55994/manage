@@ -83,11 +83,33 @@ export const getAllUsers = async (req, res) => {
 };
 
 export const createUser = async (req, res) => {
+  console.log("=" .repeat(50));
+  console.log("🎯 CREATE USER - Request received");
+  console.log("📥 Body:", JSON.stringify(req.body, null, 2));
+  console.log("👤 Created by:", req.user?.username);
+  
   try {
-    const result = await userService.createNewUser(req.body);
-    res.status(201).json({ success: true, data: result.user });
-  } catch (err) {
-    res.status(400).json({ message: err.message });
+    const newUser = await createNewUser(req.body);
+    
+    console.log("✅ User created successfully:", newUser.username);
+    console.log("=" .repeat(50));
+    
+    res.status(201).json({
+      success: true,
+      data: newUser,
+      message: "משתמש נוצר בהצלחה"
+    });
+    
+  } catch (error) {
+    console.error("❌ CREATE USER ERROR:");
+    console.error("Error message:", error.message);
+    console.error("Error stack:", error.stack);
+    console.error("=" .repeat(50));
+    
+    res.status(500).json({
+      success: false,
+      message: error.message || "שגיאה ביצירת משתמש"
+    });
   }
 };
 

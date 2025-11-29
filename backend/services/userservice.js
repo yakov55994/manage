@@ -19,36 +19,50 @@ export const getAllUsers = () => {
     .select("-password -resetPasswordToken -resetPasswordExpires");
 };
 
-export const createNewUser = async (data) => {
-  // ✅ יצירת סיסמה זמנית רנדומלית (אף אחד לא יודע אותה!)
-  const tempPassword = crypto.randomBytes(16).toString('hex');
+export const createNewUser = async (userData) => {
+  console.log("🔧 SERVICE: createNewUser started");
+  console.log("📦 User data:", userData);
 
-  const user = await User.create({
-    ...data,
-    password: tempPassword, // סיסמה זמנית - אף אחד לא יודע אותה
-  });
-
-  // ✅ שליחת מייל ברוכים הבאים עם קישור לבחירת סיסמה
-  if (user.email) {
-    try {
-      const resetToken = await generatePasswordResetToken(user._id);
-      const resetUrl = `${process.env.CLIENT_URL}/reset-password/${resetToken}`;
-
-      await sendWelcomeEmail({
-        to: user.email,
-        username: user.username,
-        resetUrl,
-      });
-
-    } catch (emailError) {
-      console.error("❌ Failed to send welcome email:", emailError);
-      // לא נכשיל את יצירת המשתמש בגלל כשל במייל
+  try {
+    // בדיקה שיש username
+    if (!userData.username) {
+      throw new Error("שם משתמש חסר");
     }
-  } else {
-    console.warn("⚠️ User created without email - cannot send welcome email");
-  }
 
-  return { success: true, user };
+    // יצירת המשתמש
+    const newUser = new User({
+      username: userData.username,
+      email: userData.email,
+      role: userData.role || "user",
+      isActive: userData.isActive !== undefined ? userData.isActive : true,
+      permissions: userData.permissions || [],
+    });
+
+    console.log("💾 Saving user to database...");
+    await newUser.save();
+    console.log("✅ User saved successfully:", newUser._id);
+
+    // ניסיון לשלוח מייל - לא קריטי
+    if (newUser.email) {
+      console.log("📧 Attempting to send welcome email...");
+      try {
+        await sendWelcomeEmail(newUser);
+        console.log("✅ Welcome email sent");
+      } catch (emailError) {
+        console.warn("⚠️ Email failed (non-critical):", emailError.message);
+        // לא זורקים שגיאה - המשתמש נוצר בהצלחה
+      }
+    } else {
+      console.log("ℹ️ No email provided, skipping welcome email");
+    }
+
+    console.log("🎉 createNewUser completed successfully");
+    return newUser;
+
+  } catch (error) {
+    console.error("❌ SERVICE ERROR in createNewUser:", error);
+    throw error;
+  }
 };
 
 export const updateUser = async (id, data) => {

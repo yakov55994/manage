@@ -316,39 +316,61 @@ export default function UserManagement() {
   };
 
   // SAVE USER
-  const saveUser = async (e) => {
-    e.preventDefault();
+const saveUser = async (e) => {
+  e.preventDefault();
 
-    const payload = {
-      username: formData.username,
-      email: formData.email,
-      role: formData.role,
-      isActive: formData.isActive,
-      permissions: formData.permissions.map((p) =>
-        autoFixProjectAccess({
-          project: normalizeId(p.project),
-          access: p.access,
-          modules: p.modules,
-        })
-      ),
-    };
-
-    try {
-      if (editingUser) {
-        await api.put(`/users/${editingUser._id}`, payload);
-        toast.success("המשתמש עודכן בהצלחה");
-      } else {
-        await api.post(`/users`, payload);
-        toast.success("המשתמש נוצר בהצלחה");
-      }
-
-      setShowModal(false);
-      loadEverything();
-    } catch (err) {
-      console.error(err);
-      toast.error(err.response?.data?.message || "שגיאה בשמירת המשתמש");
-    }
+  const payload = {
+    username: formData.username,
+    email: formData.email,
+    role: formData.role,
+    isActive: formData.isActive,
+    permissions: formData.permissions.map((p) =>
+      autoFixProjectAccess({
+        project: normalizeId(p.project),
+        access: p.access,
+        modules: p.modules,
+      })
+    ),
   };
+
+  console.log("🚀 Starting saveUser...");
+  console.log("📦 Payload:", JSON.stringify(payload, null, 2));
+  console.log("✏️ Editing user?", !!editingUser);
+
+  try {
+    let response;
+    
+    if (editingUser) {
+      console.log("📝 PUT request to:", `/users/${editingUser._id}`);
+      response = await api.put(`/users/${editingUser._id}`, payload);
+      console.log("✅ PUT response:", response.data);
+      toast.success("המשתמש עודכן בהצלחה");
+    } else {
+      console.log("➕ POST request to: /users");
+      response = await api.post(`/users`, payload);
+      console.log("✅ POST response:", response.data);
+      toast.success("המשתמש נוצר בהצלחה");
+    }
+
+    console.log("🎉 Success! Closing modal...");
+    setShowModal(false);
+    console.log("🔄 Reloading data...");
+    loadEverything();
+    
+  } catch (err) {
+    console.error("❌❌❌ FULL ERROR:", err);
+    console.error("❌ Error name:", err.name);
+    console.error("❌ Error message:", err.message);
+    console.error("❌ Error response:", err.response);
+    console.error("❌ Error response data:", err.response?.data);
+    console.error("❌ Error response status:", err.response?.status);
+    console.error("❌ Error config:", err.config);
+    
+    const errorMessage = err.response?.data?.message || err.message || "שגיאה בשמירת המשתמש";
+    console.error("❌ Showing toast with message:", errorMessage);
+    toast.error(errorMessage);
+  }
+};
 
   const deleteUser = async () => {
     try {

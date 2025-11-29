@@ -1,24 +1,58 @@
 import nodemailer from 'nodemailer';
+import crypto from 'crypto';
 import dotenv from 'dotenv';
 
 dotenv.config();
 
-// יצירת transporter
-const transporter = nodemailer.createTransport({
-  service: 'gmail',
-  auth: {
-    user: process.env.GMAIL_USER,
-    pass: process.env.GMAIL_APP_PASSWORD
+// יצירת transporter - רק אם לא ברנדר
+const createTransporter = () => {
+  // בדיקה אם אנחנו ברנדר (Gmail לא יעבוד שם)
+  if (process.env.RENDER) {
+    console.warn('⚠️ Gmail SMTP is blocked on Render - emails will not be sent');
+    return null;
   }
-});
 
-// ✅ איפוס סיסמה
-export const sendPasswordResetEmail = async ({ to, username, resetUrl }) => {
+  return nodemailer.createTransport({
+    service: 'gmail',
+    auth: {
+      user: process.env.GMAIL_USER,
+      pass: process.env.GMAIL_APP_PASSWORD
+    }
+  });
+};
+
+const transporter = createTransporter();
+
+// פונקציה עזר ליצירת טוקן איפוס
+const generateResetToken = async (user) => {
+  const resetToken = crypto.randomBytes(32).toString('hex');
+  const hashedToken = crypto.createHash('sha256').update(resetToken).digest('hex');
+
+  user.resetPasswordToken = hashedToken;
+  user.resetPasswordExpires = Date.now() + 24 * 60 * 60 * 1000; // 24 hours
+  await user.save();
+
+  return resetToken;
+};
+
+// ✅ איפוס סיסמה - מקבל user object ויוצר את הטוקן
+export const sendPasswordResetEmail = async (user) => {
   try {
+    // בדיקה אם transporter קיים
+    if (!transporter) {
+      console.warn('⚠️ Email service not available - skipping password reset email');
+      return { success: false, message: 'Email service not configured' };
+    }
+
+    // יצירת טוקן
+    const resetToken = await generateResetToken(user);
+    const resetUrl = `${process.env.FRONTEND_URL}/reset-password/${resetToken}`;
+
+    console.log('📧 Sending password reset email to:', user.email);
 
     await transporter.sendMail({
       from: `"ניהולון" <${process.env.GMAIL_USER}>`,
-      to: to,
+      to: user.email,
       subject: '🔐 איפוס סיסמה - ניהולון',
       html: `
         <div dir="rtl" style="font-family: Arial; max-width: 600px; margin: 0 auto; background: white; border-radius: 16px; overflow: hidden; box-shadow: 0 4px 6px rgba(0,0,0,0.1);">
@@ -29,7 +63,7 @@ export const sendPasswordResetEmail = async ({ to, username, resetUrl }) => {
           </div>
           
           <div style="padding: 40px; color: #333; line-height: 1.8;">
-            <p style="font-size: 16px;">שלום <strong>${username}</strong>,</p>
+            <p style="font-size: 16px;">שלום <strong>${user.username}</strong>,</p>
             <p>קיבלנו בקשה לאיפוס הסיסמה שלך במערכת ניהולון.</p>
             
             <div style="text-align: center; margin: 30px 0;">
@@ -61,21 +95,33 @@ export const sendPasswordResetEmail = async ({ to, username, resetUrl }) => {
       `
     });
 
+    console.log('✅ Password reset email sent successfully');
     return { success: true };
 
   } catch (error) {
-    console.error('❌ Error:', error);
-    throw new Error('שגיאה בשליחת המייל');
+    console.error('❌ Error sending password reset email:', error);
+    throw new Error('שגיאה בשליחת מייל איפוס סיסמה');
   }
 };
 
-// ✅ ברוכים הבאים
-export const sendWelcomeEmail = async ({ to, username, resetUrl }) => {
+// ✅ ברוכים הבאים - מקבל user object ויוצר את הטוקן
+export const sendWelcomeEmail = async (user) => {
   try {
+    // בדיקה אם transporter קיים
+    if (!transporter) {
+      console.warn('⚠️ Email service not available - skipping welcome email');
+      return { success: false, message: 'Email service not configured' };
+    }
+
+    // יצירת טוקן
+    const resetToken = await generateResetToken(user);
+    const resetUrl = `${process.env.FRONTEND_URL}/reset-password/${resetToken}`;
+
+    console.log('📧 Sending welcome email to:', user.email);
 
     await transporter.sendMail({
       from: `"ניהולון" <${process.env.GMAIL_USER}>`,
-      to: to,
+      to: user.email,
       subject: '🎉 ברוכים הבאים לניהולון!',
       html: `
         <div dir="rtl" style="font-family: Arial; max-width: 600px; margin: 0 auto; background: white; border-radius: 16px; overflow: hidden; box-shadow: 0 4px 6px rgba(0,0,0,0.1);">
@@ -86,11 +132,11 @@ export const sendWelcomeEmail = async ({ to, username, resetUrl }) => {
           </div>
           
           <div style="padding: 40px; color: #333; line-height: 1.8;">
-            <p>שלום <strong>${username}</strong>,</p>
+            <p>שלום <strong>${user.username}</strong>,</p>
             <p>חשבונך במערכת ניהולון נוצר בהצלחה! 🎊</p>
             
             <div style="background: #f0f9ff; border-right: 4px solid #3b82f6; padding: 15px; border-radius: 8px; margin: 20px 0;">
-              <p style="margin: 0;"><strong>📌 שם המשתמש שלך:</strong> ${username}</p>
+              <p style="margin: 0;"><strong>📌 שם המשתמש שלך:</strong> ${user.username}</p>
             </div>
             
             <p>כדי להתחיל, בחר סיסמה למערכת:</p>
@@ -113,10 +159,11 @@ export const sendWelcomeEmail = async ({ to, username, resetUrl }) => {
       `
     });
 
+    console.log('✅ Welcome email sent successfully');
     return { success: true };
 
   } catch (error) {
-    console.error('❌ Error:', error);
-    throw new Error('שגיאה בשליחת מייל');
+    console.error('❌ Error sending welcome email:', error);
+    throw new Error('שגיאה בשליחת מייל ברוכים הבאים');
   }
 };
