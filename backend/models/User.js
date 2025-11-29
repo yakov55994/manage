@@ -1,53 +1,83 @@
-import mongoose from "mongoose";
-import bcryptjs from "bcryptjs";
+import mongoose from 'mongoose';
+import bcrypt from 'bcryptjs';
 
-const permissionSchema = new mongoose.Schema({
-  project: {
-    type: mongoose.Schema.Types.ObjectId,
-    ref: "Project"
-  },
-  access: {
+const userSchema = new mongoose.Schema({
+  username: {
     type: String,
-    enum: ["none", "view", "edit"],
-    default: "none"
+    required: true,
+    unique: true,
+    trim: true,
   },
-  modules: {
-    invoices: { type: String, enum: ["none", "view", "edit"], default: "none" },
-    orders: { type: String, enum: ["none", "view", "edit"], default: "none" },
-    suppliers: { type: String, enum: ["none", "view", "edit"], default: "none" },
-    files: { type: String, enum: ["none", "view", "edit"], default: "none" },
+  email: {
+    type: String,
+    trim: true,
+    lowercase: true,
+    sparse: true, // מאפשר null/undefined אבל unique אם קיים
+  },
+  password: {
+    type: String,
+    required: false, // ← שינוי כאן! לא חובה
+    minlength: 6,
+  },
+  role: {
+    type: String,
+    enum: ['user', 'admin'],
+    default: 'user',
+  },
+  isActive: {
+    type: Boolean,
+    default: true,
+  },
+  permissions: [
+    {
+      project: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'Project',
+      },
+      access: {
+        type: String,
+        enum: ['none', 'view', 'edit'],
+        default: 'none',
+      },
+      modules: {
+        invoices: { type: String, enum: ['none', 'view', 'edit'], default: 'none' },
+        orders: { type: String, enum: ['none', 'view', 'edit'], default: 'none' },
+        suppliers: { type: String, enum: ['none', 'view', 'edit'], default: 'none' },
+        files: { type: String, enum: ['none', 'view', 'edit'], default: 'none' },
+      },
+    },
+  ],
+  resetPasswordToken: String,
+  resetPasswordExpires: Date,
+}, {
+  timestamps: true,
+});
+
+// Hash password לפני שמירה - רק אם יש סיסמה
+userSchema.pre('save', async function (next) {
+  // אם הסיסמה לא השתנתה או לא קיימת - דלג
+  if (!this.isModified('password') || !this.password) {
+    return next();
+  }
+
+  try {
+    const salt = await bcrypt.genSalt(10);
+    this.password = await bcrypt.hash(this.password, salt);
+    next();
+  } catch (error) {
+    next(error);
   }
 });
 
-const userSchema = new mongoose.Schema(
-  {
-    username: { type: String, required: true, unique: true },
-    password: { type: String, required: true },
-    email: { type: String, required: false },
-    role: { type: String, enum: ["admin", "user"], default: "user" },
-    isActive: { type: Boolean, default: true },
-    permissions: {
-      type: [permissionSchema],
-      default: []
-    },
-    
-    // ✅ שדות חדשים לאיפוס סיסמה
-    resetPasswordToken: { type: String },
-    resetPasswordExpires: { type: Date },
-  },
-  { timestamps: true }
-);
-
-// Hash password before saving
-userSchema.pre("save", async function (next) {
-  if (!this.isModified("password")) return next();
-  this.password = await bcryptjs.hash(this.password, 10);
-  next();
-});
-
-// Compare password
-userSchema.methods.comparePassword = function (candidate) {
-  return bcryptjs.compare(candidate, this.password);
+// השוואת סיסמה
+userSchema.methods.comparePassword = async function (candidatePassword) {
+  // אם אין סיסמה - החזר false
+  if (!this.password) {
+    return false;
+  }
+  return await bcrypt.compare(candidatePassword, this.password);
 };
 
-export default mongoose.model("User", userSchema);
+const User = mongoose.model('User', userSchema);
+
+export default User;
