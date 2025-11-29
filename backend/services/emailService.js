@@ -1,27 +1,14 @@
-import nodemailer from 'nodemailer';
+import { Resend } from 'resend';
 import crypto from 'crypto';
 import dotenv from 'dotenv';
 
 dotenv.config();
 
-// יצירת transporter - רק אם לא ברנדר
-const createTransporter = () => {
-  // בדיקה אם אנחנו ברנדר (Gmail לא יעבוד שם)
-  if (process.env.RENDER) {
-    console.warn('⚠️ Gmail SMTP is blocked on Render - emails will not be sent');
-    return null;
-  }
+console.log('🔑 RESEND_API_KEY exists:', !!process.env.RESEND_API_KEY);
+console.log('🌐 CLIENT_URL:', process.env.CLIENT_URL);
 
-  return nodemailer.createTransport({
-    service: 'gmail',
-    auth: {
-      user: process.env.GMAIL_USER,
-      pass: process.env.GMAIL_APP_PASSWORD
-    }
-  });
-};
-
-const transporter = createTransporter();
+// אתחול Resend
+const resend = new Resend(process.env.RESEND_API_KEY);
 
 // פונקציה עזר ליצירת טוקן איפוס
 const generateResetToken = async (user) => {
@@ -35,23 +22,22 @@ const generateResetToken = async (user) => {
   return resetToken;
 };
 
-// ✅ איפוס סיסמה - מקבל user object ויוצר את הטוקן
+// ✅ איפוס סיסמה
 export const sendPasswordResetEmail = async (user) => {
   try {
-    // בדיקה אם transporter קיים
-    if (!transporter) {
-      console.warn('⚠️ Email service not available - skipping password reset email');
+    if (!process.env.RESEND_API_KEY) {
+      console.warn('⚠️ RESEND_API_KEY not configured');
       return { success: false, message: 'Email service not configured' };
     }
 
-    // יצירת טוקן
     const resetToken = await generateResetToken(user);
-    const resetUrl = `${process.env.FRONTEND_URL}/reset-password/${resetToken}`;
+    const resetUrl = `${process.env.CLIENT_URL}/reset-password/${resetToken}`;
 
-    console.log('📧 Sending password reset email to:', user.email);
+    console.log('📧 Sending password reset email via Resend to:', user.email);
+    console.log('🔗 Reset URL:', resetUrl);
 
-    await transporter.sendMail({
-      from: `"ניהולון" <${process.env.GMAIL_USER}>`,
+    const { data, error } = await resend.emails.send({
+      from: 'ניהולון <onboarding@resend.dev>',
       to: user.email,
       subject: '🔐 איפוס סיסמה - ניהולון',
       html: `
@@ -95,8 +81,14 @@ export const sendPasswordResetEmail = async (user) => {
       `
     });
 
-    console.log('✅ Password reset email sent successfully');
-    return { success: true };
+    if (error) {
+      console.error('❌ Resend error:', error);
+      throw new Error(error.message);
+    }
+
+    console.log('✅ Password reset email sent via Resend!');
+    console.log('📨 Email ID:', data?.id);
+    return { success: true, data };
 
   } catch (error) {
     console.error('❌ Error sending password reset email:', error);
@@ -104,23 +96,22 @@ export const sendPasswordResetEmail = async (user) => {
   }
 };
 
-// ✅ ברוכים הבאים - מקבל user object ויוצר את הטוקן
+// ✅ ברוכים הבאים
 export const sendWelcomeEmail = async (user) => {
   try {
-    // בדיקה אם transporter קיים
-    if (!transporter) {
-      console.warn('⚠️ Email service not available - skipping welcome email');
+    if (!process.env.RESEND_API_KEY) {
+      console.warn('⚠️ RESEND_API_KEY not configured');
       return { success: false, message: 'Email service not configured' };
     }
 
-    // יצירת טוקן
     const resetToken = await generateResetToken(user);
-    const resetUrl = `${process.env.FRONTEND_URL}/reset-password/${resetToken}`;
+    const resetUrl = `${process.env.CLIENT_URL}/reset-password/${resetToken}`;
 
-    console.log('📧 Sending welcome email to:', user.email);
+    console.log('📧 Sending welcome email via Resend to:', user.email);
+    console.log('🔗 Setup URL:', resetUrl);
 
-    await transporter.sendMail({
-      from: `"ניהולון" <${process.env.GMAIL_USER}>`,
+    const { data, error } = await resend.emails.send({
+      from: 'ניהולון <onboarding@resend.dev>',
       to: user.email,
       subject: '🎉 ברוכים הבאים לניהולון!',
       html: `
@@ -148,6 +139,11 @@ export const sendWelcomeEmail = async (user) => {
             </div>
             
             <p><strong>הקישור תקף ל-24 שעות.</strong></p>
+            
+            <p style="margin-top: 20px; font-size: 14px; color: #666;">
+              אם הכפתור לא עובד, העתק את הקישור:<br>
+              <span style="color: #f97316; word-break: break-all;">${resetUrl}</span>
+            </p>
           </div>
           
           <div style="background: #f5f5f5; padding: 20px; text-align: center; color: #666; font-size: 14px; border-top: 2px solid #e5e5e5;">
@@ -159,8 +155,14 @@ export const sendWelcomeEmail = async (user) => {
       `
     });
 
-    console.log('✅ Welcome email sent successfully');
-    return { success: true };
+    if (error) {
+      console.error('❌ Resend error:', error);
+      throw new Error(error.message);
+    }
+
+    console.log('✅ Welcome email sent via Resend!');
+    console.log('📨 Email ID:', data?.id);
+    return { success: true, data };
 
   } catch (error) {
     console.error('❌ Error sending welcome email:', error);
