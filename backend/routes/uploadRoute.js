@@ -1,12 +1,9 @@
 import express from 'express';
 import multer from 'multer';
-import cloudinary from 'cloudinary';
+import cloudinary from '../config/cloudinary.js'; // ✅ שינוי כאן
 import fs from 'fs/promises';
 import path from 'path';
 import File from '../models/File.js';
-import dotenv from 'dotenv';
-
-dotenv.config();
 
 const router = express.Router();
 const uploadsDir = path.resolve('uploads');
@@ -24,11 +21,8 @@ const storage = multer.diskStorage({
 
 const upload = multer({ storage });
 
-cloudinary.v2.config({
-    cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
-    api_key: process.env.CLOUDINARY_API_KEY,
-    api_secret: process.env.CLOUDINARY_API_SECRET
-});
+// ❌ הסר את זה - עכשיו זה ב-config
+// cloudinary.v2.config({...})
 
 // Routes
 router.delete('/delete-cloudinary', async (req, res) => {
@@ -42,7 +36,7 @@ router.delete('/delete-cloudinary', async (req, res) => {
       });
     }
 
-    const result = await cloudinary.v2.uploader.destroy(publicId, {
+    const result = await cloudinary.uploader.destroy(publicId, { // ✅ cloudinary כבר מוגדר כ-v2
       resource_type: resourceType || 'raw'
     });
 
@@ -84,7 +78,6 @@ router.post('/temporary', upload.single('file'), (req, res) => {
     });
 });
 
-// ✅ העלאת קובץ - עם publicId ו-resourceType
 router.post('/', upload.single('file'), async (req, res) => {
     try {
         if (!req.file) {
@@ -94,7 +87,7 @@ router.post('/', upload.single('file'), async (req, res) => {
         const folder = req.body.folder || 'general';
         const { originalname: fileName, path: filePath, mimetype, size } = req.file;
         
-        const result = await cloudinary.v2.uploader.upload(filePath, {
+        const result = await cloudinary.uploader.upload(filePath, { // ✅ שינוי כאן
             folder,
             resource_type: 'raw'
         });
@@ -112,18 +105,16 @@ router.post('/', upload.single('file'), async (req, res) => {
         await newFile.save();
         await fs.unlink(filePath);
 
-        // ✅ החזר אובייקט מפורש עם כל השדות!
         const responseFile = {
             _id: newFile._id.toString(),
             name: newFile.name,
             url: newFile.url,
-            publicId: newFile.publicId,           // ✅ חשוב!
-            resourceType: newFile.resourceType,   // ✅ חשוב!
+            publicId: newFile.publicId,
+            resourceType: newFile.resourceType,
             folder: newFile.folder,
             type: newFile.type,
             size: newFile.size
         };
-
 
         res.status(200).json({
             message: `הקובץ הועלה בהצלחה ל-${folder}`,
@@ -146,7 +137,7 @@ router.delete('/:fileId', async (req, res) => {
     const file = await File.findById(req.params.fileId);
     if (!file) return res.status(404).json({ error: 'קובץ לא נמצא במסד' });
 
-    const result = await cloudinary.v2.uploader.destroy(file.publicId, {
+    const result = await cloudinary.uploader.destroy(file.publicId, { // ✅ שינוי כאן
       resource_type: file.resourceType || 'raw'
     });
 

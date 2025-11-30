@@ -22,7 +22,7 @@ import {
   Eye,
 } from "lucide-react";
 import { toast } from "sonner";
-import JSZip from 'jszip';
+import JSZip from "jszip";
 
 const ProjectsPage = ({ initialProjects = [] }) => {
   const { isAdmin } = useAuth();
@@ -81,7 +81,6 @@ const ProjectsPage = ({ initialProjects = [] }) => {
   const [suppliers, setSuppliers] = useState([]);
   const [includeFiles, setIncludeFiles] = useState(false); // 🆕
 
-
   useEffect(() => {
     const fetchSuppliers = async () => {
       try {
@@ -98,104 +97,120 @@ const ProjectsPage = ({ initialProjects = [] }) => {
   const { user, loading: authLoading } = useAuth();
 
   const navigate = useNavigate();
-// הוסף state חדש עבור הצ'קבוקס
-const generatePrint = async () => {
-  const printWindow = window.open("", "_blank");
+  // הוסף state חדש עבור הצ'קבוקס
+  const generatePrint = async () => {
+    const printWindow = window.open("", "_blank");
 
-  if (!printWindow) {
-    toast.error("הדפדפן חסם את חלון ההדפסה — תאפשר פופאפים");
-    return;
-  }
-
-  try {
-    const res = await api.post("/documents/collect", {
-      projectId: selectedProject || null,
-      supplierId: selectedSupplier || null,
-      fromDate: fromDate || null,
-      toDate: toDate || null,
-    });
-
-    const docs = res.data?.documents;
-    if (!docs || docs.length === 0) {
-      toast.error("לא נמצאו מסמכים להדפסה");
-      printWindow.close();
+    if (!printWindow) {
+      toast.error("הדפדפן חסם את חלון ההדפסה — תאפשר פופאפים");
       return;
     }
 
-    // חישוב סכום כולל
-    const totalSum = docs.reduce((sum, d) => sum + (d.total || 0), 0);
+    try {
+      const res = await api.post("/documents/collect", {
+        projectId: selectedProject || null,
+        supplierId: selectedSupplier || null,
+        fromDate: fromDate || null,
+        toDate: toDate || null,
+      });
 
-    // 🆕 אם includeFiles מסומן - אסוף את כל הקבצים
-    let filesSection = "";
-    if (includeFiles) {
-      const allFiles = [];
-      
-      docs.forEach((doc) => {
-        // בדוק אם יש files (מערך)
-        if (Array.isArray(doc.files) && doc.files.length > 0) {
-          doc.files.forEach((file) => {
+      const docs = res.data?.documents;
+      if (!docs || docs.length === 0) {
+        toast.error("לא נמצאו מסמכים להדפסה");
+        printWindow.close();
+        return;
+      }
+
+      // חישוב סכום כולל
+      const totalSum = docs.reduce((sum, d) => sum + (d.total || 0), 0);
+
+      // 🆕 אם includeFiles מסומן - אסוף את כל הקבצים
+      let filesSection = "";
+      if (includeFiles) {
+        const allFiles = [];
+
+        docs.forEach((doc) => {
+          // בדוק אם יש files (מערך)
+          if (Array.isArray(doc.files) && doc.files.length > 0) {
+            doc.files.forEach((file) => {
+              allFiles.push({
+                name: file.name || "קובץ ללא שם",
+                url: file.url,
+                type: file.type || "",
+                docNumber: doc.number,
+                docType: doc.type,
+                project: doc.project,
+              });
+            });
+          }
+
+          // בדוק אם יש file יחיד (לתמיכה בחשבוניות ישנות)
+          if (
+            doc.file &&
+            typeof doc.file === "string" &&
+            doc.file.trim() !== ""
+          ) {
             allFiles.push({
-              name: file.name || "קובץ ללא שם",
-              url: file.url,
-              type: file.type || "",
+              name: "קובץ מצורף",
+              url: doc.file,
+              type: "application/pdf",
               docNumber: doc.number,
               docType: doc.type,
               project: doc.project,
             });
-          });
-        }
-        
-        // בדוק אם יש file יחיד (לתמיכה בחשבוניות ישנות)
-        if (doc.file && typeof doc.file === "string" && doc.file.trim() !== "") {
-          allFiles.push({
-            name: "קובץ מצורף",
-            url: doc.file,
-            type: "application/pdf",
-            docNumber: doc.number,
-            docType: doc.type,
-            project: doc.project,
-          });
-        }
-      });
+          }
+        });
 
-      if (allFiles.length > 0) {
-        filesSection = `
+        if (allFiles.length > 0) {
+          filesSection = `
           <div class="files-section">
             <h2 class="files-title">📎 קבצים מצורפים (${allFiles.length})</h2>
             <div class="files-grid">
-              ${allFiles.map((file, idx) => {
-                const isImage = file.type?.startsWith("image/");
-                return `
+              ${allFiles
+                .map((file, idx) => {
+                  const isImage = file.type?.startsWith("image/");
+                  return `
                   <div class="file-card">
                     <div class="file-header">
                       <span class="file-number">#${idx + 1}</span>
-                      <span class="file-badge">${file.docType} ${file.docNumber}</span>
+                      <span class="file-badge">${file.docType} ${
+                    file.docNumber
+                  }</span>
                     </div>
                     
-                    ${isImage ? `
+                    ${
+                      isImage
+                        ? `
                       <img src="${file.url}" alt="${file.name}" class="file-image" />
-                    ` : `
+                    `
+                        : `
                       <div class="file-placeholder">
                         <span class="file-icon">📄</span>
-                        <span class="file-type">${file.type === "application/pdf" ? "PDF" : "קובץ"}</span>
+                        <span class="file-type">${
+                          file.type === "application/pdf" ? "PDF" : "קובץ"
+                        }</span>
                       </div>
-                    `}
+                    `
+                    }
                     
                     <div class="file-info">
                       <p class="file-name">${file.name}</p>
                       <p class="file-project">${file.project || "-"}</p>
-                      <a href="${file.url}" target="_blank" class="file-link">פתח קובץ ↗</a>
+                      <a href="${
+                        file.url
+                      }" target="_blank" class="file-link">פתח קובץ ↗</a>
                     </div>
                   </div>
                 `;
-              }).join("")}
+                })
+                .join("")}
             </div>
           </div>
         `;
+        }
       }
-    }
 
-    printWindow.document.write(`
+      printWindow.document.write(`
       <html dir="rtl" lang="he">
       <head>
         <meta charset="UTF-8">
@@ -592,208 +607,234 @@ const generatePrint = async () => {
       </html>
     `);
 
-    printWindow.document.close();
-  } catch (e) {
-    console.error(e);
-    toast.error("שגיאה בהפקת ההדפסה");
-    printWindow.close();
-  }
-};
-// 🆕 פונקציה מתוקנת - עובדת ישירות מה-state
-const downloadAllFiles = async () => {
-  try {
-    toast.info("אוסף קבצים...", { className: "sonner-toast info rtl" });
-
-    // 🔥 במקום API call - נשתמש ב-projects שכבר יש לנו!
-    let projectsToProcess = projects;
-
-    // סינון לפי הפילטרים שנבחרו
-    if (selectedProject) {
-      projectsToProcess = projects.filter(p => p._id === selectedProject);
+      printWindow.document.close();
+    } catch (e) {
+      console.error(e);
+      toast.error("שגיאה בהפקת ההדפסה");
+      printWindow.close();
     }
+  };
+  // 🆕 פונקציה מתוקנת - עובדת ישירות מה-state
+  const downloadAllFiles = async () => {
+    try {
+      toast.info("אוסף קבצים...", { className: "sonner-toast info rtl" });
 
-    if (!projectsToProcess || projectsToProcess.length === 0) {
-      toast.error("לא נמצאו פרויקטים");
-      return;
-    }
+      // 🔥 במקום API call - נשתמש ב-projects שכבר יש לנו!
+      let projectsToProcess = projects;
 
-    // איסוף כל הקבצים מכל הפרויקטים
-    const allFiles = [];
+      // סינון לפי הפילטרים שנבחרו
+      if (selectedProject) {
+        projectsToProcess = projects.filter((p) => p._id === selectedProject);
+      }
 
-    projectsToProcess.forEach((project) => {
-      const projectName = project.name || "פרויקט";
+      if (!projectsToProcess || projectsToProcess.length === 0) {
+        toast.error("לא נמצאו פרויקטים");
+        return;
+      }
 
-      // 🔥 אוסף קבצים מחשבוניות
-      if (Array.isArray(project.invoices)) {
-        project.invoices.forEach((invoice) => {
-          // דילוג על חשבוניות ריקות
-          const isEmptyInvoice = !invoice.invoiceNumber && !invoice.sum && !invoice._id;
-          if (isEmptyInvoice) return;
+      // איסוף כל הקבצים מכל הפרויקטים
+      const allFiles = [];
 
-          // בדוק אם יש files (מערך)
-          if (Array.isArray(invoice.files) && invoice.files.length > 0) {
-            invoice.files.forEach((file, idx) => {
+      projectsToProcess.forEach((project) => {
+        const projectName = project.name || "פרויקט";
+
+        // 🔥 אוסף קבצים מחשבוניות
+        if (Array.isArray(project.invoices)) {
+          project.invoices.forEach((invoice) => {
+            // דילוג על חשבוניות ריקות
+            const isEmptyInvoice =
+              !invoice.invoiceNumber && !invoice.sum && !invoice._id;
+            if (isEmptyInvoice) return;
+
+            // בדוק אם יש files (מערך)
+            if (Array.isArray(invoice.files) && invoice.files.length > 0) {
+              invoice.files.forEach((file, idx) => {
+                allFiles.push({
+                  name:
+                    file.name ||
+                    `חשבונית_${invoice.invoiceNumber}_קובץ_${idx + 1}`,
+                  url: file.url,
+                  type: file.type || "",
+                  docNumber: invoice.invoiceNumber,
+                  docType: "חשבונית",
+                  project: projectName,
+                });
+              });
+            }
+
+            // בדוק אם יש file יחיד (לתמיכה בחשבוניות ישנות)
+            if (
+              invoice.file &&
+              typeof invoice.file === "string" &&
+              invoice.file.trim() !== "" &&
+              invoice.file.startsWith("http")
+            ) {
               allFiles.push({
-                name: file.name || `חשבונית_${invoice.invoiceNumber}_קובץ_${idx + 1}`,
-                url: file.url,
-                type: file.type || "",
+                name: `חשבונית_${invoice.invoiceNumber}`,
+                url: invoice.file,
+                type: "application/pdf",
                 docNumber: invoice.invoiceNumber,
                 docType: "חשבונית",
                 project: projectName,
               });
-            });
-          }
+            }
+          });
+        }
 
-          // בדוק אם יש file יחיד (לתמיכה בחשבוניות ישנות)
-          if (invoice.file && typeof invoice.file === "string" && invoice.file.trim() !== "" && invoice.file.startsWith("http")) {
-            allFiles.push({
-              name: `חשבונית_${invoice.invoiceNumber}`,
-              url: invoice.file,
-              type: "application/pdf",
-              docNumber: invoice.invoiceNumber,
-              docType: "חשבונית",
-              project: projectName,
-            });
-          }
-        });
-      }
+        // 🔥 אוסף קבצים מהזמנות
+        if (Array.isArray(project.orders)) {
+          project.orders.forEach((order) => {
+            // בדוק אם יש files (מערך)
+            if (Array.isArray(order.files) && order.files.length > 0) {
+              order.files.forEach((file, idx) => {
+                allFiles.push({
+                  name:
+                    file.name || `הזמנה_${order.orderNumber}_קובץ_${idx + 1}`,
+                  url: file.url,
+                  type: file.type || "",
+                  docNumber: order.orderNumber,
+                  docType: "הזמנה",
+                  project: projectName,
+                });
+              });
+            }
 
-      // 🔥 אוסף קבצים מהזמנות
-      if (Array.isArray(project.orders)) {
-        project.orders.forEach((order) => {
-          // בדוק אם יש files (מערך)
-          if (Array.isArray(order.files) && order.files.length > 0) {
-            order.files.forEach((file, idx) => {
+            // בדוק אם יש file יחיד
+            if (
+              order.file &&
+              typeof order.file === "string" &&
+              order.file.trim() !== "" &&
+              order.file.startsWith("http")
+            ) {
               allFiles.push({
-                name: file.name || `הזמנה_${order.orderNumber}_קובץ_${idx + 1}`,
-                url: file.url,
-                type: file.type || "",
+                name: `הזמנה_${order.orderNumber}`,
+                url: order.file,
+                type: "application/pdf",
                 docNumber: order.orderNumber,
                 docType: "הזמנה",
                 project: projectName,
               });
-            });
-          }
+            }
+          });
+        }
 
-          // בדוק אם יש file יחיד
-          if (order.file && typeof order.file === "string" && order.file.trim() !== "" && order.file.startsWith("http")) {
+        // 🔥 אוסף קבצים מהפרויקט עצמו
+        if (Array.isArray(project.files) && project.files.length > 0) {
+          project.files.forEach((file, idx) => {
             allFiles.push({
-              name: `הזמנה_${order.orderNumber}`,
-              url: order.file,
-              type: "application/pdf",
-              docNumber: order.orderNumber,
-              docType: "הזמנה",
+              name: file.name || `פרויקט_${projectName}_קובץ_${idx + 1}`,
+              url: file.url,
+              type: file.type || "",
+              docNumber: "",
+              docType: "פרויקט",
               project: projectName,
             });
-          }
-        });
-      }
-
-      // 🔥 אוסף קבצים מהפרויקט עצמו
-      if (Array.isArray(project.files) && project.files.length > 0) {
-        project.files.forEach((file, idx) => {
-          allFiles.push({
-            name: file.name || `פרויקט_${projectName}_קובץ_${idx + 1}`,
-            url: file.url,
-            type: file.type || "",
-            docNumber: "",
-            docType: "פרויקט",
-            project: projectName,
           });
+        }
+      });
+
+      // סינון לפי תאריכים (אם צריך)
+      let filteredFiles = allFiles;
+      if (fromDate || toDate) {
+        filteredFiles = allFiles.filter((file) => {
+          // כאן אפשר להוסיף לוגיקה לסינון לפי תאריך אם רוצים
+          return true;
         });
       }
-    });
 
-    // סינון לפי תאריכים (אם צריך)
-    let filteredFiles = allFiles;
-    if (fromDate || toDate) {
-      filteredFiles = allFiles.filter((file) => {
-        // כאן אפשר להוסיף לוגיקה לסינון לפי תאריך אם רוצים
-        return true;
-      });
-    }
-
-    // סינון לפי ספק (אם צריך)
-    if (selectedSupplier) {
-      // כאן אפשר להוסיף לוגיקה לסינון לפי ספק
-    }
-
-
-    if (filteredFiles.length === 0) {
-      toast.error("לא נמצאו קבצים להורדה בפרויקטים שנבחרו", {
-        className: "sonner-toast error rtl",
-        duration: 4000,
-      });
-      return;
-    }
-
-    toast.info(`מוריד ${filteredFiles.length} קבצים...`, { 
-      className: "sonner-toast info rtl",
-      duration: 5000 
-    });
-
-    // יצירת ZIP
-    const zip = new JSZip();
-
-    // הורדת כל הקבצים ושמירתם ב-ZIP
-    let successCount = 0;
-    const downloadPromises = filteredFiles.map(async (file, index) => {
-      try {
-        const response = await fetch(file.url);
-        if (!response.ok) throw new Error(`HTTP ${response.status}`);
-        
-        const blob = await response.blob();
-        
-        // יצירת שם קובץ ייחודי
-        const extension = file.name.includes('.') 
-          ? file.name.split('.').pop() 
-          : (file.type === 'application/pdf' ? 'pdf' : 
-             file.type === 'image/png' ? 'png' :
-             file.type === 'image/jpeg' ? 'jpg' : 'file');
-        
-        const safeProjectName = file.project.replace(/[^א-תa-zA-Z0-9]/g, '_');
-        const safeDocType = file.docType.replace(/[^א-תa-zA-Z0-9]/g, '_');
-        const safeDocNumber = file.docNumber ? `_${file.docNumber}` : '';
-        const fileName = `${index + 1}_${safeProjectName}_${safeDocType}${safeDocNumber}.${extension}`;
-        
-        // הוספת הקובץ ל-ZIP
-        zip.file(fileName, blob);
-        successCount++;
-        
-      } catch (error) {
-        console.error(`❌ שגיאה בהורדת קובץ ${file.name}:`, error);
+      // סינון לפי ספק (אם צריך)
+      if (selectedSupplier) {
+        // כאן אפשר להוסיף לוגיקה לסינון לפי ספק
       }
-    });
 
-    // המתנה לכל ההורדות
-    await Promise.all(downloadPromises);
+      if (filteredFiles.length === 0) {
+        toast.error("לא נמצאו קבצים להורדה בפרויקטים שנבחרו", {
+          className: "sonner-toast error rtl",
+          duration: 4000,
+        });
+        return;
+      }
 
-    if (successCount === 0) {
-      toast.error("לא הצלחתי להוריד אף קובץ - בדוק את הקישורים", {
+      toast.info(`מוריד ${filteredFiles.length} קבצים...`, {
+        className: "sonner-toast info rtl",
+        duration: 5000,
+      });
+
+      // יצירת ZIP
+      const zip = new JSZip();
+
+      // הורדת כל הקבצים ושמירתם ב-ZIP
+      let successCount = 0;
+      const downloadPromises = filteredFiles.map(async (file, index) => {
+        try {
+          const response = await fetch(file.url);
+          if (!response.ok) throw new Error(`HTTP ${response.status}`);
+
+          const blob = await response.blob();
+
+          // יצירת שם קובץ ייחודי
+          const extension = file.name.includes(".")
+            ? file.name.split(".").pop()
+            : file.type === "application/pdf"
+            ? "pdf"
+            : file.type === "image/png"
+            ? "png"
+            : file.type === "image/jpeg"
+            ? "jpg"
+            : "file";
+
+          const safeProjectName = file.project.replace(/[^א-תa-zA-Z0-9]/g, "_");
+          const safeDocType = file.docType.replace(/[^א-תa-zA-Z0-9]/g, "_");
+          const safeDocNumber = file.docNumber ? `_${file.docNumber}` : "";
+          const fileName = `${
+            index + 1
+          }_${safeProjectName}_${safeDocType}${safeDocNumber}.${extension}`;
+
+          // הוספת הקובץ ל-ZIP
+          zip.file(fileName, blob);
+          successCount++;
+        } catch (error) {
+          console.error(`❌ שגיאה בהורדת קובץ ${file.name}:`, error);
+        }
+      });
+
+      // המתנה לכל ההורדות
+      await Promise.all(downloadPromises);
+
+      if (successCount === 0) {
+        toast.error("לא הצלחתי להוריד אף קובץ - בדוק את הקישורים", {
+          className: "sonner-toast error rtl",
+        });
+        return;
+      }
+
+      // יצירת קובץ ZIP והורדה
+      const zipBlob = await zip.generateAsync({ type: "blob" });
+
+      const zipFileName = `קבצים_${
+        selectedProject
+          ? projectsToProcess[0]?.name.replace(/[^א-תa-zA-Z0-9]/g, "_") ||
+            "פרויקט"
+          : "כל_הפרויקטים"
+      }_${new Date().toLocaleDateString("he-IL").replace(/\//g, "-")}.zip`;
+
+      saveAs(zipBlob, zipFileName);
+
+      toast.success(
+        `${successCount} מתוך ${filteredFiles.length} קבצים הורדו בהצלחה! 🎉`,
+        {
+          className: "sonner-toast success rtl",
+        }
+      );
+
+      setShowPrintModal(false);
+    } catch (error) {
+      console.error("❌ שגיאה בהורדת קבצים:", error);
+      toast.error("שגיאה בהורדת הקבצים", {
         className: "sonner-toast error rtl",
       });
-      return;
     }
-
-    // יצירת קובץ ZIP והורדה
-    const zipBlob = await zip.generateAsync({ type: "blob" });
-    
-    const zipFileName = `קבצים_${selectedProject ? projectsToProcess[0]?.name.replace(/[^א-תa-zA-Z0-9]/g, '_') || 'פרויקט' : 'כל_הפרויקטים'}_${new Date().toLocaleDateString('he-IL').replace(/\//g, '-')}.zip`;
-    
-    saveAs(zipBlob, zipFileName);
-
-    toast.success(`${successCount} מתוך ${filteredFiles.length} קבצים הורדו בהצלחה! 🎉`, {
-      className: "sonner-toast success rtl",
-    });
-
-    setShowPrintModal(false);
-  } catch (error) {
-    console.error("❌ שגיאה בהורדת קבצים:", error);
-    toast.error("שגיאה בהורדת הקבצים", {
-      className: "sonner-toast error rtl",
-    });
-  }
-};
+  };
 
   const formatNumber = (num) => num?.toLocaleString("he-IL");
   const formatDate = (dateTime) => {
@@ -1088,55 +1129,56 @@ const downloadAllFiles = async () => {
   };
 
   // 🆕 פונקציה לספירת כל הקבצים בפרויקט (חשבוניות + הזמנות)
-const getTotalProjectFiles = (project) => {
-  let totalFiles = 0;
+  const getTotalProjectFiles = (project) => {
+    let totalFiles = 0;
 
-  // ✅ קבצים מחשבוניות
-  if (Array.isArray(project.invoices)) {
-    project.invoices.forEach((invoice) => {
-      // דילוג על חשבוניות ריקות
-      const isEmptyInvoice = !invoice.invoiceNumber && !invoice.sum && !invoice._id;
-      if (isEmptyInvoice) return;
+    // ✅ קבצים מחשבוניות
+    if (Array.isArray(project.invoices)) {
+      project.invoices.forEach((invoice) => {
+        // דילוג על חשבוניות ריקות
+        const isEmptyInvoice =
+          !invoice.invoiceNumber && !invoice.sum && !invoice._id;
+        if (isEmptyInvoice) return;
 
-      // ספור files (מערך)
-      if (Array.isArray(invoice.files) && invoice.files.length > 0) {
-        totalFiles += invoice.files.length;
-      }
+        // ספור files (מערך)
+        if (Array.isArray(invoice.files) && invoice.files.length > 0) {
+          totalFiles += invoice.files.length;
+        }
 
-      // ספור file יחיד (חשבוניות ישנות)
-      if (
-        invoice.file &&
-        typeof invoice.file === "string" &&
-        invoice.file.trim() !== "" &&
-        invoice.file.startsWith("http")
-      ) {
-        totalFiles += 1;
-      }
-    });
-  }
+        // ספור file יחיד (חשבוניות ישנות)
+        if (
+          invoice.file &&
+          typeof invoice.file === "string" &&
+          invoice.file.trim() !== "" &&
+          invoice.file.startsWith("http")
+        ) {
+          totalFiles += 1;
+        }
+      });
+    }
 
-  // ✅ קבצים מהזמנות
-  if (Array.isArray(project.orders)) {
-    project.orders.forEach((order) => {
-      // ספור files (מערך)
-      if (Array.isArray(order.files) && order.files.length > 0) {
-        totalFiles += order.files.length;
-      }
+    // ✅ קבצים מהזמנות
+    if (Array.isArray(project.orders)) {
+      project.orders.forEach((order) => {
+        // ספור files (מערך)
+        if (Array.isArray(order.files) && order.files.length > 0) {
+          totalFiles += order.files.length;
+        }
 
-      // ספור file יחיד
-      if (
-        order.file &&
-        typeof order.file === "string" &&
-        order.file.trim() !== "" &&
-        order.file.startsWith("http")
-      ) {
-        totalFiles += 1;
-      }
-    });
-  }
+        // ספור file יחיד
+        if (
+          order.file &&
+          typeof order.file === "string" &&
+          order.file.trim() !== "" &&
+          order.file.startsWith("http")
+        ) {
+          totalFiles += 1;
+        }
+      });
+    }
 
-  return totalFiles;
-};
+    return totalFiles;
+  };
 
   const exportCustomReport = () => {
     const dataToExport = filteredProjects;
@@ -1597,104 +1639,120 @@ const getTotalProjectFiles = (project) => {
                     )}
                   </tr>
                 </thead>
-               <tbody>
-  {sortedProjects.map((project, index) => (
-    <tr
-      key={project._id}
-      onClick={() => handleView(project._id)}
-      className="cursor-pointer border-t border-orange-100 hover:bg-orange-50 transition-colors"
-    >
-      <td className="px-4 py-4 text-sm font-bold text-center text-slate-900">
-        {project.name}
-      </td>
-      <td className="px-4 py-4 text-sm font-bold text-center text-slate-900">
-        {formatNumber(project.budget)} ₪
-      </td>
-      <td className="px-4 py-4 text-sm font-bold text-center text-slate-900">
-        {formatNumber(project.remainingBudget)} ₪
-      </td>
-      <td className="px-4 py-4 text-sm font-medium text-center text-slate-900">
-        {project.invitingName}
-      </td>
-      <td className="px-4 py-4 text-sm font-medium text-center text-slate-900">
-        {formatDate(project.createdAt)}
-      </td>
-      <td className="px-4 py-4 text-sm font-medium text-center text-slate-900">
-        {project.Contact_person}
-      </td>
-   <td className="px-4 py-4 text-sm font-medium text-center text-slate-900">
-  {(() => {
-    // 🔍 דיבוג
-    const invoiceFiles = invoiceStats(project).fileCount;
-    
-    let orderFiles = 0;
-    if (Array.isArray(project.orders)) {
-      project.orders.forEach((order) => {
-        
-        if (Array.isArray(order.files) && order.files.length > 0) {
-          orderFiles += order.files.length;
-        }
-        
-        if (order.file && typeof order.file === "string" && 
-            order.file.trim() !== "" && order.file.startsWith("http")) {
-          orderFiles += 1;
-        }
-      });
-    }
-    
-    const total = invoiceFiles + orderFiles;
+                <tbody>
+                  {sortedProjects.map((project, index) => (
+                    <tr
+                      key={project._id}
+                      onClick={() => handleView(project._id)}
+                      className="cursor-pointer border-t border-orange-100 hover:bg-orange-50 transition-colors"
+                    >
+                      <td className="px-4 py-4 text-sm font-bold text-center text-slate-900">
+                        {project.name}
+                      </td>
+                      <td className="px-4 py-4 text-sm font-bold text-center text-slate-900">
+                        {formatNumber(project.budget)} ₪
+                      </td>
+                      <td className="px-4 py-4 text-sm font-bold text-center text-slate-900">
+                        {formatNumber(project.remainingBudget)} ₪
+                      </td>
+                      <td className="px-4 py-4 text-sm font-medium text-center text-slate-900">
+                        {project.invitingName}
+                      </td>
+                      <td className="px-4 py-4 text-sm font-medium text-center text-slate-900">
+                        {formatDate(project.createdAt)}
+                      </td>
+                      <td className="px-4 py-4 text-sm font-medium text-center text-slate-900">
+                        {project.Contact_person}
+                      </td>
+                      <td className="px-4 py-4 text-sm font-medium text-center text-slate-900">
+                        {(() => {
+                          // 🔍 דיבוג מפורט
+                          console.log("🔎 Project:", project.name);
+                          console.log("📁 Invoices:", project.invoices);
+                          console.log("📦 Orders:", project.orders);
 
-    return (
-      <div className="flex flex-col items-center">
-        <span className="font-bold text-lg text-orange-600">{total}</span>
-        {total > 0 && (
-          <span className="text-xs text-slate-500">
-            ({invoiceFiles} חשבוניות, {orderFiles} הזמנות)
-          </span>
-        )}
-      </div>
-    );
-  })()}
-</td>
-      
-      {/* 🔥 גם פה צריך את התנאי! */}
-      {isAdmin && (
-        <td className="px-4 py-4">
-          <div className="flex justify-center gap-2">
-            <button
-              onClick={(e) => {
-                e.stopPropagation();
-                handleView(project._id);
-              }}
-              className="p-2 text-blue-600 hover:bg-blue-100 rounded-lg"
-            >
-              <Eye className="w-5 h-5" />
-            </button>
-            <button
-              onClick={(e) => {
-                e.stopPropagation();
-                handleEdit(project._id);
-              }}
-              className="p-2 text-orange-600 hover:bg-orange-100 rounded-lg"
-            >
-              <Edit2 className="w-5 h-5" />
-            </button>
-            <button
-              onClick={(e) => {
-                e.stopPropagation();
-                setProjectToDelete(project._id);
-                setShowModal(true);
-              }}
-              className="p-2 text-red-600 hover:bg-red-100 rounded-lg"
-            >
-              <Trash2 className="w-5 h-5" />
-            </button>
-          </div>
-        </td>
-      )}
-    </tr>
-  ))}
-</tbody>
+                          const invoiceFiles = invoiceStats(project).fileCount;
+
+                          let orderFiles = 0;
+                          if (Array.isArray(project.orders)) {
+                            project.orders.forEach((order) => {
+                              console.log("📋 Order files:", order.files);
+                              console.log("📄 Order file:", order.file);
+
+                              if (
+                                Array.isArray(order.files) &&
+                                order.files.length > 0
+                              ) {
+                                orderFiles += order.files.length;
+                              }
+
+                              if (
+                                order.file &&
+                                typeof order.file === "string" &&
+                                order.file.trim() !== "" &&
+                                order.file.startsWith("http")
+                              ) {
+                                orderFiles += 1;
+                              }
+                            });
+                          }
+
+                          const total = invoiceFiles + orderFiles;
+                          console.log("✅ Total files:", total);
+
+                          return (
+                            <div className="flex flex-col items-center">
+                              <span className="font-bold text-lg text-orange-600">
+                                {total}
+                              </span>
+                              {total > 0 && (
+                                <span className="text-xs text-slate-500">
+                                  ({invoiceFiles} חשבוניות, {orderFiles} הזמנות)
+                                </span>
+                              )}
+                            </div>
+                          );
+                        })()}
+                      </td>
+
+                      {/* 🔥 גם פה צריך את התנאי! */}
+                      {isAdmin && (
+                        <td className="px-4 py-4">
+                          <div className="flex justify-center gap-2">
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleView(project._id);
+                              }}
+                              className="p-2 text-blue-600 hover:bg-blue-100 rounded-lg"
+                            >
+                              <Eye className="w-5 h-5" />
+                            </button>
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleEdit(project._id);
+                              }}
+                              className="p-2 text-orange-600 hover:bg-orange-100 rounded-lg"
+                            >
+                              <Edit2 className="w-5 h-5" />
+                            </button>
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setProjectToDelete(project._id);
+                                setShowModal(true);
+                              }}
+                              className="p-2 text-red-600 hover:bg-red-100 rounded-lg"
+                            >
+                              <Trash2 className="w-5 h-5" />
+                            </button>
+                          </div>
+                        </td>
+                      )}
+                    </tr>
+                  ))}
+                </tbody>
               </table>
             </div>
           </div>
@@ -2019,113 +2077,123 @@ const getTotalProjectFiles = (project) => {
           </div>
         )}
 
-{showPrintModal && (
-  <div className="fixed inset-0 bg-black/40 backdrop-blur-sm flex items-center justify-center z-50">
-    <div className="bg-white p-6 rounded-2xl w-[520px] shadow-2xl">
-      <h2 className="text-2xl font-bold mb-6 text-slate-900 flex items-center gap-3">
-        <Building2 className="w-7 h-7 text-orange-500" />
-        הפקת מסמכים
-      </h2>
+        {showPrintModal && (
+          <div className="fixed inset-0 bg-black/40 backdrop-blur-sm flex items-center justify-center z-50">
+            <div className="bg-white p-6 rounded-2xl w-[520px] shadow-2xl">
+              <h2 className="text-2xl font-bold mb-6 text-slate-900 flex items-center gap-3">
+                <Building2 className="w-7 h-7 text-orange-500" />
+                הפקת מסמכים
+              </h2>
 
-      {/* בחירת פרויקט */}
-      <label className="block font-semibold text-slate-700 mb-2">בחירת פרויקט</label>
-      <select
-        className="w-full p-3 border-2 border-orange-200 rounded-xl mb-4 font-medium focus:border-orange-500 focus:outline-none focus:ring-4 focus:ring-orange-500/20 transition-all"
-        value={selectedProject}
-        onChange={(e) => setSelectedProject(e.target.value)}
-      >
-        <option value="">כל הפרויקטים</option>
-        {projects.map((p) => (
-          <option key={p._id} value={p._id}>
-            {p.name}
-          </option>
-        ))}
-      </select>
+              {/* בחירת פרויקט */}
+              <label className="block font-semibold text-slate-700 mb-2">
+                בחירת פרויקט
+              </label>
+              <select
+                className="w-full p-3 border-2 border-orange-200 rounded-xl mb-4 font-medium focus:border-orange-500 focus:outline-none focus:ring-4 focus:ring-orange-500/20 transition-all"
+                value={selectedProject}
+                onChange={(e) => setSelectedProject(e.target.value)}
+              >
+                <option value="">כל הפרויקטים</option>
+                {projects.map((p) => (
+                  <option key={p._id} value={p._id}>
+                    {p.name}
+                  </option>
+                ))}
+              </select>
 
-      {/* בחירת ספק */}
-      <label className="block font-semibold text-slate-700 mb-2">בחירת ספק</label>
-      <select
-        className="w-full p-3 border-2 border-orange-200 rounded-xl mb-4 font-medium focus:border-orange-500 focus:outline-none focus:ring-4 focus:ring-orange-500/20 transition-all"
-        value={selectedSupplier}
-        onChange={(e) => setSelectedSupplier(e.target.value)}
-      >
-        <option value="">כל הספקים</option>
-        {suppliers.map((s) => (
-          <option key={s._id} value={s._id}>
-            {s.name}
-          </option>
-        ))}
-      </select>
+              {/* בחירת ספק */}
+              <label className="block font-semibold text-slate-700 mb-2">
+                בחירת ספק
+              </label>
+              <select
+                className="w-full p-3 border-2 border-orange-200 rounded-xl mb-4 font-medium focus:border-orange-500 focus:outline-none focus:ring-4 focus:ring-orange-500/20 transition-all"
+                value={selectedSupplier}
+                onChange={(e) => setSelectedSupplier(e.target.value)}
+              >
+                <option value="">כל הספקים</option>
+                {suppliers.map((s) => (
+                  <option key={s._id} value={s._id}>
+                    {s.name}
+                  </option>
+                ))}
+              </select>
 
-      {/* תאריכים */}
-      <label className="block font-semibold text-slate-700 mb-2">טווח תאריכים</label>
-      <div className="flex gap-3 mb-4">
-        <input
-          type="date"
-          className="w-1/2 border-2 border-orange-200 p-3 rounded-xl focus:border-orange-500 focus:outline-none focus:ring-4 focus:ring-orange-500/20 transition-all"
-          value={fromDate}
-          onChange={(e) => setFromDate(e.target.value)}
-        />
-        <input
-          type="date"
-          className="w-1/2 border-2 border-orange-200 p-3 rounded-xl focus:border-orange-500 focus:outline-none focus:ring-4 focus:ring-orange-500/20 transition-all"
-          value={toDate}
-          onChange={(e) => setToDate(e.target.value)}
-        />
-      </div>
+              {/* תאריכים */}
+              <label className="block font-semibold text-slate-700 mb-2">
+                טווח תאריכים
+              </label>
+              <div className="flex gap-3 mb-4">
+                <input
+                  type="date"
+                  className="w-1/2 border-2 border-orange-200 p-3 rounded-xl focus:border-orange-500 focus:outline-none focus:ring-4 focus:ring-orange-500/20 transition-all"
+                  value={fromDate}
+                  onChange={(e) => setFromDate(e.target.value)}
+                />
+                <input
+                  type="date"
+                  className="w-1/2 border-2 border-orange-200 p-3 rounded-xl focus:border-orange-500 focus:outline-none focus:ring-4 focus:ring-orange-500/20 transition-all"
+                  value={toDate}
+                  onChange={(e) => setToDate(e.target.value)}
+                />
+              </div>
 
-      {/* 🆕 צ'קבוקס לכלול קבצים בדוח */}
-      <label className="flex items-center gap-3 p-4 bg-gradient-to-br from-orange-50 to-amber-50 rounded-xl border-2 border-orange-200 cursor-pointer mb-6 hover:border-orange-300 transition-all">
-        <input
-          type="checkbox"
-          checked={includeFiles}
-          onChange={(e) => setIncludeFiles(e.target.checked)}
-          className="w-5 h-5 text-orange-600 rounded focus:ring-2 focus:ring-orange-500"
-        />
-        <div className="flex-1">
-          <span className="font-bold text-slate-900 block">הצג קבצים בדוח</span>
-          <p className="text-sm text-slate-600">כלול תצוגה של הקבצים המצורפים בדוח ההדפסה</p>
-        </div>
-      </label>
+              {/* 🆕 צ'קבוקס לכלול קבצים בדוח */}
+              <label className="flex items-center gap-3 p-4 bg-gradient-to-br from-orange-50 to-amber-50 rounded-xl border-2 border-orange-200 cursor-pointer mb-6 hover:border-orange-300 transition-all">
+                <input
+                  type="checkbox"
+                  checked={includeFiles}
+                  onChange={(e) => setIncludeFiles(e.target.checked)}
+                  className="w-5 h-5 text-orange-600 rounded focus:ring-2 focus:ring-orange-500"
+                />
+                <div className="flex-1">
+                  <span className="font-bold text-slate-900 block">
+                    הצג קבצים בדוח
+                  </span>
+                  <p className="text-sm text-slate-600">
+                    כלול תצוגה של הקבצים המצורפים בדוח ההדפסה
+                  </p>
+                </div>
+              </label>
 
-      {/* כפתורי פעולה */}
-      <div className="flex flex-col gap-3">
-        {/* 🆕 כפתור הורדת קבצים */}
-        <button
-          className="w-full flex items-center justify-center gap-3 px-6 py-4 bg-gradient-to-r from-orange-600 to-orange-700 text-white font-bold rounded-xl hover:from-orange-700 hover:to-orange-800 transition-all shadow-lg shadow-orange-500/30"
-          onClick={downloadAllFiles}
-        >
-          <DownloadCloud className="w-5 h-5" />
-          <span>📦 הורד קבצים (ZIP)</span>
-        </button>
+              {/* כפתורי פעולה */}
+              <div className="flex flex-col gap-3">
+                {/* 🆕 כפתור הורדת קבצים */}
+                <button
+                  className="w-full flex items-center justify-center gap-3 px-6 py-4 bg-gradient-to-r from-orange-600 to-orange-700 text-white font-bold rounded-xl hover:from-orange-700 hover:to-orange-800 transition-all shadow-lg shadow-orange-500/30"
+                  onClick={downloadAllFiles}
+                >
+                  <DownloadCloud className="w-5 h-5" />
+                  <span>📦 הורד קבצים (ZIP)</span>
+                </button>
 
-        {/* כפתור הדפסת דוח */}
-        <button
-          className="w-full flex items-center justify-center gap-3 px-6 py-4 bg-gradient-to-r from-orange-600 to-orange-700 text-white font-bold rounded-xl hover:from-orange-700 hover:to-orange-800 transition-all shadow-lg shadow-orange-500/30"
-          onClick={generatePrint}
-        >
-          <FileSpreadsheet className="w-5 h-5" />
-          <span>🖨️ הפק דוח PDF</span>
-        </button>
+                {/* כפתור הדפסת דוח */}
+                <button
+                  className="w-full flex items-center justify-center gap-3 px-6 py-4 bg-gradient-to-r from-orange-600 to-orange-700 text-white font-bold rounded-xl hover:from-orange-700 hover:to-orange-800 transition-all shadow-lg shadow-orange-500/30"
+                  onClick={generatePrint}
+                >
+                  <FileSpreadsheet className="w-5 h-5" />
+                  <span>🖨️ הפק דוח PDF</span>
+                </button>
 
-        {/* כפתור ביטול */}
-        <button
-          className="w-full px-6 py-4 bg-slate-200 text-slate-700 font-bold rounded-xl hover:bg-slate-300 transition-all"
-          onClick={() => {
-            setShowPrintModal(false);
-            setIncludeFiles(false);
-            setSelectedProject("");
-            setSelectedSupplier("");
-            setFromDate("");
-            setToDate("");
-          }}
-        >
-          ביטול
-        </button>
-      </div>
-    </div>
-  </div>
-)}
+                {/* כפתור ביטול */}
+                <button
+                  className="w-full px-6 py-4 bg-slate-200 text-slate-700 font-bold rounded-xl hover:bg-slate-300 transition-all"
+                  onClick={() => {
+                    setShowPrintModal(false);
+                    setIncludeFiles(false);
+                    setSelectedProject("");
+                    setSelectedSupplier("");
+                    setFromDate("");
+                    setToDate("");
+                  }}
+                >
+                  ביטול
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
 
         {/* Delete Modal */}
         {showModal && (

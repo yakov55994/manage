@@ -1,4 +1,5 @@
 import mongoose from "mongoose";
+import cloudinary from '../config/cloudinary.js';
 
 const orderSchema = new mongoose.Schema({
   orderNumber: { type: Number, required: true },     // ייחודי בפרויקט
@@ -50,6 +51,53 @@ const orderSchema = new mongoose.Schema({
 
 });
 
+orderSchema.pre('deleteOne', { document: true, query: false }, async function(next) {
+  console.log('🔥 Middleware רץ! מוחק חשבונית:', this.invoiceNumber);
+  console.log('📁 קבצים למחיקה:', this.files);
+  
+  try {
+    if (this.files && this.files.length > 0) {
+      for (const file of this.files) {
+        // ✅ חלץ publicId מה-URL אם לא קיים
+        let publicId = file.publicId;
+        
+        if (!publicId && file.url) {
+          publicId = extractPublicIdFromUrl(file.url);
+        }
+        
+        console.log('🗑️ מנסה למחוק:', publicId);
+        
+        if (publicId) {
+          const result = await cloudinary.uploader.destroy(publicId, {
+            resource_type: file.resourceType || 'raw'
+          });
+          console.log('✅ תוצאה:', result);
+        } else {
+          console.log('⚠️ לא נמצא publicId עבור:', file.name);
+        }
+      }
+    }
+    next();
+  } catch (err) {
+    console.error('❌ שגיאה:', err);
+    next(err);
+  }
+});
+
+// פונקציה עזר לחילוץ publicId מ-URL של Cloudinary
+function extractPublicIdFromUrl(url) {
+  try {
+    // URL לדוגמה: https://res.cloudinary.com/dbbivwbbt/raw/upload/v1764535273/invoices/vvzkducxoyn32oyulyq7.pdf
+    
+    // ✅ גרסה מתוקנת - כוללת את הסיומת
+    const regex = /\/upload\/(?:v\d+\/)?(.+)$/;
+    const match = url.match(regex);
+    return match ? match[1] : null; // יחזיר: "invoices/vvzkducxoyn32oyulyq7.pdf"
+  } catch (err) {
+    console.error('שגיאה בחילוץ publicId:', err);
+    return null;
+  }
+}
 // 💡 אין צורך ב-pre-save כפילות כי אנחנו עושים זאת ב-service — הרבה יותר נכון!
 
 const Order = mongoose.model("Order", orderSchema);

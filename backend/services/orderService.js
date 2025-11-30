@@ -116,6 +116,12 @@ async createBulkOrders(user, orders) {
 
     // 📌 יצירת ההזמנה
     const order = await Order.create(orderData);
+
+    await Project.findByIdAndUpdate(
+  data.projectId,
+  { $push: { orders: order._id } }
+);
+
     created.push(order);
   }
 
@@ -123,36 +129,43 @@ async createBulkOrders(user, orders) {
 },
 
   async createOrder(user, data) {
-
-
-    if (user.role !== "admin") {
-      const allowed = user.permissions.map(
-        (p) => String(p.project?._id || p.project)
-      );
-      if (!allowed.includes(String(data.projectId))) {
-        throw new Error("אין הרשאה להוסיף הזמנה לפרויקט זה");
-      }
+  if (user.role !== "admin") {
+    const allowed = user.permissions.map(
+      (p) => String(p.project?._id || p.project)
+    );
+    if (!allowed.includes(String(data.projectId))) {
+      throw new Error("אין הרשאה להוסיף הזמנה לפרויקט זה");
     }
+  }
 
-    const project = await Project.findById(data.projectId);
-    if (!project) throw new Error("פרויקט לא נמצא");
+  const project = await Project.findById(data.projectId);
+  if (!project) throw new Error("פרויקט לא נמצא");
 
-    // 🔺 הוספת סכום ההזמנה לתקציב הנותר
-    // ודא שסכום קיים
-    const sum = Number(data.sum);
-    if (isNaN(sum)) throw new Error("סכום ההזמנה אינו תקין");
+  // 🔺 הוספת סכום ההזמנה לתקציב הנותר
+  const sum = Number(data.sum);
+  if (isNaN(sum)) throw new Error("סכום ההזמנה אינו תקין");
 
-    // ודא שתקציב מוגדר
-    project.remainingBudget = Number(project.remainingBudget || 0);
+  project.remainingBudget = Number(project.remainingBudget || 0);
+  project.remainingBudget = project.remainingBudget + sum;
+  await project.save();
 
-    // הוסף סכום להזמנה
-    project.remainingBudget = project.remainingBudget + sum;
+  // ✅ הוספת פרטי המשתמש שיצר
+  const orderData = {
+    ...data,
+    createdBy: user._id,
+    createdByName: user.username || user.name || 'משתמש'
+  };
 
-    await project.save();
+  const order = await Order.create(orderData);
+  
+  // ✅ הוספה למערך ההזמנות של הפרויקט
+  await Project.findByIdAndUpdate(
+    data.projectId,
+    { $push: { orders: order._id } }
+  );
 
-    return Order.create(data);
-
-  },
+  return order;
+},
 
   async updateOrder(user, orderId, data) {
     const order = await Order.findById(orderId);
@@ -182,15 +195,17 @@ async createBulkOrders(user, orders) {
     );
   },
 
-  async deleteOrder(user, orderId) {
-    const order = await Order.findById(orderId);
-    if (!order) throw new Error("הזמנה לא נמצאה");
+async deleteOrder(user, orderId) {
+  const order = await Order.findById(orderId);
+  if (!order) throw new Error("הזמנה לא נמצאה");
 
-    const project = await Project.findById(order.projectId);
-    project.remainingBudget -= Number(order.sum); // מבטל את התוספת
-    await project.save();
+  const project = await Project.findById(order.projectId);
+  project.remainingBudget -= Number(order.sum);
+  await project.save();
 
-    return Order.findByIdAndDelete(orderId);
-  }
+  // ✅ שינוי כאן!
+  await order.deleteOne();
+  return order;
+}
 
 };

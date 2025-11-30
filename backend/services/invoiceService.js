@@ -110,33 +110,41 @@ export default {
 
 
   // ➕ יצירה
-  async createInvoice(user, data) {
-    // בדיקת הרשאות
-    if (user.role !== "admin") {
-      const allowed = user.permissions.map(
-        (p) => String(p.project?._id || p.project)
-      );
-      if (!allowed.includes(String(data.projectId))) {
-        throw new Error("אין הרשאה להוסיף חשבונית לפרויקט זה");
-      }
+ async createInvoice(user, data) {
+  // בדיקת הרשאות
+  if (user.role !== "admin") {
+    const allowed = user.permissions.map(
+      (p) => String(p.project?._id || p.project)
+    );
+    if (!allowed.includes(String(data.projectId))) {
+      throw new Error("אין הרשאה להוסיף חשבונית לפרויקט זה");
     }
+  }
 
-    const project = await Project.findById(data.projectId);
-    if (!project) throw new Error("פרויקט לא נמצא");
+  const project = await Project.findById(data.projectId);
+  if (!project) throw new Error("פרויקט לא נמצא");
 
-    // 🔻 הורדת סכום החשבונית מהתקציב הנותר
-    project.remainingBudget = Number(project.budget) - Number(data.sum);
-    await project.save();
+  // 🔻 הורדת סכום החשבונית מהתקציב הנותר
+  project.remainingBudget = Number(project.budget) - Number(data.sum);
+  await project.save();
 
-    // ✅ הוספת פרטי המשתמש שיצר את החשבונית
-    const invoiceData = {
-      ...data,
-      createdBy: user._id,
-      createdByName: user.username || user.name || 'משתמש'
-    };
+  // ✅ הוספת פרטי המשתמש שיצר את החשבונית
+  const invoiceData = {
+    ...data,
+    createdBy: user._id,
+    createdByName: user.username || user.name || 'משתמש'
+  };
 
-    return Invoice.create(invoiceData);
-  },
+  const invoice = await Invoice.create(invoiceData);
+  
+  // ✅ הוספה למערך החשבוניות של הפרויקט
+  await Project.findByIdAndUpdate(
+    data.projectId,
+    { $push: { invoices: invoice._id } }
+  );
+
+  return invoice;
+},
 
   // ✏️ עדכון חשבונית
   async updateInvoice(user, invoiceId, data) {
@@ -211,15 +219,16 @@ export default {
   },
 
   // 🗑️ מחיקה
-  async deleteInvoice(user, invoiceId) {
-    const invoice = await Invoice.findById(invoiceId);
-    if (!invoice) throw new Error("חשבונית לא נמצאה");
+async deleteInvoice(user, invoiceId) {
+  const invoice = await Invoice.findById(invoiceId);
+  if (!invoice) throw new Error("חשבונית לא נמצאה");
 
-    const project = await Project.findById(invoice.projectId);
-    project.remainingBudget += Number(invoice.sum); // מחזיר כסף
-    await project.save();
+  const project = await Project.findById(invoice.projectId);
+  project.remainingBudget += Number(invoice.sum); // מחזיר כסף
+  await project.save();
 
-    return Invoice.findByIdAndDelete(invoiceId);
-  }
-
+  // ✅ תשתמש ב-deleteOne על ה-document!
+  await invoice.deleteOne();
+  return invoice;
+}
 };

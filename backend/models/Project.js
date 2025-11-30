@@ -27,22 +27,36 @@ const projectSchema = new mongoose.Schema({
 });
 
 // Cascade delete invoices + orders when project is deleted
-projectSchema.pre(
-  "deleteOne",
-  { document: true, query: false },
-  async function (next) {
-    try {
-      const { default: Invoice } = await import("./Invoice.js");
-      const { default: Order } = await import("./Order.js");
+projectSchema.pre('deleteOne', { document: true, query: false }, async function (next) {
+  try {
+    const { default: Invoice } = await import("./Invoice.js");
+    const { default: Order } = await import("./Order.js");
 
-      await Invoice.deleteMany({ projectId: this._id });
-      await Order.deleteMany({ projectId: this._id });
+    console.log(`🗑️ מוחק פרויקט ${this.name} - מוחק חשבוניות והזמנות...`);
 
-      next();
-    } catch (err) {
-      next(err);
+    // ✅ מחק חשבוניות אחת אחת כדי להפעיל middleware
+    const invoices = await Invoice.find({ projectId: this._id });
+    console.log(`📋 נמצאו ${invoices.length} חשבוניות למחיקה`);
+
+    for (const invoice of invoices) {
+      await invoice.deleteOne(); // ✅ זה יפעיל את ה-middleware!
     }
+
+    // ✅ מחק הזמנות אחת אחת כדי להפעיל middleware
+    const orders = await Order.find({ projectId: this._id });
+    console.log(`📦 נמצאו ${orders.length} הזמנות למחיקה`);
+
+    for (const order of orders) {
+      await order.deleteOne(); // ✅ זה יפעיל את ה-middleware!
+    }
+
+    console.log(`✅ הפרויקט ${this.name} והקבצים שלו נמחקו בהצלחה`);
+    next();
+  } catch (err) {
+    console.error('❌ שגיאה במחיקת פרויקט:', err);
+    next(err);
   }
-);
+});
+
 
 export default mongoose.model("Project", projectSchema);

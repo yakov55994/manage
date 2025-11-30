@@ -19,20 +19,34 @@ export default {
 
 
   async getAllProjects(user) {
-    let query = {};
+  let query = {};
 
-    if (user.role !== "admin") {
-      const allowed = user.permissions.map(p =>
-        p.project?._id?.toString() || p.project.toString()
-      );
+  if (user.role !== "admin") {
+    const allowed = user.permissions.map(p =>
+      p.project?._id?.toString() || p.project.toString()
+    );
+    query = { _id: { $in: allowed } };
+  }
 
-      query = { _id: { $in: allowed } };
-    }
+  const projects = await Project.find(query)
+    .populate({
+      path: "invoices",
+      model: "Invoice",
+      select: "invoiceNumber projectName sum status invitingName detail paid paymentDate documentType paymentMethod files file supplierId",
+      populate: { path: "supplierId", select: "name" }
+    })
+    .populate({
+      path: "orders",
+      model: "Order",
+      select: "orderNumber sum status paid paymentDate files file supplierId",
+      populate: { path: "supplierId", select: "name" }
+    });
 
-    return Project.find(query)
-      .populate("invoices")
-      .populate("orders");
-  },
+  // 🔍 דיבוג
+  console.log('🔥 Project "ניסיון":', projects.find(p => p.name === 'ניסיון'));
+  
+  return projects;
+},
   async getProjectById(user, projectId) {
 
   // הרשאות
