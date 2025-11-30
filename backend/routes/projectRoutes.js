@@ -7,6 +7,8 @@ const router = express.Router();
 // 📌 רשימת פרויקטים — ללא checkAccess
 router.get("/", protect, projectController.getAllProjects);
 
+router.get("/search", protect, projectController.searchProjects);
+
 // 📌 פרויקט ספציפי — כן
 router.get("/:projectId", protect, checkAccess("projects", "view"), projectController.getProjectById);
 

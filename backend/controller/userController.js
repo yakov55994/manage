@@ -84,16 +84,9 @@ export const getAllUsers = async (req, res) => {
 };
 
 export const createUser = async (req, res) => {
-  console.log("=".repeat(50));
-  console.log("🎯 CREATE USER - Request received");
-  console.log("📥 Body:", JSON.stringify(req.body, null, 2));
-  console.log("👤 Created by:", req.user?.username);
-
   try {
     const newUser = await userService.createNewUser(req.body);
 
-    console.log("✅ User created successfully:", newUser.username);
-    console.log("=".repeat(50));
 
     res.status(201).json({
       success: true,
@@ -147,8 +140,6 @@ export const sendResetLink = async (req, res) => {
   try {
     const { userId } = req.body;
 
-    console.log('📧 sendResetLink - userId:', userId);
-
     if (!userId) {
       return res.status(400).json({
         success: false,
@@ -177,13 +168,9 @@ export const verifyResetToken = async (req, res) => {
   try {
     const { token } = req.params;
 
-    console.log('🔍 Verifying reset token');
-    console.log('📝 Token received:', token);
-
     // הצפנת הטוקן שהתקבל כדי להשוות עם מה שבדאטהבייס
     const hashedToken = crypto.createHash('sha256').update(token).digest('hex');
 
-    console.log('🔐 Hashed token:', hashedToken);
 
     // חיפוש משתמש עם טוקן תקף (לא פג)
     const user = await User.findOne({
@@ -192,14 +179,12 @@ export const verifyResetToken = async (req, res) => {
     });
 
     if (!user) {
-      console.log('❌ Token invalid or expired');
       return res.status(400).json({
         valid: false,
         message: 'הקישור לא תקף או פג תוקפו',
       });
     }
 
-    console.log('✅ Token is valid for user:', user.username);
 
     res.status(200).json({
       valid: true,
@@ -219,8 +204,6 @@ export const resetPassword = async (req, res) => {
   try {
     const { token, newPassword } = req.body;
 
-    console.log('🔐 resetPassword - token exists:', !!token);
-    console.log('🔐 resetPassword - password exists:', !!newPassword);
 
     if (!token || !newPassword) {
       return res.status(400).json({
@@ -255,8 +238,6 @@ export const resetPassword = async (req, res) => {
 export const forgotPassword = async (req, res) => {
   try {
     const { username } = req.body;
-
-    console.log('🔍 forgotPassword - username:', username);
 
     if (!username) {
       return res.status(400).json({

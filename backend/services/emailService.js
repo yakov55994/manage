@@ -4,9 +4,6 @@ import dotenv from 'dotenv';
 
 dotenv.config();
 
-console.log('🔑 BREVO_API_KEY exists:', !!process.env.BREVO_API_KEY);
-console.log('🌐 CLIENT_URL:', process.env.CLIENT_URL);
-
 // אתחול Brevo
 let apiInstance = null;
 let apiKey = null;
@@ -15,7 +12,6 @@ if (process.env.BREVO_API_KEY) {
   apiInstance = new brevo.TransactionalEmailsApi();
   apiKey = apiInstance.authentications['apiKey'];
   apiKey.apiKey = process.env.BREVO_API_KEY;
-  console.log('✅ Brevo initialized successfully');
 } else {
   console.warn('⚠️ BREVO_API_KEY not configured');
 }
@@ -48,12 +44,8 @@ export const sendPasswordResetEmail = async (user) => {
       throw new Error('User object is not a Mongoose document');
     }
 
-    console.log('🔐 Generating reset token...');
     const resetToken = await generateResetToken(user);
     const resetUrl = `${process.env.CLIENT_URL}/reset-password/${resetToken}`;
-
-    console.log('📧 Sending password reset email via Brevo to:', user.email);
-    console.log('🔗 Reset URL:', resetUrl);
 
     const sendSmtpEmail = new brevo.SendSmtpEmail();
 
@@ -105,8 +97,6 @@ export const sendPasswordResetEmail = async (user) => {
 
     const data = await apiInstance.sendTransacEmail(sendSmtpEmail);
 
-    console.log('✅ Password reset email sent via Brevo!');
-    console.log('📨 Message ID:', data.messageId);
     return { success: true, data };
 
   } catch (error) {
@@ -132,12 +122,8 @@ export const sendWelcomeEmail = async (user) => {
       throw new Error('User object is not a Mongoose document');
     }
 
-    console.log('🔐 Generating reset token...');
     const resetToken = await generateResetToken(user);
     const resetUrl = `${process.env.CLIENT_URL}/reset-password/${resetToken}`;
-
-    console.log('📧 Sending welcome email via Brevo to:', user.email);
-    console.log('🔗 Setup URL:', resetUrl);
 
     const sendSmtpEmail = new brevo.SendSmtpEmail();
 
@@ -189,8 +175,6 @@ export const sendWelcomeEmail = async (user) => {
 
     const data = await apiInstance.sendTransacEmail(sendSmtpEmail);
 
-    console.log('✅ Welcome email sent via Brevo!');
-    console.log('📨 Message ID:', data.messageId);
     return { success: true, data };
 
   } catch (error) {

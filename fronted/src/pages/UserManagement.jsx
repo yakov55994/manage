@@ -333,28 +333,18 @@ const saveUser = async (e) => {
     ),
   };
 
-  console.log("🚀 Starting saveUser...");
-  console.log("📦 Payload:", JSON.stringify(payload, null, 2));
-  console.log("✏️ Editing user?", !!editingUser);
-
   try {
     let response;
     
     if (editingUser) {
-      console.log("📝 PUT request to:", `/users/${editingUser._id}`);
       response = await api.put(`/users/${editingUser._id}`, payload);
-      console.log("✅ PUT response:", response.data);
       toast.success("המשתמש עודכן בהצלחה");
     } else {
-      console.log("➕ POST request to: /users");
       response = await api.post(`/users`, payload);
-      console.log("✅ POST response:", response.data);
       toast.success("המשתמש נוצר בהצלחה");
     }
 
-    console.log("🎉 Success! Closing modal...");
     setShowModal(false);
-    console.log("🔄 Reloading data...");
     loadEverything();
     
   } catch (err) {

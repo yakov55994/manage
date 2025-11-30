@@ -113,6 +113,7 @@ const invoiceController = {
 
   // 🗑️ מחיקה
   async deleteInvoice(req, res) {
+    console.log("req.user: ", req.user)
     try {
       await invoiceService.deleteInvoice(req.user, req.params.invoiceId);
       res.json({ success: true, message: "נמחק בהצלחה" });

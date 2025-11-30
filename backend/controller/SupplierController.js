@@ -4,6 +4,16 @@ import { sendError } from "../utils/sendError.js";
 
 const supplierController = {
 
+
+  async searchSuppliers(req, res) {
+    try {
+      const q = req.query.query || "";
+      const suppliers = await supplierService.searchSuppliers(q);
+      res.json({ suppliers });
+    } catch (err) {
+      res.status(500).json({ message: err.message });
+    }
+  },
  async getAllSuppliers(req, res) {
   try {
     const suppliers = await supplierService.getAllSuppliers();
@@ -12,7 +22,6 @@ const supplierController = {
     res.status(500).json({ success: false, message: err.message });
   }
 },
-
 
   async getAllSuppliersWithoutRestrictions(req, res) {
     try {

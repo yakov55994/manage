@@ -7,6 +7,8 @@ const router = express.Router();
 // 📌 רשימת ספקים — ללא checkAccess
 router.get("/", protect, supplierController.getSuppliers);
 
+router.get("/search", protect, supplierController.searchSuppliers);
+
 // 📌 ספק יחיד — כן
 router.get("/:supplierId", protect, checkAccess("suppliers", "view"), supplierController.getSupplierById);
 

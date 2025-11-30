@@ -7,18 +7,25 @@ export default {
 
 
   async searchOrders(query) {
-    const regex = new RegExp(query, "i");
+  const regex = new RegExp(query, "i");
 
-    return Order.find({
-      $or: [
-        { orderNumber: regex },
-        { projectName: regex },
-        { invitingName: regex },
-        { detail: regex },
-        { status: regex },
-      ],
-    }).limit(50);
-  },
+  // אם query מספר — נשתמש בו לחיפוש מספרי
+  const isNumber = !isNaN(query);
+
+  const conditions = [
+    { projectName: regex },
+    { invitingName: regex },
+    { detail: regex },
+    { status: regex }
+  ];
+
+  // במידה והחיפוש הוא מספר, נוסיף את orderNumber
+  if (isNumber) {
+    conditions.push({ orderNumber: Number(query) });
+  }
+
+  return Order.find({ $or: conditions }).limit(50);
+},
 
   async getOrders(user) {
     let query = {};

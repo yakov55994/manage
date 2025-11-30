@@ -25,6 +25,6 @@ router.put("/:invoiceId", protect, checkAccess("invoices", "edit"), invoiceContr
 // 📌 עדכון סטטוס תשלום — כן
 router.put("/:invoiceId/status", protect, checkAccess("invoices", "edit"), invoiceController.updatePaymentStatus);
 
-router.delete("/:invoiceId/", requireAdmin, protect, checkAccess("invoices", "edit"), invoiceController.deleteInvoice);
+router.delete("/:invoiceId/", protect, requireAdmin, checkAccess("invoices", "edit"), invoiceController.deleteInvoice);
 
 export default router;
