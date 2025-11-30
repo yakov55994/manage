@@ -80,7 +80,7 @@ const Home = () => {
       </div>
 
       {/* Remove CSS animations */}
-      <style jsx>{`
+      <style>{`
         /* Static styling only */
       `}</style>
 
