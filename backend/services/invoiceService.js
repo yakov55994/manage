@@ -128,7 +128,7 @@ async updatePaymentStatus(user, invoiceId, status, paymentDate, paymentMethod) {
 },
 
   // 🔄 העברה בין פרויקטים
-  async moveInvoice(user, invoiceId, newProjectId) {
+async moveInvoice(user, invoiceId, newProjectId) {
   const invoice = await Invoice.findById(invoiceId);
   if (!invoice) throw new Error("חשבונית לא נמצאה");
 
@@ -136,31 +136,28 @@ async updatePaymentStatus(user, invoiceId, status, paymentDate, paymentMethod) {
   const amount = Number(invoice.sum);
 
   if (String(oldProjectId) === String(newProjectId)) {
-    return invoice; // לא צריכים לעשות כלום
+    return invoice;
   }
 
-  // ▪ הבאת שני הפרויקטים
   const oldProject = await Project.findById(oldProjectId);
   const newProject = await Project.findById(newProjectId);
 
   if (!newProject) throw new Error("פרויקט יעד לא נמצא");
 
-  // ▪ החזרת סכום לפרויקט הישן
   if (oldProject) {
     oldProject.remainingBudget += amount;
     await oldProject.save();
   }
 
-  // ▪ הורדת סכום מהפרויקט החדש
   newProject.remainingBudget -= amount;
   await newProject.save();
 
-  // ▪ עדכון החשבונית לשייך לפרויקט החדש
-  return Invoice.findByIdAndUpdate(
-    invoiceId,
-    { projectId: newProjectId },
-    { new: true }
-  );
+  invoice.projectId = newProjectId;
+  invoice.projectName = newProject.name; // ✅ עדכן גם את projectName
+  const updated = await invoice.save();
+  
+  // ✅ החזר עם populate
+  return await Invoice.findById(updated._id).populate('projectId');
 },
 
   // 🗑️ מחיקה

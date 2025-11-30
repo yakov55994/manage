@@ -85,7 +85,7 @@ const invoiceController = {
         req.params.invoiceId,
         req.body.status,
         req.body.paymentDate,
-        req.body.paymentMethod 
+        req.body.paymentMethod
       );
 
       res.json({ success: true, data: result });
@@ -97,6 +97,8 @@ const invoiceController = {
 
   // 🔄 העברת חשבונית לפרויקט אחר
   async moveInvoice(req, res) {
+    console.log("BODY:", req.body);
+    console.log("newProjectId received:", req.body.newProjectId);
     try {
       const result = await invoiceService.moveInvoice(
         req.user,

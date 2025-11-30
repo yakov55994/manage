@@ -22,6 +22,8 @@ router.post("/", protect, checkAccess("invoices", "edit"), invoiceController.cre
 // 📌 עדכון — כן
 router.put("/:invoiceId", protect, checkAccess("invoices", "edit"), invoiceController.updateInvoice);
 
+router.put("/:invoiceId/move", protect, checkAccess("invoices", "edit"), invoiceController.moveInvoice);
+
 // 📌 עדכון סטטוס תשלום — כן
 router.put("/:invoiceId/status", protect, checkAccess("invoices", "edit"), invoiceController.updatePaymentStatus);
 

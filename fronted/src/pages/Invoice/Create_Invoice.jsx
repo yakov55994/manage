@@ -437,7 +437,7 @@ const CreateInvoice = () => {
                   formData.append("folder", fileData.folder || "invoices");
 
                   const uploadResponse = await api.post(
-                    "/upload/cloudinary",
+                    "/upload",
                     formData,
                     {
                       headers: { "Content-Type": "multipart/form-data" },

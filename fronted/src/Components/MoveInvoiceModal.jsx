@@ -6,8 +6,8 @@ import { toast } from "sonner";
 export default function MoveInvoiceModal({
   open,
   onClose,
-  invoice,              // אובייקט חשבונית מלאה
-  onMoved,               // callback לקבלת החשבונית המעודכנת מהשרת
+  invoice, // אובייקט חשבונית מלאה
+  onMoved, // callback לקבלת החשבונית המעודכנת מהשרת
 }) {
   const [loading, setLoading] = useState(false);
   const [projects, setProjects] = useState([]);
@@ -20,10 +20,14 @@ export default function MoveInvoiceModal({
       try {
         // הביא רק שדות הכרחיים (שמור כמו שה־API שלך תומך)
         const { data } = await api.get("/projects");
-        setProjects(Array.isArray(data.data) ? data.data : (data?.projects || []));
+        setProjects(
+          Array.isArray(data.data) ? data.data : data?.projects || []
+        );
       } catch (err) {
         console.error(err);
-        toast.error("שגיאה בטעינת פרויקטים", { className: "sonner-toast error rtl" });
+        toast.error("שגיאה בטעינת פרויקטים", {
+          className: "sonner-toast error rtl",
+        });
       }
     })();
   }, [open]);
@@ -36,51 +40,69 @@ export default function MoveInvoiceModal({
   const filtered = useMemo(() => {
     if (!search) return projects;
     const s = search.toLowerCase();
-    return projects.filter(p => p.name?.toLowerCase().includes(s));
+    return projects.filter((p) => p.name?.toLowerCase().includes(s));
   }, [projects, search]);
 
   const handleSubmit = async () => {
-    if (!selectedProjectId) {
-      toast.error("יש לבחור פרויקט יעד", { className: "sonner-toast error rtl" });
-      return;
-    }
-    if (!invoice?._id) return;
+  if (!selectedProjectId) {
+    toast.error("יש לבחור פרויקט יעד", {
+      className: "sonner-toast error rtl",
+    });
+    return;
+  }
+  if (!invoice?._id) return;
 
-    // אם זה אותו הפרויקט – חסימת פעולה מיותרת
-    if (invoice.projectId && String(invoice.projectId) === String(selectedProjectId)) {
-      toast.info("החשבונית כבר משויכת לפרויקט זה");
-      return;
-    }
+  if (
+    invoice.projectId &&
+    String(invoice.projectId) === String(selectedProjectId)
+  ) {
+    toast.info("החשבונית כבר משויכת לפרויקט זה");
+    return;
+  }
 
-    try {
-      setLoading(true);
-      // ראוט מהשרת שהכנו: PUT /invoices/:id/move { toProjectId }
-      const { data } = await api.put(`/invoices/${invoice._id}/move`, {
-        toProjectId: selectedProjectId,
-      });
+  try {
+    setLoading(true);
+    const { data } = await api.put(`/invoices/${invoice._id}/move`, {
+      newProjectId: selectedProjectId,
+    });
 
-      const moved = data?.data || data; // גמיש לתשובות שונות
-      if (onMoved) onMoved(moved);
+    const moved = data?.data || data;
+    
+    // ✅ וודא שיש projectName בחשבונית המעודכנת
+    const targetProject = projects.find(
+      (p) => String(p._id) === String(selectedProjectId)
+    );
+    
+    // ✅ עדכן את שם הפרויקט בחשבונית
+    const updatedInvoice = {
+      ...moved,
+      projectName: targetProject?.name || moved.projectName,
+      projectId: selectedProjectId
+    };
 
-      const target = projects.find(p => String(p._id) === String(selectedProjectId));
-      toast.success(`החשבונית הועברה אל "${target?.name || "פרויקט היעד"}"`, {
-        className: "sonner-toast success rtl",
-      });
-      onClose();
-    } catch (err) {
-      console.error(err);
-      toast.error(err.response?.data?.message || "שגיאה בהעברת החשבונית", {
-        className: "sonner-toast error rtl",
-      });
-    } finally {
-      setLoading(false);
-    }
-  };
+    if (onMoved) onMoved(updatedInvoice); // ✅ העבר את החשבונית המעודכנת
+
+    toast.success(`החשבונית הועברה אל "${targetProject?.name || "פרויקט היעד"}"`, {
+      className: "sonner-toast success rtl",
+    });
+    onClose();
+  } catch (err) {
+    console.error(err);
+    toast.error(err.response?.data?.message || "שגיאה בהעברת החשבונית", {
+      className: "sonner-toast error rtl",
+    });
+  } finally {
+    setLoading(false);
+  }
+};
 
   if (!open) return null;
 
   return (
-    <div className="mt-20 fixed inset-0 z-50 bg-black/50 flex items-center justify-center" onClick={onClose}>
+    <div
+      className="mt-20 fixed inset-0 z-50 bg-black/50 flex items-center justify-center"
+      onClick={onClose}
+    >
       <div
         className="bg-white rounded-xl shadow-2xl w-full max-w-lg mx-4 p-6"
         onClick={(e) => e.stopPropagation()}
@@ -88,20 +110,29 @@ export default function MoveInvoiceModal({
         <div className="flex items-center justify-between mb-4">
           <div className="flex items-center gap-2">
             <FolderCog className="text-slate-700" />
-            <h3 className="text-2xl font-bold text-slate-800">העבר חשבונית לפרויקט</h3>
+            <h3 className="text-2xl font-bold text-slate-800">
+              העבר חשבונית לפרויקט
+            </h3>
           </div>
-          <button onClick={onClose} className="text-slate-500 hover:text-slate-700">
+          <button
+            onClick={onClose}
+            className="text-slate-500 hover:text-slate-700"
+          >
             <X size={22} />
           </button>
         </div>
 
         <div className="mb-3 text-slate-600">
-          חשבונית #{invoice?.invoiceNumber} • {invoice?.supplier?.name || invoice?.invitingName}
+          חשבונית #{invoice?.invoiceNumber} •{" "}
+          {invoice?.supplier?.name || invoice?.invitingName}
         </div>
 
         {/* חיפוש */}
         <div className="relative mb-3">
-          <Search className="absolute right-3 top-1/2 -translate-y-1/2" size={18} />
+          <Search
+            className="absolute right-3 top-1/2 -translate-y-1/2"
+            size={18}
+          />
           <input
             type="text"
             placeholder="חפש פרויקט…"
@@ -114,7 +145,9 @@ export default function MoveInvoiceModal({
         {/* דרופדאון פרויקטים */}
         <div className="max-h-64 overflow-y-auto border border-slate-200 rounded-lg">
           {filtered.length === 0 ? (
-            <div className="p-4 text-center text-slate-500">לא נמצאו פרויקטים</div>
+            <div className="p-4 text-center text-slate-500">
+              לא נמצאו פרויקטים
+            </div>
           ) : (
             <ul className="divide-y divide-slate-100">
               {filtered.map((p) => (
@@ -141,7 +174,10 @@ export default function MoveInvoiceModal({
         </div>
 
         <div className="flex justify-end gap-3 mt-5">
-          <button onClick={onClose} className="px-4 py-2 rounded-lg bg-slate-100 text-slate-700 hover:bg-slate-200">
+          <button
+            onClick={onClose}
+            className="px-4 py-2 rounded-lg bg-slate-100 text-slate-700 hover:bg-slate-200"
+          >
             ביטול
           </button>
           <button
