@@ -78,14 +78,18 @@ const invoiceController = {
   },
 
   // 💸 עדכון סטטוס תשלום
+  // invoiceControllers.js
   async updatePaymentStatus(req, res) {
     try {
+      const { invoiceId } = req.params;
+      const { status, paymentDate, paymentMethod } = req.body; // ✅ לוודא ש-status מכיל "כן" או "לא"
+
       const result = await invoiceService.updatePaymentStatus(
         req.user,
-        req.params.invoiceId,
-        req.body.status,
-        req.body.paymentDate,
-        req.body.paymentMethod
+        invoiceId,
+        status, // צריך להיות "כן" או "לא"
+        paymentDate,
+        paymentMethod
       );
 
       res.json({ success: true, data: result });

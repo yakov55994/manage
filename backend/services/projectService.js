@@ -77,12 +77,21 @@ export default {
 
     return results;
   },
-  async createProject(user, data) {
-    if (user.role !== "admin")
-      throw new Error("רק מנהל יכול ליצור פרויקט");
+async createProject(user, data) {
+  if (user.role !== "admin")
+    throw new Error("רק מנהל יכול ליצור פרויקט");
 
-    return Project.create(data);
-  },
+  // ✅ וידוא שיש תקציב
+  const projectData = {
+    ...data,
+    budget: data.budget || 0, // ברירת מחדל 0 אם לא נשלח
+    remainingBudget: data.budget || 0,
+    createdBy: user._id,
+    createdByName: user.username || user.name || 'משתמש'
+  };
+
+  return Project.create(projectData);
+},
 
   async updateProject(user, projectId, data) {
   const project = await Project.findById(projectId);
