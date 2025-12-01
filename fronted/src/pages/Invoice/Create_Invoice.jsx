@@ -42,7 +42,7 @@ const CreateInvoice = () => {
 
   const navigate = useNavigate();
 
-  const { user, loading: authLoading } = useAuth();
+  const { user, loading: authLoading, isAdmin } = useAuth();
 
   // בתוך הקומפוננטה, אחרי const { user, loading: authLoading } = useAuth();
   const { canEdit: canEditInvoices } = useModulePermission(
@@ -436,13 +436,9 @@ const CreateInvoice = () => {
                   formData.append("file", fileData.file);
                   formData.append("folder", fileData.folder || "invoices");
 
-                  const uploadResponse = await api.post(
-                    "/upload",
-                    formData,
-                    {
-                      headers: { "Content-Type": "multipart/form-data" },
-                    }
-                  );
+                  const uploadResponse = await api.post("/upload", formData, {
+                    headers: { "Content-Type": "multipart/form-data" },
+                  });
 
                   uploadedFiles.push({
                     name: fileData.name,
@@ -876,21 +872,25 @@ const CreateInvoice = () => {
                       </select>
                     </div>
 
+                    {isAdmin && (
+                      <>
+                        <div className="group">
+                          <label className="text-sm font-bold text-slate-700 mb-2 block">
+                            האם שולם?
+                          </label>
+                          <select
+                            value={invoice.paid}
+                            onChange={(e) => handlePaidChange(index, e)}
+                            className="w-full p-3 border-2 border-slate-200 rounded-xl bg-white font-medium focus:border-orange-500 focus:outline-none focus:ring-4 focus:ring-orange-500/20 transition-all group-hover:border-orange-300"
+                            required
+                          >
+                            <option value="לא">לא</option>
+                            <option value="כן">כן</option>
+                          </select>
+                        </div>
+                      </>
+                    )}
                     {/* Paid Status */}
-                    <div className="group">
-                      <label className="text-sm font-bold text-slate-700 mb-2 block">
-                        האם שולם?
-                      </label>
-                      <select
-                        value={invoice.paid}
-                        onChange={(e) => handlePaidChange(index, e)}
-                        className="w-full p-3 border-2 border-slate-200 rounded-xl bg-white font-medium focus:border-orange-500 focus:outline-none focus:ring-4 focus:ring-orange-500/20 transition-all group-hover:border-orange-300"
-                        required
-                      >
-                        <option value="לא">לא</option>
-                        <option value="כן">כן</option>
-                      </select>
-                    </div>
 
                     {/* Payment Date */}
                     {invoice.paid === "כן" && (

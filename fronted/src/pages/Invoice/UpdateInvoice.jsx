@@ -48,7 +48,7 @@ const InvoiceEditPage = () => {
 
   // בתוך הקומפוננטה, אחרי useState של invoice
   const { canEdit } = useModulePermission(invoice?.projectId, "invoices");
-  const { canViewInvoices } = useAuth();
+  const { canViewInvoices, isAdmin } = useAuth();
   useEffect(() => {
     if (!canViewInvoices) {
       navigate("/no-access");
@@ -249,7 +249,6 @@ const InvoiceEditPage = () => {
           fileToDelete.publicId || extractPublicIdFromUrl(fileUrl);
 
         if (publicId) {
-
           // ✅ שימוש ב-endpoint הקיים - לא /invoices/${id}/delete-file!
           await api.delete("/upload/delete-cloudinary", {
             data: {
@@ -712,85 +711,97 @@ const InvoiceEditPage = () => {
                   </h2>
                 </div>
 
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-                  <div className="group">
-                    <label className="text-sm font-bold text-slate-700 mb-2 block">
-                      האם שולם?
-                    </label>
-                    <select
-                      value={paid}
-                      onChange={(e) => {
-                        const val = e.target.value;
-                        setPaid(val);
-                        if (val === "לא") {
-                          setPaymentDate("");
-                          setPaymentMethod("");
-                        }
-                      }}
-                      className="mt-2 w-full rounded-xl border-2 border-slate-200 bg-white px-4 py-3 text-sm font-medium focus:border-emerald-500 focus:outline-none focus:ring-4 focus:ring-emerald-500/20 transition-all group-hover:border-emerald-300"
-                    >
-                      <option value="לא">לא</option>
-                      <option value="כן">כן</option>
-                    </select>
-                  </div>
+                {isAdmin ? (
+                  <>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+                      <div className="group">
+                        <label className="text-sm font-bold text-slate-700 mb-2 block">
+                          האם שולם?
+                        </label>
+                        <select
+                          value={paid}
+                          onChange={(e) => {
+                            const val = e.target.value;
+                            setPaid(val);
+                            if (val === "לא") {
+                              setPaymentDate("");
+                              setPaymentMethod("");
+                            }
+                          }}
+                          className="mt-2 w-full rounded-xl border-2 border-slate-200 bg-white px-4 py-3 text-sm font-medium focus:border-emerald-500 focus:outline-none focus:ring-4 focus:ring-emerald-500/20 transition-all group-hover:border-emerald-300"
+                        >
+                          <option value="לא">לא</option>
+                          <option value="כן">כן</option>
+                        </select>
+                      </div>
 
-                  <div className="group">
-                    <label className="text-sm font-bold text-slate-700 mb-2 flex items-center gap-2">
-                      <Calendar className="w-4 h-4 text-emerald-500" />
-                      תאריך התשלום
-                    </label>
-
-                    {paid === "כן" ? (
-                      <DateField
-                        type="date"
-                        value={paymentDate}
-                        onChange={(val) => setPaymentDate(val)}
-                        className={`w-full p-3 border-2 rounded-xl font-medium transition-all focus:outline-none focus:ring-4
+                      <div className="group">
+                        <label className="text-sm font-bold text-slate-700 mb-2 flex items-center gap-2">
+                          <Calendar className="w-4 h-4 text-emerald-500" />
+                          תאריך התשלום
+                        </label>
+                        {paid === "כן" ? (
+                          <DateField
+                            type="date"
+                            value={paymentDate}
+                            onChange={(val) => setPaymentDate(val)}
+                            className={`w-full p-3 border-2 rounded-xl font-medium transition-all focus:outline-none focus:ring-4
           ${
             !paymentDate
               ? "border-rose-300 bg-rose-50 focus:border-rose-500 focus:ring-rose-500/20"
               : "border-slate-200 bg-white focus:border-emerald-500 focus:ring-emerald-500/20 group-hover:border-emerald-300"
           }`}
-                        placeholder="yyyy-mm-dd"
-                        required={paid === "כן"}
-                      />
-                    ) : (
-                      <div className="mt-2 bg-gradient-to-br from-slate-100 to-slate-200 text-slate-500 rounded-xl px-4 py-3 text-center font-medium border-2 border-slate-200">
-                        החשבונית לא שולמה
+                            placeholder="yyyy-mm-dd"
+                            required={paid === "כן"}
+                          />
+                        ) : (
+                          <div className="mt-2 bg-gradient-to-br from-slate-100 to-slate-200 text-slate-500 rounded-xl px-4 py-3 text-center font-medium border-2 border-slate-200">
+                            החשבונית לא שולמה
+                          </div>
+                        )}
                       </div>
-                    )}
-                  </div>
 
-                  <div className="group">
-                    <label className="text-sm font-bold text-slate-700 mb-2 block">
-                      צורת תשלום
-                    </label>
-                    {paid === "כן" ? (
-                      <select
-                        name="paymentMethod"
-                        value={paymentMethod}
-                        onChange={(e) => setPaymentMethod(e.target.value)}
-                        className={`mt-2 w-full rounded-xl border-2 px-4 py-3 text-sm font-medium focus:outline-none focus:ring-4 transition-all
+                      <div className="group">
+                        <label className="text-sm font-bold text-slate-700 mb-2 block">
+                          צורת תשלום
+                        </label>
+                        {paid === "כן" ? (
+                          <select
+                            name="paymentMethod"
+                            value={paymentMethod}
+                            onChange={(e) => setPaymentMethod(e.target.value)}
+                            className={`mt-2 w-full rounded-xl border-2 px-4 py-3 text-sm font-medium focus:outline-none focus:ring-4 transition-all
                             ${
                               !paymentMethod
                                 ? "border-rose-300 bg-rose-50 focus:border-rose-500 focus:ring-rose-500/20"
                                 : "border-slate-200 bg-white focus:border-emerald-500 focus:ring-emerald-500/20 group-hover:border-emerald-300"
                             }`}
-                        required={paid === "כן"}
-                      >
-                        <option value="">בחר צורת תשלום…</option>
-                        <option value="bank_transfer">העברה בנקאית</option>
-                        <option value="check">צ׳ק</option>
-                      </select>
-                    ) : (
-                      <input
-                        disabled
-                        value="—"
-                        className="mt-2 w-full rounded-xl border-2 border-slate-200 bg-gradient-to-br from-slate-100 to-slate-200 px-4 py-3 text-sm text-slate-400 font-medium text-center"
-                      />
-                    )}
-                  </div>
-                </div>
+                            required={paid === "כן"}
+                          >
+                            <option value="">בחר צורת תשלום…</option>
+                            <option value="bank_transfer">העברה בנקאית</option>
+                            <option value="check">צ׳ק</option>
+                          </select>
+                        ) : (
+                          <input
+                            disabled
+                            value="—"
+                            className="mt-2 w-full rounded-xl border-2 border-slate-200 bg-gradient-to-br from-slate-100 to-slate-200 px-4 py-3 text-sm text-slate-400 font-medium text-center"
+                          />
+                        )}
+                      </div>
+                    </div>
+                  </>
+                ) : (
+                  <>
+                    <label className="text-sm font-bold text-slate-700 mb-2 block">
+                      שולם ?
+                    </label>
+                    <p className="mt-2 w-24 text-center rounded-xl border-2 border-slate-200 bg-white px-4 py-3 text-sm font-medium focus:border-orange-500 focus:outline-none focus:ring-4 focus:ring-orange-500/20 transition-all group-hover:border-orange-300">
+                      {invoice.paid}
+                    </p>
+                  </>
+                )}
               </section>
 
               {/* Divider */}
