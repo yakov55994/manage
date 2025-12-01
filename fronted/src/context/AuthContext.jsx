@@ -17,8 +17,8 @@ const normalizeUser = (u) => {
     permissions: Array.isArray(u.permissions)
       ? u.permissions.map((p) => ({
           ...p,
-          // ✅ אם project הוא אובייקט, קח רק את ה-_id
-          project: typeof p.project === "object" ? p.project._id : p.project,
+          // ✅ תיקון: בדיקה ש-project לא null
+          project: p.project?._id ?? p.project,
         }))
       : [],
   };
@@ -35,15 +35,14 @@ const getProjectPerm = (user, projectId) => {
   if (!user || !projectId) return null;
 
   // ✅ נרמל את projectId שמקבלים
-  const normalizedSearchId = typeof projectId === "object" 
-    ? (projectId._id || projectId.$oid) 
-    : projectId;
+  const normalizedSearchId =
+    typeof projectId === "object" ? projectId._id || projectId.$oid : projectId;
 
   return (
     user.permissions?.find((p) => {
       // ✅ נרמל את project בהרשאה
       let permProjectId = p.project;
-      
+
       if (typeof permProjectId === "object") {
         permProjectId = permProjectId._id || permProjectId.$oid;
       }
@@ -132,7 +131,7 @@ export const AuthProvider = ({ children }) => {
   useEffect(() => {
     const token = localStorage.getItem("token");
     const userDataString = localStorage.getItem("user");
-    
+
     if (token && userDataString) {
       try {
         const userData = JSON.parse(userDataString);
@@ -141,7 +140,6 @@ export const AuthProvider = ({ children }) => {
 
         api.defaults.headers.common["Authorization"] = `Bearer ${token}`;
         setUser(normalized);
-        
       } catch (err) {
         console.error("❌ Error parsing user data:", err);
         localStorage.removeItem("token");
@@ -203,24 +201,24 @@ export const AuthProvider = ({ children }) => {
         },
 
         // ✅ פונקציות נוחות למודולים ספציפיים
-        canViewInvoices: (projectId) => 
+        canViewInvoices: (projectId) =>
           canAccessModule(user, projectId, "invoices", "view"),
-        canEditInvoices: (projectId) => 
+        canEditInvoices: (projectId) =>
           canAccessModule(user, projectId, "invoices", "edit"),
-        
-        canViewOrders: (projectId) => 
+
+        canViewOrders: (projectId) =>
           canAccessModule(user, projectId, "orders", "view"),
-        canEditOrders: (projectId) => 
+        canEditOrders: (projectId) =>
           canAccessModule(user, projectId, "orders", "edit"),
-        
-        canViewSuppliers: (projectId) => 
+
+        canViewSuppliers: (projectId) =>
           canAccessModule(user, projectId, "suppliers", "view"),
-        canEditSuppliers: (projectId) => 
+        canEditSuppliers: (projectId) =>
           canAccessModule(user, projectId, "suppliers", "edit"),
-        
-        canViewFiles: (projectId) => 
+
+        canViewFiles: (projectId) =>
           canAccessModule(user, projectId, "files", "view"),
-        canEditFiles: (projectId) => 
+        canEditFiles: (projectId) =>
           canAccessModule(user, projectId, "files", "edit"),
       }}
     >
