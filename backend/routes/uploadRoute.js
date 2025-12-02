@@ -4,6 +4,9 @@ import cloudinary from '../config/cloudinary.js'; // ✅ שינוי כאן
 import fs from 'fs/promises';
 import path from 'path';
 import File from '../models/File.js';
+import JSZip from "jszip";
+import fetch from "node-fetch";
+
 
 const router = express.Router();
 const uploadsDir = path.resolve('uploads');
@@ -12,11 +15,11 @@ const uploadsDir = path.resolve('uploads');
 fs.access(uploadsDir).catch(() => fs.mkdir(uploadsDir));
 
 const storage = multer.diskStorage({
-    destination: (req, file, cb) => cb(null, uploadsDir),
-    filename: (req, file, cb) => {
-        const sanitizedName = file.originalname.replace(/[^\w.-]/g, '_');
-        cb(null, `${Date.now()}-${sanitizedName}`);
-    }
+  destination: (req, file, cb) => cb(null, uploadsDir),
+  filename: (req, file, cb) => {
+    const sanitizedName = file.originalname.replace(/[^\w.-]/g, '_');
+    cb(null, `${Date.now()}-${sanitizedName}`);
+  }
 });
 
 const upload = multer({ storage });
@@ -28,11 +31,11 @@ const upload = multer({ storage });
 router.delete('/delete-cloudinary', async (req, res) => {
   try {
     const { publicId, resourceType } = req.body;
-    
+
     if (!publicId) {
-      return res.status(400).json({ 
+      return res.status(400).json({
         error: 'publicId is required',
-        received: req.body 
+        received: req.body
       });
     }
 
@@ -41,95 +44,95 @@ router.delete('/delete-cloudinary', async (req, res) => {
     });
 
     if (result.result === 'ok') {
-      res.json({ 
-        success: true, 
+      res.json({
+        success: true,
         message: 'קובץ נמחק בהצלחה מ-Cloudinary',
-        result: result 
+        result: result
       });
     } else if (result.result === 'not found') {
-      res.json({ 
-        success: true, 
+      res.json({
+        success: true,
         message: 'הקובץ לא נמצא ב-Cloudinary (אולי כבר נמחק)',
-        result: result 
+        result: result
       });
     } else {
-      res.status(400).json({ 
-        success: false, 
+      res.status(400).json({
+        success: false,
         error: 'מחיקה נכשלה',
-        result: result 
+        result: result
       });
     }
   } catch (error) {
     console.error('❌ שגיאה במחיקת קובץ מ-Cloudinary:', error);
-    res.status(500).json({ 
+    res.status(500).json({
       error: 'שגיאה במחיקת הקובץ מ-Cloudinary',
-      details: error.message 
+      details: error.message
     });
   }
 });
 
 router.post('/temporary', upload.single('file'), (req, res) => {
-    if (!req.file) return res.status(400).json({ error: 'לא נבחר קובץ' });
+  if (!req.file) return res.status(400).json({ error: 'לא נבחר קובץ' });
 
-    res.status(200).json({
-        message: 'הקובץ נשמר באופן זמני',
-        tempFilePath: req.file.path,
-        originalName: req.file.originalname
-    });
+  res.status(200).json({
+    message: 'הקובץ נשמר באופן זמני',
+    tempFilePath: req.file.path,
+    originalName: req.file.originalname
+  });
 });
 
 router.post('/', upload.single('file'), async (req, res) => {
-    try {
-        if (!req.file) {
-            return res.status(400).json({ error: 'לא נבחר קובץ' });
-        }
-
-        const folder = req.body.folder || 'general';
-        const { originalname: fileName, path: filePath, mimetype, size } = req.file;
-        
-        const result = await cloudinary.uploader.upload(filePath, { // ✅ שינוי כאן
-            folder,
-            resource_type: 'raw'
-        });
-
-        const newFile = new File({
-            name: fileName,
-            url: result.secure_url,
-            publicId: result.public_id,
-            resourceType: result.resource_type,
-            folder,
-            type: mimetype,
-            size
-        });
-
-        await newFile.save();
-        await fs.unlink(filePath);
-
-        const responseFile = {
-            _id: newFile._id.toString(),
-            name: newFile.name,
-            url: newFile.url,
-            publicId: newFile.publicId,
-            resourceType: newFile.resourceType,
-            folder: newFile.folder,
-            type: newFile.type,
-            size: newFile.size
-        };
-
-        res.status(200).json({
-            message: `הקובץ הועלה בהצלחה ל-${folder}`,
-            file: responseFile
-        });
-    } catch (error) {
-        console.error('❌ Upload error:', error);
-        if (req.file && req.file.path) {
-            await fs.unlink(req.file.path).catch(() => {});
-        }
-        res.status(500).json({ 
-            error: 'שגיאה בהעלאה', 
-            details: error.message 
-        });
+  try {
+    if (!req.file) {
+      return res.status(400).json({ error: 'לא נבחר קובץ' });
     }
+
+    const folder = req.body.folder || 'general';
+    const { originalname: fileName, path: filePath, mimetype, size } = req.file;
+
+    const result = await cloudinary.uploader.upload(filePath, { // ✅ שינוי כאן
+      folder,
+      resource_type: 'raw'
+    });
+
+    const newFile = new File({
+      name: fileName,
+      url: result.secure_url,
+      publicId: result.public_id,
+      resourceType: result.resource_type,
+      folder,
+      type: mimetype,
+      size
+    });
+
+    await newFile.save();
+    await fs.unlink(filePath);
+
+    const responseFile = {
+      _id: newFile._id.toString(),
+      name: newFile.name,
+      url: newFile.url,
+      publicId: newFile.publicId,
+      resourceType: newFile.resourceType,
+      folder: newFile.folder,
+      type: newFile.type,
+      size: newFile.size
+    };
+
+    res.status(200).json({
+      message: `הקובץ הועלה בהצלחה ל-${folder}`,
+      file: responseFile
+    });
+  } catch (error) {
+    console.error('❌ Upload error:', error);
+    if (req.file && req.file.path) {
+      await fs.unlink(req.file.path).catch(() => { });
+    }
+    res.status(500).json({
+      error: 'שגיאה בהעלאה',
+      details: error.message
+    });
+  }
 });
 
 router.delete('/:fileId', async (req, res) => {
@@ -147,17 +150,79 @@ router.delete('/:fileId', async (req, res) => {
 
     await File.findByIdAndDelete(req.params.fileId);
 
-    res.json({ 
-        message: 'הקובץ נמחק מהמערכת ומ־Cloudinary בהצלחה', 
-        cloudinary: result 
+    res.json({
+      message: 'הקובץ נמחק מהמערכת ומ־Cloudinary בהצלחה',
+      cloudinary: result
     });
   } catch (error) {
     console.error('❌ שגיאה במחיקת קובץ:', error);
-    res.status(500).json({ 
-        error: 'שגיאה במחיקת הקובץ', 
-        details: error.message 
+    res.status(500).json({
+      error: 'שגיאה במחיקת הקובץ',
+      details: error.message
     });
   }
 });
+
+// ======================================================
+// 🆕 הורדת ZIP דרך השרת (פתרון ל-NetFree)
+// ======================================================
+router.post("/download-zip", async (req, res) => {
+  try {
+    const { files } = req.body;
+
+    if (!files || files.length === 0) {
+      return res.status(400).json({ error: "לא התקבלו קבצים ליצירת ZIP" });
+    }
+
+    const zip = new JSZip();
+
+    for (const file of files) {
+      try {
+        let url = file.url;
+        let response = await fetch(url);
+
+        // 🔥 fallback לבעיית /raw/upload ב־Cloudinary (מאוד נפוץ)
+        if (!response.ok && url.includes("/raw/upload/")) {
+          const altUrl = url.replace("/raw/upload/", "/image/upload/");
+          response = await fetch(altUrl);
+        }
+
+        if (!response.ok) {
+          console.log("❌ שגיאה בהורדת קובץ:", file.url);
+          continue;
+        }
+
+        const buffer = await response.buffer();
+
+        // שם קובץ נקי ויפה
+        const safeName =
+          `${file.projectName}_${file.supplierName}_חשבונית_${file.invoiceNumber}_${file.name}`
+            .replace(/[^\u0590-\u05FF\w.-]/g, "_")
+            .replace(/\s+/g, "_");
+
+        zip.file(safeName, buffer);
+      } catch (err) {
+        console.error("❌ שגיאה בהורדת קובץ יחיד:", err);
+      }
+    }
+
+    const zipData = await zip.generateAsync({ type: "nodebuffer" });
+
+    res.set({
+      "Content-Type": "application/zip",
+      "Content-Disposition": `attachment; filename=files_${Date.now()}.zip`,
+    });
+
+    res.send(zipData);
+
+  } catch (error) {
+    console.error("❌ ZIP ERROR:", error);
+    res.status(500).json({
+      error: "שגיאה ביצירת קובץ ZIP",
+      details: error.message,
+    });
+  }
+});
+
 
 export default router;

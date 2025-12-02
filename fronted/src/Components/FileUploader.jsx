@@ -83,7 +83,7 @@ function FileUploader({
             <input
                 type="file"
                 multiple
-                accept=".xlsx, .xls, .pdf, .docx"
+                accept="*"
                 onChange={handleUpload}
                 disabled={disabled || loading} // 🔥 השבת אם אין הרשאה או בטעינה
                 className={`block w-full text-sm file:mr-4 file:py-2 file:px-4

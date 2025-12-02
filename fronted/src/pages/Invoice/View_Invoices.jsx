@@ -1147,134 +1147,88 @@ const InvoicesPage = () => {
       }
     );
   };
-  const downloadAttachedFiles = async () => {
-    try {
-      let filtered = invoices;
+ const downloadAttachedFiles = async () => {
+  try {
+    let filtered = invoices;
 
-      if (selectedProjectForPrint) {
-        filtered = filtered.filter(
-          (inv) => inv.project?._id === selectedProjectForPrint
-        );
-      }
-
-      if (selectedSupplierForPrint) {
-        filtered = filtered.filter(
-          (inv) => inv.supplier?._id === selectedSupplierForPrint
-        );
-      }
-
-      if (fromDatePrint) {
-        filtered = filtered.filter(
-          (inv) => new Date(inv.invoiceDate) >= new Date(fromDatePrint)
-        );
-      }
-
-      if (toDatePrint) {
-        filtered = filtered.filter(
-          (inv) => new Date(inv.invoiceDate) <= new Date(toDatePrint)
-        );
-      }
-
-      const allFiles = [];
-
-      filtered.forEach((invoice) => {
-        if (
-          invoice.files &&
-          Array.isArray(invoice.files) &&
-          invoice.files.length > 0
-        ) {
-          invoice.files.forEach((file) => {
-            if (file && file.url) {
-              allFiles.push({
-                url: file.url,
-                name:
-                  file.name ||
-                  file.originalName ||
-                  `קובץ_${invoice.invoiceNumber}`,
-                invoiceNumber: invoice.invoiceNumber || "ללא_מספר",
-                projectName: invoice.projectName || "ללא_פרויקט",
-                supplierName: invoice.invitingName || "ללא_ספק",
-              });
-            }
-          });
-        }
-      });
-
-      if (allFiles.length === 0) {
-        toast.error("לא נמצאו קבצים מצורפים בחשבוניות שנבחרו");
-        return;
-      }
-
-      toast.info(`מוריד ${allFiles.length} קבצים...`);
-
-      const zip = new JSZip();
-      let successCount = 0;
-      let failCount = 0;
-
-      for (let i = 0; i < allFiles.length; i++) {
-        const file = allFiles[i];
-
-        try {
-          let response = await fetch(file.url);
-
-          if (!response.ok && file.url.includes("/raw/upload/")) {
-            const altUrl = file.url.replace("/raw/upload/", "/image/upload/");
-            response = await fetch(altUrl);
-          }
-
-          if (!response.ok) {
-            console.error(`שגיאה בהורדת קובץ ${file.name}: ${response.status}`);
-            failCount++;
-            continue;
-          }
-
-          const blob = await response.blob();
-
-          const extension = file.name.split(".").pop() || "file";
-          const fileName = `${file.projectName}_${file.supplierName}_חשבונית_${file.invoiceNumber}.${extension}`;
-
-          zip.file(fileName, blob);
-          successCount++;
-        } catch (err) {
-          console.error(`שגיאה בהורדת קובץ: ${file.name}`, err);
-          failCount++;
-        }
-      }
-
-      if (successCount === 0) {
-        toast.error(
-          `לא הצלחנו להוריד אף קובץ. ${failCount} קבצים לא זמינים ב-Cloudinary (נמחקו או לא הועלו)`
-        );
-        return;
-      }
-
-      toast.info("יוצר קובץ ZIP...");
-      const zipBlob = await zip.generateAsync({ type: "blob" });
-      saveAs(
-        zipBlob,
-        `קבצים_מצורפים_${new Date()
-          .toLocaleDateString("he-IL")
-          .replace(/\./g, "_")}.zip`
+    if (selectedProjectForPrint) {
+      filtered = filtered.filter(
+        (inv) => inv.project?._id === selectedProjectForPrint
       );
-
-      if (failCount > 0) {
-        toast.warning(
-          `הורדו ${successCount} קבצים. ${failCount} קבצים לא היו זמינים.`
-        );
-      } else {
-        toast.success(`${successCount} קבצים הורדו בהצלחה!`);
-      }
-
-      setShowPrintModal(false);
-      setSelectedProjectForPrint("");
-      setSelectedSupplierForPrint("");
-      setFromDatePrint("");
-      setToDatePrint("");
-    } catch (error) {
-      console.error("Error downloading files:", error);
-      toast.error("שגיאה בהורדת הקבצים: " + error.message);
     }
-  };
+
+    if (selectedSupplierForPrint) {
+      filtered = filtered.filter(
+        (inv) => inv.supplier?._id === selectedSupplierForPrint
+      );
+    }
+
+    if (fromDatePrint) {
+      filtered = filtered.filter(
+        (inv) => new Date(inv.createdAt) >= new Date(fromDatePrint)
+      );
+    }
+
+    if (toDatePrint) {
+      filtered = filtered.filter(
+        (inv) => new Date(inv.createdAt) <= new Date(toDatePrint)
+      );
+    }
+
+    const allFiles = [];
+
+    filtered.forEach((invoice) => {
+      if (Array.isArray(invoice.files)) {
+        invoice.files.forEach((file) => {
+          if (file.url) {
+            allFiles.push({
+              url: file.url,
+              name: file.name || "file",
+              invoiceNumber: invoice.invoiceNumber || "ללא",
+              projectName: invoice.projectName || "ללא_פרויקט",
+              supplierName: invoice.invitingName || "ללא_ספק",
+            });
+          }
+        });
+      }
+    });
+
+    if (allFiles.length === 0) {
+      toast.error("לא נמצאו קבצים להורדה");
+      return;
+    }
+
+    toast.info("מכין ZIP להורדה...");
+
+    // 🔥 שולחים לשרת את רשימת הקבצים
+    const response = await api.post(
+      "/files/download-zip", // תואם ל-router שלך
+      { files: allFiles },
+      { responseType: "blob" }
+    );
+
+    // 🔥 השרת מחזיר ZIP – עכשיו רק שומרים אותו
+    saveAs(
+      new Blob([response.data], { type: "application/zip" }),
+      `קבצים_מצורפים_${new Date()
+        .toLocaleDateString("he-IL")
+        .replace(/\./g, "_")}.zip`
+    );
+
+    toast.success("קובץ ZIP הורד בהצלחה!");
+
+    setShowPrintModal(false);
+    setSelectedProjectForPrint("");
+    setSelectedSupplierForPrint("");
+    setFromDatePrint("");
+    setToDatePrint("");
+
+  } catch (error) {
+    console.error("ZIP error:", error);
+    toast.error("שגיאה בהורדה: " + error.message);
+  }
+};
+
 
   // ✅ טעינת חשבוניות עם סינון לפי הרשאות
   useEffect(() => {
