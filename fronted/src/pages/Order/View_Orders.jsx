@@ -858,7 +858,7 @@ const OrdersPage = () => {
 
       // 🔥 שולחים לשרת את רשימת הקבצים – במקום להוריד בצד לקוח
       const response = await api.post(
-        "/files/download-zip",
+        "/upload/download-zip",
         { files: allFiles },
         { responseType: "blob" }
       );

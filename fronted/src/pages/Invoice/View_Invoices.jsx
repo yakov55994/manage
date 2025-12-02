@@ -1202,7 +1202,7 @@ const InvoicesPage = () => {
 
     // 🔥 שולחים לשרת את רשימת הקבצים
     const response = await api.post(
-      "/files/download-zip", // תואם ל-router שלך
+      "/upload/download-zip", // תואם ל-router שלך
       { files: allFiles },
       { responseType: "blob" }
     );
