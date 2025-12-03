@@ -38,9 +38,16 @@ export default {
     }
 
     return Order.find(query)
-      .populate("supplierId", "name")
-      .populate("projectId", "name");
-  },
+      .populate({
+        path: "supplierId",
+        select: "name phone email bankDetails"
+      })
+      .populate({
+        path: "projectId",
+        select: "name invitingName"
+      });
+  }
+  ,
 
   async getOrderById(user, orderId) {
     const order = await Order.findById(orderId)

@@ -444,7 +444,7 @@ const CreateOrder = () => {
 
               {/* Project Selector */}
               <div className="max-w-md mx-auto mt-6">
-                <label className="block text-sm font-bold text-slate-700 mb-2 flex items-center gap-2">
+                <label className=" text-sm font-bold text-slate-700 mb-2 flex items-center gap-2">
                   <Building2 className="w-4 h-4 text-orange-500" />
                   בחר פרויקט
                 </label>

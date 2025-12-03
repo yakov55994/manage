@@ -1,30 +1,29 @@
+// ============================
+// CreateInvoice.jsx – MULTI PROJECT VERSION
+// ============================
+
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import api from "../../api/api.js";
 import FileUploader from "../../Components/FileUploader";
-import { toast } from "sonner";
 import SupplierSelector from "../../Components/SupplierSelector.jsx";
 import DateField from "../../Components/DateField.jsx";
+import { toast } from "sonner";
 import { useAuth } from "../../context/AuthContext.jsx";
-import { useModulePermission } from "../../hooks/useModulePermission";
+
 import {
   FileText,
   ClipboardList,
-  User as UserIcon,
   Calendar,
-  CreditCard,
-  Upload,
-  Save,
-  Plus,
-  Trash2,
-  CheckCircle2,
-  XCircle,
-  Sparkles,
   TrendingUp,
   Building2,
+  Plus,
+  Trash2,
+  Upload,
+  Save,
   AlertCircle,
+  Sparkles,
 } from "lucide-react";
-import { useSearchParams } from "react-router-dom";
 
 const PAYMENT_METHODS = [
   { value: "bank_transfer", label: "העברה בנקאית" },
@@ -32,1039 +31,501 @@ const PAYMENT_METHODS = [
 ];
 
 const CreateInvoice = () => {
+  // ============================
+  // STATE
+  // ============================
+
   const [projects, setProjects] = useState([]);
-  const [selectedProject, setSelectedProject] = useState(null);
-  const [invoices, setInvoices] = useState([]);
+  const [selectedProjects, setSelectedProjects] = useState([]); // ⬅ MULTI SELECT
+
+  const [common, setCommon] = useState({
+    invoiceNumber: "",
+    invitingName: "",
+    supplierId: "",
+    documentType: "",
+    createdAt: "",
+    detail: "",
+    paid: "לא",
+    paymentDate: "",
+    paymentMethod: "",
+  });
+
+  const [invoices, setInvoices] = useState([]); // each project gets its own row
   const [isLoading, setIsLoading] = useState(false);
-  const [invoiceIndexToDelete, setInvoiceIndexToDelete] = useState(null);
-  const [showModal, setShowModal] = useState(false);
-  const [searchParams] = useSearchParams();
+  const [projectSearch, setProjectSearch] = useState("");
 
   const navigate = useNavigate();
+  const { user } = useAuth();
 
-  const { user, loading: authLoading, isAdmin } = useAuth();
+  // ============================
+  // LOAD PROJECTS
+  // ============================
 
-  // בתוך הקומפוננטה, אחרי const { user, loading: authLoading } = useAuth();
-  const { canEdit: canEditInvoices } = useModulePermission(
-    selectedProject?._id,
-    "invoices"
-  );
   useEffect(() => {
-    const fetchProjects = async () => {
+    const load = async () => {
       try {
-        const response = await api.get("/projects");
-
-        const data = Array.isArray(response.data?.data)
-          ? response.data.data
-          : Array.isArray(response.data)
-          ? response.data
-          : [];
-
-        // אם ההרשאות עדיין נטענות — תציג הכל זמנית
-        if (authLoading) {
-          setProjects(data);
-          return;
-        }
-
-        // אין משתמש
-        if (!user) {
-          setProjects([]);
-          return;
-        }
-
-        // אדמין → רואה הכל
-        if (user.role === "admin") {
-          setProjects(data);
-          return;
-        }
-
-        // משתמש רגיל → מסנן לפי ההרשאות
-        if (!user.permissions || !Array.isArray(user.permissions)) {
-          setProjects([]);
-          return;
-        }
-
-        const allowedProjectIds = user.permissions
-          .filter((p) => p.modules?.invoices === "edit") // 👈 רק עם הרשאת edit ל-invoices!
-          .map((p) => String(p.project?._id || p.project))
-          .filter(Boolean);
-
-        const filtered = data.filter((p) =>
-          allowedProjectIds.includes(String(p._id))
-        );
-
-        setProjects(filtered);
+        const res = await api.get("/projects");
+        const data = res.data?.data || [];
+        setProjects(data);
       } catch (err) {
-        console.error("❌ שגיאה בטעינת פרויקטים:", err);
-        setProjects([]);
+        console.error(err);
+        toast.error("שגיאה בטעינת פרויקטים");
       }
     };
 
-    fetchProjects();
-  }, [user, authLoading]);
-
-  useEffect(() => {
-    const draftStr = sessionStorage.getItem("invoiceDraft");
-    if (draftStr && projects.length) {
-      try {
-        const draft = JSON.parse(draftStr);
-        if (draft?.invoices) setInvoices(draft.invoices);
-        if (draft?.selectedProjectId) {
-          const p = projects.find((pr) => pr._id === draft.selectedProjectId);
-          if (p) setSelectedProject(p);
-        }
-      } catch {
-      } finally {
-        sessionStorage.removeItem("invoiceDraft");
-      }
-    }
-  }, [projects]);
-
-  useEffect(() => {
-    const supplierStr = sessionStorage.getItem("createdSupplier");
-    const targetIndexStr = sessionStorage.getItem("targetInvoiceIndex");
-    if (supplierStr && targetIndexStr) {
-      try {
-        const supplier = JSON.parse(supplierStr);
-        const idx = Number(targetIndexStr);
-        setInvoices((prev) => {
-          const next = [...prev];
-          if (next[idx]) {
-            next[idx] = {
-              ...next[idx],
-              invitingName: supplier?.name || supplier?.supplierName || "",
-              supplierId: supplier?._id || supplier?.id || "",
-            };
-          }
-          return next;
-        });
-      } catch {
-      } finally {
-        sessionStorage.removeItem("createdSupplier");
-        sessionStorage.removeItem("targetInvoiceIndex");
-      }
-    }
+    load();
   }, []);
 
+  // ============================
+  // WHEN SELECTED PROJECTS CHANGE → CREATE DEDICATED INVOICE ROW
+  // ============================
+
   useEffect(() => {
-    if (!projects.length) return;
-
-    const projectIdFromQuery = searchParams.get("projectId");
-    if (!projectIdFromQuery) return;
-
-    const p = projects.find(
-      (pr) => String(pr._id) === String(projectIdFromQuery)
-    );
-    if (!p) return;
-
-    setSelectedProject(p);
-
-    // אם אין עדיין שורות חשבונית – ליצור אחת ריקה קשורה לפרויקט
-    setInvoices((prev) =>
-      prev.length
-        ? prev
-        : [
-            {
-              projectName: p.name,
-              invoiceNumber: "",
-              detail: "",
-              sum: "",
-              status: "לא הוגש",
-              paid: "לא",
-              invitingName: "",
-              files: [],
-              paymentDate: "",
-              supplierId: "",
-              documentType: "",
-              paymentMethod: "",
-            },
-          ]
-    );
-  }, [projects, searchParams]);
-
-  const handleProjectChange = (e) => {
-    const projectId = e.target.value;
-    if (!projectId) {
-      setSelectedProject(null);
-      return;
-    }
-    const selected = projects.find((project) => project._id === projectId);
-    setSelectedProject(selected || null);
-  };
-
-  const addInvoice = () => {
-    if (!selectedProject) {
-      toast.error("יש לבחור פרוייקט קודם", {
-        className: "sonner-toast error rtl",
-      });
-      return;
-    }
-    setInvoices([
-      ...invoices,
-      {
-        projectName: selectedProject?.name || "",
-        invoiceNumber: "",
-        detail: "",
-        sum: "",
-        status: "לא הוגש",
-        paid: "לא",
-        invitingName: "",
-        files: [],
-        paymentDate: "",
-        supplierId: "",
-        documentType: "",
-        paymentMethod: "",
-      },
-    ]);
-  };
-
-  const removeInvoice = (index) => {
-    setInvoiceIndexToDelete(index);
-    setShowModal(true);
-  };
-
-  const handleDelete = () => {
-    setInvoices(invoices.filter((_, i) => i !== invoiceIndexToDelete));
-    setShowModal(false);
-  };
-
-  const handleInvoiceChange = (index, field, value) => {
-    const newInvoices = [...invoices];
-    newInvoices[index] = {
-      ...newInvoices[index],
-      [field]: value,
-    };
-    setInvoices(newInvoices);
-  };
-
-  const handleInvoiceUpload = (index, selectedFiles) => {
-    if (!selectedFiles || selectedFiles.length === 0) {
-      toast.error("לא נבחרו קבצים", { className: "sonner-toast error rtl" });
+    if (!selectedProjects.length) {
+      setInvoices([]);
       return;
     }
 
-    const newInvoices = [...invoices];
+    const rows = selectedProjects.map((p) => ({
+      projectId: p._id,
+      projectName: p.name,
+      sum: "",
+      files: [],
+    }));
 
-    if (!newInvoices[index].files) {
-      newInvoices[index].files = [];
-    }
+    setInvoices(rows);
+  }, [selectedProjects]);
 
-    newInvoices[index] = {
-      ...newInvoices[index],
-      files: [...newInvoices[index].files, ...selectedFiles],
-    };
+  // ============================
+  // MULTISELECT PROJECT UI
+  // ============================
 
-    setInvoices(newInvoices);
-
-    toast.success(`${selectedFiles.length} קבצים נבחרו (יועלו בעת השמירה)`, {
-      className: "sonner-toast success rtl",
-    });
-  };
-
-  const handlePaidChange = (index, e) => {
-    const value = e.target.value;
-    const newInvoices = [...invoices];
-    newInvoices[index] = {
-      ...newInvoices[index],
-      paid: value,
-      paymentDate: value === "לא" ? "" : newInvoices[index].paymentDate,
-      paymentMethod: value === "לא" ? "" : newInvoices[index].paymentMethod,
-    };
-    setInvoices(newInvoices);
-  };
-
-  function formatHebrewDate(dateTime) {
-    if (!dateTime) return "";
-    const date = new Date(dateTime);
-    return date.toLocaleString("he-IL", {
-      year: "numeric",
-      month: "2-digit",
-      day: "2-digit",
-    });
-  }
-
-  const validateUniqueInvoiceNumbers = async () => {
-    try {
-      for (const invoice of invoices) {
-        if (!invoice.invoiceNumber || !invoice.invitingName) {
-          continue;
-        }
-
-        const response = await api.get("/invoices/check/duplicate", {
-          params: {
-            invoiceNumber: invoice.invoiceNumber,
-            supplierId: invoice.supplierId,
-          },
-        });
-
-        if (response.data.exists) {
-          toast.error(
-            `לספק "${invoice.invitingName}" כבר קיימת חשבונית עם מספר "${invoice.invoiceNumber}"`,
-            { className: "sonner-toast error rtl" }
-          );
-          return false;
-        }
-      }
-      return true;
-    } catch (err) {
-      console.error("Error checking duplicate invoices:", err);
-      if (err.response?.data?.message) {
-        toast.error(`שגיאה בבדיקה: ${err.response.data.message}`, {
-          className: "sonner-toast error rtl",
-        });
-      } else {
-        toast.error("שגיאה בבדיקת כפילות חשבוניות - בדוק את החיבור לשרת", {
-          className: "sonner-toast error rtl",
-        });
-      }
-      return false;
+  const toggleProject = (project) => {
+    const exists = selectedProjects.find((p) => p._id === project._id);
+    if (exists) {
+      setSelectedProjects(
+        selectedProjects.filter((p) => p._id !== project._id)
+      );
+    } else {
+      setSelectedProjects([...selectedProjects, project]);
     }
   };
+
+  // ============================
+  // SUBMIT
+  // ============================
 
   const handleSubmit = async (e) => {
     e.preventDefault();
 
+    if (!common.invoiceNumber) return toast.error("חסר מספר חשבונית");
+
+    if (!common.supplierId) return toast.error("יש לבחור ספק");
+
+    if (!common.documentType) return toast.error("יש לבחור סוג מסמך");
+
+    if (!common.createdAt) return toast.error("יש לבחור תאריך יצירה");
+
+    if (!invoices.length) return toast.error("יש לבחור לפחות פרויקט אחד");
+
     for (let i = 0; i < invoices.length; i++) {
-      const invoice = invoices[i];
-      const invoiceNumber = i + 1;
-
-      if (!invoice.invoiceNumber) {
-        toast.error(`חשבונית מספר ${invoiceNumber}: חסר מספר חשבונית`, {
-          className: "sonner-toast error rtl",
-        });
-        return;
-      }
-
-      if (!invoice.invitingName) {
-        toast.error(`חשבונית מספר ${invoiceNumber}: חסר שם ספק`, {
-          className: "sonner-toast error rtl",
-        });
-        return;
-      }
-
-      if (!invoice.supplierId) {
-        toast.error(
-          `חשבונית מספר ${invoiceNumber}: חסר זיהוי ספק (בחר ספק מהרשימה)`,
-          {
-            className: "sonner-toast error rtl",
-          }
-        );
-        return;
-      }
-
-      if (!invoice.createdAt) {
-        toast.error(`חשבונית מספר ${invoiceNumber}: חסר תאריך יצירת החשבונית`, {
-          className: "sonner-toast error rtl",
-        });
-        return;
-      }
-
-      if (!invoice.sum || invoice.sum <= 0) {
-        toast.error(
-          `חשבונית מספר ${invoiceNumber}: חסר סכום או שהסכום לא תקין`,
-          {
-            className: "sonner-toast error rtl",
-          }
-        );
-        return;
-      }
-
-      if (!invoice.status) {
-        toast.error(`חשבונית מספר ${invoiceNumber}: חסר סטטוס החשבונית`, {
-          className: "sonner-toast error rtl",
-        });
-        return;
-      }
-
-      if (!invoice.paid) {
-        toast.error(
-          `חשבונית מספר ${invoiceNumber}: לא צוין אם החשבונית שולמה`,
-          {
-            className: "sonner-toast error rtl",
-          }
-        );
-        return;
-      }
-
-      if (
-        invoice.paid === "כן" &&
-        (!invoice.paymentDate || invoice.paymentDate === "")
-      ) {
-        toast.error(
-          `חשבונית מספר ${invoiceNumber}: חשבונית מסומנת כשולמה אך חסר תאריך תשלום`,
-          {
-            className: "sonner-toast error rtl",
-          }
-        );
-        return;
-      }
-
-      if (!invoice.documentType) {
-        toast.error(`חשבונית מספר ${invoiceNumber}: חסר סוג מסמך`, {
-          className: "sonner-toast error rtl",
-        });
-        return;
-      }
-
-      if (invoice.paid === "כן" && !invoice.paymentMethod) {
-        toast.error(
-          `חשבונית מספר ${invoiceNumber}: סומן כשולם – יש לבחור צורת תשלום`,
-          { className: "sonner-toast error rtl" }
-        );
-        return;
-      }
-    }
-
-    const isValid = await validateUniqueInvoiceNumbers();
-    if (!isValid) {
-      setIsLoading(false);
-      return;
+      if (!invoices[i].sum || invoices[i].sum <= 0)
+        return toast.error(`סכום לא תקין בשורה ${i + 1}`);
     }
 
     setIsLoading(true);
 
     try {
-      const invoiceData = await Promise.all(
-        invoices.map(async (invoice) => {
+      const finalInvoices = await Promise.all(
+        invoices.map(async (inv) => {
           let uploadedFiles = [];
 
-          if (invoice.files && invoice.files.length > 0) {
-            for (const fileData of invoice.files) {
-              if (fileData.isLocal && fileData.file) {
-                try {
-                  const formData = new FormData();
-                  formData.append("file", fileData.file);
-                  formData.append("folder", fileData.folder || "invoices");
+          if (inv.files && inv.files.length > 0) {
+            for (const file of inv.files) {
+              if (file.isLocal && file.file) {
+                const form = new FormData();
+                form.append("file", file.file);
+                form.append("folder", "invoices");
 
-                  const uploadResponse = await api.post("/upload", formData, {
-                    headers: { "Content-Type": "multipart/form-data" },
-                  });
+                const res = await api.post("/upload", form, {
+                  headers: { "Content-Type": "multipart/form-data" },
+                });
 
-                  uploadedFiles.push({
-                    name: fileData.name,
-                    url: uploadResponse.data.file.url,
-                    type: fileData.type,
-                    size: fileData.size,
-                    publicId: uploadResponse.data.file.publicId,
-                    resourceType: uploadResponse.data.file.resourceType,
-                  });
-                } catch (uploadError) {
-                  console.error("Error uploading file:", uploadError);
-                  toast.error(`שגיאה בהעלאת ${fileData.name}`, {
-                    className: "sonner-toast error rtl",
-                  });
-                  throw uploadError;
-                }
+                uploadedFiles.push({
+                  name: file.name,
+                  url: res.data.file.url,
+                  type: file.type,
+                  size: file.size,
+                  publicId: res.data.file.publicId,
+                  resourceType: res.data.file.resourceType,
+                });
               } else {
-                uploadedFiles.push(fileData);
+                uploadedFiles.push(file);
               }
             }
           }
 
           return {
-            invoiceNumber: invoice.invoiceNumber,
-            projectName: selectedProject.name,
-            projectId: selectedProject._id,
-            sum: Number(invoice.sum),
-            status: invoice.status,
-            invitingName: invoice.invitingName,
-            detail: invoice.detail,
-            paid: invoice.paid,
+            invoiceNumber: common.invoiceNumber,
+            projectId: inv.projectId,
+            projectName: inv.projectName,
+            invitingName: common.invitingName,
+            supplierId: common.supplierId,
+            documentType: common.documentType,
+            createdAt: common.createdAt,
+            detail: common.detail,
+            sum: Number(inv.sum),
+            paid: common.paid,
+            paymentMethod: common.paid === "כן" ? common.paymentMethod : "",
+            paymentDate: common.paid === "כן" ? common.paymentDate : "",
+            status: "לא הוגש",
             files: uploadedFiles,
-            paymentDate:
-              invoice.paid === "כן"
-                ? new Date(invoice.paymentDate).toISOString().split("T")[0]
-                : "",
-            createdAt: invoice.createdAt,
-            supplierId: invoice.supplierId,
-            documentType: invoice.documentType,
-            paymentMethod: invoice.paid === "כן" ? invoice.paymentMethod : "",
           };
         })
       );
 
-      const user = JSON.parse(localStorage.getItem("user"));
-      const isAdmin = user?.role === "admin";
-
-      for (const inv of invoiceData) {
+      for (const inv of finalInvoices) {
         await api.post("/invoices", inv);
       }
 
-      toast.success("החשבונית/ות נוצרו בהצלחה!");
-      navigate(`/invoices`);
+      toast.success("החשבוניות נוצרו בהצלחה!");
+      navigate("/invoices");
     } catch (err) {
-      console.error("שגיאה במהלך יצירת החשבונית/יות:", err);
-      toast.error("שגיאה ביצירת החשבוניות - אנא נסה שוב");
+      console.error(err);
+      toast.error("שגיאה ביצירת חשבוניות");
     } finally {
       setIsLoading(false);
     }
   };
 
-  const openInExcelViewer = (fileUrl) => {
-    const officeUrl = `https://view.officeapps.live.com/op/view.aspx?src=${encodeURIComponent(
-      fileUrl
-    )}`;
-    window.open(officeUrl, "_blank");
-  };
-
-  const renderFile = (file) => {
-    const fileUrl = file?.url || file?.fileUrl;
-    const isLocal = file?.isLocal || false;
-
-    if (!fileUrl) return null;
-
-    if (isLocal) {
-      return (
-        <div className="flex items-center gap-2">
-          <span className="text-gray-600 text-sm">
-            📄 {file.name} ({(file.size / 1024).toFixed(1)} KB)
-          </span>
-          <span className="text-orange-500 text-xs font-bold">
-            (יועלה בשמירה)
-          </span>
-        </div>
-      );
-    }
-
-    const fileExtension = fileUrl.split(".").pop().toLowerCase();
-
-    if (fileExtension === "xlsx") {
-      return (
-        <button
-          onClick={() => openInExcelViewer(fileUrl)}
-          className="text-blue-500 font-bold hover:underline"
-        >
-          📂 לצפייה בקובץ לחץ כאן
-        </button>
-      );
-    }
-
-    if (fileExtension === "pdf" || fileUrl.match(/\.(jpeg|jpg|png|gif)$/)) {
-      return (
-        <a
-          href={fileUrl}
-          target="_blank"
-          rel="noopener noreferrer"
-          className="text-blue-500 font-bold hover:underline"
-        >
-          📂 לצפייה בקובץ לחץ כאן
-        </a>
-      );
-    }
-
-    return (
-      <a
-        href={fileUrl}
-        target="_blank"
-        rel="noopener noreferrer"
-        className="text-blue-500 font-bold hover:underline"
-      >
-        📂 לצפייה בקובץ לחץ כאן
-      </a>
-    );
-  };
-
-  const handleRemoveFile = async (invoiceIndex, fileIndex) => {
-    const fileToDelete = invoices[invoiceIndex].files[fileIndex];
-
-    if (!fileToDelete) {
-      toast.error("קובץ לא נמצא");
-      return;
-    }
-
-    if (fileToDelete.isLocal) {
-      const newInvoices = [...invoices];
-      newInvoices[invoiceIndex].files.splice(fileIndex, 1);
-      setInvoices(newInvoices);
-
-      if (fileToDelete.url) {
-        URL.revokeObjectURL(fileToDelete.url);
-      }
-
-      toast.success("הקובץ הוסר מהרשימה");
-      return;
-    }
-
-    try {
-      await api.delete(`/invoices/upload/cloudinary`, {
-        params: { publicId: fileToDelete.publicId },
-      });
-
-      const newInvoices = [...invoices];
-      newInvoices[invoiceIndex].files.splice(fileIndex, 1);
-      setInvoices(newInvoices);
-
-      toast.success("הקובץ נמחק בהצלחה");
-    } catch (error) {
-      toast.error("שגיאה במחיקת הקובץ");
-    }
-  };
-
   return (
-    <div className="min-h-screen bg-gradient-to-br from-orange-50 via-amber-50 to-yellow-50 relative overflow-hidden py-12">
-      {/* Animated Background Elements */}
-      <div className="absolute inset-0 overflow-hidden pointer-events-none">
-        <div className="absolute top-0 left-1/4 w-96 h-96 bg-gradient-to-br from-orange-400/20 to-amber-400/20 rounded-full blur-3xl animate-pulse"></div>
-        <div className="absolute bottom-0 right-1/4 w-96 h-96 bg-gradient-to-br from-yellow-400/20 to-orange-400/20 rounded-full blur-3xl animate-pulse delay-1000"></div>
-        <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] bg-gradient-to-br from-amber-400/10 to-orange-400/10 rounded-full blur-3xl"></div>
-      </div>
+    <div className="min-h-screen bg-gradient-to-br from-orange-50 to-yellow-50 py-12 relative">
+      {/* HEADER */}
+      <div className="container mx-auto max-w-7xl px-4">
+        <div className="relative mb-10">
+          <div className="absolute -inset-x-6 -inset-y-2 bg-gradient-to-r from-orange-500 to-yellow-500 opacity-10 rounded-3xl blur-xl"></div>
 
-      <div className="relative z-10 container mx-auto px-4 md:px-6 max-w-7xl">
-        {/* Hero Header */}
-        <header className="mb-10">
-          <div className="relative">
-            <div className="absolute -inset-x-6 -inset-y-3 bg-gradient-to-r from-orange-500 via-amber-500 to-yellow-500 rounded-3xl opacity-5 blur-xl"></div>
-
-            <div className="relative bg-white/80 backdrop-blur-xl rounded-3xl shadow-2xl shadow-orange-500/10 p-8 border border-white/50">
-              <div className="flex items-center justify-center gap-3 mb-4">
-                <div className="p-3 rounded-2xl bg-gradient-to-br from-orange-500 to-amber-600 shadow-lg shadow-orange-500/30">
-                  <ClipboardList className="w-8 h-8 text-white" />
-                </div>
-                <div className="text-center">
-                  <h1 className="text-4xl font-black text-slate-900">
-                    יצירת חשבוניות לפרויקט
-                  </h1>
-                  <div className="flex items-center justify-center gap-2 mt-2">
-                    <Sparkles className="w-4 h-4 text-orange-500" />
-                    <span className="text-sm font-medium text-slate-600">
-                      מערכת ניהול חשבוניות מתקדמת
-                    </span>
-                  </div>
-                </div>
+          <div className="relative bg-white/80 rounded-3xl shadow-xl p-8">
+            <div className="flex items-center justify-center gap-3 mb-4">
+              <div className="p-3 rounded-2xl bg-gradient-to-br from-orange-500 to-amber-600 shadow-lg">
+                <ClipboardList className="w-8 h-8 text-white" />
               </div>
-
-              {/* Project Selector */}
-              <div className="max-w-md mx-auto mt-6">
-                <label className="text-sm font-bold text-slate-700 mb-2 flex items-center gap-2">
-                  <Building2 className="w-4 h-4 text-orange-500" />
-                  בחר פרויקט
-                </label>
-                <select
-                  value={selectedProject?._id || ""}
-                  onChange={handleProjectChange}
-                  className="w-full p-4 border-2 border-orange-200 rounded-xl bg-white font-bold text-slate-900 focus:border-orange-500 focus:outline-none focus:ring-4 focus:ring-orange-500/20 transition-all"
-                >
-                  <option value="">לא נבחר פרוייקט</option>
-                  {projects.map((project) => (
-                    <option key={project._id} value={project._id}>
-                      {project.name}
-                    </option>
-                  ))}
-                </select>
-              </div>
-
-              {/* Budget Display */}
-              {selectedProject && (
-                <div className="mt-6 text-center">
-                  {selectedProject.remainingBudget < 0 ? (
-                    <div className="inline-flex items-center gap-2 px-6 py-3 rounded-2xl bg-gradient-to-r from-red-500 to-rose-500 text-white shadow-lg">
-                      <AlertCircle className="w-5 h-5" />
-                      <span className="font-bold text-lg">
-                        תקציב שנותר:{" "}
-                        {selectedProject.remainingBudget?.toLocaleString()} ₪
-                      </span>
-                    </div>
-                  ) : (
-                    <div className="inline-flex items-center gap-2 px-6 py-3 rounded-2xl bg-gradient-to-r from-emerald-500 to-teal-500 text-white shadow-lg">
-                      <CheckCircle2 className="w-5 h-5" />
-                      <span className="font-bold text-lg">
-                        תקציב שנותר:{" "}
-                        {selectedProject.remainingBudget?.toLocaleString()} ₪
-                      </span>
-                    </div>
-                  )}
-                </div>
-              )}
+              <h1 className="text-4xl font-black text-slate-900">
+                יצירת חשבוניות לפרויקטים מרובים
+              </h1>
             </div>
-          </div>
-        </header>
 
-        {/* Invoices List */}
-        <div className="space-y-6">
-          {invoices.map((invoice, index) => (
-            <div key={index} className="relative">
-              <div className="absolute -inset-2 bg-gradient-to-r from-orange-500 via-amber-500 to-yellow-500 rounded-3xl opacity-10 blur-xl"></div>
+            {/* MULTI PROJECT SELECT */}
+            <div className="mt-6 max-w-2xl mx-auto">
+              <label className="text-base font-bold flex items-center gap-3 mb-4 text-slate-800">
+                <div className="p-2 rounded-lg bg-gradient-to-br from-orange-100 to-amber-100">
+                  <Building2 className="w-5 h-5 text-orange-600" />
+                </div>
+                בחר פרויקטים
+              </label>
 
-              <div className="relative bg-white/90 backdrop-blur-xl rounded-3xl shadow-xl shadow-orange-500/10 border border-white/50 overflow-hidden">
-                {/* Invoice Header */}
-                <div className="bg-gradient-to-r from-orange-500 via-amber-500 to-yellow-500 p-1">
-                  <div className="bg-white/95 backdrop-blur-xl p-4">
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-3">
-                        <div className="p-2 rounded-xl bg-gradient-to-br from-orange-100 to-amber-100">
-                          <FileText className="w-5 h-5 text-orange-600" />
+              <div className="relative bg-gradient-to-br from-white to-orange-50/30 border-2 border-orange-200 rounded-2xl shadow-lg overflow-hidden">
+                {/* Selected Projects Tags */}
+                {selectedProjects.length > 0 && (
+                  <div className="p-4 bg-gradient-to-r from-orange-50 to-amber-50 border-b-2 border-orange-100">
+                    <div className="flex flex-wrap gap-2">
+                      {selectedProjects.map((p) => (
+                        <div
+                          key={p._id}
+                          className="group px-4 py-2 bg-gradient-to-r from-orange-500 to-amber-500 rounded-xl flex items-center gap-2 font-bold text-white shadow-md hover:shadow-xl transition-all duration-200 hover:scale-105"
+                        >
+                          <span className="text-sm">{p.name}</span>
+                          <button
+                            onClick={() => toggleProject(p)}
+                            className="w-5 h-5 rounded-full bg-white/20 hover:bg-white/30 flex items-center justify-center transition-colors duration-200 group-hover:rotate-90"
+                          >
+                            <span className="text-white text-xs font-bold">
+                              ✕
+                            </span>
+                          </button>
                         </div>
-                        <h3 className="text-xl font-bold text-slate-900">
-                          חשבונית מספר {index + 1}
-                        </h3>
-                      </div>
-                      <button
-                        onClick={() => removeInvoice(index)}
-                        className="flex items-center gap-2 px-4 py-2 rounded-xl bg-gradient-to-r from-red-500 to-rose-500 text-white font-bold hover:from-red-600 hover:to-rose-600 transition-all shadow-lg"
-                        type="button"
-                      >
-                        <Trash2 className="w-4 h-4" />
-                        <span>מחק</span>
-                      </button>
+                      ))}
                     </div>
+                  </div>
+                )}
+
+                {/* Search Box */}
+                <div className="p-4 border-b-2 border-orange-100 bg-white/50">
+                  <div className="relative">
+                    <input
+                      type="text"
+                      value={projectSearch}
+                      onChange={(e) => setProjectSearch(e.target.value)}
+                      placeholder="חפש פרויקט..."
+                      className="w-full pl-10 pr-4 py-3 border-2 border-orange-200 rounded-xl focus:outline-none focus:border-orange-400 focus:ring-2 focus:ring-orange-200 transition-all"
+                    />
+                    <svg
+                      className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-orange-400"
+                      fill="none"
+                      stroke="currentColor"
+                      viewBox="0 0 24 24"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={2}
+                        d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
+                      />
+                    </svg>
+                    {projectSearch && (
+                      <button
+                        onClick={() => setProjectSearch("")}
+                        className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-orange-600 transition-colors"
+                      >
+                        ✕
+                      </button>
+                    )}
                   </div>
                 </div>
 
-                {/* Invoice Form */}
-                <div className="p-6">
-                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                    {/* Supplier Selector */}
-                    <div className="space-y-2">
-                      <SupplierSelector
-                        projectId={selectedProject?._id}
-                        value={invoice.supplierId}
-                        onSelect={(supplier) => {
-                          const newInvoices = [...invoices];
-                          newInvoices[index] = {
-                            ...newInvoices[index],
-                            invitingName: supplier?.name || "",
-                            supplierId: supplier?._id || "",
-                          };
-                          setInvoices(newInvoices);
-                        }}
-                      />
-
-                      <button
-                        type="button"
-                        onClick={() => {
-                          sessionStorage.setItem(
-                            "invoiceDraft",
-                            JSON.stringify({
-                              invoices,
-                              selectedProjectId: selectedProject?._id ?? null,
-                            })
-                          );
-                          sessionStorage.setItem(
-                            "targetInvoiceIndex",
-                            String(index)
-                          );
-                          navigate(
-                            `/create-supplier?returnTo=${encodeURIComponent(
-                              "/create-invoice"
-                            )}`
-                          );
-                        }}
-                        className="w-full px-4 py-2 bg-gradient-to-r from-slate-100 to-slate-200 text-slate-700 text-sm font-bold rounded-xl hover:from-slate-200 hover:to-slate-300 transition-all flex items-center justify-center gap-2 border-2 border-slate-300"
-                      >
-                        <Plus className="w-4 h-4" />
-                        <span>צור ספק חדש</span>
-                      </button>
-                    </div>
-
-                    {/* Invoice Number */}
-                    <div className="group">
-                      <label className="text-sm font-bold text-slate-700 mb-2 block">
-                        מספר חשבונית
-                      </label>
-                      <input
-                        type="number"
-                        value={invoice.invoiceNumber}
-                        onChange={(e) =>
-                          handleInvoiceChange(
-                            index,
-                            "invoiceNumber",
-                            e.target.value
-                          )
-                        }
-                        className="w-full p-3 border-2 border-slate-200 rounded-xl bg-white font-medium focus:border-orange-500 focus:outline-none focus:ring-4 focus:ring-orange-500/20 transition-all group-hover:border-orange-300"
-                        required
-                      />
-                    </div>
-
-                    {/* Sum */}
-                    <div className="group">
-                      <label className="text-sm font-bold text-slate-700 mb-2 flex items-center gap-2">
-                        <TrendingUp className="w-4 h-4 text-orange-500" />
-                        סכום החשבונית
-                      </label>
-                      <input
-                        type="number"
-                        value={invoice.sum}
-                        onChange={(e) =>
-                          handleInvoiceChange(index, "sum", e.target.value)
-                        }
-                        className="w-full p-3 border-2 border-slate-200 rounded-xl bg-white font-medium focus:border-orange-500 focus:outline-none focus:ring-4 focus:ring-orange-500/20 transition-all group-hover:border-orange-300"
-                        min="0"
-                        required
-                      />
-                    </div>
-
-                    {/* Detail */}
-                    <div className="md:col-span-2 lg:col-span-3 group">
-                      <label className="text-sm font-bold text-slate-700 mb-2 block">
-                        פירוט חשבונית
-                      </label>
-                      <textarea
-                        value={invoice.detail}
-                        onChange={(e) =>
-                          handleInvoiceChange(index, "detail", e.target.value)
-                        }
-                        className="w-full p-3 border-2 border-slate-200 rounded-xl bg-white font-medium focus:border-orange-500 focus:outline-none focus:ring-4 focus:ring-orange-500/20 transition-all resize-none group-hover:border-orange-300 min-h-[100px]"
-                      />
-                    </div>
-
-                    {/* Created At */}
-                    <div className="group">
-                      <label className="text-sm font-bold text-slate-700 mb-2 flex items-center gap-2">
-                        <Calendar className="w-4 h-4 text-orange-500" />
-                        תאריך יצירת החשבונית
-                      </label>
-                      <DateField
-                        type="date"
-                        value={invoice.createdAt}
-                        className="w-full p-3 border-2 border-slate-200 rounded-xl bg-white font-medium focus:border-orange-500 focus:outline-none focus:ring-4 focus:ring-orange-500/20 transition-all group-hover:border-orange-300"
-                        placeholder="yyyy-mm-dd"
-                        required
-                        onChange={(val) =>
-                          handleInvoiceChange(index, "createdAt", val)
-                        }
-                      />
-                    </div>
-
-                    {/* Status */}
-                    <div className="group">
-                      <label className="text-sm font-bold text-slate-700 mb-2 block">
-                        סטטוס
-                      </label>
-                      <select
-                        value={invoice.status}
-                        onChange={(e) =>
-                          handleInvoiceChange(index, "status", e.target.value)
-                        }
-                        className="w-full p-3 border-2 border-slate-200 rounded-xl bg-white font-medium focus:border-orange-500 focus:outline-none focus:ring-4 focus:ring-orange-500/20 transition-all group-hover:border-orange-300"
-                        required
-                      >
-                        <option value="לא הוגש">לא הוגש</option>
-                        <option value="הוגש">הוגש</option>
-                        <option value="בעיבוד">בעיבוד</option>
-                      </select>
-                    </div>
-
-                    {/* Document Type */}
-                    <div className="group">
-                      <label className="text-sm font-bold text-slate-700 mb-2 block">
-                        סוג מסמך
-                      </label>
-                      <select
-                        value={invoice.documentType || ""}
-                        onChange={(e) =>
-                          handleInvoiceChange(
-                            index,
-                            "documentType",
-                            e.target.value
-                          )
-                        }
-                        className="w-full p-3 border-2 border-slate-200 rounded-xl bg-white font-medium focus:border-orange-500 focus:outline-none focus:ring-4 focus:ring-orange-500/20 transition-all group-hover:border-orange-300"
-                        required
-                      >
-                        <option value="">בחר סוג מסמך…</option>
-                        <option value="ח. עסקה">ח. עסקה</option>
-                        <option value="ה. עבודה">ה. עבודה</option>
-                        <option value="ד. תשלום">ד. תשלום</option>
-                        <option value="חשבונית מס / קבלה">
-                          חשבונית מס / קבלה
-                        </option>
-                      </select>
-                    </div>
-
-                    {isAdmin && (
-                      <>
-                        <div className="group">
-                          <label className="text-sm font-bold text-slate-700 mb-2 block">
-                            האם שולם?
-                          </label>
-                          <select
-                            value={invoice.paid}
-                            onChange={(e) => handlePaidChange(index, e)}
-                            className="w-full p-3 border-2 border-slate-200 rounded-xl bg-white font-medium focus:border-orange-500 focus:outline-none focus:ring-4 focus:ring-orange-500/20 transition-all group-hover:border-orange-300"
-                            required
+                {/* Projects List */}
+                <div className="p-5 max-h-64 overflow-y-auto">
+                  <div className="space-y-2">
+                    {projects
+                      .filter((p) =>
+                        p.name
+                          .toLowerCase()
+                          .includes(projectSearch.toLowerCase())
+                      )
+                      .map((p) => {
+                        const isSelected = selectedProjects.some(
+                          (s) => s._id === p._id
+                        );
+                        return (
+                          <label
+                            key={p._id}
+                            className={`
+                  flex items-center gap-3 p-3 rounded-xl cursor-pointer
+                  transition-all duration-200 hover:scale-[1.02]
+                  ${
+                    isSelected
+                      ? "bg-gradient-to-r from-orange-100 to-amber-100 border-2 border-orange-300 shadow-md"
+                      : "bg-white hover:bg-orange-50 border-2 border-gray-200 hover:border-orange-200"
+                  }
+                `}
                           >
-                            <option value="לא">לא</option>
-                            <option value="כן">כן</option>
-                          </select>
-                        </div>
-                      </>
-                    )}
-                    {/* Paid Status */}
-
-                    {/* Payment Date */}
-                    {invoice.paid === "כן" && (
-                      <div className="group">
-                        <label className="text-sm font-bold text-slate-700 mb-2 block">
-                          תאריך תשלום
-                        </label>
-
-                        <DateField
-                          type="date"
-                          value={invoice.paymentDate}
-                          className="w-full p-3 border-2 border-slate-200 rounded-xl bg-white font-medium focus:border-orange-500 focus:outline-none focus:ring-4 focus:ring-orange-500/20 transition-all group-hover:border-orange-300"
-                          placeholder="yyyy-mm-dd"
-                          required
-                          onChange={(val) =>
-                            handleInvoiceChange(index, "paymentDate", val)
-                          }
-                        />
-                      </div>
-                    )}
-
-                    {/* Payment Method */}
-                    {invoice.paid === "כן" && (
-                      <div className="group">
-                        <label className="text-sm font-bold text-slate-700 mb-2 flex items-center gap-2">
-                          <CreditCard className="w-4 h-4 text-emerald-500" />
-                          צורת תשלום
-                        </label>
-                        <select
-                          value={invoice.paymentMethod || ""}
-                          onChange={(e) =>
-                            handleInvoiceChange(
-                              index,
-                              "paymentMethod",
-                              e.target.value
-                            )
-                          }
-                          className="w-full p-3 border-2 border-slate-200 rounded-xl bg-white font-medium focus:border-emerald-500 focus:outline-none focus:ring-4 focus:ring-emerald-500/20 transition-all group-hover:border-emerald-300"
-                          required
-                        >
-                          <option value="">בחר צורת תשלום…</option>
-                          {PAYMENT_METHODS.map((pm) => (
-                            <option key={pm.value} value={pm.value}>
-                              {pm.label}
-                            </option>
-                          ))}
-                        </select>
-                      </div>
-                    )}
-
-                    {/* File Uploader */}
-                    <div className="lg:col-span-3">
-                      <div className="p-6 rounded-2xl bg-gradient-to-br from-slate-50 to-slate-100 border-2 border-dashed border-slate-300 hover:border-orange-400 transition-all">
-                        <FileUploader
-                          onUploadSuccess={(files) =>
-                            handleInvoiceUpload(index, files)
-                          }
-                          folder="invoices"
-                          label="העלאת קבצים"
-                          disabled={!canEditInvoices}
-                          disabledMessage="אין לך הרשאת עריכה להעלות קבצים לחשבונית זו"
-                        />
-                      </div>
-
-                      {/* Display Files */}
-                      {invoice.files && invoice.files.length > 0 ? (
-                        <div className="mt-4 grid grid-cols-1 md:grid-cols-2 gap-4">
-                          {invoice.files.map((file, fileIndex) => (
-                            <div
-                              key={fileIndex}
-                              className="flex items-center justify-between rounded-2xl border-2 border-slate-200 bg-white/80 backdrop-blur-sm px-4 py-3 hover:border-orange-400 hover:shadow-lg transition-all"
-                            >
-                              <div className="flex items-center gap-3 flex-1 truncate">
-                                <div className="p-2 rounded-lg bg-gradient-to-br from-orange-100 to-amber-100">
-                                  <FileText className="w-4 h-4 text-orange-600" />
-                                </div>
-                                <div className="truncate">
-                                  {renderFile(file)}
-                                </div>
-                              </div>
-                              <button
-                                onClick={() =>
-                                  handleRemoveFile(index, fileIndex)
-                                }
-                                className="mr-2 px-3 py-1.5 rounded-lg text-sm text-red-600 hover:bg-red-50 font-medium transition-all"
-                              >
-                                הסר
-                              </button>
+                            <div className="relative">
+                              <input
+                                type="checkbox"
+                                checked={isSelected}
+                                onChange={() => toggleProject(p)}
+                                className="w-5 h-5 rounded-md border-2 border-orange-300 text-orange-600 focus:ring-2 focus:ring-orange-500 focus:ring-offset-1 cursor-pointer"
+                              />
                             </div>
-                          ))}
-                        </div>
-                      ) : (
-                        <div className="mt-4 text-center py-8 text-slate-400">
-                          <Upload className="w-12 h-12 mx-auto mb-3 opacity-50" />
-                          <p className="text-sm font-medium">
-                            אין קבצים מצורפים כרגע
+                            <span
+                              className={`flex-1 font-medium transition-colors ${
+                                isSelected
+                                  ? "text-orange-900"
+                                  : "text-slate-700"
+                              }`}
+                            >
+                              {p.name}
+                            </span>
+                            {isSelected && (
+                              <div className="w-2 h-2 rounded-full bg-gradient-to-r from-orange-500 to-amber-500 animate-pulse"></div>
+                            )}
+                          </label>
+                        );
+                      })}
+
+                    {/* No Results Message */}
+                    {projectSearch &&
+                      projects.filter((p) =>
+                        p.name
+                          .toLowerCase()
+                          .includes(projectSearch.toLowerCase())
+                      ).length === 0 && (
+                        <div className="text-center py-8 text-gray-400">
+                          <p className="text-sm">
+                            לא נמצאו פרויקטים התואמים "{projectSearch}"
                           </p>
                         </div>
                       )}
-                    </div>
                   </div>
                 </div>
+
+                {/* Empty State */}
+                {projects.length === 0 && (
+                  <div className="p-8 text-center text-gray-400">
+                    <Building2 className="w-12 h-12 mx-auto mb-2 opacity-50" />
+                    <p>אין פרויקטים זמינים</p>
+                  </div>
+                )}
+              </div>
+
+              {/* Counter */}
+              {selectedProjects.length > 0 && (
+                <div className="mt-3 text-center">
+                  <span className="inline-block px-4 py-1 bg-orange-100 text-orange-700 rounded-full text-sm font-bold">
+                    נבחרו {selectedProjects.length} פרויקטים
+                  </span>
+                </div>
+              )}
+            </div>
+
+            {/* GLOBAL FIELDS */}
+            <div className="mt-8 grid grid-cols-1 md:grid-cols-2 gap-6">
+              {/* Supplier */}
+              <div>
+                <label className="font-bold text-sm mb-2 block">ספק</label>
+                <SupplierSelector
+                  projectId={null}
+                  value={common.supplierId}
+                  onSelect={(supplier) =>
+                    setCommon({
+                      ...common,
+                      supplierId: supplier._id,
+                      invitingName: supplier.name,
+                    })
+                  }
+                />
+              </div>
+
+              {/* Invoice Number */}
+              <div>
+                <label className="font-bold text-sm mb-2 block">
+                  מספר חשבונית
+                </label>
+                <input
+                  type="number"
+                  value={common.invoiceNumber}
+                  onChange={(e) =>
+                    setCommon({ ...common, invoiceNumber: e.target.value })
+                  }
+                  className="w-full p-3 border-2 rounded-xl"
+                />
+              </div>
+
+              {/* Document Type */}
+              <div>
+                <label className="font-bold text-sm mb-2 block">סוג מסמך</label>
+                <select
+                  value={common.documentType}
+                  onChange={(e) =>
+                    setCommon({ ...common, documentType: e.target.value })
+                  }
+                  className="w-full p-3 border-2 rounded-xl"
+                >
+                  <option value="">בחר סוג מסמך…</option>
+                  <option value="ח. עסקה">ח. עסקה</option>
+                  <option value="ה. עבודה">ה. עבודה</option>
+                  <option value="ד. תשלום">ד. תשלום</option>
+                  <option value="חשבונית מס / קבלה">חשבונית מס / קבלה</option>
+                </select>
+              </div>
+
+              {/* Created At */}
+              <div>
+                <label className="font-bold text-sm mb-2 block">
+                  תאריך יצירה
+                </label>
+                <DateField
+                  type="date"
+                  value={common.createdAt}
+                  onChange={(val) => setCommon({ ...common, createdAt: val })}
+                  className="w-full p-3 border-2 rounded-xl"
+                />
+              </div>
+
+              {/* Detail */}
+              <div className="md:col-span-2">
+                <label className="font-bold text-sm mb-2 block">
+                  פירוט חשבונית
+                </label>
+                <textarea
+                  value={common.detail}
+                  onChange={(e) =>
+                    setCommon({ ...common, detail: e.target.value })
+                  }
+                  className="w-full p-3 border-2 rounded-xl min-h-[120px]"
+                />
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* PER PROJECT ROWS */}
+        <div className="mt-6 space-y-6">
+          {invoices.map((inv, index) => (
+            <div
+              key={index}
+              className="bg-white rounded-3xl shadow-xl p-6 border border-orange-100"
+            >
+              <h3 className="text-2xl font-bold mb-4">
+                פרויקט: {inv.projectName}
+              </h3>
+
+              {/* Sum */}
+              <div className="mb-4">
+                <label className="font-bold text-sm mb-2 block">
+                  סכום לפרויקט זה
+                </label>
+                <input
+                  type="number"
+                  value={inv.sum}
+                  onChange={(e) => {
+                    const copy = [...invoices];
+                    copy[index].sum = e.target.value;
+                    setInvoices(copy);
+                  }}
+                  className="w-full p-3 border-2 rounded-xl"
+                />
+              </div>
+
+              {/* Files */}
+              <div>
+                <FileUploader
+                  onUploadSuccess={(files) => {
+                    const copy = [...invoices];
+                    copy[index].files.push(...files);
+                    setInvoices(copy);
+                  }}
+                  folder="invoices"
+                />
+
+                {inv.files.length > 0 && (
+                  <div className="mt-3">
+                    {inv.files.map((file, i2) => (
+                      <div
+                        key={i2}
+                        className="flex justify-between items-center p-2 border rounded mb-2"
+                      >
+                        <span className="truncate">{file.name}</span>
+
+                        <button
+                          onClick={() => {
+                            const copy = [...invoices];
+                            copy[index].files.splice(i2, 1);
+                            setInvoices(copy);
+                          }}
+                          className="text-red-600"
+                        >
+                          הסר
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                )}
               </div>
             </div>
           ))}
         </div>
 
-        {/* Action Buttons */}
-        <div className="mt-10 flex flex-wrap justify-center gap-4">
-          <button
-            onClick={addInvoice}
-            className="group px-8 py-4 rounded-xl font-bold text-white bg-gradient-to-r from-slate-700 to-slate-800 hover:from-slate-800 hover:to-slate-900 transition-all shadow-xl hover:shadow-2xl flex items-center gap-3"
-            type="button"
-          >
-            <Plus className="w-5 h-5 group-hover:scale-110 transition-transform" />
-            <span>הוסף חשבונית</span>
-          </button>
-
+        {/* SUBMIT */}
+        <div className="mt-10 flex justify-center">
           <button
             onClick={handleSubmit}
-            disabled={isLoading || !selectedProject || invoices.length === 0}
-            className="group px-8 py-4 rounded-xl font-bold text-white bg-gradient-to-r from-orange-600 via-amber-600 to-yellow-600 hover:from-orange-700 hover:via-amber-700 hover:to-yellow-700 disabled:opacity-60 disabled:cursor-not-allowed shadow-xl shadow-orange-500/30 hover:shadow-2xl hover:shadow-orange-500/40 transition-all flex items-center gap-3"
+            disabled={isLoading || !selectedProjects.length}
+            className="px-8 py-4 rounded-xl font-bold text-white bg-gradient-to-r from-orange-600 to-yellow-600 shadow-xl"
           >
-            {isLoading ? (
-              <>
-                <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
-                <span>יוצר אנא המתן...</span>
-              </>
-            ) : (
-              <>
-                <Save className="w-5 h-5 group-hover:scale-110 transition-transform" />
-                <span>צור חשבונית/ות</span>
-              </>
-            )}
+            {isLoading ? "שומר..." : "צור חשבוניות"}
           </button>
         </div>
-
-        {/* Delete Confirmation Modal */}
-        {showModal && (
-          <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-            <div className="relative">
-              <div className="absolute -inset-4 bg-gradient-to-r from-red-500 to-rose-500 rounded-3xl opacity-20 blur-2xl"></div>
-
-              <div className="relative bg-white rounded-3xl shadow-2xl p-8 max-w-md w-full">
-                <div className="text-center mb-6">
-                  <div className="mx-auto w-16 h-16 rounded-full bg-gradient-to-br from-red-500 to-rose-500 flex items-center justify-center mb-4">
-                    <AlertCircle className="w-8 h-8 text-white" />
-                  </div>
-                  <h3 className="text-3xl font-bold text-slate-900 mb-2">
-                    האם אתה בטוח?
-                  </h3>
-                  <p className="text-slate-600">
-                    שים לב! פעולה זו תמחק את החשבונית לצמיתות.
-                  </p>
-                </div>
-
-                <div className="flex gap-3">
-                  <button
-                    onClick={handleDelete}
-                    className="flex-1 px-6 py-3 rounded-xl font-bold text-white bg-gradient-to-r from-red-500 to-rose-500 hover:from-red-600 hover:to-rose-600 transition-all shadow-lg"
-                  >
-                    מחק
-                  </button>
-                  <button
-                    onClick={() => setShowModal(false)}
-                    className="flex-1 px-6 py-3 rounded-xl font-bold text-slate-700 bg-slate-100 hover:bg-slate-200 transition-all"
-                  >
-                    ביטול
-                  </button>
-                </div>
-              </div>
-            </div>
-          </div>
-        )}
       </div>
     </div>
   );

@@ -1,37 +1,40 @@
-import React, { useState, useEffect } from 'react';
-import { ChevronDown, User } from 'lucide-react';
-import api from '../api/api.js';
-import { toast } from 'sonner';
+import React, { useState, useEffect } from "react";
+import { ChevronDown, User } from "lucide-react";
+import api from "../api/api.js";
+import { toast } from "sonner";
 
-const SupplierSelector = ({ 
+const SupplierSelector = ({
   projectId,
-  value, 
+  value,
   onSelect,
-  label = "בחר ספק", 
-  placeholder = "חפש או בחר ספק...", 
+  label = "בחר ספק",
+  placeholder = "חפש או בחר ספק...",
   required = false,
   className = "",
-  disabled = false 
+  disabled = false,
 }) => {
   const [suppliers, setSuppliers] = useState([]);
   const [loading, setLoading] = useState(false);
   const [isOpen, setIsOpen] = useState(false);
-  const [searchTerm, setSearchTerm] = useState('');
+  const [searchTerm, setSearchTerm] = useState("");
   const [selectedSupplier, setSelectedSupplier] = useState(null);
 
   // טעינת ספקים
   useEffect(() => {
-    if (!projectId) return;
-
     const fetchSuppliers = async () => {
       try {
         setLoading(true);
-        const res = await api.get(`/suppliers`);
+
+        const url = projectId
+          ? `/suppliers?projectId=${projectId}`
+          : `/suppliers`; // ← מביא את כל הספקים
+
+        const res = await api.get(url);
         setSuppliers(res?.data?.data || []);
       } catch (error) {
-        console.error('Error fetching suppliers:', error);
-        toast.error('שגיאה בטעינת רשימת ספקים', {
-          className: "sonner-toast error rtl"
+        console.error("Error fetching suppliers:", error);
+        toast.error("שגיאה בטעינת רשימת ספקים", {
+          className: "sonner-toast error rtl",
         });
         setSuppliers([]);
       } finally {
@@ -61,14 +64,18 @@ const SupplierSelector = ({
     const email = String(supplier?.email ?? "").toLowerCase();
     const tax = String(supplier?.business_tax ?? "");
     const term = String(searchTerm ?? "").toLowerCase();
-    return name.includes(term) || email.includes(term) || tax.includes(String(searchTerm ?? ""));
+    return (
+      name.includes(term) ||
+      email.includes(term) ||
+      tax.includes(String(searchTerm ?? ""))
+    );
   });
 
   const handleSupplierSelect = (supplier) => {
     setSelectedSupplier(supplier);
     setIsOpen(false);
-    setSearchTerm('');
-    
+    setSearchTerm("");
+
     // שלח את הספק הנבחר להורה
     if (onSelect) {
       onSelect(supplier);
@@ -88,30 +95,35 @@ const SupplierSelector = ({
           {label} {required && <span className="text-red-500">*</span>}
         </label>
       )}
-      
+
       <div className="relative">
         <div
           onClick={() => !disabled && setIsOpen(!isOpen)}
           className={`
             w-full p-3 border border-gray-300 rounded-lg bg-white cursor-pointer
             flex items-center justify-between font-bold
-            ${disabled ? 'bg-gray-100 cursor-not-allowed' : 'hover:border-gray-400'}
-            ${isOpen ? 'ring-2 ring-blue-500' : ''}
+            ${
+              disabled
+                ? "bg-gray-100 cursor-not-allowed"
+                : "hover:border-gray-400"
+            }
+            ${isOpen ? "ring-2 ring-blue-500" : ""}
             focus:outline-none focus:ring-2 focus:ring-blue-500
           `}
         >
           <div className="flex items-center">
             <User size={20} className="text-gray-500 ml-2" />
-            <span className={selectedSupplier ? 'text-black' : 'text-gray-500'}>
-              {selectedSupplier 
+            <span className={selectedSupplier ? "text-black" : "text-gray-500"}>
+              {selectedSupplier
                 ? formatSupplierDisplay(selectedSupplier)
-                : placeholder
-              }
+                : placeholder}
             </span>
           </div>
-          <ChevronDown 
-            size={20} 
-            className={`text-gray-500 transition-transform ${isOpen ? 'rotate-180' : ''}`} 
+          <ChevronDown
+            size={20}
+            className={`text-gray-500 transition-transform ${
+              isOpen ? "rotate-180" : ""
+            }`}
           />
         </div>
 
@@ -133,10 +145,12 @@ const SupplierSelector = ({
             {/* רשימה */}
             <div className="max-h-48 overflow-y-auto">
               {loading ? (
-                <div className="p-4 text-center text-gray-500">טוען ספקים...</div>
+                <div className="p-4 text-center text-gray-500">
+                  טוען ספקים...
+                </div>
               ) : filteredSuppliers.length === 0 ? (
                 <div className="p-4 text-center text-gray-500">
-                  {searchTerm ? 'לא נמצאו ספקים מתאימים' : 'אין ספקים זמינים'}
+                  {searchTerm ? "לא נמצאו ספקים מתאימים" : "אין ספקים זמינים"}
                 </div>
               ) : (
                 filteredSuppliers.map((supplier) => (
@@ -145,7 +159,11 @@ const SupplierSelector = ({
                     onClick={() => handleSupplierSelect(supplier)}
                     className={`
                       p-3 cursor-pointer hover:bg-blue-50 border-b border-gray-100 last:border-b-0
-                      ${selectedSupplier?._id === supplier._id ? 'bg-blue-100' : ''}
+                      ${
+                        selectedSupplier?._id === supplier._id
+                          ? "bg-blue-100"
+                          : ""
+                      }
                     `}
                   >
                     <div className="font-bold text-black">
@@ -153,7 +171,9 @@ const SupplierSelector = ({
                     </div>
                     {(supplier.email || supplier.phone) && (
                       <div className="text-sm text-gray-600 mt-1">
-                        {supplier.email} {supplier.email && supplier.phone && '•'} {supplier.phone}
+                        {supplier.email}{" "}
+                        {supplier.email && supplier.phone && "•"}{" "}
+                        {supplier.phone}
                       </div>
                     )}
                   </div>
@@ -176,10 +196,7 @@ const SupplierSelector = ({
 
       {/* רקע לסגירה */}
       {isOpen && (
-        <div
-          className="fixed inset-0 z-40"
-          onClick={() => setIsOpen(false)}
-        />
+        <div className="fixed inset-0 z-40" onClick={() => setIsOpen(false)} />
       )}
     </div>
   );

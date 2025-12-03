@@ -235,14 +235,24 @@ export default {
   // 🗑️ מחיקה
   async deleteInvoice(user, invoiceId) {
     const invoice = await Invoice.findById(invoiceId);
-    if (!invoice) throw new Error("חשבונית לא נמצאה");
 
-    const project = await Project.findById(invoice.projectId);
-    project.remainingBudget += Number(invoice.sum); // מחזיר כסף
-    await project.save();
+    if (!invoice) {
+      console.log("⚠️ חשבונית לא נמצאה למחיקה");
+      return null;
+    }
 
-    // ✅ תשתמש ב-deleteOne על ה-document!
-    await invoice.deleteOne();
-    return invoice;
+    // שמור projectId לפני המחיקה
+    const projectId = invoice.projectId ? invoice.projectId.toString() : null;
+
+    // מחיקה
+    await Invoice.findByIdAndDelete(invoiceId);
+
+    // עדכון תקציב - רק אם יש projectId
+    if (projectId) {
+      await recalculateRemainingBudget(projectId);
+    }
+
+    return true;
   }
+
 };

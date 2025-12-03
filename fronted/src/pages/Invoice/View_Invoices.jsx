@@ -48,6 +48,8 @@ const InvoicesPage = () => {
   });
   const [showPrintModal, setShowPrintModal] = useState(false);
 
+  const [showPaymentExportModal, setShowPaymentExportModal] = useState(false);
+
   const [paymentFilter, setPaymentFilter] = useState("all");
   const [statusFilter, setStatusFilter] = useState("all");
 
@@ -85,11 +87,11 @@ const InvoicesPage = () => {
     createdAt: true,
     paymentDate: false,
     detail: false,
-    supplierPhone: false,
-    supplierEmail: false,
-    supplierBankName: false,
-    supplierBranchNumber: false,
-    supplierAccountNumber: false,
+    supplierPhone: true,
+    supplierEmail: true,
+    supplierBankName: true,
+    supplierBranchNumber: true,
+    supplierAccountNumber: true,
   });
 
   const { user, isAdmin, canEditModule, canViewModule } = useAuth();
@@ -145,6 +147,7 @@ const InvoicesPage = () => {
   const availableColumns = [
     { key: "invoiceNumber", label: "מספר חשבונית" },
     { key: "projectName", label: "שם הפרוייקט" },
+    { key: "supplierName", label: "שם ספק" }, // ✅ הוסף את זה
     { key: "invitingName", label: "שם המזמין" },
     { key: "sum", label: "סכום" },
     { key: "status", label: "סטטוס הגשה" },
@@ -154,6 +157,12 @@ const InvoicesPage = () => {
     { key: "paymentDate", label: "תאריך תשלום" },
     { key: "documentType", label: "סוג מסמך" },
     { key: "paymentMethod", label: "אמצעי תשלום" },
+    // ✅ הוסף את כל עמודות הספק:
+    { key: "supplierPhone", label: "טלפון ספק" },
+    { key: "supplierEmail", label: "אימייל ספק" },
+    { key: "supplierBankName", label: "שם בנק ספק" },
+    { key: "supplierBranchNumber", label: "מספר סניף ספק" },
+    { key: "supplierAccountNumber", label: "מספר חשבון ספק" },
   ];
 
   const formatNumber = (num) => num?.toLocaleString("he-IL");
@@ -270,7 +279,7 @@ const InvoicesPage = () => {
           (invoice.projectName || "")
             .toLowerCase()
             .includes(searchTerm.toLowerCase()) ||
-          (invoice.supplier?.name || "")
+          (invoice.supplierId?.name || "")
             .toLowerCase()
             .includes(searchTerm.toLowerCase()) ||
           (invoice.invitingName || "")
@@ -350,10 +359,8 @@ const InvoicesPage = () => {
 
       if (advancedFilters.supplierName) {
         const q = advancedFilters.supplierName.toLowerCase();
-        filtered = filtered.filter(
-          (inv) =>
-            (inv.supplier?.name || "").toLowerCase().includes(q) ||
-            (inv.invitingName || "").toLowerCase().includes(q)
+        filtered = filtered.filter((inv) =>
+          (inv.supplierId?.name || "").toLowerCase().includes(q)
         );
       }
 
@@ -521,7 +528,7 @@ const InvoicesPage = () => {
 
     if (selectedSupplierForPrint) {
       filteredForPrint = filteredForPrint.filter(
-        (inv) => inv.supplier?._id === selectedSupplierForPrint
+        (inv) => inv.supplierId?._id === selectedSupplierForPrint
       );
     }
 
@@ -935,9 +942,23 @@ const InvoicesPage = () => {
     setToDatePrint("");
   };
 
+  const getSupplier = (invoice) => {
+    // אם זה populated
+    if (invoice.supplierId && typeof invoice.supplierId === "object") {
+      return invoice.supplierId;
+    }
+
+    // אם זה בשדה supplier (ישן)
+    if (invoice.supplier && typeof invoice.supplier === "object") {
+      return invoice.supplier;
+    }
+
+    // אם זה מחרוזת → אין מידע
+    return null;
+  };
+
   const exportCustomReport = () => {
     const dataToExport = filteredInvoices;
-
     if (!dataToExport || dataToExport.length === 0) {
       toast.error("אין נתונים לייצוא", { className: "sonner-toast error rtl" });
       return;
@@ -959,6 +980,8 @@ const InvoicesPage = () => {
       supplierBankName: "שם בנק ספק",
       supplierBranchNumber: "מספר סניף ספק",
       supplierAccountNumber: "מספר חשבון ספק",
+      documentType: "סוג מסמך",
+      paymentMethod: "אמצעי תשלום",
     };
 
     const selectedColumns = Object.keys(exportColumns).filter(
@@ -973,8 +996,13 @@ const InvoicesPage = () => {
     }
 
     const invoicesData = dataToExport.map((invoice) => {
-      const row = {};
+      // ✅ תיקון - בדוק אם הספק הוא אובייקט
+      const supplier =
+        invoice.supplierId && typeof invoice.supplierId === "object"
+          ? invoice.supplierId
+          : null;
 
+      const row = {};
       selectedColumns.forEach((col) => {
         switch (col) {
           case "invoiceNumber":
@@ -982,10 +1010,6 @@ const InvoicesPage = () => {
             break;
           case "projectName":
             row[columnMapping.projectName] = invoice.projectName || "";
-            break;
-          case "supplierName":
-            row[columnMapping.supplierName] =
-              invoice.supplier?.name || invoice.invitingName || "אין ספק מוגדר";
             break;
           case "invitingName":
             row[columnMapping.invitingName] = invoice.invitingName || "";
@@ -1012,29 +1036,36 @@ const InvoicesPage = () => {
           case "detail":
             row[columnMapping.detail] = invoice.detail || "";
             break;
+          case "documentType":
+            row[columnMapping.documentType] = invoice.documentType || "";
+            break;
+          case "paymentMethod":
+            row[columnMapping.paymentMethod] = invoice.paymentMethod || "";
+            break;
+          // ✅ עמודות הספק - עכשיו יעבוד נכון
+          case "supplierName":
+            row[columnMapping.supplierName] = supplier?.name || "לא זמין";
+            break;
           case "supplierPhone":
-            row[columnMapping.supplierPhone] =
-              invoice.supplier?.phone || "לא זמין";
+            row[columnMapping.supplierPhone] = supplier?.phone || "לא זמין";
             break;
           case "supplierEmail":
-            row[columnMapping.supplierEmail] =
-              invoice.supplier?.email || "לא זמין";
+            row[columnMapping.supplierEmail] = supplier?.email || "לא זמין";
             break;
           case "supplierBankName":
             row[columnMapping.supplierBankName] =
-              invoice.supplier?.bankDetails?.bankName || "לא זמין";
+              supplier?.bankDetails?.bankName || "לא זמין";
             break;
           case "supplierBranchNumber":
             row[columnMapping.supplierBranchNumber] =
-              invoice.supplier?.bankDetails?.branchNumber || "לא זמין";
+              supplier?.bankDetails?.branchNumber || "לא זמין";
             break;
           case "supplierAccountNumber":
             row[columnMapping.supplierAccountNumber] =
-              invoice.supplier?.bankDetails?.accountNumber || "לא זמין";
+              supplier?.bankDetails?.accountNumber || "לא זמין";
             break;
         }
       });
-
       return row;
     });
 
@@ -1045,6 +1076,7 @@ const InvoicesPage = () => {
     const fileName = `דוח_חשבוניות_${new Date()
       .toLocaleDateString("he-IL")
       .replace(/\//g, "-")}.xlsx`;
+
     const wbout = XLSX.write(workbook, { bookType: "xlsx", type: "array" });
     saveAs(new Blob([wbout], { type: "application/octet-stream" }), fileName);
 
@@ -1078,43 +1110,49 @@ const InvoicesPage = () => {
   };
 
   const exportToExcelWithSuppliers = () => {
-    const invoicesWithSupplier = sortedInvoices.filter(
-      (invoice) => invoice.supplierId && typeof invoice.supplierId === "object" // ✅ שנה
-    );
+    const invoices = sortedInvoices || [];
 
-    const totalInvoices = sortedInvoices.length;
-    const supplierInvoices = invoicesWithSupplier.length;
+    if (!invoices.length) {
+      toast.error("אין חשבוניות לייצוא", {
+        className: "sonner-toast error rtl",
+      });
+      return;
+    }
 
-    const invoicesWithHeaders = sortedInvoices.map((invoice) => {
+    const formatSupplierAddress = (supplier) => {
+      if (supplier.address) return supplier.address;
+
+      const parts = [
+        supplier.city,
+        supplier.street,
+        supplier.houseNumber,
+      ].filter(Boolean);
+
+      return parts.length ? parts.join(" ") : "לא זמין";
+    };
+
+    const invoicesWithHeaders = invoices.map((invoice) => {
+      const supplier =
+        invoice.supplierId && typeof invoice.supplierId === "object"
+          ? invoice.supplierId
+          : null;
+
       const baseData = {
-        "מספר חשבונית": invoice.invoiceNumber,
-        "שם איש קשר": invoice.projectId?.contactPerson || "לא זמין", // ✅ שנה
-        "שם הפרוייקט": invoice.projectName,
-        "תאריך יצירה": formatDate(invoice.createdAt),
-        סכום: formatNumber(invoice.sum),
-        סטטוס: invoice.status,
-        פירוט: invoice.detail,
-        שולם: invoice.paid === "כן" ? "כן" : "לא",
+        "מספר חשבונית": invoice.invoiceNumber || "",
+        "שם פרוייקט": invoice.projectName || "",
+        "שם איש קשר": invoice.projectId?.Contact_person || "לא זמין",
+        "תאריך יצירה": formatDate(invoice.invoiceDate || invoice.createdAt),
+        סכום: formatNumber(Number(invoice.sum) || 0),
+        "סטטוס הגשה": invoice.status || "",
+        "סטטוס תשלום": invoice.paid === "כן" ? "שולם" : "לא שולם",
         "תאריך תשלום":
-          invoice.paid === "כן" ? formatDate(invoice.paymentDate) : "לא שולם",
+          invoice.paid === "כן" && invoice.paymentDate
+            ? formatDate(invoice.paymentDate)
+            : "לא שולם",
+        פירוט: invoice.detail || "",
       };
 
-      // ✅ שנה supplier ל-supplierId
-      if (invoice.supplierId && typeof invoice.supplierId === "object") {
-        return {
-          ...baseData,
-          "שם ספק": invoice.supplierId.name || "לא זמין",
-          "ח.פ/ע.מ": invoice.supplierId.business_tax || "לא זמין",
-          "טלפון ספק": invoice.supplierId.phone || "לא זמין",
-          "אימייל ספק": invoice.supplierId.email || "לא זמין",
-          "כתובת ספק": invoice.supplierId.address || "לא זמין",
-          "שם הבנק": invoice.supplierId.bankDetails?.bankName || "לא זמין",
-          "מספר סניף":
-            invoice.supplierId.bankDetails?.branchNumber || "לא זמין",
-          "מספר חשבון":
-            invoice.supplierId.bankDetails?.accountNumber || "לא זמין",
-        };
-      } else {
+      if (!supplier) {
         return {
           ...baseData,
           "שם ספק": "לא זמין",
@@ -1122,22 +1160,52 @@ const InvoicesPage = () => {
           "טלפון ספק": "לא זמין",
           "אימייל ספק": "לא זמין",
           "כתובת ספק": "לא זמין",
-          "שם הבנק": "לא זמין",
+          "שם בנק ספק": "לא זמין",
           "מספר סניף": "לא זמין",
           "מספר חשבון": "לא זמין",
         };
       }
+
+      return {
+        ...baseData,
+        "שם ספק": supplier.name || "לא זמין",
+        "ח.פ/ע.מ":
+          supplier.businessNumber ||
+          supplier.businessTaxId ||
+          supplier.taxId ||
+          "לא זמין",
+        "טלפון ספק": supplier.phone || "לא זמין",
+        "אימייל ספק": supplier.email || "לא זמין",
+        "כתובת ספק": formatSupplierAddress(supplier),
+        "שם בנק ספק": supplier.bankDetails?.bankName || "לא זמין",
+        "מספר סניף": supplier.bankDetails?.branchNumber || "לא זמין",
+        "מספר חשבון": supplier.bankDetails?.accountNumber || "לא זמין",
+      };
     });
 
+    const totalInvoices = invoices.length;
+    const supplierInvoices = invoicesWithHeaders.filter(
+      (i) => i["שם ספק"] !== "לא זמין"
+    ).length;
+
     const worksheet = XLSX.utils.json_to_sheet(invoicesWithHeaders);
+
+    // הפיכת כיוון ל־RTL
+    worksheet["!cols"] = Object.keys(invoicesWithHeaders[0]).map(() => ({
+      wpx: 140,
+    }));
+    worksheet["!rtl"] = true;
+
     const workbook = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(workbook, worksheet, "חשבוניות");
 
+    const fileName = `חשבוניות_${supplierInvoices}_עם_ספקים_מתוך_${totalInvoices}_${new Date()
+      .toLocaleDateString("he-IL")
+      .replace(/\//g, "-")}.xlsx`;
+
     const wbout = XLSX.write(workbook, { bookType: "xlsx", type: "array" });
-    saveAs(
-      new Blob([wbout], { type: "application/octet-stream" }),
-      `חשבוניות_${supplierInvoices}_מתוך_${totalInvoices}_עם_ספקים.xlsx`
-    );
+
+    saveAs(new Blob([wbout], { type: "application/octet-stream" }), fileName);
 
     toast.success(
       `הקובץ יוצא בהצלחה! ${supplierInvoices} מתוך ${totalInvoices} חשבוניות כוללות פרטי ספק`,
@@ -1147,88 +1215,87 @@ const InvoicesPage = () => {
       }
     );
   };
- const downloadAttachedFiles = async () => {
-  try {
-    let filtered = invoices;
 
-    if (selectedProjectForPrint) {
-      filtered = filtered.filter(
-        (inv) => inv.project?._id === selectedProjectForPrint
-      );
-    }
+  const downloadAttachedFiles = async () => {
+    try {
+      let filtered = invoices;
 
-    if (selectedSupplierForPrint) {
-      filtered = filtered.filter(
-        (inv) => inv.supplier?._id === selectedSupplierForPrint
-      );
-    }
-
-    if (fromDatePrint) {
-      filtered = filtered.filter(
-        (inv) => new Date(inv.createdAt) >= new Date(fromDatePrint)
-      );
-    }
-
-    if (toDatePrint) {
-      filtered = filtered.filter(
-        (inv) => new Date(inv.createdAt) <= new Date(toDatePrint)
-      );
-    }
-
-    const allFiles = [];
-
-    filtered.forEach((invoice) => {
-      if (Array.isArray(invoice.files)) {
-        invoice.files.forEach((file) => {
-          if (file.url) {
-            allFiles.push({
-              url: file.url,
-              name: file.name || "file",
-              invoiceNumber: invoice.invoiceNumber || "ללא",
-              projectName: invoice.projectName || "ללא_פרויקט",
-              supplierName: invoice.invitingName || "ללא_ספק",
-            });
-          }
-        });
+      if (selectedProjectForPrint) {
+        filtered = filtered.filter(
+          (inv) => inv.project?._id === selectedProjectForPrint
+        );
       }
-    });
 
-    if (allFiles.length === 0) {
-      toast.error("לא נמצאו קבצים להורדה");
-      return;
+      if (selectedSupplierForPrint) {
+        filtered = filtered.filter(
+          (inv) => inv.supplierId?._id === selectedSupplierForPrint
+        );
+      }
+
+      if (fromDatePrint) {
+        filtered = filtered.filter(
+          (inv) => new Date(inv.createdAt) >= new Date(fromDatePrint)
+        );
+      }
+
+      if (toDatePrint) {
+        filtered = filtered.filter(
+          (inv) => new Date(inv.createdAt) <= new Date(toDatePrint)
+        );
+      }
+
+      const allFiles = [];
+
+      filtered.forEach((invoice) => {
+        if (Array.isArray(invoice.files)) {
+          invoice.files.forEach((file) => {
+            if (file.url) {
+              allFiles.push({
+                url: file.url,
+                name: file.name || "file",
+                invoiceNumber: invoice.invoiceNumber || "ללא",
+                projectName: invoice.projectName || "ללא_פרויקט",
+                supplierName: invoice.supplierId?.name || "ללא_ספק",
+              });
+            }
+          });
+        }
+      });
+
+      if (allFiles.length === 0) {
+        toast.error("לא נמצאו קבצים להורדה");
+        return;
+      }
+
+      toast.info("מכין ZIP להורדה...");
+
+      // 🔥 שולחים לשרת את רשימת הקבצים
+      const response = await api.post(
+        "/upload/download-zip", // תואם ל-router שלך
+        { files: allFiles },
+        { responseType: "blob" }
+      );
+
+      // 🔥 השרת מחזיר ZIP – עכשיו רק שומרים אותו
+      saveAs(
+        new Blob([response.data], { type: "application/zip" }),
+        `קבצים_מצורפים_${new Date()
+          .toLocaleDateString("he-IL")
+          .replace(/\./g, "_")}.zip`
+      );
+
+      toast.success("קובץ ZIP הורד בהצלחה!");
+
+      setShowPrintModal(false);
+      setSelectedProjectForPrint("");
+      setSelectedSupplierForPrint("");
+      setFromDatePrint("");
+      setToDatePrint("");
+    } catch (error) {
+      console.error("ZIP error:", error);
+      toast.error("שגיאה בהורדה: " + error.message);
     }
-
-    toast.info("מכין ZIP להורדה...");
-
-    // 🔥 שולחים לשרת את רשימת הקבצים
-    const response = await api.post(
-      "/upload/download-zip", // תואם ל-router שלך
-      { files: allFiles },
-      { responseType: "blob" }
-    );
-
-    // 🔥 השרת מחזיר ZIP – עכשיו רק שומרים אותו
-    saveAs(
-      new Blob([response.data], { type: "application/zip" }),
-      `קבצים_מצורפים_${new Date()
-        .toLocaleDateString("he-IL")
-        .replace(/\./g, "_")}.zip`
-    );
-
-    toast.success("קובץ ZIP הורד בהצלחה!");
-
-    setShowPrintModal(false);
-    setSelectedProjectForPrint("");
-    setSelectedSupplierForPrint("");
-    setFromDatePrint("");
-    setToDatePrint("");
-
-  } catch (error) {
-    console.error("ZIP error:", error);
-    toast.error("שגיאה בהורדה: " + error.message);
-  }
-};
-
+  };
 
   // ✅ טעינת חשבוניות עם סינון לפי הרשאות
   useEffect(() => {
@@ -1419,6 +1486,225 @@ const InvoicesPage = () => {
       </div>
     );
   }
+
+  // ייצוא מרוכז לפי ספק
+  const exportPaymentBySupplier = () => {
+    let filtered = [...allInvoices];
+
+    // החל את אותם פילטרים כמו בהדפסה
+    if (selectedProjectForPrint) {
+      filtered = filtered.filter(
+        (inv) =>
+          inv.projectId === selectedProjectForPrint ||
+          inv.project?._id === selectedProjectForPrint
+      );
+    }
+
+    if (selectedSupplierForPrint) {
+      filtered = filtered.filter(
+        (inv) => inv.supplierId?._id === selectedSupplierForPrint
+      );
+    }
+
+    if (fromDatePrint) {
+      const fromDate = new Date(fromDatePrint);
+      filtered = filtered.filter((inv) => {
+        const invDate = normalizeDate(inv.createdAt);
+        return invDate && invDate >= fromDate;
+      });
+    }
+
+    if (toDatePrint) {
+      const toDate = new Date(toDatePrint);
+      filtered = filtered.filter((inv) => {
+        const invDate = normalizeDate(inv.createdAt);
+        return invDate && invDate <= toDate;
+      });
+    }
+
+    // ✅ סנן רק חשבוניות ששולמו
+    const unpaidInvoices = filtered.filter((inv) => inv.paid !== "כן");
+
+    if (unpaidInvoices.length === 0) {
+      toast.error("לא נמצאו חשבוניות שטרם שולמו", {
+        className: "sonner-toast error rtl",
+      });
+      return;
+    }
+
+    // קבץ לפי ספק
+    const groupedBySupplier = {};
+
+    unpaidInvoices.forEach((invoice) => {
+      const supplier =
+        invoice.supplierId && typeof invoice.supplierId === "object"
+          ? invoice.supplierId
+          : null;
+
+      if (!supplier) return; // דלג על חשבוניות ללא ספק
+
+      const supplierId = supplier._id;
+
+      if (!groupedBySupplier[supplierId]) {
+        groupedBySupplier[supplierId] = {
+          supplierName: supplier.name || "לא זמין",
+          bankName: supplier.bankDetails?.bankName || "לא זמין",
+          branchNumber: supplier.bankDetails?.branchNumber || "לא זמין",
+          accountNumber: supplier.bankDetails?.accountNumber || "לא זמין",
+          totalAmount: 0,
+          invoiceNumbers: [],
+          projects: new Set(),
+        };
+      }
+
+      groupedBySupplier[supplierId].totalAmount += invoice.sum || 0;
+      groupedBySupplier[supplierId].invoiceNumbers.push(
+        invoice.invoiceNumber || ""
+      );
+      groupedBySupplier[supplierId].projects.add(invoice.projectName || "");
+    });
+
+    // המר לאקסל
+    const excelData = Object.values(groupedBySupplier).map((group) => ({
+      "שם ספק": group.supplierName,
+      "שם בנק": group.bankName,
+      "מספר סניף": group.branchNumber,
+      "מספר חשבון": group.accountNumber,
+      'סה"כ לתשלום': group.totalAmount,
+      "מספרי חשבוניות": group.invoiceNumbers.join(", "),
+      פרויקטים: Array.from(group.projects).join(", "),
+    }));
+
+    const worksheet = XLSX.utils.json_to_sheet(excelData);
+
+    // הגדר רוחב עמודות
+    worksheet["!cols"] = [
+      { wpx: 150 }, // שם ספק
+      { wpx: 120 }, // שם בנק
+      { wpx: 100 }, // סניף
+      { wpx: 120 }, // חשבון
+      { wpx: 100 }, // סכום
+      { wpx: 200 }, // חשבוניות
+      { wpx: 200 }, // פרויקטים
+    ];
+
+    worksheet["!rtl"] = true;
+
+    const workbook = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(workbook, worksheet, "תשלומים לספקים");
+
+    const fileName = `תשלומים_מרוכז_${new Date()
+      .toLocaleDateString("he-IL")
+      .replace(/\//g, "-")}.xlsx`;
+
+    const wbout = XLSX.write(workbook, { bookType: "xlsx", type: "array" });
+    saveAs(new Blob([wbout], { type: "application/octet-stream" }), fileName);
+
+    toast.success(`יוצא קובץ עם ${excelData.length} ספקים לתשלום`, {
+      className: "sonner-toast success rtl",
+    });
+
+    setShowPaymentExportModal(false);
+    setShowPrintModal(false);
+  };
+
+  // ייצוא מפורט לפי חשבונית
+  const exportPaymentDetailed = () => {
+    let filtered = [...allInvoices];
+
+    // החל פילטרים
+    if (selectedProjectForPrint) {
+      filtered = filtered.filter(
+        (inv) =>
+          inv.projectId === selectedProjectForPrint ||
+          inv.project?._id === selectedProjectForPrint
+      );
+    }
+
+    if (selectedSupplierForPrint) {
+      filtered = filtered.filter(
+        (inv) => inv.supplierId?._id === selectedSupplierForPrint
+      );
+    }
+
+    if (fromDatePrint) {
+      const fromDate = new Date(fromDatePrint);
+      filtered = filtered.filter((inv) => {
+        const invDate = normalizeDate(inv.createdAt);
+        return invDate && invDate >= fromDate;
+      });
+    }
+
+    if (toDatePrint) {
+      const toDate = new Date(toDatePrint);
+      filtered = filtered.filter((inv) => {
+        const invDate = normalizeDate(inv.createdAt);
+        return invDate && invDate <= toDate;
+      });
+    }
+
+    // ✅ סנן רק חשבוניות שטרם שולמו
+    const unpaidInvoices = filtered.filter((inv) => inv.paid !== "כן");
+
+    if (unpaidInvoices.length === 0) {
+      toast.error("לא נמצאו חשבוניות שטרם שולמו", {
+        className: "sonner-toast error rtl",
+      });
+      return;
+    }
+
+    // צור Excel מפורט
+    const excelData = unpaidInvoices.map((invoice) => {
+      const supplier =
+        invoice.supplierId && typeof invoice.supplierId === "object"
+          ? invoice.supplierId
+          : null;
+
+      return {
+        "שם ספק": supplier?.name || "לא זמין",
+        "מספר חשבונית": invoice.invoiceNumber || "",
+        "שם פרויקט": invoice.projectName || "",
+        סכום: invoice.sum || 0,
+        "תאריך חשבונית": formatDate(invoice.createdAt),
+        "שם בנק": supplier?.bankDetails?.bankName || "לא זמין",
+        "מספר סניף": supplier?.bankDetails?.branchNumber || "לא זמין",
+        "מספר חשבון": supplier?.bankDetails?.accountNumber || "לא זמין",
+      };
+    });
+
+    const worksheet = XLSX.utils.json_to_sheet(excelData);
+
+    // הגדר רוחב עמודות
+    worksheet["!cols"] = [
+      { wpx: 150 }, // שם ספק
+      { wpx: 120 }, // מספר חשבונית
+      { wpx: 150 }, // פרויקט
+      { wpx: 100 }, // סכום
+      { wpx: 120 }, // תאריך
+      { wpx: 120 }, // בנק
+      { wpx: 100 }, // סניף
+      { wpx: 120 }, // חשבון
+    ];
+
+    worksheet["!rtl"] = true;
+
+    const workbook = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(workbook, worksheet, "חשבוניות לתשלום");
+
+    const fileName = `תשלומים_מפורט_${new Date()
+      .toLocaleDateString("he-IL")
+      .replace(/\//g, "-")}.xlsx`;
+
+    const wbout = XLSX.write(workbook, { bookType: "xlsx", type: "array" });
+    saveAs(new Blob([wbout], { type: "application/octet-stream" }), fileName);
+
+    toast.success(`יוצא קובץ עם ${excelData.length} חשבוניות לתשלום`, {
+      className: "sonner-toast success rtl",
+    });
+
+    setShowPaymentExportModal(false);
+    setShowPrintModal(false);
+  };
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-orange-50 via-amber-50 to-yellow-50 relative overflow-hidden py-12">
@@ -2183,12 +2469,10 @@ const InvoicesPage = () => {
 
       {/* Print Modal - כמו בפרויקטים */}
       {showPrintModal && (
-        <div className="fixed inset-0 bg-black/40 backdrop-blur-sm flex items-center justify-center z-50">
-          <div className="bg-white p-6 rounded-2xl w-[520px] shadow-2xl">
-            <h2
-              className="text-2xl font-bold mb-6 text-slate-900
-flex items-center gap-3"
-            >
+        <div className="fixed inset-0 bg-black/40 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+          {/* 🔥 הוספתי overflow-y-auto ו-max-height */}
+          <div className="bg-white p-6 rounded-2xl w-[520px] shadow-2xl max-h-[90vh] overflow-y-auto">
+            <h2 className="text-2xl font-bold mb-6 text-slate-900 flex items-center gap-3 sticky top-0 bg-white pb-4 border-b-2 border-orange-100">
               <Receipt className="w-7 h-7 text-orange-500" />
               הפקת מסמכים
             </h2>
@@ -2248,22 +2532,31 @@ flex items-center gap-3"
 
             {/* כפתורי פעולה */}
             <div className="flex flex-col gap-3">
-              {/* 🆕 כפתור הורדת קבצים */}
+              {/* כפתור ZIP */}
               <button
-                className="w-full flex items-center justify-center gap-3 px-6 py-4 bg-gradient-to-r from-orange-600 to-orange-700 text-white font-bold rounded-xl hover:from-orange-700 hover:to-orange-800 transition-all shadow-lg shadow-orange-500/30"
+                className="w-full flex items-center justify-center gap-3 px-6 py-4 bg-gradient-to-r from-blue-600 to-blue-700 text-white font-bold rounded-xl hover:from-blue-700 hover:to-blue-800 transition-all shadow-lg shadow-blue-500/30"
                 onClick={downloadAttachedFiles}
               >
                 <DownloadCloud className="w-5 h-5" />
                 <span>📦 הורד קבצים מצורפים (ZIP)</span>
               </button>
 
-              {/* כפתור הדפסת דוח */}
+              {/* כפתור PDF */}
               <button
                 className="w-full flex items-center justify-center gap-3 px-6 py-4 bg-gradient-to-r from-orange-600 to-orange-700 text-white font-bold rounded-xl hover:from-orange-700 hover:to-orange-800 transition-all shadow-lg shadow-orange-500/30"
                 onClick={generateInvoicesPrint}
               >
                 <FileText className="w-5 h-5" />
                 <span>🖨️ הפק דוח PDF</span>
+              </button>
+
+              {/* כפתור ייצוא לתשלום */}
+              <button
+                className="w-full flex items-center justify-center gap-3 px-6 py-4 bg-gradient-to-r from-emerald-600 to-emerald-700 text-white font-bold rounded-xl hover:from-emerald-700 hover:to-emerald-800 transition-all shadow-lg shadow-emerald-500/30"
+                onClick={() => setShowPaymentExportModal(true)}
+              >
+                <FileSpreadsheet className="w-5 h-5" />
+                <span>💳 ייצוא לתשלום (Excel)</span>
               </button>
 
               {/* כפתור ביטול */}
@@ -2276,6 +2569,109 @@ flex items-center gap-3"
                   setFromDatePrint("");
                   setToDatePrint("");
                 }}
+              >
+                ביטול
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* 🆕 Payment Export Modal - בחירת סוג ייצוא */}
+      {showPaymentExportModal && (
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-[60]">
+          <div className="relative">
+            <div className="absolute -inset-4 bg-gradient-to-r from-emerald-500 to-teal-500 rounded-3xl opacity-20 blur-2xl"></div>
+
+            <div className="relative bg-white p-8 rounded-3xl w-[500px] shadow-2xl">
+              <div className="text-center mb-8">
+                <div className="mx-auto w-16 h-16 rounded-full bg-gradient-to-br from-emerald-500 to-teal-500 flex items-center justify-center mb-4">
+                  <FileSpreadsheet className="w-8 h-8 text-white" />
+                </div>
+                <h3 className="text-2xl font-bold text-slate-900 mb-2">
+                  בחר סוג ייצוא לתשלום
+                </h3>
+                <p className="text-slate-600 text-sm">
+                  כיצד תרצה לארגן את הנתונים?
+                </p>
+              </div>
+
+              <div className="space-y-4">
+                {/* אופציה 1: מרוכז */}
+                <button
+                  onClick={exportPaymentBySupplier}
+                  className="w-full group p-6 rounded-2xl border-2 border-emerald-200 hover:border-emerald-500 hover:bg-emerald-50 transition-all text-right"
+                >
+                  <div className="flex items-start gap-4">
+                    <div className="p-3 rounded-xl bg-emerald-100 group-hover:bg-emerald-200 transition-colors">
+                      <svg
+                        className="w-6 h-6 text-emerald-600"
+                        fill="none"
+                        viewBox="0 0 24 24"
+                        stroke="currentColor"
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth={2}
+                          d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"
+                        />
+                      </svg>
+                    </div>
+                    <div className="flex-1">
+                      <h4 className="text-lg font-bold text-slate-900 mb-2">
+                        מרוכז לפי ספק
+                      </h4>
+                      <p className="text-sm text-slate-600 leading-relaxed">
+                        כל ספק בשורה אחת עם סכום כולל, רשימת חשבוניות ופרויקטים
+                      </p>
+                      <div className="mt-3 text-xs text-emerald-600 font-medium">
+                        ✓ מומלץ להעברות בנקאיות
+                      </div>
+                    </div>
+                  </div>
+                </button>
+
+                {/* אופציה 2: מפורט */}
+                <button
+                  onClick={exportPaymentDetailed}
+                  className="w-full group p-6 rounded-2xl border-2 border-blue-200 hover:border-blue-500 hover:bg-blue-50 transition-all text-right"
+                >
+                  <div className="flex items-start gap-4">
+                    <div className="p-3 rounded-xl bg-blue-100 group-hover:bg-blue-200 transition-colors">
+                      <svg
+                        className="w-6 h-6 text-blue-600"
+                        fill="none"
+                        viewBox="0 0 24 24"
+                        stroke="currentColor"
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth={2}
+                          d="M4 6h16M4 10h16M4 14h16M4 18h16"
+                        />
+                      </svg>
+                    </div>
+                    <div className="flex-1">
+                      <h4 className="text-lg font-bold text-slate-900 mb-2">
+                        מפורט לפי חשבונית
+                      </h4>
+                      <p className="text-sm text-slate-600 leading-relaxed">
+                        כל חשבונית בשורה נפרדת עם כל הפרטים המלאים
+                      </p>
+                      <div className="mt-3 text-xs text-blue-600 font-medium">
+                        ✓ מומלץ למעקב מפורט
+                      </div>
+                    </div>
+                  </div>
+                </button>
+              </div>
+
+              {/* כפתור ביטול */}
+              <button
+                onClick={() => setShowPaymentExportModal(false)}
+                className="w-full mt-6 px-6 py-3 bg-slate-200 text-slate-700 font-bold rounded-xl hover:bg-slate-300 transition-all"
               >
                 ביטול
               </button>
