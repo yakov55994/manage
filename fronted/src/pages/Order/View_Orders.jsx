@@ -127,6 +127,28 @@ const OrdersPage = () => {
     return isNaN(dt.getTime()) ? null : dt;
   };
 
+  const normalizeSupplier = (s) => {
+    if (!s) return null;
+
+    // אם הגיע רק סטרינג (ID), נחזיר אובייקט בסיסי ריק עם ID בלבד
+    if (typeof s === "string") {
+      return { _id: s };
+    }
+
+    return {
+      _id: s._id,
+      name: s.name || "לא זמין",
+      phone: s.phone || "לא זמין",
+      email: s.email || "לא זמין",
+      bankDetails: {
+        bankName: s.bankDetails?.bankName || "לא זמין",
+        branchNumber: s.bankDetails?.branchNumber || "לא זמין",
+        accountNumber: s.bankDetails?.accountNumber || "לא זמין",
+      },
+    };
+  };
+
+
   const availableColumns = [
     { key: "orderNumber", label: "מספר הזמנה" },
     { key: "projectName", label: "שם הפרויקט" },
@@ -159,14 +181,14 @@ const OrdersPage = () => {
         const projectsData = Array.isArray(projectsRes.data?.data)
           ? projectsRes.data.data
           : Array.isArray(projectsRes.data)
-          ? projectsRes.data
-          : [];
+            ? projectsRes.data
+            : [];
 
         const suppliersData = Array.isArray(suppliersRes.data?.data)
           ? suppliersRes.data.data
           : Array.isArray(suppliersRes.data)
-          ? suppliersRes.data
-          : [];
+            ? suppliersRes.data
+            : [];
 
         setProjectsForPrint(projectsData);
         setSuppliersForPrint(suppliersData);
@@ -316,11 +338,11 @@ const OrdersPage = () => {
     // מציאת שמות לפילטרים
     const selectedProjectName = selectedProjectForPrint
       ? projectsForPrint.find((p) => p._id === selectedProjectForPrint)?.name ||
-        ""
+      ""
       : "";
     const selectedSupplierName = selectedSupplierForPrint
       ? suppliersForPrint.find((s) => s._id === selectedSupplierForPrint)
-          ?.name || ""
+        ?.name || ""
       : "";
 
     const printWindow = window.open("", "_blank");
@@ -530,53 +552,48 @@ const OrdersPage = () => {
           </div>
           <h1>📋 דוח הזמנות</h1>
           <div class="date">תאריך הפקה: ${new Date().toLocaleDateString(
-            "he-IL",
-            {
-              year: "numeric",
-              month: "long",
-              day: "numeric",
-              hour: "2-digit",
-              minute: "2-digit",
-            }
-          )}</div>
+      "he-IL",
+      {
+        year: "numeric",
+        month: "long",
+        day: "numeric",
+        hour: "2-digit",
+        minute: "2-digit",
+      }
+    )}</div>
         </div>
 
-        ${
-          selectedProjectName ||
-          selectedSupplierName ||
-          fromDatePrint ||
-          toDatePrint
-            ? `
+        ${selectedProjectName ||
+        selectedSupplierName ||
+        fromDatePrint ||
+        toDatePrint
+        ? `
         <div class="filters">
           <h3>🔍 פילטרים</h3>
-          ${
-            selectedProjectName
-              ? `<p><strong>פרויקט:</strong> ${selectedProjectName}</p>`
-              : ""
-          }
-          ${
-            selectedSupplierName
-              ? `<p><strong>ספק:</strong> ${selectedSupplierName}</p>`
-              : ""
-          }
-          ${
+          ${selectedProjectName
+          ? `<p><strong>פרויקט:</strong> ${selectedProjectName}</p>`
+          : ""
+        }
+          ${selectedSupplierName
+          ? `<p><strong>ספק:</strong> ${selectedSupplierName}</p>`
+          : ""
+        }
+          ${fromDatePrint
+          ? `<p><strong>מתאריך:</strong> ${new Date(
             fromDatePrint
-              ? `<p><strong>מתאריך:</strong> ${new Date(
-                  fromDatePrint
-                ).toLocaleDateString("he-IL")}</p>`
-              : ""
-          }
-          ${
+          ).toLocaleDateString("he-IL")}</p>`
+          : ""
+        }
+          ${toDatePrint
+          ? `<p><strong>עד תאריך:</strong> ${new Date(
             toDatePrint
-              ? `<p><strong>עד תאריך:</strong> ${new Date(
-                  toDatePrint
-                ).toLocaleDateString("he-IL")}</p>`
-              : ""
-          }
+          ).toLocaleDateString("he-IL")}</p>`
+          : ""
+        }
         </div>
         `
-            : ""
-        }
+        : ""
+      }
 
         <table>
           <thead>
@@ -592,8 +609,8 @@ const OrdersPage = () => {
           </thead>
           <tbody>
             ${filteredForPrint
-              .map(
-                (order, idx) => `
+        .map(
+          (order, idx) => `
               <tr>
                 <td><strong>${idx + 1}</strong></td>
                 <td><strong>${order.orderNumber || "-"}</strong></td>
@@ -603,8 +620,8 @@ const OrdersPage = () => {
                 <td>${formatDate(order.createdAt)}</td>
                 <td>${order.status || "-"}</td>
               </tr>`
-              )
-              .join("")}
+        )
+        .join("")}
           </tbody>
         </table>
 
@@ -702,7 +719,9 @@ const OrdersPage = () => {
     }
 
     const ordersData = dataToExport.map((order) => {
-      const supplier = order.supplierId || null;
+      const supplier = normalizeSupplier(order.supplierId);
+      if (!supplier?._id) return; // עדיין לא תקין
+
       const stats = calculateOrderStats(order);
       const row = {};
 
@@ -802,8 +821,8 @@ const OrdersPage = () => {
   const filteredOrders = searchTerm
     ? getFilteredOrders()
     : selectedStatus
-    ? orders.filter((order) => order.status === selectedStatus)
-    : orders;
+      ? orders.filter((order) => order.status === selectedStatus)
+      : orders;
 
   const sortedOrders = [...filteredOrders].sort((a, b) => {
     if (sortBy === "sum") {
@@ -843,10 +862,10 @@ const OrdersPage = () => {
     Array.isArray(res?.data?.data)
       ? res.data.data
       : Array.isArray(res?.data)
-      ? res.data
-      : Array.isArray(res)
-      ? res
-      : [];
+        ? res.data
+        : Array.isArray(res)
+          ? res
+          : [];
 
   const authUser = JSON.parse(localStorage.getItem("user") || "{}");
   const selectedProjectId = authUser?.selectedProject;
@@ -954,8 +973,24 @@ const OrdersPage = () => {
         const ordersData = Array.isArray(res.data?.data)
           ? res.data.data
           : Array.isArray(res.data)
-          ? res.data
-          : [];
+            ? res.data
+            : [];
+
+        console.log("========== DEBUG ORDERS ==========");
+        ordersData.slice(0, 10).forEach((ord, i) => {
+          console.log(`ORDER #${i + 1}:`);
+
+          console.log("supplierId:", ord.supplierId);
+          console.log("typeof supplierId:", typeof ord.supplierId);
+
+          if (ord.supplierId && typeof ord.supplierId === "object") {
+            console.log("supplierId keys:", Object.keys(ord.supplierId));
+            console.log("bankDetails:", ord.supplierId.bankDetails);
+          }
+
+          console.log("-----------------------------------");
+        });
+
 
         setAllOrders(ordersData);
         console.log("🔥 DEBUG ORDER SAMPLE:", ordersData[0]);
@@ -1079,18 +1114,19 @@ const OrdersPage = () => {
     const groupedBySupplier = {};
 
     filtered.forEach((order) => {
-      const supplier = order.supplierId || null;
+      const supplier = normalizeSupplier(order.supplierId);
+
 
       if (!supplier) return; // דלג על הזמנות ללא ספק
 
       const supplierId = supplier._id;
 
       if (!groupedBySupplier[supplierId]) {
-        groupedBySupplier[supplierId] = {
-          supplierName: supplier.name || "לא זמין",
-          bankName: supplier.bankDetails?.bankName || "לא זמין",
-          branchNumber: supplier.bankDetails?.branchNumber || "לא זמין",
-          accountNumber: supplier.bankDetails?.accountNumber || "לא זמין",
+        groupedBySupplier[supplier._id] = {
+          supplierName: supplier.name,
+          bankName: supplier.bankDetails.bankName,
+          branchNumber: supplier.bankDetails.branchNumber,
+          accountNumber: supplier.bankDetails.accountNumber,
           totalAmount: 0,
           orderNumbers: [],
           projects: new Set(),
@@ -1190,7 +1226,8 @@ const OrdersPage = () => {
 
     // צור Excel מפורט
     const excelData = filtered.map((order) => {
-      const supplier = order.supplierId || null;
+      const supplier = normalizeSupplier(order.supplierId);
+
 
       return {
         "שם ספק": supplier?.name || "לא זמין",
@@ -1962,11 +1999,10 @@ const OrdersPage = () => {
                         {availableColumns.map((column) => (
                           <label
                             key={column.key}
-                            className={`flex items-center gap-3 p-3 rounded-xl border-2 cursor-pointer transition-all ${
-                              exportColumns[column.key]
-                                ? "bg-gradient-to-br from-orange-50 to-amber-50 border-orange-400"
-                                : "bg-gray-50 border-gray-200 hover:border-gray-300"
-                            }`}
+                            className={`flex items-center gap-3 p-3 rounded-xl border-2 cursor-pointer transition-all ${exportColumns[column.key]
+                              ? "bg-gradient-to-br from-orange-50 to-amber-50 border-orange-400"
+                              : "bg-gray-50 border-gray-200 hover:border-gray-300"
+                              }`}
                           >
                             <input
                               type="checkbox"
@@ -1975,11 +2011,10 @@ const OrdersPage = () => {
                               className="w-5 h-5 text-orange-600 rounded focus:ring-2 focus:ring-orange-500"
                             />
                             <span
-                              className={`text-sm font-medium ${
-                                exportColumns[column.key]
-                                  ? "text-gray-900"
-                                  : "text-gray-600"
-                              }`}
+                              className={`text-sm font-medium ${exportColumns[column.key]
+                                ? "text-gray-900"
+                                : "text-gray-600"
+                                }`}
                             >
                               {column.label}
                             </span>

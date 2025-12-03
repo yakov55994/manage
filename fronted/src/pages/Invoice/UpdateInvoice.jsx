@@ -6,25 +6,10 @@ import { toast } from "sonner";
 import FileUploader from "../../Components/FileUploader";
 import SupplierSelector from "../../Components/SupplierSelector.jsx";
 import DateField from "../../Components/DateField.jsx";
-import { useModulePermission } from "../../hooks/useModulePermission";
 import { useAuth } from "../../context/AuthContext.jsx";
 
 // Icons (lucide-react)
-import {
-  FileText,
-  ClipboardList,
-  User as UserIcon,
-  Calendar,
-  CreditCard,
-  CheckCircle2,
-  XCircle,
-  Upload,
-  Save,
-  Sparkles,
-  TrendingUp,
-  ArrowRight,
-  Building2,
-} from "lucide-react";
+import { ClipboardList, User as UserIcon, Building2 } from "lucide-react";
 
 const InvoiceEditPage = () => {
   // State for multi-invoice editing
@@ -54,7 +39,7 @@ const InvoiceEditPage = () => {
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
 
-  const { projectId, id } = useParams();
+  const { id } = useParams();
   const navigate = useNavigate();
 
   const { canViewInvoices, isAdmin } = useAuth();
@@ -431,23 +416,27 @@ const InvoiceEditPage = () => {
 
       // For now, we're editing a single invoice
       // You can extend this to handle multiple invoices if needed
-      const formData = {
+      const payload = {
         invoiceNumber: globalFields.invoiceNumber,
         invitingName: globalFields.invitingName,
         supplierId: globalFields.supplierId,
         documentType: globalFields.documentType,
         createdAt: globalFields.createdAt,
         detail: globalFields.detail,
-        sum: Number(finalRows[0].sum),
         paid: globalFields.paid,
         paymentMethod:
           globalFields.paid === "כן" ? globalFields.paymentMethod : "",
         paymentDate: globalFields.paid === "כן" ? globalFields.paymentDate : "",
-        files: finalRows[0].files,
-        status: "לא הוגש",
+        rows: finalRows.map((r) => ({
+          projectId: r.projectId,
+          projectName: r.projectName,
+          sum: Number(r.sum),
+          files: r.files,
+        })),
       };
 
-      await api.put(`/invoices/${id}`, formData);
+      // שים לב → לא עושים PUT אלא POST מיוחד
+      await api.post(`/invoices/split/${id}`, payload);
 
       toast.success("החשבונית עודכנה בהצלחה!");
       navigate(`/invoices`);

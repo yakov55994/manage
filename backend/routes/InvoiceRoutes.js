@@ -19,6 +19,13 @@ router.get("/:invoiceId", protect, checkAccess("invoices", "view"), invoiceContr
 // 📌 יצירה — כן
 router.post("/", protect, checkAccess("invoices", "edit"), invoiceController.createInvoice);
 
+router.post(
+  "/split/:id",
+  protect,
+  checkAccess("invoice", "edit"),
+  invoiceController.splitInvoice
+);
+
 // 📌 עדכון — כן
 router.put("/:invoiceId", protect, checkAccess("invoices", "edit"), invoiceController.updateInvoice);
 

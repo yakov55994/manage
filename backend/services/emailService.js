@@ -13,7 +13,7 @@ if (process.env.BREVO_API_KEY) {
   apiKey = apiInstance.authentications['apiKey'];
   apiKey.apiKey = process.env.BREVO_API_KEY;
 } else {
-  console.warn('⚠️ BREVO_API_KEY not configured');
+  console.warn('⚠ BREVO_API_KEY not configured');
 }
 
 // פונקציה עזר ליצירת טוקן איפוס
@@ -32,7 +32,7 @@ const generateResetToken = async (user) => {
 export const sendPasswordResetEmail = async (user) => {
   try {
     if (!apiInstance) {
-      console.warn('⚠️ Brevo not configured - skipping email');
+      console.warn('⚠ Brevo not configured - skipping email');
       return { success: false, message: 'Email service not configured' };
     }
 
@@ -70,7 +70,7 @@ export const sendPasswordResetEmail = async (user) => {
           </div>
           
           <div style="background: #fef3c7; border-right: 4px solid #f59e0b; padding: 15px; border-radius: 8px; margin: 20px 0;">
-            <strong>⚠️ שים לב:</strong>
+            <strong>⚠ שים לב:</strong>
             <ul style="margin: 10px 0 0; padding-right: 20px;">
               <li>הקישור תקף ל-24 שעות</li>
               <li>אם לא ביקשת לאפס, התעלם</li>
@@ -110,7 +110,7 @@ export const sendPasswordResetEmail = async (user) => {
 export const sendWelcomeEmail = async (user) => {
   try {
     if (!apiInstance) {
-      console.warn('⚠️ Brevo not configured - skipping email');
+      console.warn('⚠ Brevo not configured - skipping email');
       return { success: false, message: 'Email service not configured' };
     }
 

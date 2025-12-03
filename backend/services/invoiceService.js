@@ -160,6 +160,42 @@ export default {
     return invoice;
   },
 
+    async splitInvoice(invoiceId, data) {
+    // 1. מחיקת חשבונית מקורית
+    await Invoice.findByIdAndDelete(invoiceId);
+
+    const createdInvoices = [];
+
+    // 2. לכל שורה — יצירת חשבונית חדשה
+    for (const row of data.rows) {
+      const project = await Project.findById(row.projectId);
+
+      const newInv = await Invoice.create({
+        invoiceNumber: data.invoiceNumber,
+        invitingName: data.invitingName,
+        supplierId: data.supplierId,
+        documentType: data.documentType,
+        createdAt: data.createdAt,
+        detail: data.detail,
+        paid: data.paid,
+        paymentMethod: data.paymentMethod,
+        paymentDate: data.paymentDate,
+
+        sum: row.sum,
+
+        projectId: row.projectId,
+        projectName: project?.name || row.projectName,
+
+        files: row.files,
+        status: "לא הוגש",
+      });
+
+      createdInvoices.push(newInv);
+    }
+
+    return createdInvoices;
+  },
+
   // ✏️ עדכון חשבונית
   async updateInvoice(user, invoiceId, data) {
     const invoice = await Invoice.findById(invoiceId);

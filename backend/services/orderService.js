@@ -46,8 +46,7 @@ export default {
         path: "projectId",
         select: "name invitingName"
       });
-  }
-  ,
+  },
 
   async getOrderById(user, orderId) {
     const order = await Order.findById(orderId)

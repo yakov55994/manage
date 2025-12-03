@@ -61,6 +61,23 @@ const invoiceController = {
     }
   },
 
+    async splitInvoice (req, res) {
+    try {
+      const { id } = req.params;
+
+      const result = await invoiceService.splitInvoice(id, req.body);
+
+      return res.json({
+        success: true,
+        message: "חשבונית פוצלה בהצלחה",
+        invoices: result,
+      });
+    } catch (err) {
+      console.error("❌ splitInvoice error:", err);
+      res.status(500).json({ message: err.message });
+    }
+  },
+
   // ✏️ עדכון
   async updateInvoice(req, res) {
     try {
