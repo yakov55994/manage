@@ -86,7 +86,7 @@ const CreateProject = () => {
                   </h2>
                   <div className="flex items-center justify-center gap-2 mt-2">
                     <Sparkles className="w-4 h-4 text-orange-500" />
-                    <span className="text-sm font-medium text-slate-600">
+                    <span className="sm font-medium text-slate-600">
                       הוסף פרויקט למערכת
                     </span>
                   </div>
@@ -113,7 +113,7 @@ const CreateProject = () => {
               <div className="space-y-6">
                 {/* Project Name */}
                 <div className="group">
-                  <label className="text-sm font-bold text-slate-700 mb-2 flex items-center gap-2">
+                  <label className="sm font-bold text-slate-700 mb-2 flex items-center gap-2">
                     <Building2 className="w-4 h-4 text-orange-500" />
                     שם הפרויקט
                   </label>
@@ -157,7 +157,7 @@ const CreateProject = () => {
               <div className="space-y-6">
                 {/* Inviting Name */}
                 <div className="group">
-                  <label className="text-sm font-bold text-slate-700 mb-2 flex items-center gap-2">
+                  <label className="sm font-bold text-slate-700 mb-2 flex items-center gap-2">
                     <User className="w-4 h-4 text-amber-500" />
                     שם המזמין
                   </label>
@@ -173,7 +173,7 @@ const CreateProject = () => {
 
                 {/* Contact Person */}
                 <div className="group">
-                  <label className="text-sm font-bold text-slate-700 mb-2 flex items-center gap-2">
+                  <label className="sm font-bold text-slate-700 mb-2 flex items-center gap-2">
                     <Phone className="w-4 h-4 text-yellow-500" />
                     איש קשר
                   </label>

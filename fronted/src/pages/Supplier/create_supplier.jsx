@@ -100,13 +100,13 @@ const CreateSupplier = () => {
   };
 
   const getFieldName = (field) =>
-    ({
-      name: "שם הספק",
-      business_tax: "מספר עוסק",
-      address: "כתובת",
-      phone: "טלפון",
-      email: "אימייל",
-    }[field] || field);
+  ({
+    name: "שם הספק",
+    business_tax: "מספר עוסק",
+    address: "כתובת",
+    phone: "טלפון",
+    email: "אימייל",
+  }[field] || field);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -136,14 +136,23 @@ const CreateSupplier = () => {
       toast.success("הספק נוצר בהצלחה!", {
         className: "sonner-toast success rtl",
       });
-      navigate("/suppliers");
+      const params = new URLSearchParams(location.search);
+      const returnTo = params.get("returnTo");
+
+      if (returnTo === "create-invoice") {
+        navigate("/create-invoice", { state: { newSupplier: res.data.data } });
+      } else {
+        navigate("/suppliers");
+      }
+
+
       if (res?.data?.supplier) {
         sessionStorage.setItem(
           "createdSupplier",
           JSON.stringify(res.data.supplier)
         );
       }
-      navigate(returnTo);
+
     } catch (err) {
       console.error("Error details:", err.response?.data);
       const errorMessage = err.response?.data?.message || "שגיאה ביצירת הספק";

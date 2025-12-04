@@ -100,10 +100,10 @@ const AppContent = () => {
         </div>
       </div>
 
-      <footer className="bg-gray-50 border-t border-gray-200 py-4">
-        <p className="text-center font-bold text-slate-600">
+      <footer className="border-gray-200 py-4">
+        <p className="text-center font-bold text-white">
           © כל הזכויות שמורות ל
-          <a href="https://yc-dev.pages.dev" target="_blank" rel="noopener noreferrer"> יעקב כהן</a>
+          <a href="https://yc-dev.pages.dev" target="_blank" rel="noopener noreferrer" className=""> יעקב כהן</a>
         </p>
       </footer>
 

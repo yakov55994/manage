@@ -42,8 +42,6 @@ export const recalculateRemainingBudget = async (projectId) => {
     project.remainingBudget = newRemainingBudget;
   }
 
-  console.log(`✅ עודכן תקציב נותר לפרויקט "${project.name}": ${project.remainingBudget} ₪`);
-
   await project.save();
   return project;
 }
@@ -160,7 +158,7 @@ export default {
     return invoice;
   },
 
-    async splitInvoice(invoiceId, data) {
+  async splitInvoice(invoiceId, data) {
     // 1. מחיקת חשבונית מקורית
     await Invoice.findByIdAndDelete(invoiceId);
 
@@ -259,7 +257,6 @@ export default {
     invoice.projectName = newProject.name;
     const updated = await invoice.save();
 
-    console.log(`🔄 מעביר חשבונית מפרויקט ${oldProjectId} לפרויקט ${newProjectId}`);
 
     // ✅ חישוב מחדש לשני הפרויקטים
     await recalculateRemainingBudget(oldProjectId);
@@ -269,26 +266,26 @@ export default {
   },
 
   // 🗑️ מחיקה
-  async deleteInvoice(user, invoiceId) {
-    const invoice = await Invoice.findById(invoiceId);
+async deleteInvoice(user, invoiceId) {
+  const invoice = await Invoice.findById(invoiceId);
 
-    if (!invoice) {
-      console.log("⚠️ חשבונית לא נמצאה למחיקה");
-      return null;
-    }
-
-    // שמור projectId לפני המחיקה
-    const projectId = invoice.projectId ? invoice.projectId.toString() : null;
-
-    // מחיקה
-    await Invoice.findByIdAndDelete(invoiceId);
-
-    // עדכון תקציב - רק אם יש projectId
-    if (projectId) {
-      await recalculateRemainingBudget(projectId);
-    }
-
-    return true;
+  if (!invoice) {
+    console.log("⚠️ חשבונית לא נמצאה למחיקה");
+    return null;
   }
+
+  const projectId = invoice.projectId?.toString();
+
+  // מפעיל את ההוק → מוחק גם ב־Cloudinary
+  await invoice.deleteOne();
+
+  if (projectId) {
+    await recalculateRemainingBudget(projectId);
+  }
+
+  return true;
+}
+
+
 
 };

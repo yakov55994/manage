@@ -6,7 +6,7 @@ function FileUploader({
     onUploadSuccess,
     folder = 'general',
     label = 'העלה קובץ',
-    maxSize = 5 * 1024 * 1024,
+    maxSize = 15 * 1024 * 1024,
     onDeleteSuccess,
     disabled = false, // 🔥 הוספתי prop חדש
     disabledMessage = "אין הרשאה להעלות קבצים" // 🔥 הודעה מותאמת אישית
@@ -54,11 +54,11 @@ function FileUploader({
 
         setFiles((prev) => [...prev, ...localFiles]);
         onUploadSuccess(localFiles);
-        
+
         toast.success(`${localFiles.length} קבצים נבחרו (יועלו בעת השמירה)`, {
             className: "sonner-toast success rtl"
         });
-        
+
         setLoading(false);
     };
 
@@ -69,7 +69,7 @@ function FileUploader({
                 {label}
                 {disabled && <Lock className="w-4 h-4 text-gray-400" />}
             </label>
-            
+
             {/* 🔥 הודעת אזהרה אם אין הרשאה */}
             {disabled && (
                 <div className="mb-2 p-3 bg-yellow-50 border border-yellow-200 rounded-lg">

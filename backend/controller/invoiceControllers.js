@@ -118,8 +118,6 @@ const invoiceController = {
 
   // 🔄 העברת חשבונית לפרויקט אחר
   async moveInvoice(req, res) {
-    console.log("BODY:", req.body);
-    console.log("newProjectId received:", req.body.newProjectId);
     try {
       const result = await invoiceService.moveInvoice(
         req.user,
@@ -136,7 +134,6 @@ const invoiceController = {
 
   // 🗑️ מחיקה
   async deleteInvoice(req, res) {
-    console.log("req.user: ", req.user)
     try {
       await invoiceService.deleteInvoice(req.user, req.params.invoiceId);
       res.json({ success: true, message: "נמחק בהצלחה" });

@@ -14,7 +14,6 @@ import {
   Save,
   Plus,
   Trash2,
-  CheckCircle2,
   AlertCircle,
   Sparkles,
   TrendingUp,
@@ -26,16 +25,15 @@ import { useAuth } from "../../context/AuthContext";
 const CreateOrder = () => {
   const [projects, setProjects] = useState([]);
   const [selectedProject, setSelectedProject] = useState(null);
+  const [projectSearch, setProjectSearch] = useState("");
   const [orders, setOrders] = useState([]);
   const [isLoading, setIsLoading] = useState(false);
   const [orderIndexToDelete, setOrderIndexToDelete] = useState(null);
   const [showModal, setShowModal] = useState(false);
 
   const navigate = useNavigate();
-
   const { user, loading: authLoading } = useAuth();
 
-  // בתוך הקומפוננטה
   const { canEdit: canEditOrders } = useModulePermission(
     selectedProject?._id,
     "orders"
@@ -49,35 +47,31 @@ const CreateOrder = () => {
         const data = Array.isArray(response.data?.data)
           ? response.data.data
           : Array.isArray(response.data)
-          ? response.data
-          : [];
+            ? response.data
+            : [];
 
-        // אם ה־Auth עדיין בטעינה — תראה הכל זמנית
         if (authLoading) {
           setProjects(data);
           return;
         }
 
-        // משתמש לא מחובר
         if (!user) {
           setProjects([]);
           return;
         }
 
-        // אדמין → רואה הכל
         if (user.role === "admin") {
           setProjects(data);
           return;
         }
 
-        // משתמש רגיל → סינון לפי הרשות המותרות
         if (!user.permissions || !Array.isArray(user.permissions)) {
           setProjects([]);
           return;
         }
 
         const allowedProjectIds = user.permissions
-          .filter((p) => p.modules?.orders === "edit") // 👈 רק עם הרשאת edit ל-orders!
+          .filter((p) => p.modules?.orders === "edit")
           .map((p) => String(p.project?._id || p.project))
           .filter(Boolean);
 
@@ -95,10 +89,12 @@ const CreateOrder = () => {
     fetchProjects();
   }, [user, authLoading]);
 
-  const handleProjectChange = (e) => {
-    const projectId = e.target.value;
-    const selected = projects.find((project) => project._id === projectId);
-    setSelectedProject(selected);
+  const toggleProject = (project) => {
+    if (selectedProject?._id === project._id) {
+      setSelectedProject(null);
+    } else {
+      setSelectedProject(project);
+    }
   };
 
   const addOrder = () => {
@@ -166,9 +162,7 @@ const CreateOrder = () => {
 
     setOrders(newOrders);
 
-    toast.success(`${selectedFiles.length} קבצים נבחרו (יועלו בעת השמירה)`, {
-      className: "sonner-toast success rtl",
-    });
+ 
   };
 
   const validateSubmission = () => {
@@ -314,7 +308,8 @@ const CreateOrder = () => {
           };
         })
       );
-      const response = await api.post("/orders/bulk", {
+
+      await api.post("/orders/bulk", {
         orders: orderData,
       });
 
@@ -361,7 +356,7 @@ const CreateOrder = () => {
     if (isLocal) {
       return (
         <div className="flex items-center gap-2">
-          <span className="text-gray-600 text-sm">
+          <span className="text-gray-600 text-m">
             📄 {file.name} ({(file.size / 1024).toFixed(1)} KB)
           </span>
           <span className="text-orange-500 text-xs font-bold">
@@ -399,6 +394,7 @@ const CreateOrder = () => {
 
     return (
       <a
+
         href={fileUrl}
         target="_blank"
         rel="noopener noreferrer"
@@ -408,6 +404,7 @@ const CreateOrder = () => {
       </a>
     );
   };
+
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-orange-50 via-amber-50 to-yellow-50 relative overflow-hidden py-12">
@@ -433,32 +430,157 @@ const CreateOrder = () => {
                   <h1 className="text-4xl font-black text-slate-900">
                     יצירת הזמנות לפרויקט
                   </h1>
-                  <div className="flex items-center justify-center gap-2 mt-2">
+                  {/* <div className="flex items-center justify-center gap-2 mt-2">
                     <Sparkles className="w-4 h-4 text-orange-500" />
-                    <span className="text-sm font-medium text-slate-600">
+                    <span className="text-m font-medium text-slate-600">
                       מערכת ניהול הזמנות מתקדמת
                     </span>
-                  </div>
+                  </div> */}
                 </div>
               </div>
 
               {/* Project Selector */}
-              <div className="max-w-md mx-auto mt-6">
-                <label className=" text-sm font-bold text-slate-700 mb-2 flex items-center gap-2">
-                  <Building2 className="w-4 h-4 text-orange-500" />
+              <div className="mt-6 max-w-2xl mx-auto">
+                <label className="text-base font-bold flex items-center gap-3 mb-4 text-slate-800">
+                  <div className="p-2 rounded-lg bg-gradient-to-br from-orange-100 to-amber-100">
+                    <Building2 className="w-5 h-5 text-orange-600" />
+                  </div>
                   בחר פרויקט
                 </label>
-                <select
-                  onChange={handleProjectChange}
-                  className="w-full p-4 border-2 border-orange-200 rounded-xl bg-white font-bold text-slate-900 focus:border-orange-500 focus:outline-none focus:ring-4 focus:ring-orange-500/20 transition-all"
-                >
-                  <option value="">לא נבחר פרוייקט</option>
-                  {projects.map((project) => (
-                    <option key={project._id} value={project._id}>
-                      {project.name}
-                    </option>
-                  ))}
-                </select>
+
+                <div className="relative bg-gradient-to-br from-white to-orange-50/30 border-2 border-orange-200 rounded-2xl shadow-lg overflow-hidden">
+                  {/* Selected Project Tag */}
+                  {selectedProject && (
+                    <div className="p-4 bg-gradient-to-r from-orange-50 to-amber-50 border-b-2 border-orange-100">
+                      <div className="flex flex-wrap gap-2">
+                        <div className="group px-4 py-2 bg-gradient-to-r from-orange-500 to-amber-500 rounded-xl flex items-center gap-2 font-bold shadow-md hover:shadow-xl transition-all duration-200 hover:scale-105">
+                          <span className="text-m">{selectedProject.name}</span>
+                          <button
+                            onClick={() => setSelectedProject(null)}
+                            className="w-5 h-5 rounded-full bg-white/20 hover:bg-white/30 flex items-center justify-center transition-colors duration-200 group-hover:rotate-90"
+                          >
+                            <span className="text-m font-bold">
+                              ✕
+                            </span>
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Search Box */}
+                  <div className="p-4 border-b-2 border-orange-100 bg-white/50">
+                    <div className="relative">
+                      <input
+                        type="text"
+                        value={projectSearch}
+                        onChange={(e) => setProjectSearch(e.target.value)}
+                        placeholder="חפש פרויקט..."
+                        className="w-full pl-10 pr-8 py-4 border-2 border-orange-200 rounded-xl focus:outline-none focus:border-orange-400 focus:ring-2 focus:ring-orange-200 transition-all font-bold"
+                      />
+                      <svg
+                        className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-orange-400"
+                        fill="none"
+                        stroke="currentColor"
+                        viewBox="0 0 24 24"
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth={2}
+                          d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
+                        />
+                      </svg>
+                      {projectSearch && (
+                        <button
+                          onClick={() => setProjectSearch("")}
+                          className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-orange-600 transition-colors"
+                        >
+                          ✕
+                        </button>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Projects List */}
+                  <div className="p-5 max-h-64 overflow-y-auto">
+                    <div className="space-y-2">
+                      {projects
+                        .filter((p) =>
+                          p.name
+                            .toLowerCase()
+                            .includes(projectSearch.toLowerCase())
+                        )
+                        .map((p) => {
+                          const isSelected = selectedProject?._id === p._id;
+                          return (
+                            <label
+                              key={p._id}
+                              className={`
+                                flex items-center gap-3 p-3 rounded-xl cursor-pointer
+                                transition-all duration-200 hover:scale-[1.02]
+                                ${isSelected
+                                  ? "bg-gradient-to-r from-orange-100 to-amber-100 border-2 border-orange-300 shadow-md"
+                                  : "bg-white hover:bg-orange-50 border-2 border-gray-200 hover:border-orange-200"
+                                }
+                              `}
+                            >
+                              <div className="relative">
+                                <input
+                                  type="radio"
+                                  checked={isSelected}
+                                  onChange={() => toggleProject(p)}
+                                  className="w-5 h-5 rounded-full border-2 border-orange-300 text-orange-600 focus:ring-2 focus:ring-orange-500 focus:ring-offset-1 cursor-pointer"
+                                />
+                              </div>
+                              <span
+                                className={`flex-1 font-medium transition-colors ${isSelected
+                                  ? "text-orange-900"
+                                  : "text-slate-700"
+                                  }`}
+                              >
+                                {p.name}
+                              </span>
+                              {isSelected && (
+                                <div className="w-2 h-2 rounded-full bg-gradient-to-r from-orange-500 to-amber-500 animate-pulse"></div>
+                              )}
+                            </label>
+                          );
+                        })}
+
+                      {/* No Results Message */}
+                      {projectSearch &&
+                        projects.filter((p) =>
+                          p.name
+                            .toLowerCase()
+                            .includes(projectSearch.toLowerCase())
+                        ).length === 0 && (
+                          <div className="text-center py-8 text-gray-400">
+                            <p className="text-m">
+                              לא נמצאו פרויקטים התואמים "{projectSearch}"
+                            </p>
+                          </div>
+                        )}
+                    </div>
+                  </div>
+
+                  {/* Empty State */}
+                  {projects.length === 0 && (
+                    <div className="p-8 text-center text-gray-400">
+                      <Building2 className="w-12 h-12 mx-auto mb-2 opacity-50" />
+                      <p>אין פרויקטים זמינים</p>
+                    </div>
+                  )}
+                </div>
+
+                {/* Counter */}
+                {selectedProject && (
+                  <div className="mt-3 text-center">
+                    <span className="inline-block px-4 py-1 bg-orange-100 text-orange-700 rounded-full text-m font-bold">
+                      נבחר: {selectedProject.name}
+                    </span>
+                  </div>
+                )}
               </div>
             </div>
           </div>
@@ -500,7 +622,7 @@ const CreateOrder = () => {
                   <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                     {/* Inviting Name */}
                     <div className="group">
-                      <label className="text-sm font-bold text-slate-700 mb-2 flex items-center gap-2">
+                      <label className="text-m font-bold text-slate-700 mb-2 flex items-center gap-2">
                         <User className="w-4 h-4 text-orange-500" />
                         שם המזמין
                       </label>
@@ -514,7 +636,7 @@ const CreateOrder = () => {
                             e.target.value
                           )
                         }
-                        className="mt-2 w-full rounded-xl border-2 border-slate-200 bg-white px-4 py-3 text-sm font-medium focus:border-orange-500 focus:outline-none focus:ring-4 focus:ring-orange-500/20 transition-all group-hover:border-orange-300"
+                        className="mt-2 w-full rounded-xl border-2 border-slate-200 bg-white px-4 py-3 text-m font-medium focus:border-orange-500 focus:outline-none focus:ring-4 focus:ring-orange-500/20 transition-all group-hover:border-orange-300"
                         placeholder="הזן שם מזמין..."
                         required
                       />
@@ -522,7 +644,7 @@ const CreateOrder = () => {
 
                     {/* Order Number */}
                     <div className="group">
-                      <label className="text-sm font-bold text-slate-700 mb-2 block">
+                      <label className="text-m font-bold text-slate-700 mb-2 block">
                         מספר הזמנה
                       </label>
                       <input
@@ -535,14 +657,14 @@ const CreateOrder = () => {
                             e.target.value
                           )
                         }
-                        className="mt-2 w-full rounded-xl border-2 border-slate-200 bg-white px-4 py-3 text-sm font-medium focus:border-orange-500 focus:outline-none focus:ring-4 focus:ring-orange-500/20 transition-all group-hover:border-orange-300"
+                        className="mt-2 w-full rounded-xl border-2 border-slate-200 bg-white px-4 py-3 text-m font-medium focus:border-orange-500 focus:outline-none focus:ring-4 focus:ring-orange-500/20 transition-all group-hover:border-orange-300"
                         required
                       />
                     </div>
 
                     {/* Sum */}
                     <div className="group">
-                      <label className="text-sm font-bold text-slate-700 mb-2 flex items-center gap-2">
+                      <label className="text-m font-bold text-slate-700 mb-2 flex items-center gap-2">
                         <TrendingUp className="w-4 h-4 text-orange-500" />
                         סכום ההזמנה
                       </label>
@@ -552,14 +674,14 @@ const CreateOrder = () => {
                         onChange={(e) =>
                           handleOrderChange(index, "sum", e.target.value)
                         }
-                        className="mt-2 w-full rounded-xl border-2 border-slate-200 bg-white px-4 py-3 text-sm font-medium focus:border-orange-500 focus:outline-none focus:ring-4 focus:ring-orange-500/20 transition-all group-hover:border-orange-300"
+                        className="mt-2 w-full rounded-xl border-2 border-slate-200 bg-white px-4 py-3 text-m font-medium focus:border-orange-500 focus:outline-none focus:ring-4 focus:ring-orange-500/20 transition-all group-hover:border-orange-300"
                         required
                       />
                     </div>
 
                     {/* Detail */}
                     <div className="md:col-span-2 lg:col-span-3 group">
-                      <label className="text-sm font-bold text-slate-700 mb-2 block">
+                      <label className="text-m font-bold text-slate-700 mb-2 block">
                         פירוט הזמנה
                       </label>
                       <textarea
@@ -567,22 +689,31 @@ const CreateOrder = () => {
                         onChange={(e) =>
                           handleOrderChange(index, "detail", e.target.value)
                         }
-                        className="mt-2 w-full min-h-[100px] rounded-xl border-2 border-slate-200 bg-white px-4 py-3 text-sm font-medium focus:border-orange-500 focus:outline-none focus:ring-4 focus:ring-orange-500/20 transition-all resize-none group-hover:border-orange-300"
+                        className="mt-2 w-full min-h-[100px] rounded-xl border-2 border-slate-200 bg-white px-4 py-3 text-m font-medium focus:border-orange-500 focus:outline-none focus:ring-4 focus:ring-orange-500/20 transition-all resize-none group-hover:border-orange-300"
                         placeholder="הוסף פירוט על ההזמנה..."
                         required
                       />
                     </div>
 
                     {/* Created At */}
-                    <div className="group">
-                      <label className="text-sm font-bold text-slate-700 mb-2 flex items-center gap-2">
+                    <div
+                      className="group cursor-pointer"
+                      onClick={(e) => {
+                        // מצא את ה-input בתוך ה-div ופתח את ה-picker
+                        const input = e.currentTarget.querySelector('input[type="date"]');
+                        if (input && input.showPicker) {
+                          input.showPicker();
+                        }
+                      }}
+                    >
+                      <label className="text-sm font-bold text-slate-700 mb-2 flex items-center gap-2 pointer-events-none">
                         <Calendar className="w-4 h-4 text-orange-500" />
                         תאריך יצירת ההזמנה
                       </label>
                       <DateField
                         type="date"
                         value={order.createdAt}
-                        className="w-full p-3 border-2 border-slate-200 rounded-xl bg-white font-medium focus:border-orange-500 focus:outline-none focus:ring-4 focus:ring-orange-500/20 transition-all group-hover:border-orange-300"
+                        className="w-full p-3 border-2 border-slate-200 rounded-xl bg-white font-medium focus:border-orange-500 focus:outline-none focus:ring-4 focus:ring-orange-500/20 transition-all group-hover:border-orange-300 cursor-pointer"
                         placeholder="yyyy-mm-dd"
                         required
                         onChange={(val) =>
@@ -593,7 +724,7 @@ const CreateOrder = () => {
 
                     {/* Contact Person */}
                     <div className="group">
-                      <label className="text-sm font-bold text-slate-700 mb-2 flex items-center gap-2">
+                      <label className="text-m font-bold text-slate-700 mb-2 flex items-center gap-2">
                         <Phone className="w-4 h-4 text-orange-500" />
                         איש קשר
                       </label>
@@ -607,7 +738,7 @@ const CreateOrder = () => {
                             e.target.value
                           )
                         }
-                        className="mt-2 w-full rounded-xl border-2 border-slate-200 bg-white px-4 py-3 text-sm font-medium focus:border-orange-500 focus:outline-none focus:ring-4 focus:ring-orange-500/20 transition-all group-hover:border-orange-300"
+                        className="mt-2 w-full rounded-xl border-2 border-slate-200 bg-white px-4 py-3 text-m font-medium focus:border-orange-500 focus:outline-none focus:ring-4 focus:ring-orange-500/20 transition-all group-hover:border-orange-300"
                         placeholder="הכנס שם איש הקשר..."
                         required
                       />
@@ -615,7 +746,7 @@ const CreateOrder = () => {
 
                     {/* Status */}
                     <div className="group">
-                      <label className="text-sm font-bold text-slate-700 mb-2 block">
+                      <label className="text-m font-bold text-slate-700 mb-2 block">
                         סטטוס
                       </label>
                       <select
@@ -623,7 +754,7 @@ const CreateOrder = () => {
                         onChange={(e) =>
                           handleOrderChange(index, "status", e.target.value)
                         }
-                        className="mt-2 w-full rounded-xl border-2 border-slate-200 bg-white px-4 py-3 text-sm font-medium focus:border-orange-500 focus:outline-none focus:ring-4 focus:ring-orange-500/20 transition-all group-hover:border-orange-300"
+                        className="mt-2 w-full rounded-xl border-2 border-slate-200 bg-white px-4 py-3 text-m font-medium focus:border-orange-500 focus:outline-none focus:ring-4 focus:ring-orange-500/20 transition-all group-hover:border-orange-300"
                         required
                       >
                         <option value="לא הוגש">לא הוגש</option>
@@ -666,7 +797,7 @@ const CreateOrder = () => {
                                 onClick={() =>
                                   handleRemoveFile(index, fileIndex)
                                 }
-                                className="mr-2 px-3 py-1.5 rounded-lg text-sm text-red-600 hover:bg-red-50 font-medium transition-all"
+                                className="mr-2 px-3 py-1.5 rounded-lg text-m text-red-600 hover:bg-red-50 font-medium transition-all"
                               >
                                 הסר
                               </button>
@@ -676,7 +807,7 @@ const CreateOrder = () => {
                       ) : (
                         <div className="mt-4 text-center py-8 text-slate-400">
                           <Upload className="w-12 h-12 mx-auto mb-3 opacity-50" />
-                          <p className="text-sm font-medium">
+                          <p className="text-m font-medium">
                             אין קבצים מצורפים כרגע
                           </p>
                         </div>

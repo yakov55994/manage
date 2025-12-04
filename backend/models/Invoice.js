@@ -24,8 +24,8 @@ const invoiceSchema = new mongoose.Schema({
     size: { type: Number, required: true },
     folder: { type: String, required: false },
     _id: { type: mongoose.Schema.Types.ObjectId, ref: 'File' },
-    publicId: { type: String },
-    resourceType: { type: String }
+    publicId: { type: String, required: true },    // ← חובה!
+    resourceType: { type: String, required: true }, // ← חובה!
   }],
   supplierId: {
     type: mongoose.Schema.Types.ObjectId,
@@ -59,29 +59,24 @@ const invoiceSchema = new mongoose.Schema({
   }
 });
 
-invoiceSchema.pre('deleteOne', { document: true, query: false }, async function(next) {
-  console.log('🔥 Middleware רץ! מוחק חשבונית:', this.invoiceNumber);
-  console.log('📁 קבצים למחיקה:', this.files);
-  
+invoiceSchema.pre('deleteOne', { document: true, query: false }, async function (next) {
+
   try {
     if (this.files && this.files.length > 0) {
       for (const file of this.files) {
         // ✅ חלץ publicId מה-URL אם לא קיים
         let publicId = file.publicId;
-        
+
         if (!publicId && file.url) {
           publicId = extractPublicIdFromUrl(file.url);
         }
-        
-        console.log('🗑️ מנסה למחוק:', publicId);
-        
+
+
         if (publicId) {
           const result = await cloudinary.uploader.destroy(publicId, {
             resource_type: file.resourceType || 'raw'
           });
-          console.log('✅ תוצאה:', result);
         } else {
-          console.log('⚠️ לא נמצא publicId עבור:', file.name);
         }
       }
     }
@@ -96,7 +91,7 @@ invoiceSchema.pre('deleteOne', { document: true, query: false }, async function(
 function extractPublicIdFromUrl(url) {
   try {
     // URL לדוגמה: https://res.cloudinary.com/dbbivwbbt/raw/upload/v1764535273/invoices/vvzkducxoyn32oyulyq7.pdf
-    
+
     // ✅ גרסה מתוקנת - כוללת את הסיומת
     const regex = /\/upload\/(?:v\d+\/)?(.+)$/;
     const match = url.match(regex);

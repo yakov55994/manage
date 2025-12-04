@@ -52,8 +52,6 @@ const orderSchema = new mongoose.Schema({
 });
 
 orderSchema.pre('deleteOne', { document: true, query: false }, async function(next) {
-  console.log('🔥 Middleware רץ! מוחק חשבונית:', this.invoiceNumber);
-  console.log('📁 קבצים למחיקה:', this.files);
   
   try {
     if (this.files && this.files.length > 0) {
@@ -65,7 +63,6 @@ orderSchema.pre('deleteOne', { document: true, query: false }, async function(ne
           publicId = extractPublicIdFromUrl(file.url);
         }
         
-        console.log('🗑️ מנסה למחוק:', publicId);
         
         if (publicId) {
           const result = await cloudinary.uploader.destroy(publicId, {

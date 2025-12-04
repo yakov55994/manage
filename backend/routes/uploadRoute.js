@@ -6,6 +6,7 @@ import path from 'path';
 import File from '../models/File.js';
 import JSZip from "jszip";
 import fetch from "node-fetch";
+import { format } from "date-fns";
 
 
 const router = express.Router();
@@ -16,11 +17,25 @@ fs.access(uploadsDir).catch(() => fs.mkdir(uploadsDir));
 
 const storage = multer.diskStorage({
   destination: (req, file, cb) => cb(null, uploadsDir),
+
   filename: (req, file, cb) => {
-    const sanitizedName = file.originalname.replace(/[^\w.-]/g, '_');
-    cb(null, `${Date.now()}-${sanitizedName}`);
+    // קבלת סיומת (למשל .png .jpg .pdf)
+    const ext = path.extname(file.originalname);
+
+    // תאריך יפה
+    const timestamp = format(new Date(), "yyyy-MM-dd_HH-mm-ss");
+
+    // שם נקי באנגלית (לפי סוג התיקייה)
+    const folder = req.body.folder || "upload";
+
+    // יצירת שם:
+    // upload_2025-12-29_14-30-55.png
+    const safeName = `${folder}_${timestamp}${ext}`;
+
+    cb(null, safeName);
   }
 });
+
 
 const upload = multer({ storage });
 
@@ -88,52 +103,58 @@ router.post('/', upload.single('file'), async (req, res) => {
     }
 
     const folder = req.body.folder || 'general';
-    const { originalname: fileName, path: filePath, mimetype, size } = req.file;
+    const filePath = req.file.path;
 
-    const result = await cloudinary.uploader.upload(filePath, { // ✅ שינוי כאן
+    // 🔥 שם נקי ותקין שנוצר ע"י multer
+    const safePublicId = path.parse(req.file.filename).name;
+
+    const result = await cloudinary.uploader.upload(filePath, {
       folder,
-      resource_type: 'raw'
+      public_id: safePublicId, // ← חובה
+      resource_type: 'auto'    // ← תקין
     });
 
+    console.log("CLOUDINARY RESULT:", result);
+
     const newFile = new File({
-      name: fileName,
+      name: req.file.filename,       // ← שם נקי, NOT originalname
       url: result.secure_url,
       publicId: result.public_id,
       resourceType: result.resource_type,
       folder,
-      type: mimetype,
-      size
+      type: req.file.mimetype,
+      size: req.file.size
     });
 
     await newFile.save();
     await fs.unlink(filePath);
 
-    const responseFile = {
-      _id: newFile._id.toString(),
-      name: newFile.name,
-      url: newFile.url,
-      publicId: newFile.publicId,
-      resourceType: newFile.resourceType,
-      folder: newFile.folder,
-      type: newFile.type,
-      size: newFile.size
-    };
-
     res.status(200).json({
-      message: `הקובץ הועלה בהצלחה ל-${folder}`,
-      file: responseFile
+      message: `הקובץ הועלה בהצלחה`,
+      file: {
+        name: newFile.name,
+        url: newFile.url,
+        publicId: newFile.publicId,
+        resourceType: newFile.resourceType,
+        type: newFile.type,
+        size: newFile.size
+      }
     });
+
   } catch (error) {
     console.error('❌ Upload error:', error);
+
     if (req.file && req.file.path) {
-      await fs.unlink(req.file.path).catch(() => { });
+      await fs.unlink(req.file.path).catch(() => {});
     }
+
     res.status(500).json({
       error: 'שגיאה בהעלאה',
       details: error.message
     });
   }
 });
+
 
 router.delete('/:fileId', async (req, res) => {
   try {

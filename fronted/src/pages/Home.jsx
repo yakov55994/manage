@@ -1,5 +1,5 @@
-import React, { useState, useEffect } from 'react';
-import { Settings, ArrowRightCircle, Sparkles, Target, Zap, Shield } from 'lucide-react';
+import { useState, useEffect } from 'react';
+import { Settings, ArrowRightCircle, Target, Zap, Shield } from 'lucide-react';
 import { useNavigate } from "react-router-dom";
 
 

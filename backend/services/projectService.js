@@ -43,7 +43,6 @@ export default {
     });
 
   // 🔍 דיבוג
-  console.log('🔥 Project "ניסיון":', projects.find(p => p.name === 'ניסיון'));
   
   return projects;
 },

@@ -1,12 +1,15 @@
-import React, { useState, useEffect } from "react";
+import { useState, useEffect } from "react";
 import { ChevronDown, User } from "lucide-react";
 import api from "../api/api.js";
 import { toast } from "sonner";
+import { useNavigate } from "react-router-dom";
+
 
 const SupplierSelector = ({
   projectId,
   value,
   onSelect,
+  onAddNew,
   label = "בחר ספק",
   placeholder = "חפש או בחר ספק...",
   required = false,
@@ -18,6 +21,7 @@ const SupplierSelector = ({
   const [isOpen, setIsOpen] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedSupplier, setSelectedSupplier] = useState(null);
+  const navigate = useNavigate();
 
   // טעינת ספקים
   useEffect(() => {
@@ -91,7 +95,7 @@ const SupplierSelector = ({
   return (
     <div className={`relative ${className}`}>
       {label && (
-        <label className="block text-lg font-bold text-black mb-2">
+        <label className="block text-m font-bold text-black mb-2">
           {label} {required && <span className="text-red-500">*</span>}
         </label>
       )}
@@ -102,10 +106,9 @@ const SupplierSelector = ({
           className={`
             w-full p-3 border border-gray-300 rounded-lg bg-white cursor-pointer
             flex items-center justify-between font-bold
-            ${
-              disabled
-                ? "bg-gray-100 cursor-not-allowed"
-                : "hover:border-gray-400"
+            ${disabled
+              ? "bg-gray-100 cursor-not-allowed"
+              : "hover:border-gray-400"
             }
             ${isOpen ? "ring-2 ring-blue-500" : ""}
             focus:outline-none focus:ring-2 focus:ring-blue-500
@@ -121,15 +124,14 @@ const SupplierSelector = ({
           </div>
           <ChevronDown
             size={20}
-            className={`text-gray-500 transition-transform ${
-              isOpen ? "rotate-180" : ""
-            }`}
+            className={`text-gray-500 transition-transform ${isOpen ? "rotate-180" : ""
+              }`}
           />
         </div>
 
         {/* רשימת ספקים */}
         {isOpen && (
-          <div className="absolute z-50 w-full mt-1 bg-white border border-gray-300 rounded-lg shadow-lg max-h-64 overflow-hidden">
+          <div className="absolute z-50 w-full mt-1 bg-white border border-gray-300 rounded-lg shadow-lg max-h-64 overflow-visible">
             {/* שדה חיפוש */}
             <div className="p-3 border-b border-gray-200">
               <input
@@ -145,9 +147,7 @@ const SupplierSelector = ({
             {/* רשימה */}
             <div className="max-h-48 overflow-y-auto">
               {loading ? (
-                <div className="p-4 text-center text-gray-500">
-                  טוען ספקים...
-                </div>
+                <div className="p-4 text-center text-gray-500">טוען ספקים...</div>
               ) : filteredSuppliers.length === 0 ? (
                 <div className="p-4 text-center text-gray-500">
                   {searchTerm ? "לא נמצאו ספקים מתאימים" : "אין ספקים זמינים"}
@@ -157,14 +157,9 @@ const SupplierSelector = ({
                   <div
                     key={supplier._id}
                     onClick={() => handleSupplierSelect(supplier)}
-                    className={`
-                      p-3 cursor-pointer hover:bg-blue-50 border-b border-gray-100 last:border-b-0
-                      ${
-                        selectedSupplier?._id === supplier._id
-                          ? "bg-blue-100"
-                          : ""
-                      }
-                    `}
+                    className={`p-3 cursor-pointer hover:bg-blue-50 border-b border-gray-100 last:border-b-0
+          ${selectedSupplier?._id === supplier._id ? "bg-blue-100" : ""}
+        `}
                   >
                     <div className="font-bold text-black">
                       {formatSupplierDisplay(supplier)}
@@ -172,14 +167,28 @@ const SupplierSelector = ({
                     {(supplier.email || supplier.phone) && (
                       <div className="text-sm text-gray-600 mt-1">
                         {supplier.email}{" "}
-                        {supplier.email && supplier.phone && "•"}{" "}
-                        {supplier.phone}
+                        {supplier.email && supplier.phone && "•"} {supplier.phone}
                       </div>
                     )}
                   </div>
                 ))
               )}
             </div>
+
+            {/* ➕ צור ספק חדש — תמיד מופיע */}
+            <div
+              onClick={() => {
+                setIsOpen(false);
+                navigate("/create-supplier?returnTo=create-invoice");
+              }}
+
+              className="p-3 cursor-pointer bg-green-50 text-green-700 
+     font-bold text-center hover:bg-green-100 
+     border-t border-gray-200"
+            >
+              ➕ צור ספק חדש
+            </div>
+
 
             {/* כפתור סגירה */}
             <div className="p-2 border-t border-gray-200 bg-gray-50">

@@ -32,11 +32,9 @@ projectSchema.pre('deleteOne', { document: true, query: false }, async function 
     const { default: Invoice } = await import("./Invoice.js");
     const { default: Order } = await import("./Order.js");
 
-    console.log(`🗑️ מוחק פרויקט ${this.name} - מוחק חשבוניות והזמנות...`);
 
     // ✅ מחק חשבוניות אחת אחת כדי להפעיל middleware
     const invoices = await Invoice.find({ projectId: this._id });
-    console.log(`📋 נמצאו ${invoices.length} חשבוניות למחיקה`);
 
     for (const invoice of invoices) {
       await invoice.deleteOne(); // ✅ זה יפעיל את ה-middleware!
@@ -44,13 +42,11 @@ projectSchema.pre('deleteOne', { document: true, query: false }, async function 
 
     // ✅ מחק הזמנות אחת אחת כדי להפעיל middleware
     const orders = await Order.find({ projectId: this._id });
-    console.log(`📦 נמצאו ${orders.length} הזמנות למחיקה`);
 
     for (const order of orders) {
       await order.deleteOne(); // ✅ זה יפעיל את ה-middleware!
     }
 
-    console.log(`✅ הפרויקט ${this.name} והקבצים שלו נמחקו בהצלחה`);
     next();
   } catch (err) {
     console.error('❌ שגיאה במחיקת פרויקט:', err);
