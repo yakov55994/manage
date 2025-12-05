@@ -1002,6 +1002,13 @@ const InvoicesPage = () => {
           ? invoice.supplierId
           : null;
 
+      console.log("📋 Invoice:", invoice.invoiceNumber);
+      console.log("👤 invitingName:", invoice.invitingName);
+      console.log("🏢 supplierId (raw):", invoice.supplierId);
+      console.log("🏢 supplier (resolved):", supplier);
+      console.log("✅ supplier.name:", supplier?.name);
+      console.log("---");
+
       const row = {};
       selectedColumns.forEach((col) => {
         switch (col) {
@@ -1140,6 +1147,8 @@ const InvoicesPage = () => {
       const baseData = {
         "מספר חשבונית": invoice.invoiceNumber || "",
         "שם פרוייקט": invoice.projectName || "",
+        "שם ספק": supplier?.name || "לא זמין", // ✅ הוסף את זה!
+        "שם מזמין": invoice.invitingName || "לא זמין", // ✅ הוסף את זה!
         "שם איש קשר": invoice.projectId?.Contact_person || "לא זמין",
         "תאריך יצירה": formatDate(invoice.invoiceDate || invoice.createdAt),
         סכום: formatNumber(Number(invoice.sum) || 0),
@@ -1152,34 +1161,17 @@ const InvoicesPage = () => {
         פירוט: invoice.detail || "",
       };
 
-      if (!supplier) {
-        return {
-          ...baseData,
-          "שם ספק": "לא זמין",
-          "ח.פ/ע.מ": "לא זמין",
-          "טלפון ספק": "לא זמין",
-          "אימייל ספק": "לא זמין",
-          "כתובת ספק": "לא זמין",
-          "שם בנק ספק": "לא זמין",
-          "מספר סניף": "לא זמין",
-          "מספר חשבון": "לא זמין",
-        };
-      }
-
+      // ✅ פשט את הקוד - אין צורך ב-if
       return {
         ...baseData,
-        "שם ספק": supplier.name || "לא זמין",
         "ח.פ/ע.מ":
-          supplier.businessNumber ||
-          supplier.businessTaxId ||
-          supplier.taxId ||
-          "לא זמין",
-        "טלפון ספק": supplier.phone || "לא זמין",
-        "אימייל ספק": supplier.email || "לא זמין",
-        "כתובת ספק": formatSupplierAddress(supplier),
-        "שם בנק ספק": supplier.bankDetails?.bankName || "לא זמין",
-        "מספר סניף": supplier.bankDetails?.branchNumber || "לא זמין",
-        "מספר חשבון": supplier.bankDetails?.accountNumber || "לא זמין",
+          supplier?.businessNumber || supplier?.business_tax || "לא זמין",
+        "טלפון ספק": supplier?.phone || "לא זמין",
+        "אימייל ספק": supplier?.email || "לא זמין",
+        "כתובת ספק": supplier ? formatSupplierAddress(supplier) : "לא זמין",
+        "שם בנק ספק": supplier?.bankDetails?.bankName || "לא זמין",
+        "מספר סניף": supplier?.bankDetails?.branchNumber || "לא זמין",
+        "מספר חשבון": supplier?.bankDetails?.accountNumber || "לא זמין",
       };
     });
 
@@ -1190,7 +1182,6 @@ const InvoicesPage = () => {
 
     const worksheet = XLSX.utils.json_to_sheet(invoicesWithHeaders);
 
-    // הפיכת כיוון ל־RTL
     worksheet["!cols"] = Object.keys(invoicesWithHeaders[0]).map(() => ({
       wpx: 140,
     }));
@@ -1954,7 +1945,7 @@ const InvoicesPage = () => {
 
                     {/* עמודה 2: שם הספק */}
                     <td className="px-4 py-4 text-sm font-bold text-center text-slate-900">
-                      {invoice.invitingName || (
+                      {invoice.supplierId.name || (
                         <span className="text-red-500 italic">חסר</span>
                       )}
                     </td>

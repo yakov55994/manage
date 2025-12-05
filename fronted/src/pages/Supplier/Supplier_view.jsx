@@ -20,6 +20,8 @@ import {
   Building2,
   CheckSquare,
   Square,
+  Sparkles,
+  ArrowUpDown,
 } from "lucide-react";
 import api from "../../api/api.js";
 import { toast } from "sonner";
@@ -44,7 +46,6 @@ const SuppliersPage = () => {
     businessTaxRange: { min: "", max: "" },
   });
 
-  // ✅ עמודות לייצוא – הוספתי _id, כמות חשבוניות ורשימת מזהי חשבוניות
   const [exportColumns, setExportColumns] = useState({
     _id: false,
     name: true,
@@ -61,18 +62,18 @@ const SuppliersPage = () => {
   });
 
   const navigate = useNavigate();
-  const { isAdmin } = useAuth()
-  // תאריך תקני מהספק (תומך גם ב-createdAt וגם ב-date)
+  const { isAdmin } = useAuth();
+
   const getSupplierDate = (supplier) => {
     const d = supplier?.createdAt || supplier?.date;
     return d ? new Date(d) : null;
   };
+
   const formatSupplierDate = (supplier) => {
     const d = getSupplierDate(supplier);
     return d ? d.toLocaleDateString("he-IL") : "";
   };
 
-  // 🔧 רשימת עמודות זמינות למודאל
   const availableColumns = [
     { key: "_id", label: "מזהה ספק" },
     { key: "name", label: "שם הספק" },
@@ -173,7 +174,6 @@ const SuppliersPage = () => {
     });
   }, [filteredSuppliers, sortBy, sortOrder]);
 
-  // ✅ יצוא לאקסל – תואם לשדות שביקשת
   const exportCustomReport = () => {
     if (!Array.isArray(sortedSuppliers) || sortedSuppliers.length === 0) {
       toast.error("אין נתונים לייצוא", { className: "sonner-toast error rtl" });
@@ -314,7 +314,6 @@ const SuppliersPage = () => {
     setExportColumns(newState);
   };
 
-  // ✅ פונקציית עזר שמחזירה מערך ספקים מה-API בכל מבנה נפוץ
   const arr = (res) =>
     Array.isArray(res?.data?.data)
       ? res.data.data
@@ -337,7 +336,7 @@ const SuppliersPage = () => {
       try {
         const res = await api.get("/suppliers");
         const data = arr(res);
-        setAllSuppliers(data.data);
+        setAllSuppliers(data);
         setSuppliers(data);
       } catch (error) {
         console.error("Error fetching suppliers:", error);
@@ -363,6 +362,7 @@ const SuppliersPage = () => {
     try {
       await api.delete(`/suppliers/${supplierToDelete}`);
       setSuppliers((prev) => prev.filter((s) => s._id !== supplierToDelete));
+      setAllSuppliers((prev) => prev.filter((s) => s._id !== supplierToDelete));
       setShowModal(false);
       setSupplierToDelete(null);
       toast.success("הספק נמחק בהצלחה", {
@@ -379,12 +379,12 @@ const SuppliersPage = () => {
 
   if (loading) {
     return (
-      <div className="flex flex-col justify-center items-center min-h-screen bg-gradient-to-br from-orange-50 via-amber-50 to-orange-100">
+      <div className="min-h-screen bg-gradient-to-br from-orange-50 via-amber-50 to-yellow-50 flex flex-col justify-center items-center">
         <div className="relative">
-          <div className="absolute inset-0 bg-orange-500/20 blur-3xl rounded-full"></div>
-          <ClipLoader size={80} color="#f97316" loading={loading} />
+          <div className="absolute inset-0 bg-gradient-to-r from-orange-500 to-amber-500 blur-3xl opacity-20 animate-pulse"></div>
+          <ClipLoader size={100} color="#f97316" loading />
         </div>
-        <h1 className="mt-6 font-bold text-2xl text-orange-900">
+        <h1 className="mt-8 font-bold text-3xl text-slate-900">
           טוען רשימת ספקים...
         </h1>
       </div>
@@ -392,101 +392,133 @@ const SuppliersPage = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-orange-50 via-amber-50 to-orange-100 py-8 px-4">
-      <div className="max-w-7xl mx-auto">
-        {/* Header */}
-        <div className="bg-white rounded-2xl shadow-xl p-6 mb-8">
-          <div className="flex items-center justify-center gap-3 mb-2">
-            <div className="bg-gradient-to-br from-orange-500 to-amber-500 p-3 rounded-xl shadow-lg">
-              <Users className="text-white w-8 h-8" />
-            </div>
-            <h1 className="text-4xl font-bold text-gray-900">רשימת ספקים</h1>
-          </div>
-          <div className="h-1 w-32 bg-gradient-to-r from-orange-500 to-amber-500 rounded-full mx-auto"></div>
-        </div>
+    <div className="min-h-screen bg-gradient-to-br from-orange-50 via-amber-50 to-yellow-50 relative overflow-hidden py-12">
+      {/* Animated Background */}
+      <div className="absolute inset-0 overflow-hidden pointer-events-none">
+        <div className="absolute top-0 left-1/4 w-96 h-96 bg-gradient-to-br from-orange-400/20 to-amber-400/20 rounded-full blur-3xl animate-pulse"></div>
+        <div className="absolute bottom-0 right-1/4 w-96 h-96 bg-gradient-to-br from-yellow-400/20 to-orange-400/20 rounded-full blur-3xl animate-pulse delay-1000"></div>
+      </div>
 
-        {/* סרגל כלים עליון */}
-        <div className="bg-white rounded-2xl shadow-xl p-6 mb-6">
-          <div className="flex flex-col lg:flex-row justify-between items-start gap-6">
-            {/* חיפוש ומיון */}
-            <div className="flex flex-col sm:flex-row items-start sm:items-end gap-4 flex-1">
-              {/* חיפוש */}
-              <div className="w-full sm:w-auto">
-                <label className="block text-sm font-semibold text-gray-700 mb-2">
-                  חיפוש
-                </label>
+      <div className="relative z-10 container mx-auto px-4 md:px-6 max-w-7xl">
+        {/* Hero Header */}
+        <header className="mb-10">
+          <div className="relative">
+            <div className="absolute -inset-x-6 -inset-y-3 bg-gradient-to-r from-orange-500 via-amber-500 to-yellow-500 rounded-3xl opacity-5 blur-xl"></div>
+
+            <div className="relative bg-white/80 backdrop-blur-xl rounded-3xl shadow-2xl shadow-orange-500/10 p-8 border border-white/50">
+              <div className="flex items-center justify-center gap-4 mb-6">
+                <div className="p-4 rounded-2xl bg-gradient-to-br from-orange-500 to-amber-600 shadow-lg shadow-orange-500/30">
+                  <Users className="w-10 h-10 text-white" />
+                </div>
+                <div className="text-center">
+                  <h1 className="text-4xl font-black text-slate-900">
+                    רשימת ספקים
+                  </h1>
+                  <div className="flex items-center justify-center gap-2 mt-2">
+                    <Sparkles className="w-4 h-4 text-orange-500" />
+                    <span className="text-sm font-medium text-slate-600">
+                      ניהול וניתוח ספקים
+                    </span>
+                  </div>
+                </div>
+              </div>
+
+              {/* Search Bar */}
+              <div className="max-w-2xl mx-auto">
                 <div className="relative">
-                  <Search className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
+                  <Search className="absolute right-4 top-1/2 transform -translate-y-1/2 text-orange-500 w-5 h-5" />
                   <input
                     type="text"
-                    placeholder="ID, שם, אימייל או מספר עוסק..."
                     value={searchTerm}
                     onChange={(e) => setSearchTerm(e.target.value)}
-                    className="w-full sm:w-80 pr-10 pl-4 py-3 bg-gradient-to-br from-gray-50 to-gray-100 border-2 border-gray-200 rounded-xl focus:border-orange-400 focus:outline-none focus:ring-2 focus:ring-orange-200 transition-all"
+                    placeholder="חיפוש לפי ID, שם, אימייל או מספר עוסק..."
+                    className="w-full pr-12 pl-4 py-4 border-2 border-orange-200 rounded-xl bg-white font-medium focus:border-orange-500 focus:outline-none focus:ring-4 focus:ring-orange-500/20 transition-all"
                   />
-                </div>
-              </div>
-
-              {/* מיון */}
-              <div className="flex gap-3">
-                <div>
-                  <label className="block text-sm font-semibold text-gray-700 mb-2">
-                    מיין לפי
-                  </label>
-                  <select
-                    onChange={(e) => setSortBy(e.target.value)}
-                    value={sortBy}
-                    className="px-4 py-3 bg-gradient-to-br from-blue-50 to-cyan-50 border-2 border-blue-200 rounded-xl focus:border-blue-400 focus:outline-none focus:ring-2 focus:ring-blue-200 transition-all font-medium cursor-pointer"
-                  >
-                    <option value="name">שם</option>
-                    <option value="business_tax">מספר עוסק</option>
-                    <option value="createdAt">תאריך יצירה</option>
-                  </select>
-                </div>
-
-                <div>
-                  <label className="block text-sm font-semibold text-gray-700 mb-2">
-                    סדר
-                  </label>
-                  <select
-                    onChange={(e) => setSortOrder(e.target.value)}
-                    value={sortOrder}
-                    className="px-4 py-3 bg-gradient-to-br from-purple-50 to-pink-50 border-2 border-purple-200 rounded-xl focus:border-purple-400 focus:outline-none focus:ring-2 focus:ring-purple-200 transition-all font-medium cursor-pointer"
-                  >
-                    <option value="asc">⬆ עולה</option>
-                    <option value="desc">⬇ יורד</option>
-                  </select>
+                  {searchTerm && (
+                    <button
+                      onClick={() => setSearchTerm("")}
+                      className="absolute left-4 top-1/2 transform -translate-y-1/2 text-slate-400 hover:text-slate-600"
+                    >
+                      <X className="w-5 h-5" />
+                    </button>
+                  )}
                 </div>
               </div>
             </div>
+          </div>
+        </header>
 
-            {/* כפתורי פעולה */}
-            <div className="flex gap-3 w-full lg:w-auto">
-              {isAdmin && (
-                <>
-              <button
-                onClick={() => navigate("/create-supplier")}
-                className="flex-1 lg:flex-none flex items-center justify-center gap-2 px-6 py-3 bg-gradient-to-r from-green-500 to-emerald-500 text-white rounded-xl hover:from-green-600 hover:to-emerald-600 transition-all duration-300 shadow-lg hover:shadow-xl font-medium"
+        {/* Controls Bar */}
+        <div className="mb-6 bg-white/80 backdrop-blur-xl rounded-2xl shadow-lg p-6 border border-white/50">
+          <div className="flex flex-col lg:flex-row justify-between items-center gap-4 mb-4">
+            {/* Sort Controls */}
+            <div className="flex flex-wrap items-center gap-4">
+              <div className="flex items-center gap-2">
+                <ArrowUpDown className="text-orange-600 w-5 h-5" />
+                <span className="font-bold text-slate-700">מיין לפי:</span>
+              </div>
+              <select
+                onChange={(e) => setSortBy(e.target.value)}
+                value={sortBy}
+                className="px-4 py-2 border-2 border-orange-200 rounded-xl bg-white font-bold text-slate-900 focus:border-orange-500 focus:outline-none focus:ring-4 focus:ring-orange-500/20 transition-all"
               >
-                <Plus className="w-5 h-5" />
-                <span>הוסף ספק</span>
-              </button>
-                </>
+                <option value="name">שם</option>
+                <option value="business_tax">מספר עוסק</option>
+                <option value="createdAt">תאריך יצירה</option>
+              </select>
+              <select
+                onChange={(e) => setSortOrder(e.target.value)}
+                value={sortOrder}
+                className="px-4 py-2 border-2 border-orange-200 rounded-xl bg-white font-bold text-slate-900 focus:border-orange-500 focus:outline-none focus:ring-4 focus:ring-orange-500/20 transition-all"
+              >
+                <option value="asc">עולה</option>
+                <option value="desc">יורד</option>
+              </select>
+
+              {(searchTerm ||
+                advancedFilters.dateFrom ||
+                advancedFilters.dateTo ||
+                advancedFilters.hasBankDetails !== "all" ||
+                advancedFilters.hasEmail !== "all") && (
+                <button
+                  onClick={clearFilters}
+                  className="px-4 py-2 bg-slate-200 text-slate-700 rounded-xl hover:bg-slate-300 transition-all font-bold"
+                >
+                  נקה סינון
+                </button>
+              )}
+            </div>
+
+            {/* Action Buttons */}
+            <div className="flex gap-3">
+              {isAdmin && (
+                <button
+                  onClick={() => navigate("/create-supplier")}
+                  className="flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-green-600 to-emerald-600 text-white font-bold rounded-xl hover:from-green-700 hover:to-emerald-700 transition-all shadow-lg shadow-green-500/30"
+                >
+                  <Plus className="w-5 h-5" />
+                  <span>הוסף ספק</span>
+                </button>
               )}
 
               <button
                 onClick={() => setShowReportModal(true)}
-                className="flex-1 lg:flex-none flex items-center justify-center gap-2 px-6 py-3 bg-gradient-to-r from-orange-500 to-amber-500 text-white rounded-xl hover:from-orange-600 hover:to-amber-600 transition-all duration-300 shadow-lg hover:shadow-xl font-medium"
+                className="flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-orange-600 to-amber-600 text-white font-bold rounded-xl hover:from-orange-700 hover:to-amber-700 transition-all shadow-lg shadow-orange-500/30"
               >
                 <FileSpreadsheet className="w-5 h-5" />
-                <span>דוחות</span>
+                <span>מחולל דוחות</span>
               </button>
             </div>
           </div>
+
+          {/* Results Count */}
+          <div className="text-sm text-slate-600 font-medium">
+            מציג {sortedSuppliers.length} ספקים מתוך {allSuppliers.length}
+          </div>
         </div>
 
-        {/* פילטרים מתקדמים */}
-        <div className="bg-white rounded-2xl shadow-xl p-6 mb-6">
+        {/* Advanced Filters */}
+        <div className="mb-6 bg-white/80 backdrop-blur-xl rounded-2xl shadow-lg p-6 border border-white/50">
           <div className="flex items-center gap-3 mb-6">
             <div className="bg-gradient-to-br from-indigo-500 to-purple-500 p-2 rounded-lg shadow-md">
               <Filter className="text-white w-5 h-5" />
@@ -610,174 +642,161 @@ const SuppliersPage = () => {
                 placeholder="מקסימום"
               />
             </div>
-
-            <button
-              onClick={clearFilters}
-              className="flex items-center gap-2 px-5 py-2.5 bg-gradient-to-r from-red-500 to-rose-500 text-white rounded-lg hover:from-red-600 hover:to-rose-600 transition-all duration-300 shadow-md hover:shadow-lg font-medium"
-            >
-              <X className="w-4 h-4" />
-              נקה פילטרים
-            </button>
           </div>
         </div>
 
-        {/* הצגת תוצאות */}
-        <div className="bg-gradient-to-r from-orange-100 to-amber-100 rounded-xl p-4 mb-6 border-2 border-orange-200">
-          <p className="text-center font-semibold text-gray-800">
-            מציג{" "}
-            <span className="text-orange-600 font-bold text-lg">
-              {sortedSuppliers.length}
-            </span>{" "}
-            ספקים מתוך{" "}
-            <span className="text-amber-600 font-bold text-lg">
-              {suppliers.length}
-            </span>
-          </p>
-        </div>
+        {/* Suppliers Table */}
+        {sortedSuppliers.length > 0 ? (
+          <div className="w-full overflow-hidden rounded-t-xl">
+            <table className="w-full">
+              <thead>
+                <tr
+                  className="bg-gradient-to-r from-orange-500 via-amber-500 to-yellow-500"
+                  style={{
+                    display: "grid",
+                    gridTemplateColumns: isAdmin
+                      ? "1.5fr 1fr 1fr 1.5fr 1.5fr 1.2fr"
+                      : "1.5fr 1fr 1fr 1.5fr 1.5fr 0.8fr",
+                  }}
+                >
+                  <th className="px-4 py-4 text-sm font-bold text-center text-white">
+                    שם הספק
+                  </th>
+                  <th className="px-4 py-4 text-sm font-bold text-center text-white">
+                    מספר עוסק
+                  </th>
+                  <th className="px-4 py-4 text-sm font-bold text-center text-white">
+                    טלפון
+                  </th>
+                  <th className="px-4 py-4 text-sm font-bold text-center text-white">
+                    אימייל
+                  </th>
+                  <th className="px-4 py-4 text-sm font-bold text-center text-white">
+                    שם בנק
+                  </th>
+                  <th className="px-4 py-4 text-sm font-bold text-center text-white">
+                    פעולות
+                  </th>
+                </tr>
+              </thead>
 
-        {/* טבלת ספקים */}
-        {Array.isArray(suppliers) && suppliers.length > 0 ? (
-          <div className="bg-white rounded-2xl shadow-xl overflow-hidden">
-            <div className="overflow-x-auto">
-              <table className="w-full">
-                <thead>
-                  <tr className="bg-gradient-to-r from-orange-500 to-amber-500 text-white">
-                    <th className="px-6 py-4 text-center font-bold">שם הספק</th>
-                    <th className="px-6 py-4 text-center font-bold">
-                      מספר עוסק
-                    </th>
-                    <th className="px-6 py-4 text-center font-bold">טלפון</th>
-                    <th className="px-6 py-4 text-center font-bold">אימייל</th>
-                    <th className="px-6 py-4 text-center font-bold">שם בנק</th>
-                    <th className="px-6 py-4 text-center font-bold">פעולות</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {sortedSuppliers.map((supplier, index) => (
-                    <tr
-                      key={supplier._id}
-                      onClick={() => handleView(supplier._id)}
-                      className={`cursor-pointer border-b border-gray-200 transition-all duration-200 ${
-                        index % 2 === 0
-                          ? "bg-gradient-to-r from-orange-50/50 to-amber-50/50 hover:from-orange-100 hover:to-amber-100"
-                          : "bg-white hover:bg-gradient-to-r hover:from-orange-50 hover:to-amber-50"
-                      }`}
-                    >
-                      <td className="px-6 py-4 font-semibold text-center text-gray-900">
-                        {supplier.name}
-                      </td>
-                      <td className="px-6 py-4 font-medium text-center text-gray-700">
-                        {supplier.business_tax}
-                      </td>
-                      <td className="px-6 py-4 font-medium text-center text-gray-700">
-                        {supplier.phone}
-                      </td>
-                      <td className="px-6 py-4 font-medium text-center text-gray-700">
-                        {supplier.email ? (
-                          <span className="text-blue-600">
-                            {supplier.email}
-                          </span>
-                        ) : (
-                          <span className="text-gray-400 italic">לא הוזן</span>
-                        )}
-                      </td>
-                      <td className="px-6 py-4 font-medium text-center text-gray-700">
-                        {supplier.bankDetails?.bankName ? (
-                          <span className="text-green-600">
-                            {supplier.bankDetails.bankName}
-                          </span>
-                        ) : (
-                          <span className="text-gray-400 italic">
-                            אין חשבון
-                          </span>
-                        )}
-                      </td>
-                      <td className="px-6 py-4">
-                        <div className="flex justify-center gap-2">
-                          <button
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              handleView(supplier._id);
-                            }}
-                            className="p-2.5 bg-blue-100 text-blue-600 hover:bg-blue-200 rounded-lg transition-all duration-200 hover:scale-110"
-                            title="צפה בפרטים"
-                          >
-                            <Eye className="w-5 h-5" />
-                          </button>
-                          <button
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              handleEdit(supplier._id);
-                            }}
-                            className="p-2.5 bg-orange-100 text-orange-600 hover:bg-orange-200 rounded-lg transition-all duration-200 hover:scale-110"
-                            title="ערוך"
-                          >
-                            <Edit2 className="w-5 h-5" />
-                          </button>
-                          {isAdmin && (
-                            <>
+              <tbody>
+                {sortedSuppliers.map((supplier) => (
+                  <tr
+                    key={supplier._id}
+                    onClick={() => handleView(supplier._id)}
+                    className="cursor-pointer border-t border-orange-100 hover:bg-orange-50 transition-colors"
+                    style={{
+                      display: "grid",
+                      gridTemplateColumns: isAdmin
+                        ? "1.5fr 1fr 1fr 1.5fr 1.5fr 1.2fr"
+                        : "1.5fr 1fr 1fr 1.5fr 1.5fr 0.8fr",
+                    }}
+                  >
+                    <td className="px-4 py-4 text-sm font-bold text-center text-slate-900">
+                      {supplier.name}
+                    </td>
+                    <td className="px-4 py-4 text-sm font-medium text-center text-slate-700">
+                      {supplier.business_tax}
+                    </td>
+                    <td className="px-4 py-4 text-sm font-medium text-center text-slate-700">
+                      {supplier.phone}
+                    </td>
+                    <td className="px-4 py-4 text-sm font-medium text-center text-slate-700">
+                      {supplier.email ? (
+                        <span className="text-blue-600">{supplier.email}</span>
+                      ) : (
+                        <span className="text-gray-400 italic">לא הוזן</span>
+                      )}
+                    </td>
+                    <td className="px-4 py-4 text-sm font-medium text-center text-slate-700">
+                      {supplier.bankDetails?.bankName ? (
+                        <span className="text-green-600">
+                          {supplier.bankDetails.bankName}
+                        </span>
+                      ) : (
+                        <span className="text-gray-400 italic">אין חשבון</span>
+                      )}
+                    </td>
+                    <td className="px-4 py-4">
+                      <div className="flex justify-center gap-2">
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleView(supplier._id);
+                          }}
+                          className="p-2 text-blue-600 hover:bg-blue-100 rounded-lg transition-colors"
+                          title="צפה בפרטים"
+                        >
+                          <Eye className="w-5 h-5" />
+                        </button>
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleEdit(supplier._id);
+                          }}
+                          className="p-2 text-orange-600 hover:bg-orange-100 rounded-lg transition-colors"
+                          title="ערוך"
+                        >
+                          <Edit2 className="w-5 h-5" />
+                        </button>
+                        {isAdmin && (
                           <button
                             onClick={(e) => {
                               e.stopPropagation();
                               setSupplierToDelete(supplier._id);
                               setShowModal(true);
                             }}
-                            className="p-2.5 bg-red-100 text-red-600 hover:bg-red-200 rounded-lg transition-all duration-200 hover:scale-110"
+                            className="p-2 text-red-600 hover:bg-red-100 rounded-lg transition-colors"
                             title="מחק"
                           >
                             <Trash2 className="w-5 h-5" />
                           </button>
-                            </>
-                          )}
-                        </div>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
+                        )}
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
           </div>
         ) : (
-          <div className="bg-white rounded-2xl shadow-xl p-12 text-center">
-            <div className="bg-gradient-to-br from-orange-100 to-amber-100 w-24 h-24 rounded-full flex items-center justify-center mx-auto mb-6">
-              <Users className="w-12 h-12 text-orange-600" />
-            </div>
-            <h2 className="text-2xl font-bold text-gray-900 mb-2">
-              אין ספקים להציג
+          <div className="bg-white/90 backdrop-blur-xl rounded-2xl shadow-xl border border-white/50 p-12 text-center">
+            <Users className="w-16 h-16 text-slate-300 mx-auto mb-4" />
+            <h2 className="text-2xl font-bold text-slate-600">
+              {searchTerm ||
+              Object.values(advancedFilters).some((v) => v && v !== "all")
+                ? "לא נמצאו תוצאות"
+                : "עדיין אין ספקים"}
             </h2>
-            <p className="text-gray-600 mb-6">לחץ על "הוסף ספק" כדי להתחיל</p>
-            <button
-              onClick={() => navigate("/create-supplier")}
-              className="inline-flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-orange-500 to-amber-500 text-white rounded-xl hover:from-orange-600 hover:to-amber-600 transition-all duration-300 shadow-lg hover:shadow-xl font-medium"
-            >
-              <Plus className="w-5 h-5" />
-              <span>הוסף ספק ראשון</span>
-            </button>
+            {isAdmin && !searchTerm && (
+              <button
+                onClick={() => navigate("/create-supplier")}
+                className="mt-6 inline-flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-orange-500 to-amber-500 text-white rounded-xl hover:from-orange-600 hover:to-amber-600 transition-all duration-300 shadow-lg hover:shadow-xl font-medium"
+              >
+                <Plus className="w-5 h-5" />
+                <span>הוסף ספק ראשון</span>
+              </button>
+            )}
           </div>
         )}
 
         {/* Report Generator Modal */}
         {showReportModal && (
           <div className="fixed inset-0 z-50">
-            {/* רקע + סגירה בלחיצה בחוץ */}
             <div
               className="absolute inset-0 bg-black/60 backdrop-blur-sm"
               onClick={() => setShowReportModal(false)}
             />
-            {/* מעטפת עם גלילה על כל המסך, מיושרת למעלה */}
+
             <div className="fixed inset-0 flex items-center justify-center p-4 overflow-y-auto">
-              {/* קופסת המודאל */}
               <div
                 className="relative w-full max-w-3xl my-8"
                 onClick={(e) => e.stopPropagation()}
-                role="dialog"
-                aria-modal="true"
               >
-                {/* זוהר עדין */}
                 <div className="pointer-events-none absolute -inset-2 bg-gradient-to-r from-orange-500 to-amber-500 rounded-3xl opacity-20 blur-xl"></div>
 
                 <div className="relative bg-white rounded-3xl shadow-2xl overflow-hidden">
-                  {/* כותרת + כפתור סגירה */}
                   <div className="bg-gradient-to-r from-orange-500 to-amber-500 text-white p-6">
                     <div className="flex items-center justify-between">
                       <div className="flex items-center gap-3">
@@ -791,17 +810,13 @@ const SuppliersPage = () => {
                       <button
                         onClick={() => setShowReportModal(false)}
                         className="text-white hover:bg-white/20 rounded-lg p-2 transition-colors"
-                        aria-label="סגור"
-                        title="סגור"
                       >
                         <X className="w-6 h-6" />
                       </button>
                     </div>
                   </div>
 
-                  {/* תוכן המודאל */}
                   <div className="max-h-[calc(85vh-8rem)] overflow-y-auto p-6">
-                    {/* בחירת עמודות */}
                     <div className="mb-6">
                       <div className="flex items-center justify-between mb-4">
                         <h4 className="text-lg font-bold text-gray-900">
@@ -855,7 +870,6 @@ const SuppliersPage = () => {
                       </div>
                     </div>
 
-                    {/* סיכום הדוח */}
                     <div className="bg-gradient-to-br from-blue-50 to-cyan-50 p-5 rounded-xl border-2 border-blue-200 mb-6">
                       <h4 className="font-bold text-lg mb-3 text-gray-900 flex items-center gap-2">
                         <AlertCircle className="w-5 h-5 text-blue-600" />
@@ -882,7 +896,6 @@ const SuppliersPage = () => {
                       </div>
                     </div>
 
-                    {/* כפתורי פעולה */}
                     <div className="flex gap-3">
                       <button
                         onClick={() => setShowReportModal(false)}
@@ -902,43 +915,36 @@ const SuppliersPage = () => {
                 </div>
               </div>
             </div>
-            {/* /wrapper */}
           </div>
         )}
-        {/* /showReportModal */}
 
-        {/* מודל מחיקה */}
+        {/* Delete Modal */}
         {showModal && (
           <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-            <div className="bg-white rounded-2xl shadow-2xl max-w-md w-full transform transition-all">
-              <div className="bg-gradient-to-r from-red-500 to-rose-500 text-white p-6 rounded-t-2xl">
-                <div className="flex items-center justify-between mb-2">
-                  <div className="flex items-center gap-3">
-                    <div className="bg-white/20 p-2 rounded-lg">
-                      <AlertCircle className="w-6 h-6" />
-                    </div>
-                    <h3 className="text-2xl font-bold">אישור מחיקה</h3>
+            <div className="relative">
+              <div className="absolute -inset-4 bg-gradient-to-r from-red-500 to-rose-500 rounded-3xl opacity-20 blur-2xl"></div>
+
+              <div className="relative bg-white rounded-3xl shadow-2xl p-8 max-w-md w-full">
+                <div className="text-center mb-6">
+                  <div className="mx-auto w-16 h-16 rounded-full bg-gradient-to-br from-red-500 to-rose-500 flex items-center justify-center mb-4">
+                    <AlertCircle className="w-8 h-8 text-white" />
                   </div>
+                  <h3 className="text-3xl font-bold text-slate-900 mb-2">
+                    האם למחוק את הספק?
+                  </h3>
+                  <p className="text-slate-600">הפעולה בלתי הפיכה.</p>
                 </div>
-              </div>
-              <div className="p-6">
-                <p className="text-lg text-gray-700 text-center mb-2">
-                  האם אתה בטוח שברצונך למחוק את הספק?
-                </p>
-                <p className="text-red-600 text-center font-semibold mb-6">
-                  פעולה זו אינה ניתנת לביטול!
-                </p>
+
                 <div className="flex gap-3">
                   <button
                     onClick={handleDelete}
-                    className="flex-1 flex items-center justify-center gap-2 px-6 py-3 bg-gradient-to-r from-red-500 to-rose-500 text-white rounded-xl hover:from-red-600 hover:to-rose-600 transition-all duration-300 shadow-lg hover:shadow-xl font-medium"
+                    className="flex-1 px-6 py-3 rounded-xl font-bold text-white bg-gradient-to-r from-red-500 to-rose-500 hover:from-red-600 hover:to-rose-600 transition-all shadow-lg"
                   >
-                    <Trash2 className="w-5 h-5" />
-                    מחק ספק
+                    מחק
                   </button>
                   <button
                     onClick={() => setShowModal(false)}
-                    className="flex-1 px-6 py-3 bg-gray-200 text-gray-700 rounded-xl hover:bg-gray-300 transition-all duration-300 font-medium"
+                    className="flex-1 px-6 py-3 rounded-xl font-bold text-slate-700 bg-slate-100 hover:bg-slate-200 transition-all"
                   >
                     ביטול
                   </button>
@@ -947,10 +953,8 @@ const SuppliersPage = () => {
             </div>
           </div>
         )}
-        {/* /showModal */}
       </div>
-      {/* /max-w-7xl */}
-    </div> /* /min-h-screen */
+    </div>
   );
 };
 

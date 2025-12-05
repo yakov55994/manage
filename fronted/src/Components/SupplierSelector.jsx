@@ -4,7 +4,6 @@ import api from "../api/api.js";
 import { toast } from "sonner";
 import { useNavigate } from "react-router-dom";
 
-
 const SupplierSelector = ({
   projectId,
   value,
@@ -106,9 +105,10 @@ const SupplierSelector = ({
           className={`
             w-full p-3 border border-gray-300 rounded-lg bg-white cursor-pointer
             flex items-center justify-between font-bold
-            ${disabled
-              ? "bg-gray-100 cursor-not-allowed"
-              : "hover:border-gray-400"
+            ${
+              disabled
+                ? "bg-gray-100 cursor-not-allowed"
+                : "hover:border-gray-400"
             }
             ${isOpen ? "ring-2 ring-blue-500" : ""}
             focus:outline-none focus:ring-2 focus:ring-blue-500
@@ -124,8 +124,9 @@ const SupplierSelector = ({
           </div>
           <ChevronDown
             size={20}
-            className={`text-gray-500 transition-transform ${isOpen ? "rotate-180" : ""
-              }`}
+            className={`text-gray-500 transition-transform ${
+              isOpen ? "rotate-180" : ""
+            }`}
           />
         </div>
 
@@ -147,7 +148,9 @@ const SupplierSelector = ({
             {/* רשימה */}
             <div className="max-h-48 overflow-y-auto">
               {loading ? (
-                <div className="p-4 text-center text-gray-500">טוען ספקים...</div>
+                <div className="p-4 text-center text-gray-500">
+                  טוען ספקים...
+                </div>
               ) : filteredSuppliers.length === 0 ? (
                 <div className="p-4 text-center text-gray-500">
                   {searchTerm ? "לא נמצאו ספקים מתאימים" : "אין ספקים זמינים"}
@@ -167,7 +170,8 @@ const SupplierSelector = ({
                     {(supplier.email || supplier.phone) && (
                       <div className="text-sm text-gray-600 mt-1">
                         {supplier.email}{" "}
-                        {supplier.email && supplier.phone && "•"} {supplier.phone}
+                        {supplier.email && supplier.phone && "•"}{" "}
+                        {supplier.phone}
                       </div>
                     )}
                   </div>
@@ -176,29 +180,30 @@ const SupplierSelector = ({
             </div>
 
             {/* ➕ צור ספק חדש — תמיד מופיע */}
+              <div className="grid grid-cols-2 gap-2">
             <div
               onClick={() => {
                 setIsOpen(false);
                 navigate("/create-supplier?returnTo=create-invoice");
               }}
-
-              className="p-3 cursor-pointer bg-green-50 text-green-700 
-     font-bold text-center hover:bg-green-100 
+              className="mt-2 rounded-2xl p-2 cursor-pointer bg-slate-200 font-bold text-center hover:bg-slate-300 
      border-t border-gray-200"
             >
               ➕ צור ספק חדש
             </div>
 
-
             {/* כפתור סגירה */}
-            <div className="p-2 border-t border-gray-200 bg-gray-50">
+            <div  className="mt-2 rounded-2xl p-1 cursor-pointer bg-slate-200 font-bold text-center hover:bg-slate-300 
+     border-t border-gray-200">
               <button
                 onClick={() => setIsOpen(false)}
-                className="w-full p-2 text-sm text-gray-600 hover:text-gray-800 transition-colors"
+                className="w-full p-2 text-sm transition-colors"
               >
                 סגור
               </button>
             </div>
+
+              </div>
           </div>
         )}
       </div>

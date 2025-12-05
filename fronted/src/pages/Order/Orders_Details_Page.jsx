@@ -4,7 +4,7 @@ import api from "../../api/api.js";
 import { ClipLoader } from "react-spinners";
 import {
   ShoppingCart,
-  Edit,
+  Edit2,
   Trash2,
   FileText,
   Calendar,
@@ -14,11 +14,14 @@ import {
   Briefcase,
   AlertCircle,
   Phone,
-  X,
+  Sparkles,
+  ArrowRight,
+  ExternalLink,
+  Download,
+  Paperclip,
 } from "lucide-react";
 import { toast } from "sonner";
 import { useAuth } from "../../context/AuthContext";
-
 
 const OrderDetailsPage = () => {
   const { projectId, id } = useParams();
@@ -27,7 +30,7 @@ const OrderDetailsPage = () => {
   const [deleting, setDeleting] = useState(false);
   const [loading, setLoading] = useState(true);
   const navigate = useNavigate();
-  
+
   const { canViewModule, canEditModule, isAdmin } = useAuth();
 
   const canViewOrders = canViewModule(projectId, "orders");
@@ -40,7 +43,7 @@ const OrderDetailsPage = () => {
   }, [canViewOrders]);
 
   useEffect(() => {
-    const fetchInvoiceDetails = async () => {
+    const fetchOrderDetails = async () => {
       try {
         const response = await api.get(`/orders/${id}`);
         const orderData = response.data.data;
@@ -68,17 +71,17 @@ const OrderDetailsPage = () => {
       }
     };
 
-    fetchInvoiceDetails();
+    fetchOrderDetails();
   }, [id]);
 
   if (loading) {
     return (
-      <div className="flex flex-col justify-center items-center min-h-screen bg-gradient-to-br from-orange-50 via-amber-50 to-orange-100">
+      <div className="min-h-screen bg-gradient-to-br from-orange-50 via-amber-50 to-yellow-50 flex flex-col justify-center items-center">
         <div className="relative">
-          <div className="absolute inset-0 bg-orange-500/20 blur-3xl rounded-full"></div>
-          <ClipLoader size={80} color="#f97316" loading={loading} />
+          <div className="absolute inset-0 bg-gradient-to-r from-orange-500 to-amber-500 blur-3xl opacity-20 animate-pulse"></div>
+          <ClipLoader size={100} color="#f97316" loading />
         </div>
-        <h1 className="mt-6 font-bold text-2xl text-orange-900">
+        <h1 className="mt-8 font-bold text-3xl text-slate-900">
           טוען פרטי הזמנה...
         </h1>
       </div>
@@ -105,57 +108,95 @@ const OrderDetailsPage = () => {
     window.open(officeUrl, "_blank");
   };
 
-  const renderFile = (file) => {
+  const renderFile = (file, index) => {
     const fileUrl = file?.url || file?.fileUrl;
-    if (!fileUrl) return null;
+    const fileName = file?.name || `קובץ ${index + 1}`;
+
+    if (!fileUrl) {
+      return (
+        <div className="text-red-500 text-sm">שגיאה: לא נמצא קישור לקובץ</div>
+      );
+    }
 
     const fileExtension = fileUrl.split(".").pop().toLowerCase();
 
     if (fileExtension === "pdf") {
       return (
-        <a
-          href={fileUrl}
-          target="_blank"
-          rel="noopener noreferrer"
-          className="inline-flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-orange-500 to-amber-500 text-white rounded-lg hover:from-orange-600 hover:to-amber-600 transition-all duration-300 shadow-md hover:shadow-lg"
-        >
-          <FileText className="w-5 h-5" />
-          <span className="font-medium">צפה בקובץ PDF</span>
-        </a>
+        <div className="flex items-center justify-between gap-3 p-3 rounded-lg bg-red-50 border border-red-200 hover:bg-red-100 transition-all">
+          <div className="flex items-center gap-2">
+            <FileText className="w-5 h-5 text-red-600" />
+            <span className="text-sm font-medium text-slate-900">
+              {fileName}
+            </span>
+          </div>
+          <a
+            href={fileUrl}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="flex items-center gap-2 px-3 py-1 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-all text-sm font-bold"
+          >
+            <ExternalLink className="w-4 h-4" />
+            צפה ב-PDF
+          </a>
+        </div>
       );
     } else if (fileExtension === "xlsx" || fileExtension === "xls") {
       return (
-        <button
-          onClick={() => openInExcelViewer(fileUrl)}
-          className="inline-flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-green-500 to-emerald-500 text-white rounded-lg hover:from-green-600 hover:to-emerald-600 transition-all duration-300 shadow-md hover:shadow-lg"
-        >
-          <FileText className="w-5 h-5" />
-          <span className="font-medium">צפה בקובץ Excel</span>
-        </button>
+        <div className="flex items-center justify-between gap-3 p-3 rounded-lg bg-green-50 border border-green-200 hover:bg-green-100 transition-all">
+          <div className="flex items-center gap-2">
+            <FileText className="w-5 h-5 text-green-600" />
+            <span className="text-sm font-medium text-slate-900">
+              {fileName}
+            </span>
+          </div>
+          <button
+            onClick={() => openInExcelViewer(fileUrl)}
+            className="flex items-center gap-2 px-3 py-1 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-all text-sm font-bold"
+          >
+            <ExternalLink className="w-4 h-4" />
+            צפה באקסל
+          </button>
+        </div>
       );
     } else if (fileUrl.match(/\.(jpeg|jpg|png|gif)$/)) {
       return (
-        <a
-          href={fileUrl}
-          target="_blank"
-          rel="noopener noreferrer"
-          className="inline-flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-blue-500 to-cyan-500 text-white rounded-lg hover:from-blue-600 hover:to-cyan-600 transition-all duration-300 shadow-md hover:shadow-lg"
-        >
-          <FileText className="w-5 h-5" />
-          <span className="font-medium">צפה בתמונה</span>
-        </a>
+        <div className="flex items-center justify-between gap-3 p-3 rounded-lg bg-blue-50 border border-blue-200 hover:bg-blue-100 transition-all">
+          <div className="flex items-center gap-2">
+            <FileText className="w-5 h-5 text-blue-600" />
+            <span className="text-sm font-medium text-slate-900">
+              {fileName}
+            </span>
+          </div>
+          <a
+            href={fileUrl}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="flex items-center gap-2 px-3 py-1 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-all text-sm font-bold"
+          >
+            <ExternalLink className="w-4 h-4" />
+            צפה בתמונה
+          </a>
+        </div>
       );
     } else {
       return (
-        <a
-          href={fileUrl}
-          target="_blank"
-          rel="noopener noreferrer"
-          className="inline-flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-purple-500 to-pink-500 text-white rounded-lg hover:from-purple-600 hover:to-pink-600 transition-all duration-300 shadow-md hover:shadow-lg"
-        >
-          <FileText className="w-5 h-5" />
-          <span className="font-medium">צפה בקובץ</span>
-        </a>
+        <div className="flex items-center justify-between gap-3 p-3 rounded-lg bg-slate-50 border border-slate-200 hover:bg-slate-100 transition-all">
+          <div className="flex items-center gap-2">
+            <Download className="w-5 h-5 text-slate-600" />
+            <span className="text-sm font-medium text-slate-900">
+              {fileName}
+            </span>
+          </div>
+          <a
+            href={fileUrl}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="flex items-center gap-2 px-3 py-1 bg-slate-600 text-white rounded-lg hover:bg-slate-700 transition-all text-sm font-bold"
+          >
+            <Download className="w-4 h-4" />
+            הורד
+          </a>
+        </div>
       );
     }
   };
@@ -186,326 +227,342 @@ const OrderDetailsPage = () => {
 
   if (!order) {
     return (
-      <div className="flex flex-col justify-center items-center min-h-screen bg-gradient-to-br from-orange-50 via-amber-50 to-orange-100">
-        <div className="bg-white rounded-2xl shadow-2xl p-8 max-w-md">
-          <div className="flex flex-col items-center">
-            <div className="bg-red-100 rounded-full p-4 mb-4">
-              <AlertCircle className="w-16 h-16 text-red-600" />
-            </div>
-            <h1 className="text-3xl font-bold text-red-600 mb-2">
-              הזמנה לא נמצאה
-            </h1>
-            <p className="text-gray-600 text-center mb-6">
-              לא ניתן למצוא את ההזמנה המבוקשת
-            </p>
-            <button
-              onClick={() => navigate(`/orders`)}
-              className="px-6 py-3 bg-gradient-to-r from-orange-500 to-amber-500 text-white rounded-xl hover:from-orange-600 hover:to-amber-600 transition-all duration-300 shadow-lg hover:shadow-xl font-medium"
-            >
-              חזור לרשימת הזמנות
-            </button>
-          </div>
+      <div className="min-h-screen bg-gradient-to-br from-red-50 via-orange-50 to-yellow-50 flex flex-col justify-center items-center">
+        <div className="text-center">
+          <AlertCircle className="w-20 h-20 text-red-500 mx-auto mb-4" />
+          <h1 className="text-3xl font-bold text-red-600">הזמנה לא נמצאה</h1>
+          <button
+            onClick={() => navigate("/orders")}
+            className="mt-6 px-6 py-3 bg-gradient-to-r from-slate-600 to-slate-700 text-white rounded-xl hover:from-slate-700 hover:to-slate-800 transition-all shadow-lg"
+          >
+            חזור לרשימת הזמנות
+          </button>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-orange-50 via-amber-50 to-orange-100 py-8 px-4">
-      <div className="max-w-7xl mx-auto">
-        {/* Header */}
-        <div className="bg-white rounded-2xl shadow-xl p-6 mb-8">
-          <div className="flex items-center justify-between flex-wrap gap-4">
-            <div className="flex items-center gap-3">
-              <div className="bg-gradient-to-br from-orange-500 to-amber-500 p-3 rounded-xl shadow-lg">
-                <ShoppingCart className="text-white w-8 h-8" />
-              </div>
-              <div>
-                <h1 className="text-3xl md:text-4xl font-bold text-gray-900">
-                  פרטי הזמנה
-                </h1>
-                <p className="text-gray-600 mt-1">הצגת מידע מפורט על ההזמנה</p>
-              </div>
-            </div>
-
-            {/* Action Buttons */}
-            <div className="flex items-center gap-3">
-              {canEditOrders && (
-                <button
-                  onClick={() => handleEdit(order._id)}
-
-                  className="inline-flex items-center gap-2 px-5 py-3 bg-gradient-to-r from-blue-500 to-cyan-500 text-white rounded-xl hover:from-blue-600 hover:to-cyan-600 transition-all duration-300 shadow-lg hover:shadow-xl font-medium"
-                >
-                  <Edit className="w-5 h-5" />
-                  <span>עריכת הזמנה</span>
-                </button>
-              )}
-
-              {isAdmin && (
-                <button
-                onClick={() => handleDelete(order._id)}
-
-                  className="inline-flex items-center gap-2 px-5 py-3 bg-gradient-to-r from-red-500 to-rose-500 text-white rounded-xl hover:from-red-600 hover:to-rose-600 transition-all duration-300 shadow-lg hover:shadow-xl font-medium"
-                >
-                  <Trash2 className="w-5 h-5" />
-                  <span>מחק הזמנה</span>
-                </button>
-              )}
-            </div>
-          </div>
-        </div>
-
-        {/* Order Details Card */}
-        <div className="bg-white rounded-2xl shadow-xl p-8">
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {/* שם המזמין */}
-            <div className="group bg-gradient-to-br from-orange-50 to-amber-50 p-5 rounded-xl border-r-4 border-orange-500 hover:shadow-lg transition-all duration-300">
-              <div className="flex items-center gap-3 mb-2">
-                <div className="bg-white p-2 rounded-lg shadow-sm">
-                  <User className="w-5 h-5 text-orange-600" />
-                </div>
-                <span className="text-sm font-semibold text-gray-600">
-                  שם המזמין
-                </span>
-              </div>
-              <p className="text-xl font-bold text-gray-900 mr-10">
-                {order.invitingName}
-              </p>
-            </div>
-
-            {/* מספר הזמנה */}
-            <div className="group bg-gradient-to-br from-orange-50 to-amber-50 p-5 rounded-xl border-r-4 border-amber-500 hover:shadow-lg transition-all duration-300">
-              <div className="flex items-center gap-3 mb-2">
-                <div className="bg-white p-2 rounded-lg shadow-sm">
-                  <Hash className="w-5 h-5 text-amber-600" />
-                </div>
-                <span className="text-sm font-semibold text-gray-600">
-                  מספר הזמנה
-                </span>
-              </div>
-              <p className="text-xl font-bold text-gray-900 mr-10">
-                {order.orderNumber}
-              </p>
-            </div>
-
-            {/* סכום */}
-            <div className="group bg-gradient-to-br from-green-50 to-emerald-50 p-5 rounded-xl border-r-4 border-green-500 hover:shadow-lg transition-all duration-300">
-              <div className="flex items-center gap-3 mb-2">
-                <div className="bg-white p-2 rounded-lg shadow-sm">
-                  <DollarSign className="w-5 h-5 text-green-600" />
-                </div>
-                <span className="text-sm font-semibold text-gray-600">
-                  סכום
-                </span>
-              </div>
-              <p className="text-xl font-bold text-green-700 mr-10">
-                {formatNumber(order.sum)} ₪
-              </p>
-            </div>
-
-            {/* פירוט */}
-            <div className="group bg-gradient-to-br from-blue-50 to-cyan-50 p-5 rounded-xl border-r-4 border-blue-500 hover:shadow-lg transition-all duration-300">
-              <div className="flex items-center gap-3 mb-2">
-                <div className="bg-white p-2 rounded-lg shadow-sm">
-                  <FileText className="w-5 h-5 text-blue-600" />
-                </div>
-                <span className="text-sm font-semibold text-gray-600">
-                  פירוט
-                </span>
-              </div>
-              <p className="text-xl font-bold text-gray-900 mr-10">
-                {order.detail}
-              </p>
-            </div>
-
-            {/* פרויקט */}
-            <div className="group bg-gradient-to-br from-purple-50 to-pink-50 p-5 rounded-xl border-r-4 border-purple-500 hover:shadow-lg transition-all duration-300">
-              <div className="flex items-center gap-3 mb-2">
-                <div className="bg-white p-2 rounded-lg shadow-sm">
-                  <Briefcase className="w-5 h-5 text-purple-600" />
-                </div>
-                <span className="text-sm font-semibold text-gray-600">
-                  פרויקט
-                </span>
-              </div>
-              <p className="text-xl font-bold text-gray-900 mr-10">
-                {order.projectName}
-              </p>
-            </div>
-
-            {/* תאריך יצירה */}
-            <div className="group bg-gradient-to-br from-indigo-50 to-blue-50 p-5 rounded-xl border-r-4 border-indigo-500 hover:shadow-lg transition-all duration-300">
-              <div className="flex items-center gap-3 mb-2">
-                <div className="bg-white p-2 rounded-lg shadow-sm">
-                  <Calendar className="w-5 h-5 text-indigo-600" />
-                </div>
-                <span className="text-sm font-semibold text-gray-600">
-                  תאריך יצירה
-                </span>
-              </div>
-              <p className="text-xl font-bold text-gray-900 mr-10">
-                {formatHebrewDate(order.createdAt)}
-              </p>
-            </div>
-            {/* נוצר ע"י */}
-            <div className="group bg-gradient-to-br from-indigo-50 to-blue-50 p-5 rounded-xl border-r-4 border-indigo-500 hover:shadow-lg transition-all duration-300">
-              <div className="flex items-center gap-3 mb-2">
-                <div className="bg-white p-2 rounded-lg shadow-sm">
-                  <Calendar className="w-5 h-5 text-indigo-600" />
-                </div>
-                <span className="text-sm font-semibold text-gray-600">
-                  נוצר ע"י 
-                </span>
-              </div>
-              <p className="text-xl font-bold text-gray-900 mr-10">
-               { order.createdByName || 'לא זמין' }
-              </p>
-            </div>
-
-            {/* סטטוס */}
-            <div className="group bg-gradient-to-br from-orange-50 to-amber-50 p-5 rounded-xl border-r-4 border-orange-500 hover:shadow-lg transition-all duration-300">
-              <div className="flex items-center gap-3 mb-2">
-                <div className="bg-white p-2 rounded-lg shadow-sm">
-                  <AlertCircle className="w-5 h-5 text-orange-600" />
-                </div>
-                <span className="text-sm font-semibold text-gray-600">
-                  סטטוס הזמנה
-                </span>
-              </div>
-              <p className="text-xl font-bold text-gray-900 mr-10">
-                {order.status}
-              </p>
-            </div>
-
-            {/* איש קשר */}
-            <div className="group bg-gradient-to-br from-teal-50 to-cyan-50 p-5 rounded-xl border-r-4 border-teal-500 hover:shadow-lg transition-all duration-300">
-              <div className="flex items-center gap-3 mb-2">
-                <div className="bg-white p-2 rounded-lg shadow-sm">
-                  <Phone className="w-5 h-5 text-teal-600" />
-                </div>
-                <span className="text-sm font-semibold text-gray-600">
-                  איש קשר
-                </span>
-              </div>
-              <p className="text-xl font-bold text-gray-900 mr-10">
-                {order.Contact_person}
-              </p>
-            </div>
-            
-          </div>
-
-
-
-
-          {/* Files Section */}
-          {order.files && order.files.length > 0 && (
-            <div className="mt-8 pt-8 border-t-2 border-gray-200">
-              <div className="flex items-center gap-3 mb-6">
-                <div className="bg-gradient-to-br from-orange-500 to-amber-500 p-2 rounded-lg shadow-lg">
-                  <FileText className="text-white w-6 h-6" />
-                </div>
-                <h2 className="text-2xl font-bold text-gray-900">
-                  קבצים מצורפים
-                </h2>
-              </div>
-
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                {order.files.map((file, index) => (
-                  <div
-                    key={index}
-                    className="bg-gradient-to-br from-gray-50 to-gray-100 p-5 rounded-xl border-2 border-gray-200 hover:border-orange-400 transition-all duration-300 shadow-md hover:shadow-lg"
-                  >
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-3">
-                        <div className="bg-gradient-to-br from-orange-500 to-amber-500 text-white font-bold w-10 h-10 rounded-lg flex items-center justify-center shadow-md">
-                          {index + 1}
-                        </div>
-                        <span className="font-semibold text-gray-700">
-                          קובץ {index + 1}
-                        </span>
-                      </div>
-                      <div>{renderFile(file)}</div>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
-          )}
-
-          {(!order.files || order.files.length === 0) && (
-            <div className="mt-8 pt-8 border-t-2 border-gray-200">
-              <div className="bg-gradient-to-br from-gray-50 to-gray-100 p-8 rounded-xl border-2 border-dashed border-gray-300 text-center">
-                <FileText className="w-16 h-16 text-gray-400 mx-auto mb-3" />
-                <p className="text-xl font-semibold text-gray-600">
-                  אין קבצים מצורפים
-                </p>
-              </div>
-            </div>
-          )}
-        </div>
+    <div className="min-h-screen bg-gradient-to-br from-orange-50 via-amber-50 to-yellow-50 relative overflow-hidden py-12">
+      {/* Animated Background */}
+      <div className="absolute inset-0 overflow-hidden pointer-events-none">
+        <div className="absolute top-0 left-1/4 w-96 h-96 bg-gradient-to-br from-orange-400/20 to-amber-400/20 rounded-full blur-3xl animate-pulse"></div>
+        <div className="absolute bottom-0 right-1/4 w-96 h-96 bg-gradient-to-br from-yellow-400/20 to-orange-400/20 rounded-full blur-3xl animate-pulse delay-1000"></div>
       </div>
 
-      {/* Delete Confirmation Modal */}
-      {confirmOpen && (
-        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-2xl shadow-2xl max-w-md w-full transform transition-all">
-            <div className="bg-gradient-to-r from-red-500 to-rose-500 text-white p-6 rounded-t-2xl">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-3">
-                  <div className="bg-white/20 p-2 rounded-lg">
-                    <AlertCircle className="w-6 h-6" />
-                  </div>
-                  <h3 className="text-2xl font-bold">אישור מחיקה</h3>
+      <div className="relative z-10 container mx-auto px-4 md:px-6 max-w-7xl">
+        {/* Hero Header */}
+        <header className="mb-10">
+          <div className="relative">
+            <div className="absolute -inset-x-6 -inset-y-3 bg-gradient-to-r from-orange-500 via-amber-500 to-yellow-500 rounded-3xl opacity-5 blur-xl"></div>
+
+            <div className="relative bg-white/80 backdrop-blur-xl rounded-3xl shadow-2xl shadow-orange-500/10 p-8 border border-white/50">
+              <div className="flex items-center justify-center gap-4 mb-6">
+                <div className="p-4 rounded-2xl bg-gradient-to-br from-orange-500 to-amber-600 shadow-lg shadow-orange-500/30">
+                  <ShoppingCart className="w-10 h-10 text-white" />
                 </div>
+                <div className="text-center">
+                  <h1 className="text-4xl font-black text-slate-900">
+                    פרטי הזמנה
+                  </h1>
+                  <div className="flex items-center justify-center gap-2 mt-2">
+                    <Sparkles className="w-4 h-4 text-orange-500" />
+                    <span className="text-sm font-medium text-slate-600">
+                      מספר {order.orderNumber}
+                    </span>
+                  </div>
+                </div>
+              </div>
+
+              {/* Action Buttons */}
+              <div className="flex justify-center gap-4">
                 <button
-                  onClick={() => setConfirmOpen(false)}
-                  disabled={deleting}
-                  className="text-white hover:bg-white/20 rounded-lg p-2 transition-colors"
+                  onClick={() => navigate("/orders")}
+                  className="flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-slate-200 to-slate-300 text-slate-700 font-bold rounded-xl hover:from-slate-300 hover:to-slate-400 transition-all shadow-lg"
                 >
-                  <X className="w-6 h-6" />
+                  <ArrowRight className="w-4 h-4" />
+                  <span>חזור לרשימה</span>
                 </button>
+
+                {canEditOrders && (
+                  <button
+                    onClick={() => handleEdit(order._id)}
+                    className="flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-orange-600 to-amber-600 text-white font-bold rounded-xl hover:from-orange-700 hover:to-amber-700 transition-all shadow-xl shadow-orange-500/30"
+                  >
+                    <Edit2 className="w-4 h-4" />
+                    <span>ערוך הזמנה</span>
+                  </button>
+                )}
+
+                {isAdmin && (
+                  <button
+                    onClick={() => setConfirmOpen(true)}
+                    className="flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-red-500 to-rose-500 text-white font-bold rounded-xl hover:from-red-600 hover:to-rose-600 transition-all shadow-xl shadow-red-500/30"
+                  >
+                    <Trash2 className="w-4 h-4" />
+                    <span>מחק הזמנה</span>
+                  </button>
+                )}
+              </div>
+            </div>
+          </div>
+        </header>
+
+        {/* Order Details Section */}
+        <div className="relative mb-6">
+          <div className="absolute -inset-2 bg-gradient-to-r from-orange-500 via-amber-500 to-yellow-500 rounded-3xl opacity-10 blur-xl"></div>
+
+          <div className="relative bg-white/90 backdrop-blur-xl rounded-3xl shadow-xl shadow-orange-500/10 border border-white/50 overflow-hidden">
+            <div className="bg-gradient-to-r from-orange-500 via-amber-500 to-yellow-500 p-1">
+              <div className="bg-white/95 backdrop-blur-xl p-4">
+                <div className="flex items-center gap-3">
+                  <div className="p-2 rounded-xl bg-gradient-to-br from-orange-100 to-amber-100">
+                    <FileText className="w-5 h-5 text-orange-600" />
+                  </div>
+                  <h2 className="text-2xl font-bold text-slate-900">
+                    פרטי ההזמנה
+                  </h2>
+                </div>
               </div>
             </div>
 
             <div className="p-6">
-              <p className="text-lg text-gray-700 text-center mb-2">
-                האם אתה בטוח שברצונך למחוק את ההזמנה?
-              </p>
-              <p className="text-red-600 text-center font-semibold mb-6">
-                פעולה זו אינה ניתנת לביטול!
-              </p>
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                {/* שם המזמין */}
+                <div className="group p-4 rounded-xl bg-gradient-to-br from-orange-50 to-amber-50 border-2 border-orange-200 hover:border-orange-400 transition-all">
+                  <div className="flex items-start gap-3">
+                    <div className="p-2 rounded-lg bg-orange-100">
+                      <User className="w-4 h-4 text-orange-600" />
+                    </div>
+                    <div className="flex-1">
+                      <p className="text-xs font-bold text-orange-600 mb-1">
+                        שם המזמין
+                      </p>
+                      <p className="text-sm font-bold text-slate-900">
+                        {order.invitingName}
+                      </p>
+                    </div>
+                  </div>
+                </div>
 
-              <div className="flex gap-3">
-                <button
-                  onClick={handleDelete}
-                  disabled={deleting}
-                  className="flex-1 px-6 py-3 bg-gradient-to-r from-red-500 to-rose-500 text-white rounded-xl hover:from-red-600 hover:to-rose-600 transition-all duration-300 shadow-lg hover:shadow-xl font-medium disabled:opacity-50 disabled:cursor-not-allowed"
-                >
-                  {deleting ? (
-                    <span className="flex items-center justify-center gap-2">
-                      <ClipLoader size={20} color="#ffffff" />
-                      מוחק...
-                    </span>
-                  ) : (
-                    <span className="flex items-center justify-center gap-2">
-                      <Trash2 className="w-5 h-5" />
-                      מחק הזמנה
-                    </span>
-                  )}
-                </button>
+                {/* מספר הזמנה */}
+                <div className="group p-4 rounded-xl bg-gradient-to-br from-orange-50 to-amber-50 border-2 border-orange-200 hover:border-orange-400 transition-all">
+                  <div className="flex items-start gap-3">
+                    <div className="p-2 rounded-lg bg-orange-100">
+                      <Hash className="w-4 h-4 text-orange-600" />
+                    </div>
+                    <div className="flex-1">
+                      <p className="text-xs font-bold text-orange-600 mb-1">
+                        מספר הזמנה
+                      </p>
+                      <p className="text-sm font-bold text-slate-900">
+                        {order.orderNumber}
+                      </p>
+                    </div>
+                  </div>
+                </div>
 
-                <button
-                  onClick={() => setConfirmOpen(false)}
-                  disabled={deleting}
-                  className="flex-1 px-6 py-3 bg-gray-200 text-gray-700 rounded-xl hover:bg-gray-300 transition-all duration-300 font-medium disabled:opacity-50"
-                >
-                  ביטול
-                </button>
+                {/* סכום */}
+                <div className="group p-4 rounded-xl bg-gradient-to-br from-orange-50 to-amber-50 border-2 border-orange-200 hover:border-orange-400 transition-all">
+                  <div className="flex items-start gap-3">
+                    <div className="p-2 rounded-lg bg-orange-100">
+                      <DollarSign className="w-4 h-4 text-orange-600" />
+                    </div>
+                    <div className="flex-1">
+                      <p className="text-xs font-bold text-orange-600 mb-1">
+                        סכום
+                      </p>
+                      <p className="text-sm font-bold text-slate-900">
+                        {formatNumber(order.sum)} ₪
+                      </p>
+                    </div>
+                  </div>
+                </div>
+
+                {/* פירוט */}
+                <div className="group p-4 rounded-xl bg-gradient-to-br from-orange-50 to-amber-50 border-2 border-orange-200 hover:border-orange-400 transition-all">
+                  <div className="flex items-start gap-3">
+                    <div className="p-2 rounded-lg bg-orange-100">
+                      <FileText className="w-4 h-4 text-orange-600" />
+                    </div>
+                    <div className="flex-1">
+                      <p className="text-xs font-bold text-orange-600 mb-1">
+                        פירוט
+                      </p>
+                      <p className="text-sm font-bold text-slate-900">
+                        {order.detail}
+                      </p>
+                    </div>
+                  </div>
+                </div>
+
+                {/* פרויקט */}
+                <div className="group p-4 rounded-xl bg-gradient-to-br from-orange-50 to-amber-50 border-2 border-orange-200 hover:border-orange-400 transition-all">
+                  <div className="flex items-start gap-3">
+                    <div className="p-2 rounded-lg bg-orange-100">
+                      <Briefcase className="w-4 h-4 text-orange-600" />
+                    </div>
+                    <div className="flex-1">
+                      <p className="text-xs font-bold text-orange-600 mb-1">
+                        פרויקט
+                      </p>
+                      <p className="text-sm font-bold text-slate-900">
+                        {order.projectName}
+                      </p>
+                    </div>
+                  </div>
+                </div>
+
+                {/* סטטוס */}
+                <div className="group p-4 rounded-xl bg-gradient-to-br from-orange-50 to-amber-50 border-2 border-orange-200 hover:border-orange-400 transition-all">
+                  <div className="flex items-start gap-3">
+                    <div className="p-2 rounded-lg bg-orange-100">
+                      <AlertCircle className="w-4 h-4 text-orange-600" />
+                    </div>
+                    <div className="flex-1">
+                      <p className="text-xs font-bold text-orange-600 mb-1">
+                        סטטוס הזמנה
+                      </p>
+                      <p className="text-sm font-bold text-slate-900">
+                        {order.status}
+                      </p>
+                    </div>
+                  </div>
+                </div>
+
+                {/* איש קשר */}
+                <div className="group p-4 rounded-xl bg-gradient-to-br from-orange-50 to-amber-50 border-2 border-orange-200 hover:border-orange-400 transition-all">
+                  <div className="flex items-start gap-3">
+                    <div className="p-2 rounded-lg bg-orange-100">
+                      <Phone className="w-4 h-4 text-orange-600" />
+                    </div>
+                    <div className="flex-1">
+                      <p className="text-xs font-bold text-orange-600 mb-1">
+                        איש קשר
+                      </p>
+                      <p className="text-sm font-bold text-slate-900">
+                        {order.Contact_person}
+                      </p>
+                    </div>
+                  </div>
+                </div>
+
+                {/* תאריך יצירה */}
+                <div className="group p-4 rounded-xl bg-gradient-to-br from-orange-50 to-amber-50 border-2 border-orange-200 hover:border-orange-400 transition-all">
+                  <div className="flex items-start gap-3">
+                    <div className="p-2 rounded-lg bg-orange-100">
+                      <Calendar className="w-4 h-4 text-orange-600" />
+                    </div>
+                    <div className="flex-1">
+                      <p className="text-xs font-bold text-orange-600 mb-1">
+                        תאריך יצירה
+                      </p>
+                      <p className="text-sm font-bold text-slate-900">
+                        {formatHebrewDate(order.createdAt)}
+                      </p>
+                    </div>
+                  </div>
+                </div>
+
+                {/* נוצר ע"י */}
+                <div className="group p-4 rounded-xl bg-gradient-to-br from-orange-50 to-amber-50 border-2 border-orange-200 hover:border-orange-400 transition-all">
+                  <div className="flex items-start gap-3">
+                    <div className="p-2 rounded-lg bg-orange-100">
+                      <User className="w-4 h-4 text-orange-600" />
+                    </div>
+                    <div className="flex-1">
+                      <p className="text-xs font-bold text-orange-600 mb-1">
+                        נוצר ע"י
+                      </p>
+                      <p className="text-sm font-bold text-slate-900">
+                        {order.createdByName || "לא זמין"}
+                      </p>
+                    </div>
+                  </div>
+                </div>
               </div>
             </div>
           </div>
         </div>
-      )}
+
+        {/* Files Section */}
+        <div className="relative">
+          <div className="absolute -inset-2 bg-gradient-to-r from-purple-500 via-indigo-500 to-blue-500 rounded-3xl opacity-10 blur-xl"></div>
+
+          <div className="relative bg-white/90 backdrop-blur-xl rounded-3xl shadow-xl shadow-purple-500/10 border border-white/50 overflow-hidden">
+            <div className="bg-gradient-to-r from-purple-500 via-indigo-500 to-blue-500 p-1">
+              <div className="bg-white/95 backdrop-blur-xl p-4">
+                <div className="flex items-center gap-3">
+                  <div className="p-2 rounded-xl bg-gradient-to-br from-purple-100 to-indigo-100">
+                    <Paperclip className="w-5 h-5 text-purple-600" />
+                  </div>
+                  <h2 className="text-2xl font-bold text-slate-900">
+                    קבצים מצורפים
+                  </h2>
+                  {order.files && order.files.length > 0 && (
+                    <span className="mr-auto px-3 py-1 rounded-full bg-purple-100 text-purple-700 text-sm font-bold">
+                      {order.files.length}
+                    </span>
+                  )}
+                </div>
+              </div>
+            </div>
+
+            <div className="p-6">
+              {order.files && order.files.length > 0 ? (
+                <div className="space-y-3">
+                  {order.files.map((file, index) => (
+                    <div key={index}>{renderFile(file, index)}</div>
+                  ))}
+                </div>
+              ) : (
+                <div className="text-center py-8 text-slate-600">
+                  <Paperclip className="w-12 h-12 mx-auto mb-3 opacity-50" />
+                  <p className="font-bold text-lg">אין קבצים מצורפים</p>
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+
+        {/* Delete Confirmation Modal */}
+        {confirmOpen && (
+          <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+            <div className="relative">
+              <div className="absolute -inset-4 bg-gradient-to-r from-red-500 to-rose-500 rounded-3xl opacity-20 blur-2xl"></div>
+
+              <div className="relative bg-white rounded-3xl shadow-2xl p-8 max-w-md w-full">
+                <div className="text-center mb-6">
+                  <div className="mx-auto w-16 h-16 rounded-full bg-gradient-to-br from-red-500 to-rose-500 flex items-center justify-center mb-4">
+                    <AlertCircle className="w-8 h-8 text-white" />
+                  </div>
+                  <h3 className="text-3xl font-bold text-slate-900 mb-2">
+                    האם למחוק את ההזמנה?
+                  </h3>
+                  <p className="text-slate-600">הפעולה בלתי הפיכה.</p>
+                </div>
+
+                <div className="flex gap-3">
+                  <button
+                    onClick={handleDelete}
+                    disabled={deleting}
+                    className="flex-1 px-6 py-3 rounded-xl font-bold text-white bg-gradient-to-r from-red-500 to-rose-500 hover:from-red-600 hover:to-rose-600 transition-all shadow-lg disabled:opacity-60"
+                  >
+                    {deleting ? "מוחק..." : "מחק"}
+                  </button>
+                  <button
+                    onClick={() => setConfirmOpen(false)}
+                    disabled={deleting}
+                    className="flex-1 px-6 py-3 rounded-xl font-bold text-slate-700 bg-slate-100 hover:bg-slate-200 transition-all"
+                  >
+                    ביטול
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+      </div>
     </div>
   );
 };

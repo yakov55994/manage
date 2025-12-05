@@ -171,15 +171,15 @@ const Notes = () => {
                         <div className="flex justify-center gap-8 mt-8">
                             <div className="text-center bg-slate-700 rounded-lg p-4 shadow-sm border border-slate-600">
                                 <div className="text-2xl font-bold text-orange-400">{notes.length}</div>
-                                <div className="text-slate-300 text-sm">סה״כ משימות</div>
+                                <div className="text-slate-300 text-m">סה״כ משימות</div>
                             </div>
                             <div className="text-center bg-slate-700 rounded-lg p-4 shadow-sm border border-slate-600">
                                 <div className="text-2xl font-bold text-green-400">{completedCount}</div>
-                                <div className="text-slate-300 text-sm">הושלמו</div>
+                                <div className="text-slate-300 text-m">הושלמו</div>
                             </div>
                             <div className="text-center bg-slate-700 rounded-lg p-4 shadow-sm border border-slate-600">
                                 <div className="text-2xl font-bold text-blue-400">{completionRate}%</div>
-                                <div className="text-slate-300 text-sm">אחוז השלמה</div>
+                                <div className="text-slate-300 text-m">אחוז השלמה</div>
                             </div>
                         </div>
                     </div>
@@ -235,7 +235,7 @@ const Notes = () => {
                             <>
                                 <div className="flex items-center justify-between mb-6">
                                     <h2 className="text-2xl font-bold text-white">רשימת המשימות</h2>
-                                    <div className="flex gap-3 text-sm">
+                                    <div className="flex gap-3 text-m">
                                         <span className="bg-blue-500 text-white px-3 py-1 rounded-full font-medium">
                                             {pendingCount} ממתינות
                                         </span>
@@ -258,7 +258,7 @@ const Notes = () => {
                                             <div className="p-4">
                                                 <div className="flex items-start gap-4">
                                                     {/* מספר המשימה ו/או סטטוס */}
-                                                    <div className={`flex-shrink-0 w-8 h-8 rounded-lg flex items-center justify-center text-white font-bold text-sm ${
+                                                    <div className={`flex-shrink-0 w-8 h-8 rounded-lg flex items-center justify-center text-white font-bold text-m ${
                                                         note.completed 
                                                             ? 'bg-green-500' 
                                                             : 'bg-orange-500'
@@ -278,7 +278,7 @@ const Notes = () => {
                                                         
                                                         {/* תאריך יצירה */}
                                                         {note.createdAt && (
-                                                            <div className="text-sm text-slate-400 mb-3">
+                                                            <div className="text-m text-slate-400 mb-3">
                                                                 נוצר ב-{new Date(note.createdAt).toLocaleDateString('he-IL')}
                                                             </div>
                                                         )}
@@ -286,7 +286,7 @@ const Notes = () => {
                                                 </div>
                                                <div className="inline-flex items-center gap-2 bg-white/20 backdrop-blur-sm rounded-full px-4 py-2 border border-white/30">
   <User className="w-4 h-4 text-white" />
-  <p className="text-white font-bold text-sm">
+  <p className="text-white font-bold text-m">
     נוצר ע"י: {note.createdByName || "לא זמין"}
   </p>
 </div>
@@ -295,7 +295,7 @@ const Notes = () => {
                                                 <div className="flex gap-2 pt-3 border-t border-slate-600">
                                                     <button
                                                         onClick={() => handleCompleted(note._id, note.completed)}
-                                                        className={`flex items-center gap-2 px-3 py-2 rounded-lg font-medium transition-colors duration-150 text-sm ${
+                                                        className={`flex items-center gap-2 px-3 py-2 rounded-lg font-medium transition-colors duration-150 text-m ${
                                                             note.completed
                                                                 ? "bg-yellow-600 text-white hover:bg-yellow-700"
                                                                 : "bg-green-600 text-white hover:bg-green-700"
@@ -316,7 +316,7 @@ const Notes = () => {
                                                     
                                                     <button
                                                         onClick={() => startEditing(note)}
-                                                        className="bg-blue-600 text-white hover:bg-blue-700 px-3 py-2 rounded-lg font-medium transition-colors duration-150 text-sm flex items-center gap-2"
+                                                        className="bg-blue-600 text-white hover:bg-blue-700 px-3 py-2 rounded-lg font-medium transition-colors duration-150 text-m flex items-center gap-2"
                                                     >
                                                         <Edit3 size={16} />
                                                         ערוך
@@ -324,7 +324,7 @@ const Notes = () => {
                                                     
                                                     <button
                                                         onClick={() => handleDelete(note._id)}
-                                                        className="bg-red-600 text-white hover:bg-red-700 px-3 py-2 rounded-lg font-medium transition-colors duration-150 text-sm flex items-center gap-2"
+                                                        className="bg-red-600 text-white hover:bg-red-700 px-3 py-2 rounded-lg font-medium transition-colors duration-150 text-m flex items-center gap-2"
                                                     >
                                                         <Trash2 size={16} />
                                                         מחק

@@ -4,6 +4,7 @@ import api from "../../api/api.js";
 import { ClipLoader } from "react-spinners";
 import { toast } from "sonner";
 import FileUploader from "../../Components/FileUploader";
+import SupplierSelector from "../../Components/SupplierSelector.jsx";
 import {
   ShoppingCart,
   Hash,
@@ -27,17 +28,18 @@ const OrderEditPage = () => {
   const [status, setStatus] = useState("");
   const [detail, setDetail] = useState("");
   const [invitingName, setInvitingName] = useState("");
+  const [supplierId, setSupplierId] = useState(""); // ✅ הוספה
   const [Contact_person, setContact_Person] = useState("");
   const [orderNumber, setOrderNumber] = useState("");
   const [sum, setSum] = useState("");
   const [createdAt, setCreatedAt] = useState("");
   const [files, setFiles] = useState([]);
-  const [loading, setLoading] = useState(true); // ✅ התחל מ-true
+  const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
 
   const { id } = useParams();
   const navigate = useNavigate();
-  const { canEditOrders, user } = useAuth(); // ✅ קבל user מ-context
+  const { canEditOrders, user } = useAuth();
 
   useEffect(() => {
     const fetchOrder = async () => {
@@ -46,20 +48,17 @@ const OrderEditPage = () => {
         const response = await api.get(`/orders/${id}`);
         const orderData = response.data.data || response.data;
 
-        // ✅ נרמל את projectId
         let projectId = orderData.projectId;
 
         if (typeof projectId === "object") {
           projectId = projectId._id || projectId.$oid;
         }
 
-        // ✅ בדיקת הרשאה
         if (!canEditOrders(projectId)) {
           navigate("/no-access", { replace: true });
           return;
         }
 
-        // ✅ עדכון כל השדות
         setOrder(orderData);
         setProjectName(orderData.projectName || "");
         setOrderNumber(orderData.orderNumber || "");
@@ -67,6 +66,7 @@ const OrderEditPage = () => {
         setStatus(orderData.status || "בעיבוד");
         setDetail(orderData.detail || "");
         setInvitingName(orderData.invitingName || "");
+        setSupplierId(orderData.supplierId || ""); // ✅ הוספה
         setContact_Person(orderData.Contact_person || "");
         setCreatedAt(
           orderData.createdAt
@@ -89,7 +89,6 @@ const OrderEditPage = () => {
           : [];
 
         setFiles(normalizedFiles);
-
       } catch (error) {
         console.error("Error loading order:", error);
         toast.error("שגיאה בטעינת ההזמנה");
@@ -103,19 +102,15 @@ const OrderEditPage = () => {
   }, [id, navigate, canEditOrders]);
 
   const extractPublicIdFromUrl = (url) => {
-
     if (!url) {
       console.warn("⚠️ URL is empty");
       return null;
     }
 
     try {
-      // Cloudinary URL format: .../upload/v123456/folder/filename.ext
       const match = url.match(/\/upload\/(?:v\d+\/)?(.+?)$/);
 
-
       if (match && match[1]) {
-        // הסר את הסיומת (extension)
         const publicId = match[1].replace(/\.[^.]+$/, "");
         return publicId;
       }
@@ -127,6 +122,7 @@ const OrderEditPage = () => {
       return null;
     }
   };
+
   const handleFileUpload = (selectedFiles) => {
     if (!selectedFiles || selectedFiles.length === 0) return;
     setFiles((prev) => [...(prev || []), ...selectedFiles]);
@@ -134,7 +130,6 @@ const OrderEditPage = () => {
   };
 
   const handleRemoveFile = async (fileIndex) => {
-
     const fileToDelete = files[fileIndex];
 
     if (!fileToDelete) {
@@ -142,7 +137,6 @@ const OrderEditPage = () => {
       return;
     }
 
-    // 1️⃣ קובץ מקומי - רק הסר מה-UI
     if (fileToDelete.isLocal) {
       const clone = [...files];
       clone.splice(fileIndex, 1);
@@ -156,17 +150,13 @@ const OrderEditPage = () => {
       return;
     }
 
-    // 2️⃣ קובץ ב-Cloudinary
-
     const originalFiles = [...files];
 
     try {
-      // הסר מה-UI מיד (אופטימיסטי)
       const clone = [...files];
       clone.splice(fileIndex, 1);
       setFiles(clone);
 
-      // חלץ publicId
       const fileUrl = fileToDelete.url || fileToDelete.fileUrl;
 
       if (!fileUrl) {
@@ -175,7 +165,6 @@ const OrderEditPage = () => {
         return;
       }
 
-      // נסה לקבל publicId מהשדה או מה-URL
       let publicId = fileToDelete.publicId;
 
       if (!publicId) {
@@ -190,8 +179,6 @@ const OrderEditPage = () => {
         return;
       }
 
-
-      // קריאה לשרת למחיקה
       const response = await api.delete("/upload/delete-cloudinary", {
         data: {
           publicId,
@@ -202,17 +189,13 @@ const OrderEditPage = () => {
       toast.success("הקובץ נמחק מהשרת ומ-Cloudinary");
     } catch (error) {
       console.error("❌ Error deleting file:", error);
-      console.error("❌ Error response:", error.response?.data);
-      console.error("❌ Error status:", error.response?.status);
 
-      // בדוק אם זה 404 (קובץ כבר נמחק)
       if (
         error.response?.status === 404 ||
         error.response?.data?.result === "not found"
       ) {
         toast.info("הקובץ כבר לא קיים ב-Cloudinary");
       } else {
-        // שגיאה אמיתית - החזר את המצב המקורי
         toast.error(
           "שגיאה במחיקת הקובץ: " +
             (error.response?.data?.message ||
@@ -223,7 +206,6 @@ const OrderEditPage = () => {
         setFiles(originalFiles);
       }
     }
-
   };
 
   const handleSubmit = async (e) => {
@@ -246,8 +228,6 @@ const OrderEditPage = () => {
 
       for (const file of files) {
         if (file.isLocal && file.file) {
-          // 1️⃣ קובץ חדש - העלאה ל-Cloudinary
-
           const formData = new FormData();
           formData.append("file", file.file);
           formData.append("folder", "orders");
@@ -255,7 +235,6 @@ const OrderEditPage = () => {
           const res = await api.post("/upload", formData, {
             headers: { "Content-Type": "multipart/form-data" },
           });
-
 
           uploadedFiles.push({
             name: file.name,
@@ -267,8 +246,6 @@ const OrderEditPage = () => {
             type: file.file.type,
           });
         } else {
-          // 2️⃣ קובץ קיים - חלץ publicId מה-URL אם חסר
-
           const existingFile = {
             name: file.name,
             url: file.url,
@@ -276,20 +253,16 @@ const OrderEditPage = () => {
             size: file.size,
           };
 
-          // ✅ אם יש publicId - השתמש בו
           if (file.publicId) {
             existingFile.publicId = file.publicId;
           } else if (file.url) {
-            // ✅ אם אין publicId - חלץ מה-URL
             existingFile.publicId = extractPublicIdFromUrl(file.url);
-
           }
 
-          // ✅ העתק שדות נוספים אם קיימים
           if (file.resourceType) {
             existingFile.resourceType = file.resourceType;
           } else {
-            existingFile.resourceType = "raw"; // ברירת מחדל
+            existingFile.resourceType = "raw";
           }
 
           if (file.folder) {
@@ -310,6 +283,7 @@ const OrderEditPage = () => {
         sum: Number(sum),
         status,
         invitingName,
+        supplierId, // ✅ הוספה
         detail,
         Contact_person,
         createdAt,
@@ -335,7 +309,6 @@ const OrderEditPage = () => {
     }
   };
 
-  // ✅ בדיקה נוספת - האם יש הרשאה לפרויקט הזה
   const canEdit = order
     ? canEditOrders(
         typeof order.project === "object"
@@ -426,6 +399,19 @@ const OrderEditPage = () => {
                 <option value="בעיבוד">בעיבוד</option>
                 <option value="לא הוגש">לא הוגש</option>
               </select>
+            </div>
+
+            {/* ✅ בחירת ספק */}
+            <div>
+              <SupplierSelector
+                projectId={null}
+                value={supplierId}
+                onSelect={(supplier) => {
+                  setSupplierId(supplier._id);
+                  setInvitingName(supplier.name); // ✅ מילוי אוטומטי של שם המזמין
+                }}
+                disabled={!canEdit}
+              />
             </div>
 
             <div>

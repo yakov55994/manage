@@ -18,9 +18,14 @@ import {
   Sparkles,
   TrendingUp,
   Phone,
+  Users,
+  Search,
+  X,
 } from "lucide-react";
 import DateField from "../../Components/DateField";
 import { useAuth } from "../../context/AuthContext";
+import Select from "react-select";
+import SupplierSelector from "../../Components/SupplierSelector.jsx";
 
 const CreateOrder = () => {
   const [projects, setProjects] = useState([]);
@@ -31,6 +36,11 @@ const CreateOrder = () => {
   const [orderIndexToDelete, setOrderIndexToDelete] = useState(null);
   const [showModal, setShowModal] = useState(false);
 
+  // 🆕 States לספקים
+  const [suppliers, setSuppliers] = useState([]);
+  const [supplierSearchTerms, setSupplierSearchTerms] = useState({});
+  const [openSupplierDropdowns, setOpenSupplierDropdowns] = useState({});
+
   const navigate = useNavigate();
   const { user, loading: authLoading } = useAuth();
 
@@ -38,6 +48,28 @@ const CreateOrder = () => {
     selectedProject?._id,
     "orders"
   );
+
+  // 🆕 טעינת ספקים
+  useEffect(() => {
+    const fetchSuppliers = async () => {
+      try {
+        const response = await api.get("/suppliers");
+        const data = Array.isArray(response.data?.data)
+          ? response.data.data
+          : Array.isArray(response.data)
+          ? response.data
+          : [];
+        setSuppliers(data);
+      } catch (err) {
+        console.error("❌ שגיאה בטעינת ספקים:", err);
+        toast.error("שגיאה בטעינת רשימת ספקים", {
+          className: "sonner-toast error rtl",
+        });
+      }
+    };
+
+    fetchSuppliers();
+  }, []);
 
   useEffect(() => {
     const fetchProjects = async () => {
@@ -47,8 +79,8 @@ const CreateOrder = () => {
         const data = Array.isArray(response.data?.data)
           ? response.data.data
           : Array.isArray(response.data)
-            ? response.data
-            : [];
+          ? response.data
+          : [];
 
         if (authLoading) {
           setProjects(data);
@@ -113,6 +145,7 @@ const CreateOrder = () => {
         sum: "",
         status: "לא הוגש",
         invitingName: "",
+        supplierId: null, // 🆕
         files: [],
         Contact_person: "",
         createdAt: "",
@@ -134,6 +167,45 @@ const CreateOrder = () => {
     const newOrders = [...orders];
     newOrders[index][field] = value;
     setOrders(newOrders);
+  };
+
+  // 🆕 טיפול בבחירת ספק
+  const handleSupplierSelect = (index, supplier) => {
+    const newOrders = [...orders];
+    newOrders[index].supplierId = supplier._id;
+    newOrders[index].invitingName = supplier.name;
+    setOrders(newOrders);
+
+    // סגור את ה-dropdown
+    setOpenSupplierDropdowns((prev) => ({
+      ...prev,
+      [index]: false,
+    }));
+
+    // נקה את החיפוש
+    setSupplierSearchTerms((prev) => ({
+      ...prev,
+      [index]: "",
+    }));
+  };
+
+  // 🆕 קבלת שם הספק הנבחר
+  const getSelectedSupplierName = (order) => {
+    if (!order.supplierId) return "";
+    const supplier = suppliers.find((s) => s._id === order.supplierId);
+    return supplier?.name || order.invitingName || "";
+  };
+
+  // 🆕 סינון ספקים לפי חיפוש
+  const getFilteredSuppliers = (index) => {
+    const searchTerm = supplierSearchTerms[index] || "";
+    if (!searchTerm) return suppliers;
+
+    return suppliers.filter(
+      (supplier) =>
+        supplier.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        supplier.business_tax?.toString().includes(searchTerm)
+    );
   };
 
   const handleOrderUpload = (index, selectedFiles) => {
@@ -161,8 +233,6 @@ const CreateOrder = () => {
     };
 
     setOrders(newOrders);
-
- 
   };
 
   const validateSubmission = () => {
@@ -192,7 +262,7 @@ const CreateOrder = () => {
       }
 
       if (!order.invitingName || order.invitingName.trim() === "") {
-        toast.error(`הזמנה מספר ${orderNumber}: חסר שם המזמין`, {
+        toast.error(`הזמנה מספר ${orderNumber}: חסר שם המזמין/ספק`, {
           className: "sonner-toast error rtl",
         });
         return false;
@@ -232,18 +302,6 @@ const CreateOrder = () => {
         });
         return false;
       }
-    }
-
-    const invitingNames = orders.map((order) => order.invitingName.trim());
-    const duplicates = invitingNames.filter(
-      (name, index) => invitingNames.indexOf(name) !== index
-    );
-
-    if (duplicates.length > 0) {
-      toast.error(`שם מזמין "${duplicates[0]}" מופיע יותר מפעם אחת`, {
-        className: "sonner-toast error rtl",
-      });
-      return false;
     }
 
     return true;
@@ -301,6 +359,7 @@ const CreateOrder = () => {
             sum: Number(order.sum),
             status: order.status,
             invitingName: order.invitingName,
+            supplierId: order.supplierId || undefined, // 🆕
             detail: order.detail,
             files: uploadedFiles,
             Contact_person: order.Contact_person,
@@ -394,7 +453,6 @@ const CreateOrder = () => {
 
     return (
       <a
-
         href={fileUrl}
         target="_blank"
         rel="noopener noreferrer"
@@ -404,7 +462,6 @@ const CreateOrder = () => {
       </a>
     );
   };
-
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-orange-50 via-amber-50 to-yellow-50 relative overflow-hidden py-12">
@@ -430,12 +487,6 @@ const CreateOrder = () => {
                   <h1 className="text-4xl font-black text-slate-900">
                     יצירת הזמנות לפרויקט
                   </h1>
-                  {/* <div className="flex items-center justify-center gap-2 mt-2">
-                    <Sparkles className="w-4 h-4 text-orange-500" />
-                    <span className="text-m font-medium text-slate-600">
-                      מערכת ניהול הזמנות מתקדמת
-                    </span>
-                  </div> */}
                 </div>
               </div>
 
@@ -449,7 +500,6 @@ const CreateOrder = () => {
                 </label>
 
                 <div className="relative bg-gradient-to-br from-white to-orange-50/30 border-2 border-orange-200 rounded-2xl shadow-lg overflow-hidden">
-                  {/* Selected Project Tag */}
                   {selectedProject && (
                     <div className="p-4 bg-gradient-to-r from-orange-50 to-amber-50 border-b-2 border-orange-100">
                       <div className="flex flex-wrap gap-2">
@@ -459,16 +509,13 @@ const CreateOrder = () => {
                             onClick={() => setSelectedProject(null)}
                             className="w-5 h-5 rounded-full bg-white/20 hover:bg-white/30 flex items-center justify-center transition-colors duration-200 group-hover:rotate-90"
                           >
-                            <span className="text-m font-bold">
-                              ✕
-                            </span>
+                            <span className="text-m font-bold">✕</span>
                           </button>
                         </div>
                       </div>
                     </div>
                   )}
 
-                  {/* Search Box */}
                   <div className="p-4 border-b-2 border-orange-100 bg-white/50">
                     <div className="relative">
                       <input
@@ -502,7 +549,6 @@ const CreateOrder = () => {
                     </div>
                   </div>
 
-                  {/* Projects List */}
                   <div className="p-5 max-h-64 overflow-y-auto">
                     <div className="space-y-2">
                       {projects
@@ -519,9 +565,10 @@ const CreateOrder = () => {
                               className={`
                                 flex items-center gap-3 p-3 rounded-xl cursor-pointer
                                 transition-all duration-200 hover:scale-[1.02]
-                                ${isSelected
-                                  ? "bg-gradient-to-r from-orange-100 to-amber-100 border-2 border-orange-300 shadow-md"
-                                  : "bg-white hover:bg-orange-50 border-2 border-gray-200 hover:border-orange-200"
+                                ${
+                                  isSelected
+                                    ? "bg-gradient-to-r from-orange-100 to-amber-100 border-2 border-orange-300 shadow-md"
+                                    : "bg-white hover:bg-orange-50 border-2 border-gray-200 hover:border-orange-200"
                                 }
                               `}
                             >
@@ -534,10 +581,11 @@ const CreateOrder = () => {
                                 />
                               </div>
                               <span
-                                className={`flex-1 font-medium transition-colors ${isSelected
-                                  ? "text-orange-900"
-                                  : "text-slate-700"
-                                  }`}
+                                className={`flex-1 font-medium transition-colors ${
+                                  isSelected
+                                    ? "text-orange-900"
+                                    : "text-slate-700"
+                                }`}
                               >
                                 {p.name}
                               </span>
@@ -548,7 +596,6 @@ const CreateOrder = () => {
                           );
                         })}
 
-                      {/* No Results Message */}
                       {projectSearch &&
                         projects.filter((p) =>
                           p.name
@@ -564,7 +611,6 @@ const CreateOrder = () => {
                     </div>
                   </div>
 
-                  {/* Empty State */}
                   {projects.length === 0 && (
                     <div className="p-8 text-center text-gray-400">
                       <Building2 className="w-12 h-12 mx-auto mb-2 opacity-50" />
@@ -573,7 +619,6 @@ const CreateOrder = () => {
                   )}
                 </div>
 
-                {/* Counter */}
                 {selectedProject && (
                   <div className="mt-3 text-center">
                     <span className="inline-block px-4 py-1 bg-orange-100 text-orange-700 rounded-full text-m font-bold">
@@ -592,7 +637,7 @@ const CreateOrder = () => {
             <div key={index} className="relative">
               <div className="absolute -inset-2 bg-gradient-to-r from-orange-500 via-amber-500 to-yellow-500 rounded-3xl opacity-10 blur-xl"></div>
 
-              <div className="relative bg-white/90 backdrop-blur-xl rounded-3xl shadow-xl shadow-orange-500/10 border border-white/50 overflow-hidden">
+              <div className="relative bg-white/90 backdrop-blur-xl rounded-3xl shadow-xl shadow-orange-500/10 border border-white/50 overflow-visible">
                 {/* Order Header */}
                 <div className="bg-gradient-to-r from-orange-500 via-amber-500 to-yellow-500 p-1">
                   <div className="bg-white/95 backdrop-blur-xl p-4">
@@ -620,11 +665,32 @@ const CreateOrder = () => {
                 {/* Order Form */}
                 <div className="p-6">
                   <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                    {/* Inviting Name */}
+                    {/* 🆕 Supplier Selection */}
+                    <div className="group">
+                      <SupplierSelector
+                        projectId={null}
+                        value={order.supplierId}
+                        onSelect={(supplier) =>
+                          setCommon({
+                            ...common,
+                            supplierId: supplier._id,
+                            invitingName: supplier.name,
+                          })
+                        }
+                        onAddNew={() =>
+                          navigate("/suppliers/create?returnTo=createInvoice")
+                        }
+                      />
+                    </div>
+
+                    {/* Inviting Name - now optional if supplier selected */}
                     <div className="group">
                       <label className="text-m font-bold text-slate-700 mb-2 flex items-center gap-2">
                         <User className="w-4 h-4 text-orange-500" />
                         שם המזמין
+                        {!order.supplierId && (
+                          <span className="text-red-500">*</span>
+                        )}
                       </label>
                       <input
                         type="text"
@@ -637,8 +703,10 @@ const CreateOrder = () => {
                           )
                         }
                         className="mt-2 w-full rounded-xl border-2 border-slate-200 bg-white px-4 py-3 text-m font-medium focus:border-orange-500 focus:outline-none focus:ring-4 focus:ring-orange-500/20 transition-all group-hover:border-orange-300"
-                        placeholder="הזן שם מזמין..."
-                        required
+                        placeholder={
+                          order.supplierId ? "אוטומטי מהספק" : "הזן שם מזמין..."
+                        }
+                        disabled={!!order.supplierId}
                       />
                     </div>
 
@@ -699,8 +767,8 @@ const CreateOrder = () => {
                     <div
                       className="group cursor-pointer"
                       onClick={(e) => {
-                        // מצא את ה-input בתוך ה-div ופתח את ה-picker
-                        const input = e.currentTarget.querySelector('input[type="date"]');
+                        const input =
+                          e.currentTarget.querySelector('input[type="date"]');
                         if (input && input.showPicker) {
                           input.showPicker();
                         }

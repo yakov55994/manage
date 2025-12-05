@@ -67,7 +67,6 @@ const CreateInvoice = () => {
   // LOAD PROJECTS
   // ============================
 
-
   useEffect(() => {
     const load = async () => {
       try {
@@ -83,14 +82,13 @@ const CreateInvoice = () => {
     load();
   }, []);
 
-
   useEffect(() => {
     if (location.state?.newSupplier) {
       const s = location.state.newSupplier;
       setCommon((prev) => ({
         ...prev,
         supplierId: s._id,
-        invitingName: s.name
+        invitingName: s.name,
       }));
     }
   }, [location.state]);
@@ -136,7 +134,7 @@ const CreateInvoice = () => {
   const handleFileUpload = (index, selectedFiles) => {
     const copy = [...invoices];
 
-    const deepCloned = selectedFiles.map(f => ({
+    const deepCloned = selectedFiles.map((f) => ({
       file: f.file,
       name: f.name,
       type: f.type,
@@ -150,10 +148,6 @@ const CreateInvoice = () => {
     copy[index].files = [...copy[index].files, ...deepCloned];
     setInvoices(copy);
   };
-
-
-
-
 
   const handleRemoveFile = (invoiceIndex, fileIndex) => {
     const copy = [...invoices];
@@ -170,7 +164,7 @@ const CreateInvoice = () => {
     if (isLocal) {
       return (
         <div className="flex items-center gap-2">
-          <span className="text-gray-600 text-sm">
+          <span className="text-gray-600 text-m">
             📄 {file.name} ({(file.size / 1024).toFixed(1)} KB)
           </span>
           <span className="text-orange-500 text-xs font-bold">
@@ -239,7 +233,6 @@ const CreateInvoice = () => {
                 });
                 console.log("UPLOAD RESPONSE:", res.data);
 
-
                 uploadedFiles.push({
                   name: res.data.file.name || file.name,
                   url: res.data.file.url,
@@ -248,7 +241,6 @@ const CreateInvoice = () => {
                   publicId: res.data.file.publicId,
                   resourceType: res.data.file.resourceType,
                 });
-
               } else {
                 uploadedFiles.push({
                   name: file.name,
@@ -259,10 +251,8 @@ const CreateInvoice = () => {
                   resourceType: file.resourceType,
                 });
               }
-
             }
             console.log("FINAL INVOICE FILES:", uploadedFiles);
-
           }
 
           return {
@@ -322,7 +312,7 @@ const CreateInvoice = () => {
                 </h1>
                 <div className="flex items-center justify-center gap-2 mt-2">
                   <Sparkles className="w-4 h-4 text-orange-500" />
-                  <span className="text-sm font-medium text-slate-600">
+                  <span className="text-m font-medium text-slate-600">
                     מערכת ניהול חשבוניות מתקדמת
                   </span>
                 </div>
@@ -348,7 +338,7 @@ const CreateInvoice = () => {
                           key={p._id}
                           className="group px-4 py-2 bg-gradient-to-r from-orange-500 to-amber-500 rounded-xl flex items-center gap-2 font-bold text-white shadow-md hover:shadow-xl transition-all duration-200 hover:scale-105"
                         >
-                          <span className="text-sm">{p.name}</span>
+                          <span className="text-m">{p.name}</span>
                           <button
                             onClick={() => toggleProject(p)}
                             className="w-5 h-5 rounded-full bg-white/20 hover:bg-white/30 flex items-center justify-center transition-colors duration-200 group-hover:rotate-90"
@@ -416,9 +406,10 @@ const CreateInvoice = () => {
                             className={`
                               flex items-center gap-3 p-3 rounded-xl cursor-pointer
                               transition-all duration-200 hover:scale-[1.02]
-                              ${isSelected
-                                ? "bg-gradient-to-r from-orange-100 to-amber-100 border-2 border-orange-300 shadow-md"
-                                : "bg-white hover:bg-orange-50 border-2 border-gray-200 hover:border-orange-200"
+                              ${
+                                isSelected
+                                  ? "bg-gradient-to-r from-orange-100 to-amber-100 border-2 border-orange-300 shadow-md"
+                                  : "bg-white hover:bg-orange-50 border-2 border-gray-200 hover:border-orange-200"
                               }
                             `}
                           >
@@ -431,10 +422,11 @@ const CreateInvoice = () => {
                               />
                             </div>
                             <span
-                              className={`flex-1 font-medium transition-colors ${isSelected
-                                ? "text-orange-900"
-                                : "text-slate-700"
-                                }`}
+                              className={`flex-1 font-medium transition-colors ${
+                                isSelected
+                                  ? "text-orange-900"
+                                  : ""
+                              }`}
                             >
                               {p.name}
                             </span>
@@ -453,7 +445,7 @@ const CreateInvoice = () => {
                           .includes(projectSearch.toLowerCase())
                       ).length === 0 && (
                         <div className="text-center py-8 text-gray-400">
-                          <p className="text-sm">
+                          <p className="text-m">
                             לא נמצאו פרויקטים התואמים "{projectSearch}"
                           </p>
                         </div>
@@ -473,7 +465,7 @@ const CreateInvoice = () => {
               {/* Counter */}
               {selectedProjects.length > 0 && (
                 <div className="mt-3 text-center">
-                  <span className="inline-block px-4 py-1 bg-orange-100 text-orange-700 rounded-full text-sm font-bold">
+                  <span className="inline-block px-4 py-1 bg-orange-100 text-orange-700 rounded-full text-m font-bold">
                     נבחרו {selectedProjects.length} פרויקטים
                   </span>
                 </div>
@@ -483,7 +475,7 @@ const CreateInvoice = () => {
             {/* GLOBAL FIELDS */}
             <div className="mt-8 grid grid-cols-1 md:grid-cols-2 gap-6">
               {/* Supplier */}
-              <div className="group">
+                <div className="group">
                 <SupplierSelector
                   projectId={null}
                   value={common.supplierId}
@@ -494,14 +486,15 @@ const CreateInvoice = () => {
                       invitingName: supplier.name,
                     })
                   }
-                  onAddNew={() => navigate("/suppliers/create?returnTo=createInvoice")}
-
+                  onAddNew={() =>
+                    navigate("/suppliers/create?returnTo=createInvoice")
+                  }
                 />
               </div>
 
               {/* Invoice Number */}
               <div className="group">
-                <label className="text-sm font-bold text-slate-700 mb-2 block">
+                <label className="text-m font-bold  mb-2 block">
                   מספר חשבונית
                 </label>
                 <input
@@ -517,7 +510,7 @@ const CreateInvoice = () => {
 
               {/* Document Type */}
               <div className="group">
-                <label className="text-sm font-bold text-slate-700 mb-2 block">
+                <label className="text-m font-bold  mb-2 block">
                   סוג מסמך
                 </label>
                 <select
@@ -541,7 +534,7 @@ const CreateInvoice = () => {
                 onClick={() => dateInputRef.current?.showPicker()}
                 className="cursor-pointer group"
               >
-                <label className="text-sm font-bold text-slate-700 mb-2 flex items-center gap-2 pointer-events-none">
+                <label className="text-m font-bold  mb-2 flex items-center gap-2 pointer-events-none">
                   <Calendar className="w-4 h-4 text-orange-500" />
                   תאריך יצירה
                 </label>
@@ -560,13 +553,15 @@ const CreateInvoice = () => {
 
               {/* Paid Status */}
               <div className="group">
-                <label className="text-sm font-bold text-slate-700 mb-2 flex items-center gap-2">
+                <label className="text-m font-bold  mb-2 flex items-center gap-2">
                   <DollarSign className="w-4 h-4 text-orange-500" />
                   האם שולם?
                 </label>
                 <select
                   value={common.paid}
-                  onChange={(e) => setCommon({ ...common, paid: e.target.value })}
+                  onChange={(e) =>
+                    setCommon({ ...common, paid: e.target.value })
+                  }
                   className="w-full p-3 border-2 border-slate-200 rounded-xl bg-white font-medium focus:border-orange-500 focus:outline-none focus:ring-4 focus:ring-orange-500/20 transition-all group-hover:border-orange-300"
                 >
                   <option value="לא">לא</option>
@@ -580,7 +575,7 @@ const CreateInvoice = () => {
                   onClick={() => paymentDateInputRef.current?.showPicker()}
                   className="cursor-pointer group"
                 >
-                  <label className="text-sm font-bold text-slate-700 mb-2 flex items-center gap-2 pointer-events-none">
+                  <label className="text-m font-bold  mb-2 flex items-center gap-2 pointer-events-none">
                     <Calendar className="w-4 h-4 text-orange-500" />
                     תאריך תשלום
                   </label>
@@ -601,7 +596,7 @@ const CreateInvoice = () => {
               {/* Payment Method - Only if paid */}
               {common.paid === "כן" && (
                 <div className="group">
-                  <label className="text-sm font-bold text-slate-700 mb-2 flex items-center gap-2">
+                  <label className="text-m font-bold  mb-2 flex items-center gap-2">
                     <CreditCard className="w-4 h-4 text-orange-500" />
                     אמצעי תשלום
                   </label>
@@ -624,7 +619,7 @@ const CreateInvoice = () => {
 
               {/* Detail */}
               <div className="md:col-span-2 group">
-                <label className="text-sm font-bold text-slate-700 mb-2 block">
+                <label className="text-m font-bold  mb-2 block">
                   פירוט חשבונית
                 </label>
                 <textarea
@@ -643,10 +638,7 @@ const CreateInvoice = () => {
         {/* PER PROJECT ROWS */}
         <div className="mt-6 space-y-6">
           {invoices.map((inv, index) => (
-            <div
-              key={index}
-              className="relative"
-            >
+            <div key={index} className="relative">
               <div className="absolute -inset-2 bg-gradient-to-r from-orange-500 via-amber-500 to-yellow-500 rounded-3xl opacity-10 blur-xl"></div>
 
               <div className="relative bg-white/90 backdrop-blur-xl rounded-3xl shadow-xl border border-white/50 p-6">
@@ -661,7 +653,7 @@ const CreateInvoice = () => {
 
                 {/* Sum */}
                 <div className="mb-6 group">
-                  <label className="text-sm font-bold text-slate-700 mb-2 flex items-center gap-2">
+                  <label className="text-m font-bold  mb-2 flex items-center gap-2">
                     <TrendingUp className="w-4 h-4 text-orange-500" />
                     סכום לפרויקט זה
                   </label>
@@ -683,7 +675,9 @@ const CreateInvoice = () => {
                 <div>
                   <div className="p-6 rounded-2xl bg-gradient-to-br from-slate-50 to-slate-100 border-2 border-dashed border-slate-300 hover:border-orange-400 transition-all">
                     <FileUploader
-                      onUploadSuccess={(files) => handleFileUpload(index, files)}
+                      onUploadSuccess={(files) =>
+                        handleFileUpload(index, files)
+                      }
                       folder="invoices"
                       label="העלה קבצי חשבונית"
                     />
@@ -705,7 +699,7 @@ const CreateInvoice = () => {
                           </div>
                           <button
                             onClick={() => handleRemoveFile(index, fileIndex)}
-                            className="mr-2 px-3 py-1.5 rounded-lg text-sm text-red-600 hover:bg-red-50 font-medium transition-all"
+                            className="mr-2 px-3 py-1.5 rounded-lg text-m text-red-600 hover:bg-red-50 font-medium transition-all"
                           >
                             הסר
                           </button>
@@ -715,7 +709,7 @@ const CreateInvoice = () => {
                   ) : (
                     <div className="mt-4 text-center py-8 text-slate-400">
                       <Upload className="w-12 h-12 mx-auto mb-3 opacity-50" />
-                      <p className="text-sm font-medium">
+                      <p className="text-m font-medium">
                         אין קבצים מצורפים כרגע
                       </p>
                     </div>
