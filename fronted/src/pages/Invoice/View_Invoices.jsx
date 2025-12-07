@@ -34,7 +34,7 @@ const InvoicesPage = () => {
   const [invoices, setInvoices] = useState([]);
   const [allInvoices, setAllInvoices] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [sortBy, setSortBy] = useState("sum");
+  const [sortBy, setSortBy] = useState("totalAmount");
   const [sortOrder, setSortOrder] = useState("asc");
   const [showModal, setShowModal] = useState(false);
   const [showReportModal, setShowReportModal] = useState(false);
@@ -82,7 +82,7 @@ const InvoicesPage = () => {
     projectName: true,
     supplierName: true,
     invitingName: true,
-    sum: true,
+    totalAmount: true,
     status: true,
     paid: true,
     createdAt: true,
@@ -153,7 +153,7 @@ const InvoicesPage = () => {
     { key: "projectName", label: "שם הפרוייקט" },
     { key: "supplierName", label: "שם ספק" }, // ✅ הוסף את זה
     { key: "invitingName", label: "שם המזמין" },
-    { key: "sum", label: "סכום" },
+    { key: "totalAmount", label: "סכום" },
     { key: "status", label: "סטטוס הגשה" },
     { key: "createdAt", label: "תאריך יצירה" },
     { key: "detail", label: "פירוט" },
@@ -280,9 +280,9 @@ const InvoicesPage = () => {
       filtered = filtered.filter(
         (invoice) =>
           (invoice.invoiceNumber?.toString() || "").includes(searchTerm) ||
-          (invoice.projectName || "")
-            .toLowerCase()
-            .includes(searchTerm.toLowerCase()) ||
+          (invoice.projects || []).some((p) =>
+            p.projectName?.toLowerCase().includes(searchTerm.toLowerCase())
+          ) ||
           (invoice.supplierId?.name || "")
             .toLowerCase()
             .includes(searchTerm.toLowerCase()) ||
@@ -344,20 +344,19 @@ const InvoicesPage = () => {
 
       if (advancedFilters.amountMin) {
         filtered = filtered.filter(
-          (inv) => Number(inv.sum) >= Number(advancedFilters.amountMin)
+          (inv) => Number(inv.totalAmount) >= Number(advancedFilters.amountMin)
         );
       }
       if (advancedFilters.amountMax) {
         filtered = filtered.filter(
-          (inv) => Number(inv.sum) <= Number(advancedFilters.amountMax)
+          (inv) => Number(inv.totalAmount) <= Number(advancedFilters.amountMax)
         );
       }
 
       if (advancedFilters.projectName) {
+        const q = advancedFilters.projectName.toLowerCase();
         filtered = filtered.filter((inv) =>
-          (inv.projectName || "")
-            .toLowerCase()
-            .includes(advancedFilters.projectName.toLowerCase())
+          inv.projects?.some((p) => p.projectName?.toLowerCase().includes(q))
         );
       }
 
@@ -497,8 +496,10 @@ const InvoicesPage = () => {
 
   const sortedInvoices = [...(searchTerm ? filteredInvoices : invoices)].sort(
     (a, b) => {
-      if (sortBy === "sum") {
-        return sortOrder === "asc" ? a.sum - b.sum : b.sum - a.sum;
+      if (sortBy === "totalAmount") {
+        return sortOrder === "asc"
+          ? a.totalAmount - b.totalAmount
+          : b.totalAmount - a.totalAmount;
       }
       if (sortBy === "createdAt") {
         return sortOrder === "asc"
@@ -511,10 +512,14 @@ const InvoicesPage = () => {
           : b.invoiceNumber - a.invoiceNumber;
       }
       if (sortBy === "projectName") {
+        const aName = a.projects?.[0]?.projectName || "";
+        const bName = b.projects?.[0]?.projectName || "";
+
         return sortOrder === "asc"
-          ? a.projectName.localeCompare(b.projectName)
-          : b.projectName.localeCompare(a.projectName);
+          ? aName.localeCompare(bName)
+          : bName.localeCompare(aName);
       }
+
       return 0;
     }
   );
@@ -560,12 +565,12 @@ const InvoicesPage = () => {
     }
 
     const totalSum = filteredForPrint.reduce(
-      (sum, inv) => sum + (inv.sum || 0),
+      (totalAmount, inv) => totalAmount + (inv.totalAmount || 0),
       0
     );
     const paidSum = filteredForPrint
       .filter((inv) => inv.paid === "כן")
-      .reduce((sum, inv) => sum + (inv.sum || 0), 0);
+      .reduce((totalAmount, inv) => totalAmount + (inv.totalAmount || 0), 0);
     const unpaidSum = totalSum - paidSum;
 
     const selectedProjectName = selectedProjectForPrint
@@ -587,350 +592,356 @@ const InvoicesPage = () => {
     }
 
     printWindow.document.write(`
-      <!DOCTYPE html>
-      <html dir="rtl" lang="he">
-      <head>
-        <meta charset="UTF-8">
-        <title>דוח חשבוניות - ניהולון</title>
-        <style>
-          * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-          }
+        <!DOCTYPE html>
+        <html dir="rtl" lang="he">
+        <head>
+          <meta charset="UTF-8">
+          <title>דוח חשבוניות - ניהולון</title>
+          <style>
+            * {
+              margin: 0;
+              padding: 0;
+              box-sizing: border-box;
+            }
 
-          body {
-            font-family: 'Segoe UI', Tahoma, Arial, sans-serif;
-            padding: 30px;
-            background: #fff;
-            color: #1f2937;
-          }
-
-          .header {
-            text-align: center;
-            margin-bottom: 40px;
-            padding-bottom: 20px;
-            border-bottom: 3px solid #f97316;
-          }
-
-          .logo {
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: 12px;
-            margin-bottom: 15px;
-          }
-
-          .logo-text {
-            font-size: 36px;
-            font-weight: 700;
-            color: #6b7280;
-            letter-spacing: 2px;
-          }
-
-          .logo-icon {
-            width: 45px;
-            height: 45px;
-            background: #f97316;
-            border-radius: 10px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-          }
-
-          .logo-icon::before {
-            content: "⚙";
-            font-size: 28px;
-            color: white;
-          }
-
-          .header h1 {
-            font-size: 24px;
-            color: #1f2937;
-            margin-bottom: 10px;
-            font-weight: 600;
-          }
-
-          .header .date {
-            color: #6b7280;
-            font-size: 14px;
-          }
-
-          .filters {
-            background: #fff7ed;
-            padding: 15px 20px;
-            border-radius: 8px;
-            margin-bottom: 30px;
-            border-right: 4px solid #f97316;
-          }
-
-          .filters h3 {
-            color: #f97316;
-            margin-bottom: 10px;
-            font-size: 16px;
-          }
-
-          .filters p {
-            color: #6b7280;
-            font-size: 14px;
-            margin: 5px 0;
-          }
-
-          table {
-            width: 100%;
-            border-collapse: collapse;
-            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
-            margin-bottom: 30px;
-          }
-
-          thead {
-            background: linear-gradient(135deg, #f97316 0%, #fb923c 100%);
-            color: white;
-          }
-
-          thead th {
-            padding: 15px 12px;
-            font-weight: 600;
-            font-size: 13px;
-            text-align: center;
-          }
-
-          tbody tr {
-            border-bottom: 1px solid #e5e7eb;
-          }
-
-          tbody tr:nth-child(even) {
-            background: #f9fafb;
-          }
-
-          tbody tr:hover {
-            background: #fff7ed;
-          }
-
-          tbody td {
-            padding: 12px;
-            font-size: 12px;
-            color: #374151;
-            text-align: center;
-          }
-
-          .status-paid {
-            background: #d1fae5;
-            color: #065f46;
-            padding: 4px 12px;
-            border-radius: 12px;
-            font-weight: bold;
-            display: inline-block;
-          }
-
-          .status-unpaid {
-            background: #fee2e2;
-            color: #991b1b;
-            padding: 4px 12px;
-            border-radius: 12px;
-            font-weight: bold;
-            display: inline-block;
-          }
-
-          .summary {
-            background: linear-gradient(135deg, #fff7ed 0%, #ffedd5 100%);
-            border: 2px solid #fdba74;
-            border-radius: 12px;
-            padding: 20px;
-            margin-top: 30px;
-          }
-
-          .summary h3 {
-            color: #f97316;
-            margin-bottom: 15px;
-            font-size: 20px;
-          }
-
-          .summary-row {
-            display: flex;
-            justify-content: space-between;
-            padding: 10px 0;
-            border-bottom: 1px solid #fdba74;
-            font-size: 15px;
-          }
-
-          .summary-row:last-child {
-            border-bottom: none;
-          }
-
-          .summary-row.total {
-            font-size: 18px;
-            font-weight: bold;
-            color: #ea580c;
-            margin-top: 10px;
-          }
-
-          .summary-row.paid {
-            color: #16a34a;
-            font-weight: 600;
-          }
-
-          .summary-row.unpaid {
-            color: #dc2626;
-            font-weight: 600;
-          }
-
-          .footer {
-            margin-top: 40px;
-            text-align: center;
-            color: #9ca3af;
-            font-size: 12px;
-            padding-top: 20px;
-            border-top: 1px solid #e5e7eb;
-          }
-
-          @media print {
             body {
-              padding: 15mm;
+              font-family: 'Segoe UI', Tahoma, Arial, sans-serif;
+              padding: 30px;
+              background: #fff;
+              color: #1f2937;
+            }
+
+            .header {
+              text-align: center;
+              margin-bottom: 40px;
+              padding-bottom: 20px;
+              border-bottom: 3px solid #f97316;
+            }
+
+            .logo {
+              display: flex;
+              align-items: center;
+              justify-content: center;
+              gap: 12px;
+              margin-bottom: 15px;
+            }
+
+            .logo-text {
+              font-size: 36px;
+              font-weight: 700;
+              color: #6b7280;
+              letter-spacing: 2px;
+            }
+
+            .logo-icon {
+              width: 45px;
+              height: 45px;
+              background: #f97316;
+              border-radius: 10px;
+              display: flex;
+              align-items: center;
+              justify-content: center;
+            }
+
+            .logo-icon::before {
+              content: "⚙";
+              font-size: 28px;
+              color: white;
+            }
+
+            .header h1 {
+              font-size: 24px;
+              color: #1f2937;
+              margin-bottom: 10px;
+              font-weight: 600;
+            }
+
+            .header .date {
+              color: #6b7280;
+              font-size: 14px;
+            }
+
+            .filters {
+              background: #fff7ed;
+              padding: 15px 20px;
+              border-radius: 8px;
+              margin-bottom: 30px;
+              border-right: 4px solid #f97316;
+            }
+
+            .filters h3 {
+              color: #f97316;
+              margin-bottom: 10px;
+              font-size: 16px;
+            }
+
+            .filters p {
+              color: #6b7280;
+              font-size: 14px;
+              margin: 5px 0;
             }
 
             table {
-              page-break-inside: auto;
-            }
-
-            tr {
-              page-break-inside: avoid;
-              page-break-after: auto;
+              width: 100%;
+              border-collapse: collapse;
+              box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+              margin-bottom: 30px;
             }
 
             thead {
-              display: table-header-group;
+              background: linear-gradient(135deg, #f97316 0%, #fb923c 100%);
+              color: white;
             }
-          }
-        </style>
-      </head>
-      <body>
-        <div class="header">
-          <div class="logo">
-            <div class="logo-icon"></div>
-            <div class="logo-text">ניהולון</div>
-          </div>
-          <h1>📋 דוח חשבוניות</h1>
-          <div class="date">תאריך הפקה: ${new Date().toLocaleDateString(
-            "he-IL",
-            {
-              year: "numeric",
-              month: "long",
-              day: "numeric",
-              hour: "2-digit",
-              minute: "2-digit",
-            }
-          )}</div>
-        </div>
 
-        ${
-          selectedProjectName ||
-          selectedSupplierName ||
-          fromDatePrint ||
-          toDatePrint
-            ? `
-        <div class="filters">
-          <h3>🔍 פילטרים</h3>
+            thead th {
+              padding: 15px 12px;
+              font-weight: 600;
+              font-size: 13px;
+              text-align: center;
+            }
+
+            tbody tr {
+              border-bottom: 1px solid #e5e7eb;
+            }
+
+            tbody tr:nth-child(even) {
+              background: #f9fafb;
+            }
+
+            tbody tr:hover {
+              background: #fff7ed;
+            }
+
+            tbody td {
+              padding: 12px;
+              font-size: 12px;
+              color: #374151;
+              text-align: center;
+            }
+
+            .status-paid {
+              background: #d1fae5;
+              color: #065f46;
+              padding: 4px 12px;
+              border-radius: 12px;
+              font-weight: bold;
+              display: inline-block;
+            }
+
+            .status-unpaid {
+              background: #fee2e2;
+              color: #991b1b;
+              padding: 4px 12px;
+              border-radius: 12px;
+              font-weight: bold;
+              display: inline-block;
+            }
+
+            .totalAmountmary {
+              background: linear-gradient(135deg, #fff7ed 0%, #ffedd5 100%);
+              border: 2px solid #fdba74;
+              border-radius: 12px;
+              padding: 20px;
+              margin-top: 30px;
+            }
+
+            .totalAmountmary h3 {
+              color: #f97316;
+              margin-bottom: 15px;
+              font-size: 20px;
+            }
+
+            .totalAmountmary-row {
+              display: flex;
+              justify-content: space-between;
+              padding: 10px 0;
+              border-bottom: 1px solid #fdba74;
+              font-size: 15px;
+            }
+
+            .totalAmountmary-row:last-child {
+              border-bottom: none;
+            }
+
+            .totalAmountmary-row.total {
+              font-size: 18px;
+              font-weight: bold;
+              color: #ea580c;
+              margin-top: 10px;
+            }
+
+            .totalAmountmary-row.paid {
+              color: #16a34a;
+              font-weight: 600;
+            }
+
+            .totalAmountmary-row.unpaid {
+              color: #dc2626;
+              font-weight: 600;
+            }
+
+            .footer {
+              margin-top: 40px;
+              text-align: center;
+              color: #9ca3af;
+              font-size: 12px;
+              padding-top: 20px;
+              border-top: 1px solid #e5e7eb;
+            }
+
+            @media print {
+              body {
+                padding: 15mm;
+              }
+
+              table {
+                page-break-inside: auto;
+              }
+
+              tr {
+                page-break-inside: avoid;
+                page-break-after: auto;
+              }
+
+              thead {
+                display: table-header-group;
+              }
+            }
+          </style>
+        </head>
+        <body>
+          <div class="header">
+            <div class="logo">
+              <div class="logo-icon"></div>
+              <div class="logo-text">ניהולון</div>
+            </div>
+            <h1>📋 דוח חשבוניות</h1>
+            <div class="date">תאריך הפקה: ${new Date().toLocaleDateString(
+              "he-IL",
+              {
+                year: "numeric",
+                month: "long",
+                day: "numeric",
+                hour: "2-digit",
+                minute: "2-digit",
+              }
+            )}</div>
+          </div>
+
           ${
-            selectedProjectName
-              ? `<p><strong>פרויקט:</strong> ${selectedProjectName}</p>`
-              : ""
-          }
-          ${
-            selectedSupplierName
-              ? `<p><strong>ספק:</strong> ${selectedSupplierName}</p>`
-              : ""
-          }
-          ${
-            fromDatePrint
-              ? `<p><strong>מתאריך:</strong> ${new Date(
-                  fromDatePrint
-                ).toLocaleDateString("he-IL")}</p>`
-              : ""
-          }
-          ${
+            selectedProjectName ||
+            selectedSupplierName ||
+            fromDatePrint ||
             toDatePrint
-              ? `<p><strong>עד תאריך:</strong> ${new Date(
-                  toDatePrint
-                ).toLocaleDateString("he-IL")}</p>`
+              ? `
+          <div class="filters">
+            <h3>🔍 פילטרים</h3>
+            ${
+              selectedProjectName
+                ? `<p><strong>פרויקט:</strong> ${selectedProjectName}</p>`
+                : ""
+            }
+            ${
+              selectedSupplierName
+                ? `<p><strong>ספק:</strong> ${selectedSupplierName}</p>`
+                : ""
+            }
+            ${
+              fromDatePrint
+                ? `<p><strong>מתאריך:</strong> ${new Date(
+                    fromDatePrint
+                  ).toLocaleDateString("he-IL")}</p>`
+                : ""
+            }
+            ${
+              toDatePrint
+                ? `<p><strong>עד תאריך:</strong> ${new Date(
+                    toDatePrint
+                  ).toLocaleDateString("he-IL")}</p>`
+                : ""
+            }
+          </div>
+          `
               : ""
           }
-        </div>
-        `
-            : ""
-        }
 
-        <table>
-          <thead>
-            <tr>
-              <th>מס׳</th>
-              <th>מספר חשבונית</th>
-              <th>ספק/מזמין</th>
-              <th>פרויקט</th>
-              <th>סכום</th>
-              <th>תאריך</th>
-              <th>סטטוס הגשה</th>
-              <th>תשלום</th>
-            </tr>
-          </thead>
-          <tbody>
-            ${filteredForPrint
-              .map(
-                (invoice, idx) => `
+          <table>
+            <thead>
               <tr>
-                <td><strong>${idx + 1}</strong></td>
-                <td><strong>${invoice.invoiceNumber || "-"}</strong></td>
-                <td>${invoice.invitingName || "לא צוין"}</td>
-                <td>${invoice.projectName || "-"}</td>
-                <td><strong>${formatNumber(invoice.sum)} ₪</strong></td>
-                <td>${formatDate(invoice.createdAt)}</td>
-                <td>${invoice.status || "-"}</td>
-                <td>
-                  <span class="${
-                    invoice.paid === "כן" ? "status-paid" : "status-unpaid"
-                  }">
-                    ${invoice.paid === "כן" ? "✓ שולם" : "✗ לא שולם"}
-                  </span>
-                </td>
-              </tr>`
-              )
-              .join("")}
-          </tbody>
-        </table>
+                <th>מס׳</th>
+                <th>מספר חשבונית</th>
+                <th>ספק/מזמין</th>
+                <th>פרויקט</th>
+                <th>סכום</th>
+                <th>תאריך</th>
+                <th>סטטוס הגשה</th>
+                <th>תשלום</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${filteredForPrint
+                .map(
+                  (invoice, idx) => `
+                <tr>
+                  <td><strong>${idx + 1}</strong></td>
+                  <td><strong>${invoice.invoiceNumber || "-"}</strong></td>
+                  <td>${invoice.invitingName || "לא צוין"}</td>
+<td>${
+                    invoice.projects?.length
+                      ? invoice.projects.map((p) => p.projectName).join(", ")
+                      : "-"
+                  }</td>
+                  <td><strong>${formatNumber(
+                    invoice.totalAmount
+                  )} ₪</strong></td>
+                  <td>${formatDate(invoice.createdAt)}</td>
+                  <td>${invoice.status || "-"}</td>
+                  <td>
+                    <span class="${
+                      invoice.paid === "כן" ? "status-paid" : "status-unpaid"
+                    }">
+                      ${invoice.paid === "כן" ? "✓ שולם" : "✗ לא שולם"}
+                    </span>
+                  </td>
+                </tr>`
+                )
+                .join("")}
+            </tbody>
+          </table>
 
-        <div class="summary">
-          <h3>📊 סיכום</h3>
-          <div class="summary-row">
-            <span>סה"כ חשבוניות:</span>
-            <strong>${filteredForPrint.length}</strong>
+          <div class="totalAmountmary">
+            <h3>📊 סיכום</h3>
+            <div class="totalAmountmary-row">
+              <span>סה"כ חשבוניות:</span>
+              <strong>${filteredForPrint.length}</strong>
+            </div>
+            <div class="totalAmountmary-row total">
+              <span>סה"כ סכום כולל:</span>
+              <strong>${formatNumber(totalSum)} ₪</strong>
+            </div>
+            <div class="totalAmountmary-row paid">
+              <span>✓ סכום ששולם:</span>
+              <strong>${formatNumber(paidSum)} ₪</strong>
+            </div>
+            <div class="totalAmountmary-row unpaid">
+              <span>✗ סכום שטרם שולם:</span>
+              <strong>${formatNumber(unpaidSum)} ₪</strong>
+            </div>
           </div>
-          <div class="summary-row total">
-            <span>סה"כ סכום כולל:</span>
-            <strong>${formatNumber(totalSum)} ₪</strong>
-          </div>
-          <div class="summary-row paid">
-            <span>✓ סכום ששולם:</span>
-            <strong>${formatNumber(paidSum)} ₪</strong>
-          </div>
-          <div class="summary-row unpaid">
-            <span>✗ סכום שטרם שולם:</span>
-            <strong>${formatNumber(unpaidSum)} ₪</strong>
-          </div>
-        </div>
 
-        <div class="footer">
-          <p>מסמך זה הופק אוטומטית ממערכת ניהולון</p>
-          <p>© ${new Date().getFullYear()} כל הזכויות שמורות</p>
-        </div>
+          <div class="footer">
+            <p>מסמך זה הופק אוטומטית ממערכת ניהולון</p>
+            <p>© ${new Date().getFullYear()} כל הזכויות שמורות</p>
+          </div>
 
-        <script>
-          window.onload = function() {
-            setTimeout(() => window.print(), 250);
-          }
-        </script>
-      </body>
-      </html>
-    `);
+          <script>
+            window.onload = function() {
+              setTimeout(() => window.print(), 250);
+            }
+          </script>
+        </body>
+        </html>
+      `);
 
     printWindow.document.close();
 
@@ -951,12 +962,10 @@ const InvoicesPage = () => {
     if (invoice.supplierId && typeof invoice.supplierId === "object") {
       return invoice.supplierId;
     }
-
-    // אם זה בשדה supplier (ישן)
+    // אם זה בשדה supplier (ישן) ✅ זה החסר!
     if (invoice.supplier && typeof invoice.supplier === "object") {
       return invoice.supplier;
     }
-
     // אם זה מחרוזת → אין מידע
     return null;
   };
@@ -973,7 +982,7 @@ const InvoicesPage = () => {
       projectName: "שם פרויקט",
       supplierName: "שם ספק",
       invitingName: "שם מזמין",
-      sum: "סכום",
+      totalAmount: "סכום",
       status: "סטטוס הגשה",
       paid: "סטטוס תשלום",
       createdAt: "תאריך יצירה",
@@ -1001,17 +1010,7 @@ const InvoicesPage = () => {
 
     const invoicesData = dataToExport.map((invoice) => {
       // ✅ תיקון - בדוק אם הספק הוא אובייקט
-      const supplier =
-        invoice.supplierId && typeof invoice.supplierId === "object"
-          ? invoice.supplierId
-          : null;
-
-      console.log("📋 Invoice:", invoice.invoiceNumber);
-      console.log("👤 invitingName:", invoice.invitingName);
-      console.log("🏢 supplierId (raw):", invoice.supplierId);
-      console.log("🏢 supplier (resolved):", supplier);
-      console.log("✅ supplier.name:", supplier?.name);
-      console.log("---");
+      const supplier = getSupplier(invoice);
 
       const row = {};
       selectedColumns.forEach((col) => {
@@ -1020,13 +1019,14 @@ const InvoicesPage = () => {
             row[columnMapping.invoiceNumber] = invoice.invoiceNumber || "";
             break;
           case "projectName":
-            row[columnMapping.projectName] = invoice.projectName || "";
+            row[columnMapping.projectName] =
+              invoice.projects?.map((p) => p.projectName).join(", ") || "";
             break;
           case "invitingName":
             row[columnMapping.invitingName] = invoice.invitingName || "";
             break;
-          case "sum":
-            row[columnMapping.sum] = invoice.sum || 0;
+          case "totalAmount":
+            row[columnMapping.totalAmount] = invoice.totalAmount || 0;
             break;
           case "status":
             row[columnMapping.status] = invoice.status || "";
@@ -1143,10 +1143,7 @@ const InvoicesPage = () => {
     };
 
     const invoicesWithHeaders = invoices.map((invoice) => {
-      const supplier =
-        invoice.supplierId && typeof invoice.supplierId === "object"
-          ? invoice.supplierId
-          : null;
+      const supplier = getSupplier(invoice);
 
       const baseData = {
         "מספר חשבונית": invoice.invoiceNumber || "",
@@ -1155,7 +1152,7 @@ const InvoicesPage = () => {
         "שם מזמין": invoice.invitingName || "לא זמין", // ✅ הוסף את זה!
         "שם איש קשר": invoice.projectId?.Contact_person || "לא זמין",
         "תאריך יצירה": formatDate(invoice.invoiceDate || invoice.createdAt),
-        סכום: formatNumber(Number(invoice.sum) || 0),
+        סכום: formatNumber(Number(invoice.totalAmount) || 0),
         "סטטוס הגשה": invoice.status || "",
         "סטטוס תשלום": invoice.paid === "כן" ? "שולם" : "לא שולם",
         "תאריך תשלום":
@@ -1249,7 +1246,9 @@ const InvoicesPage = () => {
                 url: file.url,
                 name: file.name || "file",
                 invoiceNumber: invoice.invoiceNumber || "ללא",
-                projectName: invoice.projectName || "ללא_פרויקט",
+                projectName:
+                  invoice.projects?.map((p) => p.projectName).join(", ") ||
+                  "ללא_פרויקט",
                 supplierName: invoice.supplierId?.name || "ללא_ספק",
               });
             }
@@ -1602,7 +1601,7 @@ const InvoicesPage = () => {
         };
       }
 
-      groupedBySupplier[supplierId].totalAmount += invoice.sum || 0;
+      groupedBySupplier[supplierId].totalAmount += invoice.totalAmount || 0;
       groupedBySupplier[supplierId].invoiceNumbers.push(
         invoice.invoiceNumber || ""
       );
@@ -1708,8 +1707,9 @@ const InvoicesPage = () => {
       return {
         "שם ספק": supplier?.name || "לא זמין",
         "מספר חשבונית": invoice.invoiceNumber || "",
-        "שם פרויקט": invoice.projectName || "",
-        סכום: invoice.sum || 0,
+        "שם פרויקט":
+          invoice.projects?.map((p) => p.projectName).join(", ") || "",
+        סכום: invoice.totalAmount || 0,
         "תאריך חשבונית": formatDate(invoice.createdAt),
         "שם בנק": supplier?.bankDetails?.bankName || "לא זמין",
         "מספר סניף": supplier?.bankDetails?.branchNumber || "לא זמין",
@@ -1832,7 +1832,7 @@ const InvoicesPage = () => {
                 value={sortBy}
                 className="px-4 py-2 border-2 border-orange-200 rounded-xl bg-white font-bold text-slate-900 focus:border-orange-500 focus:outline-none focus:ring-4 focus:ring-orange-500/20 transition-all"
               >
-                <option value="sum">סכום</option>
+                <option value="totalAmount">סכום</option>
                 <option value="createdAt">תאריך יצירה</option>
                 <option value="invoiceNumber">מספר חשבונית</option>
                 <option value="projectName">שם פרוייקט</option>
@@ -1957,14 +1957,14 @@ const InvoicesPage = () => {
                     <th className="px-4 py-4 text-sm font-bold text-center text-white">
                       <div className="flex flex-col items-center gap-1">
                         {/* <input
-                  type="checkbox"
-                  checked={
-                    selectedInvoices.length === sortedInvoices.length &&
-                    sortedInvoices.length > 0
-                  }
-                  onChange={toggleSelectAll}
-                  className="w-5 h-5 accent-white cursor-pointer"
-                /> */}
+                    type="checkbox"
+                    checked={
+                      selectedInvoices.length === sortedInvoices.length &&
+                      sortedInvoices.length > 0
+                    }
+                    onChange={toggleSelectAll}
+                    className="w-5 h-5 accent-white cursor-pointer"
+                  /> */}
                         <span className="text-xs">בחר הכל</span>
                       </div>
                     </th>
@@ -2109,8 +2109,8 @@ const InvoicesPage = () => {
 
                     {/* עמודה 5/4: סכום */}
                     <td className="px-2 py-4 text-xs font-bold text-center text-slate-900">
-                      {invoice.sum ? (
-                        `${formatNumber(invoice.sum)} ₪`
+                      {invoice.totalAmount ? (
+                        `${formatNumber(invoice.totalAmount)} ₪`
                       ) : (
                         <span className="text-red-500 italic">חסר</span>
                       )}
@@ -2130,9 +2130,9 @@ const InvoicesPage = () => {
 
                     {/* עמודה 8/7: שם פרוייקט */}
                     <td className="px-2 py-4 text-xs text-center font-medium text-slate-900">
-                      {invoice.projectName || (
-                        <span className="text-red-500 italic">חסר</span>
-                      )}
+                      {invoice.projects?.length
+                        ? invoice.projects.map((p) => p.projectName).join(", ")
+                        : "—"}
                     </td>
 
                     {/* עמודה 9/8: תשלום */}
@@ -2924,7 +2924,7 @@ const InvoicesPage = () => {
                           חשבונית #{inv.invoiceNumber}
                         </span>
                         <span className="text-xs text-slate-500">
-                          {inv.projectName}
+                          {inv.projects?.map((p) => p.projectName).join(", ")}
                         </span>
                       </div>
                     ))}

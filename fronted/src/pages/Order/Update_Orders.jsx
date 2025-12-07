@@ -37,6 +37,9 @@ const OrderEditPage = () => {
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
 
+  const [submittedAmount, setSubmittedAmount] = useState("");
+  const [submittedDate, setSubmittedDate] = useState("");
+
   const { id } = useParams();
   const navigate = useNavigate();
   const { canEditOrders, user } = useAuth();
@@ -71,6 +74,12 @@ const OrderEditPage = () => {
         setCreatedAt(
           orderData.createdAt
             ? new Date(orderData.createdAt).toISOString().split("T")[0]
+            : ""
+        );
+        setSubmittedAmount(orderData.submittedAmount || "");
+        setSubmittedDate(
+          orderData.submittedDate
+            ? new Date(orderData.submittedDate).toISOString().split("T")[0]
             : ""
         );
         const normalizedFiles = Array.isArray(orderData.files)
@@ -288,6 +297,8 @@ const OrderEditPage = () => {
         Contact_person,
         createdAt,
         files: uploadedFiles,
+        submittedDate: status !== "לא הוגש" ? submittedDate : null,
+        submittedAmount: status === "הוגש חלקי" ? Number(submittedAmount) : 0,
       };
 
       const response = await api.put(`/orders/${id}`, payload, {
@@ -390,14 +401,24 @@ const OrderEditPage = () => {
               </label>
               <select
                 value={status}
-                onChange={(e) => setStatus(e.target.value)}
+                onChange={(e) => {
+                  const value = e.target.value;
+                  setStatus(value);
+
+                  // ✅ אפס שדות הגשה אם בוחרים "לא הוגש"
+                  if (value === "לא הוגש") {
+                    setSubmittedAmount("");
+                    setSubmittedDate("");
+                  }
+                }}
                 disabled={!canEdit}
                 required
                 className="w-full px-4 py-3 border-2 border-orange-200 rounded-xl focus:border-orange-400 focus:outline-none disabled:bg-gray-100 disabled:cursor-not-allowed"
               >
-                <option value="הוגש">הוגש</option>
-                <option value="בעיבוד">בעיבוד</option>
                 <option value="לא הוגש">לא הוגש</option>
+                <option value="בעיבוד">בעיבוד</option>
+                <option value="הוגש חלקי">הוגש חלקי</option>
+                <option value="הוגש">הוגש</option>
               </select>
             </div>
 
@@ -408,7 +429,7 @@ const OrderEditPage = () => {
                 value={supplierId}
                 onSelect={(supplier) => {
                   setSupplierId(supplier._id);
-                  setInvitingName(supplier.name); // ✅ מילוי אוטומטי של שם המזמין
+                  // ✅ אל תמלא את invitingName - שדות נפרדים!
                 }}
                 disabled={!canEdit}
               />
@@ -455,6 +476,41 @@ const OrderEditPage = () => {
                 className="w-full px-4 py-3 border-2 border-orange-200 rounded-xl focus:border-orange-400 focus:outline-none disabled:bg-gray-100 disabled:cursor-not-allowed"
               />
             </div>
+
+            {/* ✅ תאריך הגשה - מופיע אם הסטטוס אינו "לא הוגש" */}
+            {status !== "לא הוגש" && (
+              <div>
+                <label className="block text-sm font-semibold text-gray-700 mb-2">
+                  <Calendar className="inline w-4 h-4 mr-2" />
+                  תאריך הגשה
+                </label>
+                <input
+                  type="date"
+                  value={submittedDate}
+                  onChange={(e) => setSubmittedDate(e.target.value)}
+                  disabled={!canEdit}
+                  className="w-full px-4 py-3 border-2 border-orange-200 rounded-xl focus:border-orange-400 focus:outline-none disabled:bg-gray-100 disabled:cursor-not-allowed"
+                />
+              </div>
+            )}
+
+            {/* ✅ סכום הגשה - מופיע רק אם "הוגש חלקי" */}
+            {status === "הוגש חלקי" && (
+              <div>
+                <label className="block text-sm font-semibold text-gray-700 mb-2">
+                  <DollarSign className="inline w-4 h-4 mr-2" />
+                  סכום שהוגש (₪)
+                </label>
+                <input
+                  type="number"
+                  value={submittedAmount}
+                  onChange={(e) => setSubmittedAmount(e.target.value)}
+                  disabled={!canEdit}
+                  className="w-full px-4 py-3 border-2 border-orange-200 rounded-xl focus:border-orange-400 focus:outline-none disabled:bg-gray-100 disabled:cursor-not-allowed"
+                  placeholder="הזן סכום..."
+                />
+              </div>
+            )}
           </div>
 
           <div className="mb-8">
@@ -524,18 +580,18 @@ const OrderEditPage = () => {
             </div>
           )}
 
-          <div className="flex gap-4">
+          <div className="flex justify-center gap-4">
             <button
               type="submit"
               disabled={submitting || !canEdit}
-              className="flex-1 px-8 py-4 bg-gradient-to-r from-orange-500 to-amber-500 text-white rounded-xl font-bold hover:from-orange-600 hover:to-amber-600 transition-all shadow-lg disabled:opacity-50 disabled:cursor-not-allowed"
+              className="px-8 py-3 bg-gradient-to-r from-orange-500 to-amber-500 text-white rounded-xl font-bold hover:from-orange-600 hover:to-amber-600 transition-all shadow-lg disabled:opacity-50 disabled:cursor-not-allowed"
             >
               {submitting ? (
                 <>
                   <ClipLoader
                     size={20}
                     color="#ffffff"
-                    className="inline mr-2"
+                    className="inline ml-2"
                   />
                   מעדכן...
                 </>
@@ -547,7 +603,7 @@ const OrderEditPage = () => {
             <button
               type="button"
               onClick={() => navigate(`/orders/${id}`)}
-              className="px-8 py-4 bg-gray-200 text-gray-700 rounded-xl font-bold hover:bg-gray-300 transition-all"
+              className="px-8 py-3 bg-gradient-to-r from-orange-500 to-amber-500 text-white rounded-xl font-bold hover:from-orange-600 hover:to-amber-600 transition-all shadow-lg disabled:opacity-50 disabled:cursor-not-allowed"
             >
               ביטול
             </button>

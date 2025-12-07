@@ -20,8 +20,7 @@ import {
 } from "lucide-react";
 import { toast } from "sonner";
 import { useAuth } from "../../context/AuthContext.jsx";
-import CreatorInfo from '../../Components/CreatorInfo';
-
+import CreatorInfo from "../../Components/CreatorInfo";
 
 const ProjectDetailsPage = () => {
   const { id } = useParams();
@@ -33,11 +32,9 @@ const ProjectDetailsPage = () => {
   const canViewOrders = () => {
     if (isAdmin) return true;
     if (!user?.permissions) return false;
-    
-    const perm = user.permissions.find(
-      (p) => String(p.project) === String(id)
-    );
-    
+
+    const perm = user.permissions.find((p) => String(p.project) === String(id));
+
     const level = perm?.modules?.orders;
     return level === "view" || level === "edit";
   };
@@ -45,11 +42,9 @@ const ProjectDetailsPage = () => {
   const canViewInvoices = () => {
     if (isAdmin) return true;
     if (!user?.permissions) return false;
-    
-    const perm = user.permissions.find(
-      (p) => String(p.project) === String(id)
-    );
-    
+
+    const perm = user.permissions.find((p) => String(p.project) === String(id));
+
     const level = perm?.modules?.invoices;
     return level === "view" || level === "edit";
   };
@@ -57,11 +52,9 @@ const ProjectDetailsPage = () => {
   const canEditInvoices = () => {
     if (isAdmin) return true;
     if (!user?.permissions) return false;
-    
-    const perm = user.permissions.find(
-      (p) => String(p.project) === String(id)
-    );
-    
+
+    const perm = user.permissions.find((p) => String(p.project) === String(id));
+
     return perm?.modules?.invoices === "edit";
   };
 
@@ -122,11 +115,19 @@ const ProjectDetailsPage = () => {
           const allInvoices = Array.isArray(invoicesResponse.data?.data)
             ? invoicesResponse.data.data
             : [];
-          const projectInvoices = allInvoices.filter(
-            (invoice) =>
-              String(invoice.projectId?._id || invoice.projectId) === String(id)
+          const projectInvoices = allInvoices.filter((invoice) =>
+            invoice.projects?.some((p) => {
+              const pid =
+                typeof p.projectId === "string"
+                  ? p.projectId
+                  : p.projectId?._id;
+
+              return String(pid) === String(id);
+            })
           );
+
           setInvoices(projectInvoices);
+          console.log("Invoices ", projectInvoices);
         }
         setLoadingInvoices(false);
       } catch (error) {
@@ -143,7 +144,7 @@ const ProjectDetailsPage = () => {
     fetchProjectDetails();
   }, [id, loading, user]);
 
-    function formatHebrewDate(dateTime) {
+  function formatHebrewDate(dateTime) {
     const date = new Date(dateTime);
     return date.toLocaleString("he-IL", {
       year: "numeric",
@@ -293,6 +294,8 @@ const ProjectDetailsPage = () => {
     if (!project?._id) return;
     navigate(`/create-invoice?projectId=${project._id}`);
   };
+
+  // פרויקט ספציפי מתוך החשבונית
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-orange-50 via-amber-50 to-yellow-50 relative overflow-hidden py-12">
@@ -465,16 +468,14 @@ const ProjectDetailsPage = () => {
                   </div>
                 </div>
 
-
                 <div className="group p-4 rounded-xl bg-gradient-to-br from-orange-50 to-amber-50 border-2 border-orange-200 hover:border-orange-400 transition-all">
                   <div className="flex items-start gap-3">
                     <div className="p-2 rounded-lg bg-orange-100">
-                                                       <Calendar className="w-5 h-5 text-orange-600" />
-
+                      <Calendar className="w-5 h-5 text-orange-600" />
                     </div>
                     <div className="flex-1">
                       <p className="text-xs font-bold text-orange-600 mb-1">
-                       תאריך יצירה
+                        תאריך יצירה
                       </p>
                       <div className="font-bold">
                         {formatHebrewDate(project?.createdAt)}
@@ -483,7 +484,6 @@ const ProjectDetailsPage = () => {
                   </div>
                 </div>
 
-
                 <div className="group p-4 rounded-xl bg-gradient-to-br from-orange-50 to-amber-50 border-2 border-orange-200 hover:border-orange-400 transition-all">
                   <div className="flex items-start gap-3">
                     <div className="p-2 rounded-lg bg-orange-100">
@@ -491,7 +491,7 @@ const ProjectDetailsPage = () => {
                     </div>
                     <div className="flex-1">
                       <p className="text-xs font-bold text-orange-600 mb-1">
-                       נוצר ע"י 
+                        נוצר ע"י
                       </p>
                       <div className="font-bold">
                         {project.createdByName || "לא זמין"}
@@ -499,7 +499,6 @@ const ProjectDetailsPage = () => {
                     </div>
                   </div>
                 </div>
-
               </div>
             </div>
           </div>
@@ -667,46 +666,70 @@ const ProjectDetailsPage = () => {
                       </tr>
                     </thead>
                     <tbody className="bg-white">
-                      {filteredInvoices.map((invoice) => (
-                        <tr
-                          key={invoice._id}
-                          onClick={() => moveToInvoiceDetails(invoice)}
-                          className="cursor-pointer border-t border-emerald-100 hover:bg-emerald-50/50 transition-colors"
-                        >
-                          <td className="px-4 py-3 text-sm font-bold text-center">
-                            {invoice.invoiceNumber}
-                          </td>
-                          <td className="px-4 py-3 text-sm font-bold text-center">
-                            {invoice.projectName}
-                          </td>
-                          <td className="px-4 py-3 text-center">
-                            {formatCurrencyWithAlert(invoice.sum)}
-                          </td>
-                          <td className="px-4 py-3 text-sm font-bold text-center">
-                            {invoice.status}
-                          </td>
-                          <td className="px-4 py-3 text-sm font-bold text-center">
-                            {invoice.supplierId?.name || "—"}
-                          </td>
-                          <td className="px-4 py-3 text-sm font-bold text-center">
-                            {invoice.paid === "כן" ? "שולם" : "לא שולם"}
-                          </td>
-                          <td className="px-8 py-3 text-sm font-bold text-center">
-                            {(() => {
-                              const a = getActionState(invoice);
-                              return (
-                                <span
-                                  className={`text-center gap-2 px-3 py-1 rounded-full text-xs font-bold border ${a.color}`}
-                                >
-                                  <span>{a.status} | </span>
-                                  <span className="opacity-70"></span>
-                                  <span>{a.label}</span>
-                                </span>
-                              );
-                            })()}
-                          </td>
-                        </tr>
-                      ))}
+                      {filteredInvoices.map((invoice) => {
+                        const proj = invoice.projects.find((p) => {
+                          const pid =
+                            typeof p.projectId === "string"
+                              ? p.projectId
+                              : p.projectId?._id || p.projectId?.$oid;
+
+                          return String(pid) === String(id);
+                        });
+
+                        {
+                          console.log("Invoice:", invoice);
+                          console.log("projects:", invoice.projects);
+
+                          console.log(proj);
+                        }
+                        return (
+                          <tr
+                            key={invoice._id}
+                            onClick={() => moveToInvoiceDetails(invoice)}
+                            className="cursor-pointer border-t border-emerald-100 hover:bg-emerald-50/50 transition-colors"
+                          >
+                            <td className="px-4 py-3 text-sm font-bold text-center">
+                              {invoice.invoiceNumber}
+                            </td>
+
+                            {/* ✅ שם הפרויקט מתוך המערך */}
+                            <td className="px-4 py-3 text-sm font-bold text-center">
+                              {proj?.projectName || "—"}
+                            </td>
+
+                            {/* ✅ סכום הפרויקט מתוך המערך */}
+                            <td className="px-4 py-3 text-center">
+                              {formatCurrencyWithAlert(proj?.sum)}
+                            </td>
+
+                            <td className="px-4 py-3 text-sm font-bold text-center">
+                              {invoice.status}
+                            </td>
+
+                            <td className="px-4 py-3 text-sm font-bold text-center">
+                              {invoice.supplierId?.name || "—"}
+                            </td>
+
+                            <td className="px-4 py-3 text-sm font-bold text-center">
+                              {invoice.paid === "כן" ? "שולם" : "לא שולם"}
+                            </td>
+
+                            {/* חוסר מסמך וכו׳... */}
+                            <td className="px-8 py-3 text-sm font-bold text-center">
+                              {(() => {
+                                const a = getActionState(invoice);
+                                return (
+                                  <span
+                                    className={`px-3 py-1 rounded-full text-xs font-bold border ${a.color}`}
+                                  >
+                                    {a.status} | {a.label}
+                                  </span>
+                                );
+                              })()}
+                            </td>
+                          </tr>
+                        );
+                      })}
                     </tbody>
                   </table>
                 </div>

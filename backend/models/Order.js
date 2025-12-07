@@ -10,11 +10,15 @@ const orderSchema = new mongoose.Schema({
 
   createdAt: { type: Date, required: true },
 
-  status: {
+ status: {
     type: String,
-    enum: ["הוגש", "לא הוגש", "בעיבוד"],
+    enum: ["הוגש", "לא הוגש", "בעיבוד", "הוגש חלקי"], // ✅ הוסף
     required: true
   },
+
+   // ✅ הוסף שדות הגשה חדשים
+  submittedAmount: { type: Number, default: 0 },
+  submittedDate: { type: Date, default: null },
 
   invitingName: { type: String, required: true }, // מי ביצע את ההזמנה
   detail: { type: String, required: true },

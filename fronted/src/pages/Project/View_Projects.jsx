@@ -163,449 +163,449 @@ const ProjectsPage = ({ initialProjects = [] }) => {
 
         if (allFiles.length > 0) {
           filesSection = `
-          <div class="files-section">
-            <h2 class="files-title">📎 קבצים מצורפים (${allFiles.length})</h2>
-            <div class="files-grid">
-              ${allFiles
-                .map((file, idx) => {
-                  const isImage = file.type?.startsWith("image/");
-                  return `
-                  <div class="file-card">
-                    <div class="file-header">
-                      <span class="file-number">#${idx + 1}</span>
-                      <span class="file-badge">${file.docType} ${
-                    file.docNumber
-                  }</span>
-                    </div>
-                    
-                    ${
-                      isImage
-                        ? `
-                      <img src="${file.url}" alt="${file.name}" class="file-image" />
-                    `
-                        : `
-                      <div class="file-placeholder">
-                        <span class="file-icon">📄</span>
-                        <span class="file-type">${
-                          file.type === "application/pdf" ? "PDF" : "קובץ"
-                        }</span>
+            <div class="files-section">
+              <h2 class="files-title">📎 קבצים מצורפים (${allFiles.length})</h2>
+              <div class="files-grid">
+                ${allFiles
+                  .map((file, idx) => {
+                    const isImage = file.type?.startsWith("image/");
+                    return `
+                    <div class="file-card">
+                      <div class="file-header">
+                        <span class="file-number">#${idx + 1}</span>
+                        <span class="file-badge">${file.docType} ${
+                      file.docNumber
+                    }</span>
                       </div>
-                    `
-                    }
-                    
-                    <div class="file-info">
-                      <p class="file-name">${file.name}</p>
-                      <p class="file-project">${file.project || "-"}</p>
-                      <a href="${
-                        file.url
-                      }" target="_blank" class="file-link">פתח קובץ ↗</a>
+                      
+                      ${
+                        isImage
+                          ? `
+                        <img src="${file.url}" alt="${file.name}" class="file-image" />
+                      `
+                          : `
+                        <div class="file-placeholder">
+                          <span class="file-icon">📄</span>
+                          <span class="file-type">${
+                            file.type === "application/pdf" ? "PDF" : "קובץ"
+                          }</span>
+                        </div>
+                      `
+                      }
+                      
+                      <div class="file-info">
+                        <p class="file-name">${file.name}</p>
+                        <p class="file-project">${file.project || "-"}</p>
+                        <a href="${
+                          file.url
+                        }" target="_blank" class="file-link">פתח קובץ ↗</a>
+                      </div>
                     </div>
-                  </div>
-                `;
-                })
-                .join("")}
+                  `;
+                  })
+                  .join("")}
+              </div>
             </div>
-          </div>
-        `;
+          `;
         }
       }
 
       printWindow.document.write(`
-      <html dir="rtl" lang="he">
-      <head>
-        <meta charset="UTF-8">
-        <title>הדפסת מסמכים - ניהולון</title>
-        <style>
-          * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-          }
+        <html dir="rtl" lang="he">
+        <head>
+          <meta charset="UTF-8">
+          <title>הדפסת מסמכים - ניהולון</title>
+          <style>
+            * {
+              margin: 0;
+              padding: 0;
+              box-sizing: border-box;
+            }
 
-          body {
-            font-family: 'Segoe UI', Tahoma, Arial, sans-serif;
-            padding: 30px;
-            background: #fff;
-            color: #1f2937;
-          }
-
-          .header {
-            text-align: center;
-            margin-bottom: 40px;
-            padding-bottom: 20px;
-            border-bottom: 3px solid #f97316;
-          }
-
-          .logo {
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: 12px;
-            margin-bottom: 15px;
-          }
-
-          .logo-text {
-            font-size: 36px;
-            font-weight: 700;
-            color: #6b7280;
-            letter-spacing: 2px;
-          }
-
-          .logo-icon {
-            width: 45px;
-            height: 45px;
-            background: #f97316;
-            border-radius: 10px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            position: relative;
-          }
-
-          .logo-icon::before {
-            content: "⚙";
-            font-size: 28px;
-            color: white;
-          }
-
-          .header h1 {
-            font-size: 24px;
-            color: #1f2937;
-            margin-bottom: 10px;
-            font-weight: 600;
-          }
-
-          .header .date {
-            color: #6b7280;
-            font-size: 14px;
-          }
-
-          .filters {
-            background: #fff7ed;
-            padding: 15px 20px;
-            border-radius: 8px;
-            margin-bottom: 30px;
-            border-right: 4px solid #f97316;
-          }
-
-          .filters h3 {
-            color: #f97316;
-            margin-bottom: 10px;
-            font-size: 16px;
-          }
-
-          .filters p {
-            color: #6b7280;
-            font-size: 14px;
-            margin: 5px 0;
-          }
-
-          table {
-            width: 100%;
-            border-collapse: collapse;
-            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
-            margin-bottom: 40px;
-          }
-
-          thead {
-            background: linear-gradient(135deg, #f97316 0%, #fb923c 100%);
-            color: white;
-          }
-
-          thead th {
-            padding: 15px 12px;
-            font-weight: 600;
-            font-size: 14px;
-            text-align: right;
-            letter-spacing: 0.3px;
-          }
-
-          tbody tr {
-            border-bottom: 1px solid #e5e7eb;
-            transition: background 0.2s;
-          }
-
-          tbody tr:nth-child(even) {
-            background: #f9fafb;
-          }
-
-          tbody td {
-            padding: 12px;
-            font-size: 13px;
-            color: #374151;
-          }
-
-          .total-row {
-            background: #fff7ed !important;
-            font-weight: 700;
-            border-top: 2px solid #f97316;
-          }
-
-          .total-row td {
-            padding: 15px 12px;
-            font-size: 16px;
-            color: #1f2937;
-          }
-
-          /* 🆕 עיצוב לקבצים */
-          .files-section {
-            margin-top: 50px;
-            page-break-before: always;
-          }
-
-          .files-title {
-            font-size: 24px;
-            font-weight: 700;
-            color: #1f2937;
-            margin-bottom: 30px;
-            text-align: center;
-            padding-bottom: 15px;
-            border-bottom: 3px solid #f97316;
-          }
-
-          .files-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
-            gap: 20px;
-            margin-bottom: 40px;
-          }
-
-          .file-card {
-            border: 2px solid #e5e7eb;
-            border-radius: 12px;
-            overflow: hidden;
-            background: white;
-            page-break-inside: avoid;
-          }
-
-          .file-header {
-            background: linear-gradient(135deg, #f97316 0%, #fb923c 100%);
-            padding: 10px 15px;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-          }
-
-          .file-number {
-            font-weight: 700;
-            color: white;
-            font-size: 14px;
-          }
-
-          .file-badge {
-            background: white;
-            color: #f97316;
-            padding: 4px 12px;
-            border-radius: 20px;
-            font-size: 12px;
-            font-weight: 600;
-          }
-
-          .file-image {
-            width: 100%;
-            height: 200px;
-            object-fit: cover;
-            background: #f9fafb;
-          }
-
-          .file-placeholder {
-            height: 200px;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            background: #f9fafb;
-            gap: 10px;
-          }
-
-          .file-icon {
-            font-size: 48px;
-          }
-
-          .file-type {
-            font-size: 14px;
-            font-weight: 600;
-            color: #6b7280;
-          }
-
-          .file-info {
-            padding: 15px;
-          }
-
-          .file-name {
-            font-weight: 600;
-            color: #1f2937;
-            margin-bottom: 5px;
-            font-size: 14px;
-          }
-
-          .file-project {
-            color: #6b7280;
-            font-size: 12px;
-            margin-bottom: 10px;
-          }
-
-          .file-link {
-            display: inline-block;
-            color: #f97316;
-            text-decoration: none;
-            font-size: 13px;
-            font-weight: 600;
-            padding: 6px 12px;
-            border: 2px solid #f97316;
-            border-radius: 8px;
-            transition: all 0.2s;
-          }
-
-          .file-link:hover {
-            background: #f97316;
-            color: white;
-          }
-
-          .footer {
-            margin-top: 40px;
-            text-align: center;
-            color: #9ca3af;
-            font-size: 12px;
-            padding-top: 20px;
-            border-top: 1px solid #e5e7eb;
-          }
-
-          @media print {
             body {
-              padding: 20px;
-            }
-            
-            .filters, table {
-              break-inside: avoid;
-            }
-
-            .files-section {
-              page-break-before: always;
+              font-family: 'Segoe UI', Tahoma, Arial, sans-serif;
+              padding: 30px;
+              background: #fff;
+              color: #1f2937;
             }
 
-            .file-card {
-              break-inside: avoid;
+            .header {
+              text-align: center;
+              margin-bottom: 40px;
+              padding-bottom: 20px;
+              border-bottom: 3px solid #f97316;
             }
 
-            .file-link {
-              display: none; /* הסתר קישורים בהדפסה */
+            .logo {
+              display: flex;
+              align-items: center;
+              justify-content: center;
+              gap: 12px;
+              margin-bottom: 15px;
             }
 
-            tr {
-              page-break-inside: avoid;
-              page-break-after: auto;
+            .logo-text {
+              font-size: 36px;
+              font-weight: 700;
+              color: #6b7280;
+              letter-spacing: 2px;
+            }
+
+            .logo-icon {
+              width: 45px;
+              height: 45px;
+              background: #f97316;
+              border-radius: 10px;
+              display: flex;
+              align-items: center;
+              justify-content: center;
+              position: relative;
+            }
+
+            .logo-icon::before {
+              content: "⚙";
+              font-size: 28px;
+              color: white;
+            }
+
+            .header h1 {
+              font-size: 24px;
+              color: #1f2937;
+              margin-bottom: 10px;
+              font-weight: 600;
+            }
+
+            .header .date {
+              color: #6b7280;
+              font-size: 14px;
+            }
+
+            .filters {
+              background: #fff7ed;
+              padding: 15px 20px;
+              border-radius: 8px;
+              margin-bottom: 30px;
+              border-right: 4px solid #f97316;
+            }
+
+            .filters h3 {
+              color: #f97316;
+              margin-bottom: 10px;
+              font-size: 16px;
+            }
+
+            .filters p {
+              color: #6b7280;
+              font-size: 14px;
+              margin: 5px 0;
+            }
+
+            table {
+              width: 100%;
+              border-collapse: collapse;
+              box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+              margin-bottom: 40px;
             }
 
             thead {
-              display: table-header-group;
+              background: linear-gradient(135deg, #f97316 0%, #fb923c 100%);
+              color: white;
             }
-          }
-        </style>
-      </head>
-      <body>
-        <div class="header">
-          <div class="logo">
-            <div class="logo-icon"></div>
-            <div class="logo-text">ניהולון</div>
+
+            thead th {
+              padding: 15px 12px;
+              font-weight: 600;
+              font-size: 14px;
+              text-align: right;
+              letter-spacing: 0.3px;
+            }
+
+            tbody tr {
+              border-bottom: 1px solid #e5e7eb;
+              transition: background 0.2s;
+            }
+
+            tbody tr:nth-child(even) {
+              background: #f9fafb;
+            }
+
+            tbody td {
+              padding: 12px;
+              font-size: 13px;
+              color: #374151;
+            }
+
+            .total-row {
+              background: #fff7ed !important;
+              font-weight: 700;
+              border-top: 2px solid #f97316;
+            }
+
+            .total-row td {
+              padding: 15px 12px;
+              font-size: 16px;
+              color: #1f2937;
+            }
+
+            /* 🆕 עיצוב לקבצים */
+            .files-section {
+              margin-top: 50px;
+              page-break-before: always;
+            }
+
+            .files-title {
+              font-size: 24px;
+              font-weight: 700;
+              color: #1f2937;
+              margin-bottom: 30px;
+              text-align: center;
+              padding-bottom: 15px;
+              border-bottom: 3px solid #f97316;
+            }
+
+            .files-grid {
+              display: grid;
+              grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+              gap: 20px;
+              margin-bottom: 40px;
+            }
+
+            .file-card {
+              border: 2px solid #e5e7eb;
+              border-radius: 12px;
+              overflow: hidden;
+              background: white;
+              page-break-inside: avoid;
+            }
+
+            .file-header {
+              background: linear-gradient(135deg, #f97316 0%, #fb923c 100%);
+              padding: 10px 15px;
+              display: flex;
+              justify-content: space-between;
+              align-items: center;
+            }
+
+            .file-number {
+              font-weight: 700;
+              color: white;
+              font-size: 14px;
+            }
+
+            .file-badge {
+              background: white;
+              color: #f97316;
+              padding: 4px 12px;
+              border-radius: 20px;
+              font-size: 12px;
+              font-weight: 600;
+            }
+
+            .file-image {
+              width: 100%;
+              height: 200px;
+              object-fit: cover;
+              background: #f9fafb;
+            }
+
+            .file-placeholder {
+              height: 200px;
+              display: flex;
+              flex-direction: column;
+              align-items: center;
+              justify-content: center;
+              background: #f9fafb;
+              gap: 10px;
+            }
+
+            .file-icon {
+              font-size: 48px;
+            }
+
+            .file-type {
+              font-size: 14px;
+              font-weight: 600;
+              color: #6b7280;
+            }
+
+            .file-info {
+              padding: 15px;
+            }
+
+            .file-name {
+              font-weight: 600;
+              color: #1f2937;
+              margin-bottom: 5px;
+              font-size: 14px;
+            }
+
+            .file-project {
+              color: #6b7280;
+              font-size: 12px;
+              margin-bottom: 10px;
+            }
+
+            .file-link {
+              display: inline-block;
+              color: #f97316;
+              text-decoration: none;
+              font-size: 13px;
+              font-weight: 600;
+              padding: 6px 12px;
+              border: 2px solid #f97316;
+              border-radius: 8px;
+              transition: all 0.2s;
+            }
+
+            .file-link:hover {
+              background: #f97316;
+              color: white;
+            }
+
+            .footer {
+              margin-top: 40px;
+              text-align: center;
+              color: #9ca3af;
+              font-size: 12px;
+              padding-top: 20px;
+              border-top: 1px solid #e5e7eb;
+            }
+
+            @media print {
+              body {
+                padding: 20px;
+              }
+              
+              .filters, table {
+                break-inside: avoid;
+              }
+
+              .files-section {
+                page-break-before: always;
+              }
+
+              .file-card {
+                break-inside: avoid;
+              }
+
+              .file-link {
+                display: none; /* הסתר קישורים בהדפסה */
+              }
+
+              tr {
+                page-break-inside: avoid;
+                page-break-after: auto;
+              }
+
+              thead {
+                display: table-header-group;
+              }
+            }
+          </style>
+        </head>
+        <body>
+          <div class="header">
+            <div class="logo">
+              <div class="logo-icon"></div>
+              <div class="logo-text">ניהולון</div>
+            </div>
+            <h1>📋 דוח מסמכים</h1>
+            <div class="date">תאריך הפקה: ${new Date().toLocaleDateString(
+              "he-IL",
+              {
+                year: "numeric",
+                month: "long",
+                day: "numeric",
+                hour: "2-digit",
+                minute: "2-digit",
+              }
+            )}</div>
           </div>
-          <h1>📋 דוח מסמכים</h1>
-          <div class="date">תאריך הפקה: ${new Date().toLocaleDateString(
-            "he-IL",
-            {
-              year: "numeric",
-              month: "long",
-              day: "numeric",
-              hour: "2-digit",
-              minute: "2-digit",
+
+          ${
+            selectedProject || selectedSupplier || fromDate || toDate
+              ? `
+          <div class="filters">
+            <h3>🔍 פילטרים</h3>
+            ${
+              selectedProject
+                ? `<p><strong>פרויקט:</strong> ${selectedProject}</p>`
+                : ""
             }
-          )}</div>
-        </div>
+            ${
+              selectedSupplier
+                ? `<p><strong>ספק:</strong> ${selectedSupplier}</p>`
+                : ""
+            }
+            ${
+              fromDate
+                ? `<p><strong>מתאריך:</strong> ${new Date(
+                    fromDate
+                  ).toLocaleDateString("he-IL")}</p>`
+                : ""
+            }
+            ${
+              toDate
+                ? `<p><strong>עד תאריך:</strong> ${new Date(
+                    toDate
+                  ).toLocaleDateString("he-IL")}</p>`
+                : ""
+            }
+          </div>
+          `
+              : ""
+          }
 
-        ${
-          selectedProject || selectedSupplier || fromDate || toDate
-            ? `
-        <div class="filters">
-          <h3>🔍 פילטרים</h3>
-          ${
-            selectedProject
-              ? `<p><strong>פרויקט:</strong> ${selectedProject}</p>`
-              : ""
-          }
-          ${
-            selectedSupplier
-              ? `<p><strong>ספק:</strong> ${selectedSupplier}</p>`
-              : ""
-          }
-          ${
-            fromDate
-              ? `<p><strong>מתאריך:</strong> ${new Date(
-                  fromDate
-                ).toLocaleDateString("he-IL")}</p>`
-              : ""
-          }
-          ${
-            toDate
-              ? `<p><strong>עד תאריך:</strong> ${new Date(
-                  toDate
-                ).toLocaleDateString("he-IL")}</p>`
-              : ""
-          }
-        </div>
-        `
-            : ""
-        }
-
-        <table>
-          <thead>
-            <tr>
-              <th>מס׳</th>
-              <th>סוג מסמך</th>
-              <th>מספר מסמך</th>
-              <th>פרויקט</th>
-              <th>ספק</th>
-              <th>תאריך</th>
-              <th>סכום</th>
-            </tr>
-          </thead>
-          <tbody>
-            ${docs
-              .map(
-                (d, idx) => `
+          <table>
+            <thead>
               <tr>
-                <td>${idx + 1}</td>
-                <td>${d.type}</td>
-                <td>${d.number}</td>
-                <td>${d.project || "-"}</td>
-                <td>${d.supplier.name || "-"}</td>
-                <td>${new Date(d.date).toLocaleDateString("he-IL")}</td>
-                <td>₪${(d.total || 0).toLocaleString("he-IL")}</td>
-              </tr>`
-              )
-              .join("")}
-            <tr class="total-row">
-              <td colspan="6" style="text-align: left;">סה״כ כולל:</td>
-              <td>₪${totalSum.toLocaleString("he-IL")}</td>
-            </tr>
-          </tbody>
-        </table>
+                <th>מס׳</th>
+                <th>סוג מסמך</th>
+                <th>מספר מסמך</th>
+                <th>פרויקט</th>
+                <th>ספק</th>
+                <th>תאריך</th>
+                <th>סכום</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${docs
+                .map(
+                  (d, idx) => `
+                <tr>
+                  <td>${idx + 1}</td>
+                  <td>${d.type}</td>
+                  <td>${d.number}</td>
+                  <td>${d.project || "-"}</td>
+                  <td>${d.supplier.name || "-"}</td>
+                  <td>${new Date(d.date).toLocaleDateString("he-IL")}</td>
+                  <td>₪${(d.totalAmount || 0).toLocaleString("he-IL")}</td>
+                </tr>`
+                )
+                .join("")}
+              <tr class="total-row">
+                <td colspan="6" style="text-align: left;">סה״כ כולל:</td>
+                <td>₪${totalSum.toLocaleString("he-IL")}</td>
+              </tr>
+            </tbody>
+          </table>
 
-        ${filesSection}
+          ${filesSection}
 
-        <div class="footer">
-          <p>מסמך זה הופק אוטומטית ממערכת ניהולון ⚙ | נכון לתאריך ${new Date().toLocaleDateString(
-            "he-IL"
-          )}</p>
-        </div>
+          <div class="footer">
+            <p>מסמך זה הופק אוטומטית ממערכת ניהולון ⚙ | נכון לתאריך ${new Date().toLocaleDateString(
+              "he-IL"
+            )}</p>
+          </div>
 
-        <script>
-          window.onload = () => {
-            setTimeout(() => window.print(), 250);
-          };
-        </script>
-      </body>
-      </html>
-    `);
+          <script>
+            window.onload = () => {
+              setTimeout(() => window.print(), 250);
+            };
+          </script>
+        </body>
+        </html>
+      `);
 
       printWindow.document.close();
     } catch (e) {

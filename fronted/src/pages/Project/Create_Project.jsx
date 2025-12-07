@@ -192,13 +192,7 @@ const CreateProject = () => {
             {/* Submit Button */}
             <div className="pt-6">
               <div className="flex justify-center gap-4">
-                <button
-                  type="button"
-                  onClick={() => navigate("/projects")}
-                  className="px-8 py-4 rounded-xl font-bold text-slate-600 hover:bg-slate-100 transition-all"
-                >
-                  ביטול
-                </button>
+          
                 <button
                   type="submit"
                   disabled={loading}
@@ -213,9 +207,15 @@ const CreateProject = () => {
                     <>
                       <Save className="w-5 h-5 group-hover:scale-110 transition-transform" />
                       <span>צור פרויקט</span>
-                      <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
                     </>
                   )}
+                </button>
+                      <button
+                  type="button"
+                  onClick={() => navigate("/projects")}
+                  className="group relative px-10 py-4 rounded-xl font-bold text-white bg-gradient-to-r from-orange-600 via-amber-600 to-yellow-600 hover:from-orange-700 hover:via-amber-700 hover:to-yellow-700 disabled:opacity-60 disabled:cursor-not-allowed shadow-xl shadow-orange-500/30 hover:shadow-2xl hover:shadow-orange-500/40 transition-all duration-300 flex items-center gap-3"
+                >
+                  ביטול
                 </button>
               </div>
             </div>

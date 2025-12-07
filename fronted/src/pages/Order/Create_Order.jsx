@@ -144,6 +144,8 @@ const CreateOrder = () => {
         detail: "",
         sum: "",
         status: "לא הוגש",
+        submittedAmount: "", // ✅ הוסף
+        submittedDate: "", // ✅ הוסף
         invitingName: "",
         supplierId: null, // 🆕
         files: [],
@@ -358,6 +360,11 @@ const CreateOrder = () => {
             projectId: selectedProject._id,
             sum: Number(order.sum),
             status: order.status,
+            // ✅ הוסף שדות הגשה
+            submittedDate:
+              order.status !== "לא הוגש" ? order.submittedDate : null,
+            submittedAmount:
+              order.status === "הוגש חלקי" ? Number(order.submittedAmount) : 0,
             invitingName: order.invitingName,
             supplierId: order.supplierId || undefined, // 🆕
             detail: order.detail,
@@ -665,32 +672,24 @@ const CreateOrder = () => {
                 {/* Order Form */}
                 <div className="p-6">
                   <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                    {/* 🆕 Supplier Selection */}
+                    {/* ✅ בחירת ספק */}
                     <div className="group">
                       <SupplierSelector
                         projectId={null}
                         value={order.supplierId}
-                        onSelect={(supplier) =>
-                          setCommon({
-                            ...common,
-                            supplierId: supplier._id,
-                            invitingName: supplier.name,
-                          })
-                        }
-                        onAddNew={() =>
-                          navigate("/suppliers/create?returnTo=createInvoice")
-                        }
+                        onSelect={(supplier) => {
+                          handleOrderChange(index, "supplierId", supplier._id);
+                          // ✅ אל תמלא את invitingName - הם שני שדות נפרדים!
+                        }}
                       />
                     </div>
 
-                    {/* Inviting Name - now optional if supplier selected */}
+                    {/* ✅ שם מזמין - שדה עצמאי לחלוטין */}
                     <div className="group">
                       <label className="text-m font-bold text-slate-700 mb-2 flex items-center gap-2">
                         <User className="w-4 h-4 text-orange-500" />
                         שם המזמין
-                        {!order.supplierId && (
-                          <span className="text-red-500">*</span>
-                        )}
+                        <span className="text-red-500">*</span>
                       </label>
                       <input
                         type="text"
@@ -703,10 +702,8 @@ const CreateOrder = () => {
                           )
                         }
                         className="mt-2 w-full rounded-xl border-2 border-slate-200 bg-white px-4 py-3 text-m font-medium focus:border-orange-500 focus:outline-none focus:ring-4 focus:ring-orange-500/20 transition-all group-hover:border-orange-300"
-                        placeholder={
-                          order.supplierId ? "אוטומטי מהספק" : "הזן שם מזמין..."
-                        }
-                        disabled={!!order.supplierId}
+                        placeholder="הזן שם מזמין..."
+                        required
                       />
                     </div>
 
@@ -819,17 +816,83 @@ const CreateOrder = () => {
                       </label>
                       <select
                         value={order.status}
-                        onChange={(e) =>
-                          handleOrderChange(index, "status", e.target.value)
-                        }
+                        onChange={(e) => {
+                          const value = e.target.value;
+
+                          // ✅ אם בוחרים "לא הוגש" - אפס שדות הגשה
+                          if (value === "לא הוגש") {
+                            handleOrderChange(index, "status", value);
+                            handleOrderChange(index, "submittedAmount", "");
+                            handleOrderChange(index, "submittedDate", "");
+                          } else {
+                            handleOrderChange(index, "status", value);
+                          }
+                        }}
                         className="mt-2 w-full rounded-xl border-2 border-slate-200 bg-white px-4 py-3 text-m font-medium focus:border-orange-500 focus:outline-none focus:ring-4 focus:ring-orange-500/20 transition-all group-hover:border-orange-300"
                         required
                       >
                         <option value="לא הוגש">לא הוגש</option>
-                        <option value="הוגש">הוגש</option>
                         <option value="בעיבוד">בעיבוד</option>
+                        <option value="הוגש חלקי">הוגש חלקי</option>
+                        <option value="הוגש">הוגש</option>
                       </select>
                     </div>
+
+                    {/* ✅ תאריך הגשה - מופיע אם הסטטוס אינו "לא הוגש" */}
+                    {order.status !== "לא הוגש" && (
+                      <div
+                        className="group cursor-pointer"
+                        onClick={(e) => {
+                          const input =
+                            e.currentTarget.querySelector('input[type="date"]');
+                          try {
+                            input?.showPicker();
+                          } catch {
+                            input?.focus();
+                          }
+                        }}
+                      >
+                        <label className="text-m font-bold text-slate-700 mb-2 flex items-center gap-2 cursor-pointer">
+                          <Calendar className="w-4 h-4 text-orange-500" />
+                          תאריך הגשה
+                        </label>
+                        <input
+                          type="date"
+                          value={order.submittedDate || ""}
+                          onChange={(e) =>
+                            handleOrderChange(
+                              index,
+                              "submittedDate",
+                              e.target.value
+                            )
+                          }
+                          className="mt-2 w-full rounded-xl border-2 border-slate-200 bg-white px-4 py-3 text-m font-medium focus:border-orange-500 focus:outline-none focus:ring-4 focus:ring-orange-500/20 transition-all group-hover:border-orange-300 cursor-pointer"
+                        />
+                      </div>
+                    )}
+
+                    {/* ✅ סכום הגשה - מופיע רק אם "הוגש חלקי" */}
+                    {order.status === "הוגש חלקי" && (
+                      <div className="group">
+                        <label className="text-m font-bold text-slate-700 mb-2 flex items-center gap-2">
+                          <TrendingUp className="w-4 h-4 text-green-500" />
+                          סכום שהוגש
+                        </label>
+                        <input
+                          type="number"
+                          value={order.submittedAmount || ""}
+                          onChange={(e) =>
+                            handleOrderChange(
+                              index,
+                              "submittedAmount",
+                              e.target.value
+                            )
+                          }
+                          className="mt-2 w-full rounded-xl border-2 border-slate-200 bg-white px-4 py-3 text-m font-medium focus:border-orange-500 focus:outline-none focus:ring-4 focus:ring-orange-500/20 transition-all group-hover:border-orange-300"
+                          placeholder="הזן סכום..."
+                        />
+                      </div>
+                    )}
 
                     {/* File Uploader */}
                     <div className="lg:col-span-3">
@@ -892,7 +955,7 @@ const CreateOrder = () => {
         <div className="mt-10 flex flex-wrap justify-center gap-4">
           <button
             onClick={addOrder}
-            className="group px-8 py-4 rounded-xl font-bold text-white bg-gradient-to-r from-slate-700 to-slate-800 hover:from-slate-800 hover:to-slate-900 transition-all shadow-xl hover:shadow-2xl flex items-center gap-3"
+            className="group px-8 py-4 rounded-xl font-bold text-white bg-gradient-to-r from-orange-600 via-amber-600 to-yellow-600 hover:from-orange-700 hover:via-amber-700 hover:to-yellow-700 disabled:opacity-60 disabled:cursor-not-allowed shadow-xl shadow-orange-500/30 hover:shadow-2xl hover:shadow-orange-500/40 transition-all flex items-center gap-3"
             type="button"
           >
             <Plus className="w-5 h-5 group-hover:scale-110 transition-transform" />

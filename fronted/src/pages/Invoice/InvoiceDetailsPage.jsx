@@ -194,9 +194,15 @@ const InvoiceDetailsPage = () => {
         {/* שדות כלליים */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
           <DetailCard
-            label="ספק"
+            label="שם ספק"
             icon={<User />}
-            value={invoice.invitingName}
+            value={invoice.supplierId?.name || "לא זמין"}
+          />
+
+          <DetailCard
+            label="שם מזמין"
+            icon={<User />}
+            value={invoice.invitingName || "לא זמין"}
           />
 
           <DetailCard

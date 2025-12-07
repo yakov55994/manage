@@ -100,13 +100,13 @@ const CreateSupplier = () => {
   };
 
   const getFieldName = (field) =>
-  ({
-    name: "שם הספק",
-    business_tax: "מספר עוסק",
-    address: "כתובת",
-    phone: "טלפון",
-    email: "אימייל",
-  }[field] || field);
+    ({
+      name: "שם הספק",
+      business_tax: "מספר עוסק",
+      address: "כתובת",
+      phone: "טלפון",
+      email: "אימייל",
+    }[field] || field);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -132,6 +132,10 @@ const CreateSupplier = () => {
       }
 
       const res = await api.post("/suppliers", supplierData);
+      const createdSupplier = res.data.data || res.data;
+
+      // ✅ שמור את ה-ID של הספק החדש ב-localStorage
+      localStorage.setItem("newSupplierId", createdSupplier._id);
 
       toast.success("הספק נוצר בהצלחה!", {
         className: "sonner-toast success rtl",
@@ -145,14 +149,12 @@ const CreateSupplier = () => {
         navigate("/suppliers");
       }
 
-
       if (res?.data?.supplier) {
         sessionStorage.setItem(
           "createdSupplier",
           JSON.stringify(res.data.supplier)
         );
       }
-
     } catch (err) {
       console.error("Error details:", err.response?.data);
       const errorMessage = err.response?.data?.message || "שגיאה ביצירת הספק";
@@ -496,13 +498,6 @@ const CreateSupplier = () => {
           {/* Action Buttons */}
           <div className="mt-10 flex justify-center gap-4">
             <button
-              type="button"
-              onClick={() => navigate(returnTo)}
-              className="px-8 py-4 rounded-xl font-bold text-slate-600 hover:bg-slate-100 transition-all"
-            >
-              ביטול
-            </button>
-            <button
               type="submit"
               disabled={isLoading}
               className="group relative px-10 py-4 rounded-xl font-bold text-white bg-gradient-to-r from-orange-600 via-amber-600 to-yellow-600 hover:from-orange-700 hover:via-amber-700 hover:to-yellow-700 disabled:opacity-60 disabled:cursor-not-allowed shadow-xl shadow-orange-500/30 hover:shadow-2xl hover:shadow-orange-500/40 transition-all duration-300 flex items-center gap-3"
@@ -518,6 +513,13 @@ const CreateSupplier = () => {
                   <span>צור ספק</span>
                 </>
               )}
+            </button>
+            <button
+              type="button"
+              onClick={() => navigate(returnTo)}
+              className="group relative px-10 py-4 rounded-xl font-bold text-white bg-gradient-to-r from-orange-600 via-amber-600 to-yellow-600 hover:from-orange-700 hover:via-amber-700 hover:to-yellow-700 disabled:opacity-60 disabled:cursor-not-allowed shadow-xl shadow-orange-500/30 hover:shadow-2xl hover:shadow-orange-500/40 transition-all duration-300 flex items-center gap-3"
+            >
+              ביטול
             </button>
           </div>
         </form>
