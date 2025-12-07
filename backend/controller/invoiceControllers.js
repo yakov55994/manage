@@ -1,30 +1,141 @@
-import invoiceService from "../services/invoiceService.js";
-import { sendError } from "../utils/sendError.js";
+// ===============================================
+// INVOICE CONTROLLER – MULTI-PROJECT SYSTEM
+// ===============================================
 
-const invoiceController = {
+import Invoice from "../models/Invoice.js";
+import invoiceService, {
+  recalculateRemainingBudget
+} from "../services/invoiceService.js";
 
-  // 🔍 חיפוש חשבוניות
-  async searchInvoices(req, res) {
-    try {
-      const q = req.query.query || "";
-      const results = await invoiceService.searchInvoices(q);
-      res.json(results);
-    } catch (e) {
-      sendError(res, e);
+const invoiceControllers = {
+// ===============================================
+// חיפוש חשבוניות
+// ===============================================
+async searchInvoices (req, res) {
+  try {
+    const results = await invoiceService.searchInvoices(req.query.q || "");
+    res.json({ success: true, data: results });
+  } catch (err) {
+    res.status(500).json({ success: false, error: err.message });
+  }
+},
+
+// ===============================================
+// קבלת כל החשבוניות לפי הרשאות
+// ===============================================
+async getInvoices  (req, res) {
+  try {
+    const invoices = await invoiceService.getInvoices(req.user);
+    res.json({ success: true, data: invoices });
+  } catch (err) {
+    res.status(500).json({ success: false, error: err.message });
+  }
+},
+
+// ===============================================
+// קבלת חשבונית לפי ID
+// ===============================================
+async getInvoiceById  (req, res)  {
+  try {
+    const invoice = await invoiceService.getInvoiceById(req.user, req.params.id);
+    if (!invoice) {
+      return res.status(404).json({ success: false, error: "חשבונית לא נמצאה" });
     }
-  },
+    res.json({ success: true, data: invoice });
+  } catch (err) {
+    res.status(403).json({ success: false, error: err.message });
+  }
+},
 
-  // ✔ כל החשבוניות לפי הרשאות
-  async getInvoices(req, res) {
-    try {
-      const data = await invoiceService.getInvoices(req.user);
-      res.json({ success: true, data });
-    } catch (e) {
-      sendError(res, e);
-    }
-  },
+// ===============================================
+// יצירת חשבונית חדשה (מרובת פרויקטים)
+// ===============================================
+async createInvoice  (req, res)  {
+  console.log("✔ Invoice Schema Keys:", Object.keys(Invoice.schema.paths));
 
-  // ✔ בדיקת כפילות
+  console.log("📥 BODY RECEIVED:", req.body);
+
+  try {
+    const invoice = await invoiceService.createInvoice(req.user, req.body);
+    res.json({ success: true, data: invoice });
+  } catch (err) {
+    console.error("❌ CREATE ERROR:", err);
+    res.status(400).json({ success: false, error: err.message });
+  }
+},
+
+// ===============================================
+// עדכון חשבונית (עדכון פרויקטים, סכומים, קובץ וכו')
+// ===============================================
+async updateInvoice  (req, res)  {
+  try {
+    const updated = await invoiceService.updateInvoice(
+      req.user,
+      req.params.id,
+      req.body
+    );
+    res.json({ success: true, data: updated });
+  } catch (err) {
+    console.error("❌ UPDATE ERROR:", err);
+    res.status(400).json({ success: false, error: err.message });
+  }
+},
+
+// ===============================================
+// עדכון סטטוס תשלום
+// ===============================================
+async updatePaymentStatus  (req, res)  {
+  try {
+    const { status, paymentDate, paymentMethod } = req.body;
+
+    const updated = await invoiceService.updatePaymentStatus(
+      req.user,
+      req.params.id,
+      status,
+      paymentDate,
+      paymentMethod
+    );
+
+    res.json({ success: true, data: updated });
+  } catch (err) {
+    console.error("❌ PAYMENT UPDATE ERROR:", err);
+    res.status(400).json({ success: false, error: err.message });
+  }
+},
+
+// ===============================================
+// העברת חשבונית בין פרויקטים (מותאם למבנה החדש!)
+// ===============================================
+async moveInvoice  (req, res)  {
+  try {
+    const { fromProjectId, toProjectId } = req.body;
+
+    const updated = await invoiceService.moveInvoice(
+      req.user,
+      req.params.id,
+      fromProjectId,
+      toProjectId
+    );
+
+    res.json({ success: true, data: updated });
+  } catch (err) {
+    console.error("❌ MOVE ERROR:", err);
+    res.status(400).json({ success: false, error: err.message });
+  }
+},
+
+// ===============================================
+// מחיקת חשבונית (כולל קבצים ותקציב)
+// ===============================================
+async deleteInvoice  (req, res)  {
+  try {
+    await invoiceService.deleteInvoice(req.user, req.params.id);
+    res.json({ success: true });
+  } catch (err) {
+    console.error("❌ DELETE ERROR:", err);
+    res.status(400).json({ success: false, error: err.message });
+  }
+},
   async checkDuplicate(req, res) {
     try {
       const result = await invoiceService.checkDuplicate(req.query);
@@ -33,114 +144,5 @@ const invoiceController = {
       sendError(res, e);
     }
   },
-
-  // ✔ חשבונית לפי ID
-  async getInvoiceById(req, res) {
-    try {
-      const invoiceId = req.params.invoiceId;
-      const invoice = await invoiceService.getInvoiceById(req.user, invoiceId);
-
-      if (!invoice) {
-        return res.status(404).json({ message: "חשבונית לא נמצאה" });
-      }
-
-      res.json({ success: true, data: invoice });
-
-    } catch (e) {
-      sendError(res, e);
-    }
-  },
-
-  // ➕ יצירה
-  async createInvoice(req, res) {
-    try {
-      const invoice = await invoiceService.createInvoice(req.user, req.body);
-      res.status(201).json({ success: true, data: invoice });
-    } catch (e) {
-      sendError(res, e);
-    }
-  },
-
-    async splitInvoice (req, res) {
-    try {
-      const { id } = req.params;
-
-      const result = await invoiceService.splitInvoice(id, req.body);
-
-      return res.json({
-        success: true,
-        message: "חשבונית פוצלה בהצלחה",
-        invoices: result,
-      });
-    } catch (err) {
-      console.error("❌ splitInvoice error:", err);
-      res.status(500).json({ message: err.message });
-    }
-  },
-
-  // ✏️ עדכון
-  async updateInvoice(req, res) {
-    try {
-      const updated = await invoiceService.updateInvoice(
-        req.user,
-        req.params.invoiceId,
-        req.body
-      );
-
-      res.json({ success: true, data: updated });
-
-    } catch (e) {
-      sendError(res, e);
-    }
-  },
-
-  // 💸 עדכון סטטוס תשלום
-  // invoiceControllers.js
-  async updatePaymentStatus(req, res) {
-    try {
-      const { invoiceId } = req.params;
-      const { status, paymentDate, paymentMethod } = req.body; // ✅ לוודא ש-status מכיל "כן" או "לא"
-
-      const result = await invoiceService.updatePaymentStatus(
-        req.user,
-        invoiceId,
-        status, // צריך להיות "כן" או "לא"
-        paymentDate,
-        paymentMethod
-      );
-
-      res.json({ success: true, data: result });
-
-    } catch (e) {
-      sendError(res, e);
-    }
-  },
-
-  // 🔄 העברת חשבונית לפרויקט אחר
-  async moveInvoice(req, res) {
-    try {
-      const result = await invoiceService.moveInvoice(
-        req.user,
-        req.params.invoiceId,
-        req.body.newProjectId
-      );
-
-      res.json({ success: true, data: result });
-
-    } catch (e) {
-      sendError(res, e);
-    }
-  },
-
-  // 🗑️ מחיקה
-  async deleteInvoice(req, res) {
-    try {
-      await invoiceService.deleteInvoice(req.user, req.params.invoiceId);
-      res.json({ success: true, message: "נמחק בהצלחה" });
-    } catch (e) {
-      sendError(res, e);
-    }
-  }
-};
-
-export default invoiceController;
+}
+export default invoiceControllers;

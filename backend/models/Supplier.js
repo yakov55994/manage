@@ -1,7 +1,7 @@
 // models/Supplier.js
 import mongoose from "mongoose";
 import bankDetailsSchema from "./BankDetails.js";
-import Invoice from "./Invoice.js";
+import Invoice from "../models/Invoice.js";
 
 const supplierSchema = new mongoose.Schema({
     name: { type: String, required: true },
