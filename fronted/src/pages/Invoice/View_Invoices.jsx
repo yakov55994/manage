@@ -1352,14 +1352,15 @@ const InvoicesPage = () => {
 
   const handleBulkDelete = async () => {
     try {
-      // מחק את כל החשבוניות הנבחרות
-      await Promise.all(
-        selectedInvoices.map((invoice) =>
-          api.delete(`/invoices/${invoice._id}`)
-        )
-      );
+      for (const invoice of selectedInvoices) {
+        try {
+          await api.delete(`/invoices/${invoice._id}`);
+        } catch (err) {
+          console.error("❌ Error deleting invoice:", invoice._id, err);
+        }
+      }
 
-      // עדכן את ה-state
+      // עדכון ה־state אחרי שהכול נמחק
       const remainingInvoices = allInvoices.filter(
         (invoice) => !selectedInvoices.some((sel) => sel._id === invoice._id)
       );
@@ -2607,145 +2608,141 @@ const InvoicesPage = () => {
 
       {/* Print Modal - כמו בפרויקטים */}
       {showPrintModal && (
-  <div className="fixed inset-0 z-50">
-    {/* רקע כהה */}
-    <div
-      className="absolute inset-0 bg-black/60 backdrop-blur-sm"
-      onClick={() => setShowPrintModal(false)}
-    />
+        <div className="fixed inset-0 z-50">
+          {/* רקע כהה */}
+          <div
+            className="absolute inset-0 bg-black/60 backdrop-blur-sm"
+            onClick={() => setShowPrintModal(false)}
+          />
 
-    {/* עיטוף מרכזי */}
-    <div className="fixed inset-0 flex items-center justify-center p-4 overflow-y-auto">
-      <div
-        className="relative w-full max-w-4xl mt-20"
-        onClick={(e) => e.stopPropagation()}
-      >
-        {/* זוהר */}
-        <div className="pointer-events-none absolute -inset-2 bg-gradient-to-r from-orange-500 to-amber-500 rounded-3xl opacity-20 blur-xl"></div>
-
-        {/* תוכן המודל */}
-        <div className="relative bg-white rounded-3xl shadow-2xl overflow-hidden">
-
-          {/* HEADER */}
-          <div className="bg-gradient-to-r from-orange-500 to-amber-500 text-white p-6 flex items-center justify-between">
-            <div className="flex items-center gap-3">
-              <Receipt className="w-7 h-7 text-white" />
-              <h3 className="text-2xl font-bold">הפקת מסמכים</h3>
-            </div>
-
-            <button
-              onClick={() => setShowPrintModal(false)}
-              className="text-white hover:bg-white/20 rounded-lg p-2 transition"
+          {/* עיטוף מרכזי */}
+          <div className="fixed inset-0 flex items-center justify-center p-4 overflow-y-auto">
+            <div
+              className="relative w-full max-w-4xl mt-20"
+              onClick={(e) => e.stopPropagation()}
             >
-              <X className="w-6 h-6" />
-            </button>
+              {/* זוהר */}
+              <div className="pointer-events-none absolute -inset-2 bg-gradient-to-r from-orange-500 to-amber-500 rounded-3xl opacity-20 blur-xl"></div>
+
+              {/* תוכן המודל */}
+              <div className="relative bg-white rounded-3xl shadow-2xl overflow-hidden">
+                {/* HEADER */}
+                <div className="bg-gradient-to-r from-orange-500 to-amber-500 text-white p-6 flex items-center justify-between">
+                  <div className="flex items-center gap-3">
+                    <Receipt className="w-7 h-7 text-white" />
+                    <h3 className="text-2xl font-bold">הפקת מסמכים</h3>
+                  </div>
+
+                  <button
+                    onClick={() => setShowPrintModal(false)}
+                    className="text-white hover:bg-white/20 rounded-lg p-2 transition"
+                  >
+                    <X className="w-6 h-6" />
+                  </button>
+                </div>
+
+                {/* תוכן גולל */}
+                <div className="max-h-[calc(85vh-8rem)] overflow-y-auto p-6">
+                  {/* בחירת פרויקט */}
+                  <label className="block font-semibold text-slate-700 mb-2">
+                    בחירת פרויקט
+                  </label>
+                  <select
+                    className="w-full p-3 border-2 border-orange-200 rounded-xl mb-6 font-medium focus:border-orange-500 focus:outline-none focus:ring-4 focus:ring-orange-500/20 transition-all"
+                    value={selectedProjectForPrint}
+                    onChange={(e) => setSelectedProjectForPrint(e.target.value)}
+                  >
+                    <option value="">כל הפרויקטים</option>
+                    {projectsForPrint.map((p) => (
+                      <option key={p._id} value={p._id}>
+                        {p.name}
+                      </option>
+                    ))}
+                  </select>
+
+                  {/* בחירת ספק */}
+                  <label className="block font-semibold text-slate-700 mb-2">
+                    בחירת ספק
+                  </label>
+                  <select
+                    className="w-full p-3 border-2 border-orange-200 rounded-xl mb-6 font-medium focus:border-orange-500 focus:outline-none focus:ring-4 focus:ring-orange-500/20 transition-all"
+                    value={selectedSupplierForPrint}
+                    onChange={(e) =>
+                      setSelectedSupplierForPrint(e.target.value)
+                    }
+                  >
+                    <option value="">כל הספקים</option>
+                    {suppliersForPrint.map((s) => (
+                      <option key={s._id} value={s._id}>
+                        {s.name}
+                      </option>
+                    ))}
+                  </select>
+
+                  {/* טווח תאריכים */}
+                  <label className="block font-semibold text-slate-700 mb-2">
+                    טווח תאריכים
+                  </label>
+                  <div className="flex gap-3 mb-10">
+                    <input
+                      type="date"
+                      className="w-1/2 border-2 border-orange-200 p-3 rounded-xl focus:border-orange-500 focus:outline-none focus:ring-4 focus:ring-orange-500/20 transition-all"
+                      value={fromDatePrint}
+                      onChange={(e) => setFromDatePrint(e.target.value)}
+                    />
+                    <input
+                      type="date"
+                      className="w-1/2 border-2 border-orange-200 p-3 rounded-xl focus:border-orange-500 focus:outline-none focus:ring-4 focus:ring-orange-500/20 transition-all"
+                      value={toDatePrint}
+                      onChange={(e) => setToDatePrint(e.target.value)}
+                    />
+                  </div>
+
+                  {/* כפתורי פעולה */}
+                  <div className="flex flex-col gap-3">
+                    <button
+                      className="w-full flex items-center justify-center gap-3 px-6 py-4 bg-gradient-to-r from-blue-600 to-blue-700 text-white font-bold rounded-xl hover:from-blue-700 hover:to-blue-800 transition-all shadow-lg"
+                      onClick={downloadAttachedFiles}
+                    >
+                      <DownloadCloud className="w-5 h-5" />
+                      📦 הורד קבצים מצורפים (ZIP)
+                    </button>
+
+                    <button
+                      className="w-full flex items-center justify-center gap-3 px-6 py-4 bg-gradient-to-r from-orange-600 to-orange-700 text-white font-bold rounded-xl hover:from-orange-700 hover:to-orange-800 transition-all shadow-lg"
+                      onClick={generateInvoicesPrint}
+                    >
+                      <FileText className="w-5 h-5" />
+                      🖨️ הפק דוח PDF
+                    </button>
+
+                    <button
+                      className="w-full flex items-center justify-center gap-3 px-6 py-4 bg-gradient-to-r from-emerald-600 to-emerald-700 text-white font-bold rounded-xl hover:from-emerald-700 hover:to-emerald-800 transition-all shadow-lg"
+                      onClick={() => setShowPaymentExportModal(true)}
+                    >
+                      <FileSpreadsheet className="w-5 h-5" />
+                      💳 ייצוא לתשלום (Excel)
+                    </button>
+
+                    <button
+                      className="w-full px-6 py-4 bg-slate-200 text-slate-700 font-bold rounded-xl hover:bg-slate-300 transition-all"
+                      onClick={() => {
+                        setShowPrintModal(false);
+                        setSelectedProjectForPrint("");
+                        setSelectedSupplierForPrint("");
+                        setFromDatePrint("");
+                        setToDatePrint("");
+                      }}
+                    >
+                      ביטול
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </div>
           </div>
-
-          {/* תוכן גולל */}
-          <div className="max-h-[calc(85vh-8rem)] overflow-y-auto p-6">
-
-            {/* בחירת פרויקט */}
-            <label className="block font-semibold text-slate-700 mb-2">
-              בחירת פרויקט
-            </label>
-            <select
-              className="w-full p-3 border-2 border-orange-200 rounded-xl mb-6 font-medium focus:border-orange-500 focus:outline-none focus:ring-4 focus:ring-orange-500/20 transition-all"
-              value={selectedProjectForPrint}
-              onChange={(e) => setSelectedProjectForPrint(e.target.value)}
-            >
-              <option value="">כל הפרויקטים</option>
-              {projectsForPrint.map((p) => (
-                <option key={p._id} value={p._id}>
-                  {p.name}
-                </option>
-              ))}
-            </select>
-
-            {/* בחירת ספק */}
-            <label className="block font-semibold text-slate-700 mb-2">
-              בחירת ספק
-            </label>
-            <select
-              className="w-full p-3 border-2 border-orange-200 rounded-xl mb-6 font-medium focus:border-orange-500 focus:outline-none focus:ring-4 focus:ring-orange-500/20 transition-all"
-              value={selectedSupplierForPrint}
-              onChange={(e) => setSelectedSupplierForPrint(e.target.value)}
-            >
-              <option value="">כל הספקים</option>
-              {suppliersForPrint.map((s) => (
-                <option key={s._id} value={s._id}>
-                  {s.name}
-                </option>
-              ))}
-            </select>
-
-            {/* טווח תאריכים */}
-            <label className="block font-semibold text-slate-700 mb-2">
-              טווח תאריכים
-            </label>
-            <div className="flex gap-3 mb-10">
-              <input
-                type="date"
-                className="w-1/2 border-2 border-orange-200 p-3 rounded-xl focus:border-orange-500 focus:outline-none focus:ring-4 focus:ring-orange-500/20 transition-all"
-                value={fromDatePrint}
-                onChange={(e) => setFromDatePrint(e.target.value)}
-              />
-              <input
-                type="date"
-                className="w-1/2 border-2 border-orange-200 p-3 rounded-xl focus:border-orange-500 focus:outline-none focus:ring-4 focus:ring-orange-500/20 transition-all"
-                value={toDatePrint}
-                onChange={(e) => setToDatePrint(e.target.value)}
-              />
-            </div>
-
-            {/* כפתורי פעולה */}
-            <div className="flex flex-col gap-3">
-
-              <button
-                className="w-full flex items-center justify-center gap-3 px-6 py-4 bg-gradient-to-r from-blue-600 to-blue-700 text-white font-bold rounded-xl hover:from-blue-700 hover:to-blue-800 transition-all shadow-lg"
-                onClick={downloadAttachedFiles}
-              >
-                <DownloadCloud className="w-5 h-5" />
-                📦 הורד קבצים מצורפים (ZIP)
-              </button>
-
-              <button
-                className="w-full flex items-center justify-center gap-3 px-6 py-4 bg-gradient-to-r from-orange-600 to-orange-700 text-white font-bold rounded-xl hover:from-orange-700 hover:to-orange-800 transition-all shadow-lg"
-                onClick={generateInvoicesPrint}
-              >
-                <FileText className="w-5 h-5" />
-                🖨️ הפק דוח PDF
-              </button>
-
-              <button
-                className="w-full flex items-center justify-center gap-3 px-6 py-4 bg-gradient-to-r from-emerald-600 to-emerald-700 text-white font-bold rounded-xl hover:from-emerald-700 hover:to-emerald-800 transition-all shadow-lg"
-                onClick={() => setShowPaymentExportModal(true)}
-              >
-                <FileSpreadsheet className="w-5 h-5" />
-                💳 ייצוא לתשלום (Excel)
-              </button>
-
-              <button
-                className="w-full px-6 py-4 bg-slate-200 text-slate-700 font-bold rounded-xl hover:bg-slate-300 transition-all"
-                onClick={() => {
-                  setShowPrintModal(false);
-                  setSelectedProjectForPrint("");
-                  setSelectedSupplierForPrint("");
-                  setFromDatePrint("");
-                  setToDatePrint("");
-                }}
-              >
-                ביטול
-              </button>
-
-            </div>
-          </div>
-
         </div>
-      </div>
-    </div>
-  </div>
-)}
-
+      )}
 
       {/* 🆕 Payment Export Modal - בחירת סוג ייצוא */}
       {showPaymentExportModal && (

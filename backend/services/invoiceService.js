@@ -250,19 +250,36 @@ async function deleteInvoice(user, invoiceId) {
   const invoice = await Invoice.findById(invoiceId);
   if (!invoice) return null;
 
-  const projectIds = invoice.projects.map((p) => p.projectId.toString());
+  // הפקת מזהי פרויקטים בצורה בטוחה
+  const projectIds = invoice.projects
+    .map((p) => (p.projectId ? p.projectId.toString() : null))
+    .filter(Boolean);
 
-  await invoice.deleteOne(); // מפעיל מחיקת Cloudinary
+  // מחיקת הקבצים + המסמך
+  try {
+    await invoice.deleteOne();
+  } catch (err) {
+    console.error("❌ Error deleting invoice or files:", err);
+    // לא נחזיר 400 — רק נדלג
+  }
 
+  //עדכון פרויקטים
   for (const pid of projectIds) {
-    await Project.findByIdAndUpdate(pid, {
-      $pull: { invoices: invoiceId }
-    });
-    await recalculateRemainingBudget(pid);
+    try {
+      await Project.findByIdAndUpdate(pid, {
+        $pull: { invoices: invoiceId }
+      });
+
+      await recalculateRemainingBudget(pid);
+    } catch (err) {
+      console.error(`❌ Error updating project ${pid}:`, err);
+      // לא מפילים את המחיקה
+    }
   }
 
   return true;
 }
+
 
 // ===============================================
 // EXPORT SERVICE
