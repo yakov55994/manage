@@ -148,7 +148,6 @@ const OrdersPage = () => {
     };
   };
 
-
   const availableColumns = [
     { key: "orderNumber", label: "מספר הזמנה" },
     { key: "projectName", label: "שם הפרויקט" },
@@ -181,14 +180,14 @@ const OrdersPage = () => {
         const projectsData = Array.isArray(projectsRes.data?.data)
           ? projectsRes.data.data
           : Array.isArray(projectsRes.data)
-            ? projectsRes.data
-            : [];
+          ? projectsRes.data
+          : [];
 
         const suppliersData = Array.isArray(suppliersRes.data?.data)
           ? suppliersRes.data.data
           : Array.isArray(suppliersRes.data)
-            ? suppliersRes.data
-            : [];
+          ? suppliersRes.data
+          : [];
 
         setProjectsForPrint(projectsData);
         setSuppliersForPrint(suppliersData);
@@ -338,11 +337,11 @@ const OrdersPage = () => {
     // מציאת שמות לפילטרים
     const selectedProjectName = selectedProjectForPrint
       ? projectsForPrint.find((p) => p._id === selectedProjectForPrint)?.name ||
-      ""
+        ""
       : "";
     const selectedSupplierName = selectedSupplierForPrint
       ? suppliersForPrint.find((s) => s._id === selectedSupplierForPrint)
-        ?.name || ""
+          ?.name || ""
       : "";
 
     const printWindow = window.open("", "_blank");
@@ -552,48 +551,53 @@ const OrdersPage = () => {
           </div>
           <h1>📋 דוח הזמנות</h1>
           <div class="date">תאריך הפקה: ${new Date().toLocaleDateString(
-      "he-IL",
-      {
-        year: "numeric",
-        month: "long",
-        day: "numeric",
-        hour: "2-digit",
-        minute: "2-digit",
-      }
-    )}</div>
+            "he-IL",
+            {
+              year: "numeric",
+              month: "long",
+              day: "numeric",
+              hour: "2-digit",
+              minute: "2-digit",
+            }
+          )}</div>
         </div>
 
-        ${selectedProjectName ||
-        selectedSupplierName ||
-        fromDatePrint ||
-        toDatePrint
-        ? `
+        ${
+          selectedProjectName ||
+          selectedSupplierName ||
+          fromDatePrint ||
+          toDatePrint
+            ? `
         <div class="filters">
           <h3>🔍 פילטרים</h3>
-          ${selectedProjectName
-          ? `<p><strong>פרויקט:</strong> ${selectedProjectName}</p>`
-          : ""
-        }
-          ${selectedSupplierName
-          ? `<p><strong>ספק:</strong> ${selectedSupplierName}</p>`
-          : ""
-        }
-          ${fromDatePrint
-          ? `<p><strong>מתאריך:</strong> ${new Date(
+          ${
+            selectedProjectName
+              ? `<p><strong>פרויקט:</strong> ${selectedProjectName}</p>`
+              : ""
+          }
+          ${
+            selectedSupplierName
+              ? `<p><strong>ספק:</strong> ${selectedSupplierName}</p>`
+              : ""
+          }
+          ${
             fromDatePrint
-          ).toLocaleDateString("he-IL")}</p>`
-          : ""
-        }
-          ${toDatePrint
-          ? `<p><strong>עד תאריך:</strong> ${new Date(
+              ? `<p><strong>מתאריך:</strong> ${new Date(
+                  fromDatePrint
+                ).toLocaleDateString("he-IL")}</p>`
+              : ""
+          }
+          ${
             toDatePrint
-          ).toLocaleDateString("he-IL")}</p>`
-          : ""
-        }
+              ? `<p><strong>עד תאריך:</strong> ${new Date(
+                  toDatePrint
+                ).toLocaleDateString("he-IL")}</p>`
+              : ""
+          }
         </div>
         `
-        : ""
-      }
+            : ""
+        }
 
         <table>
           <thead>
@@ -609,8 +613,8 @@ const OrdersPage = () => {
           </thead>
           <tbody>
             ${filteredForPrint
-        .map(
-          (order, idx) => `
+              .map(
+                (order, idx) => `
               <tr>
                 <td><strong>${idx + 1}</strong></td>
                 <td><strong>${order.orderNumber || "-"}</strong></td>
@@ -620,8 +624,8 @@ const OrdersPage = () => {
                 <td>${formatDate(order.createdAt)}</td>
                 <td>${order.status || "-"}</td>
               </tr>`
-        )
-        .join("")}
+              )
+              .join("")}
           </tbody>
         </table>
 
@@ -821,8 +825,8 @@ const OrdersPage = () => {
   const filteredOrders = searchTerm
     ? getFilteredOrders()
     : selectedStatus
-      ? orders.filter((order) => order.status === selectedStatus)
-      : orders;
+    ? orders.filter((order) => order.status === selectedStatus)
+    : orders;
 
   const sortedOrders = [...filteredOrders].sort((a, b) => {
     if (sortBy === "sum") {
@@ -862,10 +866,10 @@ const OrdersPage = () => {
     Array.isArray(res?.data?.data)
       ? res.data.data
       : Array.isArray(res?.data)
-        ? res.data
-        : Array.isArray(res)
-          ? res
-          : [];
+      ? res.data
+      : Array.isArray(res)
+      ? res
+      : [];
 
   const authUser = JSON.parse(localStorage.getItem("user") || "{}");
   const selectedProjectId = authUser?.selectedProject;
@@ -973,8 +977,8 @@ const OrdersPage = () => {
         const ordersData = Array.isArray(res.data?.data)
           ? res.data.data
           : Array.isArray(res.data)
-            ? res.data
-            : [];
+          ? res.data
+          : [];
 
         console.log("========== DEBUG ORDERS ==========");
         ordersData.slice(0, 10).forEach((ord, i) => {
@@ -990,7 +994,6 @@ const OrdersPage = () => {
 
           console.log("-----------------------------------");
         });
-
 
         setAllOrders(ordersData);
         console.log("🔥 DEBUG ORDER SAMPLE:", ordersData[0]);
@@ -1116,7 +1119,6 @@ const OrdersPage = () => {
     filtered.forEach((order) => {
       const supplier = normalizeSupplier(order.supplierId);
 
-
       if (!supplier) return; // דלג על הזמנות ללא ספק
 
       const supplierId = supplier._id;
@@ -1227,7 +1229,6 @@ const OrdersPage = () => {
     // צור Excel מפורט
     const excelData = filtered.map((order) => {
       const supplier = normalizeSupplier(order.supplierId);
-
 
       return {
         "שם ספק": supplier?.name || "לא זמין",
@@ -1361,43 +1362,44 @@ const OrdersPage = () => {
               <div className="flex items-center gap-2">
                 <Filter className="text-orange-600 w-5 h-5" />
                 <span className="font-bold text-slate-700">סינון:</span>
-              </div>
-              <select
-                onChange={(e) => setSelectedStatus(e.target.value)}
-                value={selectedStatus}
-                className="px-4 py-2 border-2 border-orange-200 rounded-xl bg-white font-bold text-slate-900 focus:border-orange-500 focus:outline-none focus:ring-4 focus:ring-orange-500/20 transition-all"
-              >
-                <option value="">כל הסטטוסים</option>
-                <option value="הוגש">הוגש</option>
-                <option value="לא הוגש">לא הוגש</option>
-                <option value="בעיבוד">בעיבוד</option>
-              </select>
-
-              {(selectedStatus || searchTerm) && (
-                <button
-                  onClick={() => {
-                    setSelectedStatus("");
-                    setSearchTerm("");
-                  }}
-                  className="px-4 py-2 bg-slate-200 text-slate-700 rounded-xl hover:bg-slate-300 transition-all font-bold"
+                <select
+                  onChange={(e) => setSelectedStatus(e.target.value)}
+                  value={selectedStatus}
+                  className="px-4 py-2 border-2 border-orange-200 rounded-xl bg-white font-bold text-slate-900 focus:border-orange-500 focus:outline-none focus:ring-4 focus:ring-orange-500/20 transition-all"
                 >
-                  נקה סינון
-                </button>
-              )}
+                  <option value="">כל הסטטוסים</option>
+                  <option value="הוגש">הוגש</option>
+                  <option value="לא הוגש">לא הוגש</option>
+                  <option value="בעיבוד">בעיבוד</option>
+                </select>
+
+                {(selectedStatus || searchTerm) && (
+                  <button
+                    onClick={() => {
+                      setSelectedStatus("");
+                      setSearchTerm("");
+                    }}
+                    className="px-4 py-2 bg-slate-200 text-slate-700 rounded-xl hover:bg-slate-300 transition-all font-bold"
+                  >
+                    נקה סינון
+                  </button>
+                )}
+              </div>
             </div>
 
             {/* Export Buttons */}
             <div className="flex gap-3">
               <button
                 onClick={() => setShowPrintModal(true)}
-                className="px-4 py-2 bg-orange-500 text-white rounded-xl font-medium hover:bg-orange-600"
+                className="flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-orange-500 to-amber-500 text-white font-bold rounded-full hover:from-orange-600 hover:to-amber-600 transition-all shadow-lg whitespace-nowrap"
               >
-                הדפסת מסמכים
+                <FileText className="w-5 h-5" />
+                <span>הדפסת מסמכים</span>
               </button>
 
               <button
                 onClick={() => setShowReportModal(true)}
-                className="flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-orange-600 to-orange-600 text-white font-bold rounded-xl hover:from-orange-700 hover:to-orange-700 transition-all shadow-lg shadow-orange-500/30"
+                className="flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-orange-500 to-amber-500 text-white font-bold rounded-full hover:from-orange-600 hover:to-amber-600 transition-all shadow-lg whitespace-nowrap"
               >
                 <FileSpreadsheet className="w-5 h-5" />
                 <span>מחולל דוחות</span>
@@ -1405,7 +1407,7 @@ const OrdersPage = () => {
 
               <button
                 onClick={exportToExcel}
-                className="flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-orange-600 to-orange-600 text-white font-bold rounded-xl hover:from-orange-700 hover:to-orange-700 transition-all shadow-lg shadow-orange-500/30"
+                className="flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-orange-500 to-amber-500 text-white font-bold rounded-full hover:from-orange-600 hover:to-amber-600 transition-all shadow-lg whitespace-nowrap"
               >
                 <DownloadCloud className="w-5 h-5" />
                 <span>ייצוא מהיר</span>
@@ -1530,215 +1532,280 @@ const OrdersPage = () => {
 
         {/* 🆕 Print Modal */}
         {showPrintModal && (
-          <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-            <div className="bg-white p-6 rounded-2xl w-[520px] shadow-2xl max-h-[90vh] overflow-y-auto">
-              <h2 className="text-2xl font-bold mb-6 text-slate-900 flex items-center gap-3 sticky top-0 bg-white pb-4 border-b-2 border-orange-100">
-                <ShoppingCart className="w-7 h-7 text-orange-500" />
-                הפקת מסמכים
-              </h2>
+          <div className="fixed inset-0 z-50">
+            {/* רקע כהה */}
+            <div
+              className="absolute inset-0 bg-black/60 backdrop-blur-sm"
+              onClick={() => setShowPrintModal(false)}
+            />
 
-              {/* בחירת פרויקט */}
-              <label className="block font-semibold text-slate-700 mb-2">
-                בחירת פרויקט
-              </label>
-              <select
-                className="w-full p-3 border-2 border-orange-200 rounded-xl mb-4 font-medium focus:border-orange-500 focus:outline-none focus:ring-4 focus:ring-orange-500/20 transition-all"
-                value={selectedProjectForPrint}
-                onChange={(e) => setSelectedProjectForPrint(e.target.value)}
+            {/* מרכז המסך */}
+            <div className="fixed inset-0 flex items-center justify-center p-4 overflow-y-auto">
+              <div
+                className="relative w-full max-w-xl mt-20"
+                onClick={(e) => e.stopPropagation()}
               >
-                <option value="">כל הפרויקטים</option>
-                {projectsForPrint.map((p) => (
-                  <option key={p._id} value={p._id}>
-                    {p.name}
-                  </option>
-                ))}
-              </select>
+                {/* אפקט זוהר */}
+                <div className="pointer-events-none absolute -inset-2 bg-gradient-to-r from-orange-500 to-amber-500 rounded-3xl opacity-20 blur-xl"></div>
 
-              {/* בחירת ספק */}
-              <label className="block font-semibold text-slate-700 mb-2">
-                בחירת ספק
-              </label>
-              <select
-                className="w-full p-3 border-2 border-orange-200 rounded-xl mb-4 font-medium focus:border-orange-500 focus:outline-none focus:ring-4 focus:ring-orange-500/20 transition-all"
-                value={selectedSupplierForPrint}
-                onChange={(e) => setSelectedSupplierForPrint(e.target.value)}
-              >
-                <option value="">כל הספקים</option>
-                {suppliersForPrint.map((s) => (
-                  <option key={s._id} value={s._id}>
-                    {s.name}
-                  </option>
-                ))}
-              </select>
+                {/* גוף המודל */}
+                <div className="relative bg-white rounded-3xl shadow-2xl overflow-hidden">
+                  {/* Header */}
+                  <div className="bg-gradient-to-r from-orange-500 to-amber-500 text-white p-6 flex items-center justify-between">
+                    <div className="flex items-center gap-3">
+                      <ShoppingCart className="w-6 h-6" />
+                      <h3 className="text-2xl font-bold">הפקת מסמכים</h3>
+                    </div>
 
-              {/* תאריכים */}
-              <label className="block font-semibold text-slate-700 mb-2">
-                טווח תאריכים
-              </label>
-              <div className="flex gap-3 mb-6">
-                <input
-                  type="date"
-                  className="w-1/2 border-2 border-orange-200 p-3 rounded-xl focus:border-orange-500 focus:outline-none focus:ring-4 focus:ring-orange-500/20 transition-all"
-                  value={fromDatePrint}
-                  onChange={(e) => setFromDatePrint(e.target.value)}
-                />
-                <input
-                  type="date"
-                  className="w-1/2 border-2 border-orange-200 p-3 rounded-xl focus:border-orange-500 focus:outline-none focus:ring-4 focus:ring-orange-500/20 transition-all"
-                  value={toDatePrint}
-                  onChange={(e) => setToDatePrint(e.target.value)}
-                />
-              </div>
+                    <button
+                      onClick={() => setShowPrintModal(false)}
+                      className="text-white hover:bg-white/20 rounded-lg p-2 transition"
+                    >
+                      <X className="w-6 h-6" />
+                    </button>
+                  </div>
 
-              {/* כפתורי פעולה */}
-              <div className="flex flex-col gap-3">
-                {/* כפתור ZIP */}
-                <button
-                  className="w-full flex items-center justify-center gap-3 px-6 py-4 bg-gradient-to-r from-blue-600 to-blue-700 text-white font-bold rounded-xl hover:from-blue-700 hover:to-blue-800 transition-all shadow-lg shadow-blue-500/30"
-                  onClick={downloadAttachedFiles}
-                >
-                  <DownloadCloud className="w-5 h-5" />
-                  <span>📦 הורד קבצים מצורפים (ZIP)</span>
-                </button>
+                  {/* תוכן עם scroll פנימי */}
+                  <div className="max-h-[calc(85vh-8rem)] overflow-y-auto p-6">
+                    {/* ---- כאן נכנס כל התוכן המקורי שלך ---- */}
 
-                {/* כפתור PDF */}
-                <button
-                  className="w-full flex items-center justify-center gap-3 px-6 py-4 bg-gradient-to-r from-orange-600 to-orange-700 text-white font-bold rounded-xl hover:from-orange-700 hover:to-orange-800 transition-all shadow-lg shadow-orange-500/30"
-                  onClick={generateOrdersPrint}
-                >
-                  <FileText className="w-5 h-5" />
-                  <span>🖨️ הפק דוח PDF</span>
-                </button>
+                    {/* בחירת פרויקט */}
+                    <label className="block font-semibold text-slate-700 mb-2">
+                      בחירת פרויקט
+                    </label>
+                    <select
+                      className="w-full p-3 border-2 border-orange-200 rounded-xl mb-4"
+                      value={selectedProjectForPrint}
+                      onChange={(e) =>
+                        setSelectedProjectForPrint(e.target.value)
+                      }
+                    >
+                      <option value="">כל הפרויקטים</option>
+                      {projectsForPrint.map((p) => (
+                        <option key={p._id} value={p._id}>
+                          {p.name}
+                        </option>
+                      ))}
+                    </select>
 
-                {/* 🆕 כפתור ייצוא לתשלום */}
-                <button
-                  className="w-full flex items-center justify-center gap-3 px-6 py-4 bg-gradient-to-r from-emerald-600 to-emerald-700 text-white font-bold rounded-xl hover:from-emerald-700 hover:to-emerald-800 transition-all shadow-lg shadow-emerald-500/30"
-                  onClick={() => setShowPaymentExportModal(true)}
-                >
-                  <FileSpreadsheet className="w-5 h-5" />
-                  <span>💳 ייצוא לתשלום (Excel)</span>
-                </button>
+                    {/* בחירת ספק */}
+                    <label className="block font-semibold text-slate-700 mb-2">
+                      בחירת ספק
+                    </label>
+                    <select
+                      className="w-full p-3 border-2 border-orange-200 rounded-xl mb-4"
+                      value={selectedSupplierForPrint}
+                      onChange={(e) =>
+                        setSelectedSupplierForPrint(e.target.value)
+                      }
+                    >
+                      <option value="">כל הספקים</option>
+                      {suppliersForPrint.map((s) => (
+                        <option key={s._id} value={s._id}>
+                          {s.name}
+                        </option>
+                      ))}
+                    </select>
 
-                {/* כפתור ביטול */}
-                <button
-                  className="w-full px-6 py-4 bg-slate-200 text-slate-700 font-bold rounded-xl hover:bg-slate-300 transition-all"
-                  onClick={() => {
-                    setShowPrintModal(false);
-                    setSelectedProjectForPrint("");
-                    setSelectedSupplierForPrint("");
-                    setFromDatePrint("");
-                    setToDatePrint("");
-                  }}
-                >
-                  ביטול
-                </button>
+                    {/* תאריכים */}
+                    <label className="block font-semibold text-slate-700 mb-2">
+                      טווח תאריכים
+                    </label>
+                    <div className="flex gap-3 mb-6">
+                      <input
+                        type="date"
+                        className="w-1/2 p-3 border-2 rounded-xl"
+                        value={fromDatePrint}
+                        onChange={(e) => setFromDatePrint(e.target.value)}
+                      />
+                      <input
+                        type="date"
+                        className="w-1/2 p-3 border-2 rounded-xl"
+                        value={toDatePrint}
+                        onChange={(e) => setToDatePrint(e.target.value)}
+                      />
+                    </div>
+
+                    {/* כפתורים */}
+                    <div className="flex flex-col gap-3">
+                      <button
+                        className="w-full px-6 py-4 bg-blue-600 text-white rounded-xl"
+                        onClick={downloadAttachedFiles}
+                      >
+                        הורד ZIP
+                      </button>
+
+                      <button
+                        className="w-full px-6 py-4 bg-orange-600 text-white rounded-xl"
+                        onClick={generateOrdersPrint}
+                      >
+                        הפק PDF
+                      </button>
+
+                      <button
+                        className="w-full px-6 py-4 bg-emerald-600 text-white rounded-xl"
+                        onClick={() => setShowPaymentExportModal(true)}
+                      >
+                        ייצוא לתשלום (Excel)
+                      </button>
+
+                      <button
+                        className="w-full px-6 py-4 bg-gray-200 rounded-xl"
+                        onClick={() => setShowPrintModal(false)}
+                      >
+                        ביטול
+                      </button>
+                    </div>
+                  </div>
+                </div>
               </div>
             </div>
           </div>
         )}
 
         {/* 🆕 Payment Export Modal - בחירת סוג ייצוא */}
-        {showPaymentExportModal && (
-          <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-[60]">
-            <div className="relative">
-              <div className="absolute -inset-4 bg-gradient-to-r from-emerald-500 to-teal-500 rounded-3xl opacity-20 blur-2xl"></div>
+       {showPaymentExportModal && (
+  <div className="fixed inset-0 z-50">
+    {/* רקע כהה */}
+    <div
+      className="absolute inset-0 bg-black/60 backdrop-blur-sm"
+      onClick={() => setShowPaymentExportModal(false)}
+    />
 
-              <div className="relative bg-white p-8 rounded-3xl w-[500px] shadow-2xl">
-                <div className="text-center mb-8">
-                  <div className="mx-auto w-16 h-16 rounded-full bg-gradient-to-br from-emerald-500 to-teal-500 flex items-center justify-center mb-4">
-                    <FileSpreadsheet className="w-8 h-8 text-white" />
-                  </div>
-                  <h3 className="text-2xl font-bold text-slate-900 mb-2">
-                    בחר סוג ייצוא לתשלום
-                  </h3>
-                  <p className="text-slate-600 text-sm">
-                    כיצד תרצה לארגן את הנתונים?
-                  </p>
-                </div>
+    {/* מרכז המסך */}
+    <div className="fixed inset-0 flex items-center justify-center p-4 overflow-y-auto">
+      <div
+        className="relative w-full max-w-4xl mt-20"
+        onClick={(e) => e.stopPropagation()}
+      >
+        {/* אפקט זוהר */}
+        <div className="pointer-events-none absolute -inset-2 bg-gradient-to-r from-emerald-500 to-teal-500 rounded-3xl opacity-20 blur-xl"></div>
 
-                <div className="space-y-4">
-                  {/* אופציה 1: מרוכז */}
-                  <button
-                    onClick={exportPaymentBySupplier}
-                    className="w-full group p-6 rounded-2xl border-2 border-emerald-200 hover:border-emerald-500 hover:bg-emerald-50 transition-all text-right"
-                  >
-                    <div className="flex items-start gap-4">
-                      <div className="p-3 rounded-xl bg-emerald-100 group-hover:bg-emerald-200 transition-colors">
-                        <svg
-                          className="w-6 h-6 text-emerald-600"
-                          fill="none"
-                          viewBox="0 0 24 24"
-                          stroke="currentColor"
-                        >
-                          <path
-                            strokeLinecap="round"
-                            strokeLinejoin="round"
-                            strokeWidth={2}
-                            d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"
-                          />
-                        </svg>
-                      </div>
-                      <div className="flex-1">
-                        <h4 className="text-lg font-bold text-slate-900 mb-2">
-                          מרוכז לפי ספק
-                        </h4>
-                        <p className="text-sm text-slate-600 leading-relaxed">
-                          כל ספק בשורה אחת עם סכום כולל, רשימת הזמנות ופרויקטים
-                        </p>
-                        <div className="mt-3 text-xs text-emerald-600 font-medium">
-                          ✓ מומלץ להעברות בנקאיות
-                        </div>
-                      </div>
-                    </div>
-                  </button>
+        {/* קונטיינר המודל */}
+        <div className="relative bg-white rounded-3xl shadow-2xl overflow-hidden">
 
-                  {/* אופציה 2: מפורט */}
-                  <button
-                    onClick={exportPaymentDetailed}
-                    className="w-full group p-6 rounded-2xl border-2 border-blue-200 hover:border-blue-500 hover:bg-blue-50 transition-all text-right"
-                  >
-                    <div className="flex items-start gap-4">
-                      <div className="p-3 rounded-xl bg-blue-100 group-hover:bg-blue-200 transition-colors">
-                        <svg
-                          className="w-6 h-6 text-blue-600"
-                          fill="none"
-                          viewBox="0 0 24 24"
-                          stroke="currentColor"
-                        >
-                          <path
-                            strokeLinecap="round"
-                            strokeLinejoin="round"
-                            strokeWidth={2}
-                            d="M4 6h16M4 10h16M4 14h16M4 18h16"
-                          />
-                        </svg>
-                      </div>
-                      <div className="flex-1">
-                        <h4 className="text-lg font-bold text-slate-900 mb-2">
-                          מפורט לפי הזמנה
-                        </h4>
-                        <p className="text-sm text-slate-600 leading-relaxed">
-                          כל הזמנה בשורה נפרדת עם כל הפרטים המלאים
-                        </p>
-                        <div className="mt-3 text-xs text-blue-600 font-medium">
-                          ✓ מומלץ למעקב מפורט
-                        </div>
-                      </div>
-                    </div>
-                  </button>
-                </div>
-
-                {/* כפתור ביטול */}
-                <button
-                  onClick={() => setShowPaymentExportModal(false)}
-                  className="w-full mt-6 px-6 py-3 bg-slate-200 text-slate-700 font-bold rounded-xl hover:bg-slate-300 transition-all"
-                >
-                  ביטול
-                </button>
+          {/* HEADER */}
+          <div className="bg-gradient-to-r from-emerald-600 to-teal-600 text-white p-6 flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <div className="bg-white/20 p-2 rounded-lg">
+                <FileSpreadsheet className="w-7 h-7 text-white" />
               </div>
+              <h3 className="text-2xl font-bold">בחר סוג ייצוא לתשלום</h3>
             </div>
+
+            <button
+              onClick={() => setShowPaymentExportModal(false)}
+              className="text-white hover:bg-white/20 rounded-lg p-2 transition"
+            >
+              <X className="w-6 h-6" />
+            </button>
           </div>
-        )}
+
+          {/* גוף המודל + scroll פנימי */}
+          <div className="max-h-[calc(85vh-8rem)] overflow-y-auto p-8">
+
+            {/* מרכז עליון */}
+            <div className="text-center mb-10">
+              <div className="mx-auto w-20 h-20 rounded-full bg-gradient-to-br from-emerald-500 to-teal-500 flex items-center justify-center mb-4">
+                <FileSpreadsheet className="w-10 h-10 text-white" />
+              </div>
+              <p className="text-slate-600 text-md">
+                כיצד תרצה לארגן את הנתונים?
+              </p>
+            </div>
+
+            {/* אופציות בחירה */}
+            <div className="space-y-6">
+
+              {/* אופציה 1 */}
+              <button
+                onClick={exportPaymentBySupplier}
+                className="w-full group p-6 rounded-2xl border-2 border-emerald-200 hover:border-emerald-500 hover:bg-emerald-50 transition-all text-right"
+              >
+                <div className="flex items-start gap-4">
+                  <div className="p-4 rounded-xl bg-emerald-100 group-hover:bg-emerald-200 transition">
+                    <svg
+                      className="w-7 h-7 text-emerald-600"
+                      fill="none"
+                      viewBox="0 0 24 24"
+                      stroke="currentColor"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={2}
+                        d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"
+                      />
+                    </svg>
+                  </div>
+
+                  <div className="flex-1">
+                    <h4 className="text-xl font-bold text-slate-900 mb-2">
+                      מרוכז לפי ספק
+                    </h4>
+                    <p className="text-sm text-slate-600 leading-relaxed">
+                      כל ספק בשורה אחת עם סכום כולל, רשימת הזמנות ופרויקטים.
+                    </p>
+                    <div className="mt-3 text-xs text-emerald-600 font-medium">
+                      ✓ מתאים להעברות בנקאיות
+                    </div>
+                  </div>
+                </div>
+              </button>
+
+              {/* אופציה 2 */}
+              <button
+                onClick={exportPaymentDetailed}
+                className="w-full group p-6 rounded-2xl border-2 border-blue-200 hover:border-blue-500 hover:bg-blue-50 transition-all text-right"
+              >
+                <div className="flex items-start gap-4">
+                  <div className="p-4 rounded-xl bg-blue-100 group-hover:bg-blue-200 transition">
+                    <svg
+                      className="w-7 h-7 text-blue-600"
+                      fill="none"
+                      viewBox="0 0 24 24"
+                      stroke="currentColor"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={2}
+                        d="M4 6h16M4 10h16M4 14h16M4 18h16"
+                      />
+                    </svg>
+                  </div>
+
+                  <div className="flex-1">
+                    <h4 className="text-xl font-bold text-slate-900 mb-2">
+                      מפורט לפי הזמנה
+                    </h4>
+                    <p className="text-sm text-slate-600 leading-relaxed">
+                      כל הזמנה בשורה נפרדת עם כל הפרטים המלאים.
+                    </p>
+                    <div className="mt-3 text-xs text-blue-600 font-medium">
+                      ✓ מעולה למעקב מלא
+                    </div>
+                  </div>
+                </div>
+              </button>
+
+            </div>
+
+            {/* כפתור ביטול */}
+            <button
+              onClick={() => setShowPaymentExportModal(false)}
+              className="w-full mt-10 px-6 py-4 bg-slate-200 text-slate-700 font-bold rounded-xl hover:bg-slate-300 transition"
+            >
+              ביטול
+            </button>
+
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+)}
+
 
         {/* Report Modal */}
         {showReportModal && (
@@ -1999,10 +2066,11 @@ const OrdersPage = () => {
                         {availableColumns.map((column) => (
                           <label
                             key={column.key}
-                            className={`flex items-center gap-3 p-3 rounded-xl border-2 cursor-pointer transition-all ${exportColumns[column.key]
-                              ? "bg-gradient-to-br from-orange-50 to-amber-50 border-orange-400"
-                              : "bg-gray-50 border-gray-200 hover:border-gray-300"
-                              }`}
+                            className={`flex items-center gap-3 p-3 rounded-xl border-2 cursor-pointer transition-all ${
+                              exportColumns[column.key]
+                                ? "bg-gradient-to-br from-orange-50 to-amber-50 border-orange-400"
+                                : "bg-gray-50 border-gray-200 hover:border-gray-300"
+                            }`}
                           >
                             <input
                               type="checkbox"
@@ -2011,10 +2079,11 @@ const OrdersPage = () => {
                               className="w-5 h-5 text-orange-600 rounded focus:ring-2 focus:ring-orange-500"
                             />
                             <span
-                              className={`text-sm font-medium ${exportColumns[column.key]
-                                ? "text-gray-900"
-                                : "text-gray-600"
-                                }`}
+                              className={`text-sm font-medium ${
+                                exportColumns[column.key]
+                                  ? "text-gray-900"
+                                  : "text-gray-600"
+                              }`}
                             >
                               {column.label}
                             </span>
