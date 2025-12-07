@@ -77,11 +77,11 @@ const invoiceSchema = new mongoose.Schema({
   },
   createdByName: { type: String },
 });
-
 invoiceSchema.pre('deleteOne', { document: true, query: false }, async function (next) {
   try {
     if (this.files?.length) {
       for (const file of this.files) {
+        // תמיד קודם ניקח את מה שיש בבסיס הנתונים
         let publicId = file.publicId || extractPublicIdFromUrl(file.url);
 
         if (publicId) {
@@ -91,12 +91,21 @@ invoiceSchema.pre('deleteOne', { document: true, query: false }, async function 
         }
       }
     }
+
     next();
   } catch (err) {
     console.error('❌ שגיאה במחיקת קובץ:', err);
     next(err);
   }
 });
+
+function extractPublicIdFromUrl(url) {
+  if (!url) return null;
+  const matches = url.match(/upload\/(.+?)(\.[a-zA-Z0-9]+)?$/);
+  return matches ? matches[1] : null;
+}
+
+
 
 const Invoice = mongoose.model("Invoice", invoiceSchema);
 export default Invoice;

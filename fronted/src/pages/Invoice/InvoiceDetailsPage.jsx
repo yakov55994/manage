@@ -137,7 +137,6 @@ const InvoiceDetailsPage = () => {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-orange-50 via-amber-50 to-yellow-50 p-6">
-
       {/* HEADER */}
       <div className="max-w-5xl mx-auto mb-10 bg-white/80 shadow-xl rounded-3xl p-8 border border-orange-200">
         <div className="flex flex-col items-center">
@@ -181,25 +180,36 @@ const InvoiceDetailsPage = () => {
 
       {/* DETAILS */}
       <div className="max-w-5xl mx-auto bg-white/90 shadow-lg rounded-3xl p-8 border border-orange-100">
-
         {/* סכום כולל */}
         <div className="mb-8">
           <h2 className="text-2xl font-bold flex items-center gap-2">
             <DollarSign className="w-6 h-6 text-green-600" />
             סכום כולל:{" "}
             <span className="text-green-700">
-              {invoice.totalAmount.toLocaleString()} ₪
+              {Number(invoice?.totalAmount || 0).toLocaleString()} ₪
             </span>
           </h2>
         </div>
 
         {/* שדות כלליים */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
-          <DetailCard label="ספק" icon={<User />} value={invoice.invitingName} />
+          <DetailCard
+            label="ספק"
+            icon={<User />}
+            value={invoice.invitingName}
+          />
 
-          <DetailCard label="תאריך יצירה" icon={<Calendar />} value={formatDate(invoice.createdAt)} />
+          <DetailCard
+            label="תאריך יצירה"
+            icon={<Calendar />}
+            value={formatDate(invoice.createdAt)}
+          />
 
-          <DetailCard label="סוג מסמך" icon={<FileText />} value={invoice.documentType} />
+          <DetailCard
+            label="סוג מסמך"
+            icon={<FileText />}
+            value={invoice.documentType}
+          />
 
           <DetailCard
             label="סטטוס תשלום"
@@ -220,14 +230,22 @@ const InvoiceDetailsPage = () => {
               invoice.paymentMethod === "bank_transfer"
                 ? "העברה בנקאית"
                 : invoice.paymentMethod === "check"
-                  ? "צ'ק"
-                  : "—"
+                ? "צ'ק"
+                : "—"
             }
           />
 
-          <DetailCard label="פירוט" icon={<FileText />} value={invoice.detail || "—"} />
+          <DetailCard
+            label="פירוט"
+            icon={<FileText />}
+            value={invoice.detail || "—"}
+          />
 
-          <DetailCard label="נוצר ע״י" icon={<User />} value={invoice.createdByName || "—"} />
+          <DetailCard
+            label="נוצר ע״י"
+            icon={<User />}
+            value={invoice.createdByName || "—"}
+          />
         </div>
 
         {/* PROJECTS */}
@@ -278,7 +296,9 @@ const InvoiceDetailsPage = () => {
       {confirmOpen && (
         <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center">
           <div className="bg-white p-8 rounded-2xl shadow-xl max-w-md w-full">
-            <h3 className="text-2xl font-bold text-center mb-4">למחוק חשבונית?</h3>
+            <h3 className="text-2xl font-bold text-center mb-4">
+              למחוק חשבונית?
+            </h3>
             <p className="text-center text-slate-700 mb-6">
               פעולה זו בלתי הפיכה.
             </p>
@@ -301,7 +321,6 @@ const InvoiceDetailsPage = () => {
           </div>
         </div>
       )}
-
     </div>
   );
 };

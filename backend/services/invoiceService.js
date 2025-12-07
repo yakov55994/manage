@@ -15,6 +15,9 @@ export const recalculateRemainingBudget = async (projectId) => {
   const project = await Project.findById(projectId);
   if (!project) return;
 
+  // הגנות חובה:
+  const budget = Number(project.budget || 0);
+
   const invoices = await Invoice.find({ "projects.projectId": projectId });
 
   let totalSpent = 0;
@@ -23,14 +26,25 @@ export const recalculateRemainingBudget = async (projectId) => {
     const part = inv.projects.find(
       (p) => p.projectId.toString() === projectId.toString()
     );
-    if (part) totalSpent += Number(part.sum);
+
+    if (part) {
+      const sum = Number(part.sum || 0);
+      if (!isNaN(sum)) totalSpent += sum;
+    }
   }
 
-  project.remainingBudget = Number(project.budget) - totalSpent;
+  project.remainingBudget = budget - totalSpent;
+
+  // שלא יהיה NaN לעולם:
+  if (isNaN(project.remainingBudget)) {
+    project.remainingBudget = budget;
+  }
+
   await project.save();
 
   return project;
 };
+
 
 // ===============================================
 // SEARCH
