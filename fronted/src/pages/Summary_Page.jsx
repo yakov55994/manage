@@ -222,9 +222,11 @@ const SummaryPage = () => {
   const formatCurrency = (num) => {
     return (
       <span dir="ltr" className={num < 0 ? "text-red-600" : "text-green-600"}>
-        {num < 0
-          ? `₪ - ${Math.abs(num).toLocaleString("he-IL")}`
-          : `₪ ${num.toLocaleString("he-IL")}`}
+        {typeof num === "number"
+          ? num < 0
+            ? `₪ - ${Math.abs(num).toLocaleString("he-IL")}`
+            : `₪ ${num.toLocaleString("he-IL")}`
+          : "₪ 0"}
       </span>
     );
   };
