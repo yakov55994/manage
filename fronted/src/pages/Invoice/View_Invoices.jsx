@@ -1535,7 +1535,6 @@ const InvoicesPage = () => {
   const exportPaymentBySupplier = () => {
     let filtered = [...allInvoices];
 
-    // החל את אותם פילטרים כמו בהדפסה
     if (selectedProjectForPrint) {
       filtered = filtered.filter(
         (inv) =>
@@ -1566,7 +1565,7 @@ const InvoicesPage = () => {
       });
     }
 
-    // ✅ סנן רק חשבוניות ששולמו
+    // רק חשבוניות לא משולמות
     const unpaidInvoices = filtered.filter((inv) => inv.paid !== "כן");
 
     if (unpaidInvoices.length === 0) {
@@ -1576,7 +1575,7 @@ const InvoicesPage = () => {
       return;
     }
 
-    // קבץ לפי ספק
+    // קיבוץ לפי ספק
     const groupedBySupplier = {};
 
     unpaidInvoices.forEach((invoice) => {
@@ -1585,7 +1584,7 @@ const InvoicesPage = () => {
           ? invoice.supplierId
           : null;
 
-      if (!supplier) return; // דלג על חשבוניות ללא ספק
+      if (!supplier) return;
 
       const supplierId = supplier._id;
 
@@ -1605,10 +1604,13 @@ const InvoicesPage = () => {
       groupedBySupplier[supplierId].invoiceNumbers.push(
         invoice.invoiceNumber || ""
       );
-      groupedBySupplier[supplierId].projects.add(invoice.projectName || "");
+
+      // 🟢 כאן היה הבאג — עכשיו מתוקן:
+      groupedBySupplier[supplierId].projects.add(
+        invoice.projects?.map((p) => p.projectName).join(", ") || ""
+      );
     });
 
-    // המר לאקסל
     const excelData = Object.values(groupedBySupplier).map((group) => ({
       "שם ספק": group.supplierName,
       "שם בנק": group.bankName,
@@ -1621,15 +1623,14 @@ const InvoicesPage = () => {
 
     const worksheet = XLSX.utils.json_to_sheet(excelData);
 
-    // הגדר רוחב עמודות
     worksheet["!cols"] = [
-      { wpx: 150 }, // שם ספק
-      { wpx: 120 }, // שם בנק
-      { wpx: 100 }, // סניף
-      { wpx: 120 }, // חשבון
-      { wpx: 100 }, // סכום
-      { wpx: 200 }, // חשבוניות
-      { wpx: 200 }, // פרויקטים
+      { wpx: 150 },
+      { wpx: 120 },
+      { wpx: 100 },
+      { wpx: 120 },
+      { wpx: 100 },
+      { wpx: 200 },
+      { wpx: 200 },
     ];
 
     worksheet["!rtl"] = true;
@@ -1656,7 +1657,6 @@ const InvoicesPage = () => {
   const exportPaymentDetailed = () => {
     let filtered = [...allInvoices];
 
-    // החל פילטרים
     if (selectedProjectForPrint) {
       filtered = filtered.filter(
         (inv) =>
@@ -1687,7 +1687,6 @@ const InvoicesPage = () => {
       });
     }
 
-    // ✅ סנן רק חשבוניות שטרם שולמו
     const unpaidInvoices = filtered.filter((inv) => inv.paid !== "כן");
 
     if (unpaidInvoices.length === 0) {
@@ -1697,7 +1696,6 @@ const InvoicesPage = () => {
       return;
     }
 
-    // צור Excel מפורט
     const excelData = unpaidInvoices.map((invoice) => {
       const supplier =
         invoice.supplierId && typeof invoice.supplierId === "object"
@@ -1707,8 +1705,11 @@ const InvoicesPage = () => {
       return {
         "שם ספק": supplier?.name || "לא זמין",
         "מספר חשבונית": invoice.invoiceNumber || "",
+
+        // 🟢 כאן הבאג תוקן — משתמשים ב־invoice.projects
         "שם פרויקט":
           invoice.projects?.map((p) => p.projectName).join(", ") || "",
+
         סכום: invoice.totalAmount || 0,
         "תאריך חשבונית": formatDate(invoice.createdAt),
         "שם בנק": supplier?.bankDetails?.bankName || "לא זמין",
@@ -1719,16 +1720,15 @@ const InvoicesPage = () => {
 
     const worksheet = XLSX.utils.json_to_sheet(excelData);
 
-    // הגדר רוחב עמודות
     worksheet["!cols"] = [
-      { wpx: 150 }, // שם ספק
-      { wpx: 120 }, // מספר חשבונית
-      { wpx: 150 }, // פרויקט
-      { wpx: 100 }, // סכום
-      { wpx: 120 }, // תאריך
-      { wpx: 120 }, // בנק
-      { wpx: 100 }, // סניף
-      { wpx: 120 }, // חשבון
+      { wpx: 150 },
+      { wpx: 120 },
+      { wpx: 150 },
+      { wpx: 100 },
+      { wpx: 120 },
+      { wpx: 120 },
+      { wpx: 100 },
+      { wpx: 120 },
     ];
 
     worksheet["!rtl"] = true;
