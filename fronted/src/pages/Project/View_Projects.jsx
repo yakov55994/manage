@@ -167,43 +167,39 @@ const ProjectsPage = ({ initialProjects = [] }) => {
               <h2 class="files-title">📎 קבצים מצורפים (${allFiles.length})</h2>
               <div class="files-grid">
                 ${allFiles
-                  .map((file, idx) => {
-                    const isImage = file.type?.startsWith("image/");
-                    return `
+              .map((file, idx) => {
+                const isImage = file.type?.startsWith("image/");
+                return `
                     <div class="file-card">
                       <div class="file-header">
                         <span class="file-number">#${idx + 1}</span>
-                        <span class="file-badge">${file.docType} ${
-                      file.docNumber
-                    }</span>
+                        <span class="file-badge">${file.docType} ${file.docNumber
+                  }</span>
                       </div>
                       
-                      ${
-                        isImage
-                          ? `
+                      ${isImage
+                    ? `
                         <img src="${file.url}" alt="${file.name}" class="file-image" />
                       `
-                          : `
+                    : `
                         <div class="file-placeholder">
                           <span class="file-icon">📄</span>
-                          <span class="file-type">${
-                            file.type === "application/pdf" ? "PDF" : "קובץ"
-                          }</span>
+                          <span class="file-type">${file.type === "application/pdf" ? "PDF" : "קובץ"
+                    }</span>
                         </div>
                       `
-                      }
+                  }
                       
                       <div class="file-info">
                         <p class="file-name">${file.name}</p>
                         <p class="file-project">${file.project || "-"}</p>
-                        <a href="${
-                          file.url
-                        }" target="_blank" class="file-link">פתח קובץ ↗</a>
+                        <a href="${file.url
+                  }" target="_blank" class="file-link">פתח קובץ ↗</a>
                       </div>
                     </div>
                   `;
-                  })
-                  .join("")}
+              })
+              .join("")}
               </div>
             </div>
           `;
@@ -511,50 +507,45 @@ const ProjectsPage = ({ initialProjects = [] }) => {
             </div>
             <h1>📋 דוח מסמכים</h1>
             <div class="date">תאריך הפקה: ${new Date().toLocaleDateString(
-              "he-IL",
-              {
-                year: "numeric",
-                month: "long",
-                day: "numeric",
-                hour: "2-digit",
-                minute: "2-digit",
-              }
-            )}</div>
+        "he-IL",
+        {
+          year: "numeric",
+          month: "long",
+          day: "numeric",
+          hour: "2-digit",
+          minute: "2-digit",
+        }
+      )}</div>
           </div>
 
-          ${
-            selectedProject || selectedSupplier || fromDate || toDate
-              ? `
+          ${selectedProject || selectedSupplier || fromDate || toDate
+          ? `
           <div class="filters">
             <h3>🔍 פילטרים</h3>
-            ${
-              selectedProject
-                ? `<p><strong>פרויקט:</strong> ${selectedProject}</p>`
-                : ""
-            }
-            ${
-              selectedSupplier
-                ? `<p><strong>ספק:</strong> ${selectedSupplier}</p>`
-                : ""
-            }
-            ${
+            ${selectedProject
+            ? `<p><strong>פרויקט:</strong> ${selectedProject}</p>`
+            : ""
+          }
+            ${selectedSupplier
+            ? `<p><strong>ספק:</strong> ${selectedSupplier}</p>`
+            : ""
+          }
+            ${fromDate
+            ? `<p><strong>מתאריך:</strong> ${new Date(
               fromDate
-                ? `<p><strong>מתאריך:</strong> ${new Date(
-                    fromDate
-                  ).toLocaleDateString("he-IL")}</p>`
-                : ""
-            }
-            ${
+            ).toLocaleDateString("he-IL")}</p>`
+            : ""
+          }
+            ${toDate
+            ? `<p><strong>עד תאריך:</strong> ${new Date(
               toDate
-                ? `<p><strong>עד תאריך:</strong> ${new Date(
-                    toDate
-                  ).toLocaleDateString("he-IL")}</p>`
-                : ""
-            }
+            ).toLocaleDateString("he-IL")}</p>`
+            : ""
+          }
           </div>
           `
-              : ""
-          }
+          : ""
+        }
 
           <table>
             <thead>
@@ -570,8 +561,8 @@ const ProjectsPage = ({ initialProjects = [] }) => {
             </thead>
             <tbody>
               ${docs
-                .map(
-                  (d, idx) => `
+          .map(
+            (d, idx) => `
                 <tr>
                   <td>${idx + 1}</td>
                   <td>${d.type}</td>
@@ -581,8 +572,8 @@ const ProjectsPage = ({ initialProjects = [] }) => {
                   <td>${new Date(d.date).toLocaleDateString("he-IL")}</td>
                   <td>₪${(d.totalAmount || 0).toLocaleString("he-IL")}</td>
                 </tr>`
-                )
-                .join("")}
+          )
+          .join("")}
               <tr class="total-row">
                 <td colspan="6" style="text-align: left;">סה״כ כולל:</td>
                 <td>₪${totalSum.toLocaleString("he-IL")}</td>
@@ -594,8 +585,8 @@ const ProjectsPage = ({ initialProjects = [] }) => {
 
           <div class="footer">
             <p>מסמך זה הופק אוטומטית ממערכת ניהולון ⚙ | נכון לתאריך ${new Date().toLocaleDateString(
-              "he-IL"
-            )}</p>
+            "he-IL"
+          )}</p>
           </div>
 
           <script>
@@ -776,19 +767,18 @@ const ProjectsPage = ({ initialProjects = [] }) => {
           const extension = file.name.includes(".")
             ? file.name.split(".").pop()
             : file.type === "application/pdf"
-            ? "pdf"
-            : file.type === "image/png"
-            ? "png"
-            : file.type === "image/jpeg"
-            ? "jpg"
-            : "file";
+              ? "pdf"
+              : file.type === "image/png"
+                ? "png"
+                : file.type === "image/jpeg"
+                  ? "jpg"
+                  : "file";
 
           const safeProjectName = file.project.replace(/[^א-תa-zA-Z0-9]/g, "_");
           const safeDocType = file.docType.replace(/[^א-תa-zA-Z0-9]/g, "_");
           const safeDocNumber = file.docNumber ? `_${file.docNumber}` : "";
-          const fileName = `${
-            index + 1
-          }_${safeProjectName}_${safeDocType}${safeDocNumber}.${extension}`;
+          const fileName = `${index + 1
+            }_${safeProjectName}_${safeDocType}${safeDocNumber}.${extension}`;
 
           // הוספת הקובץ ל-ZIP
           zip.file(fileName, blob);
@@ -811,12 +801,11 @@ const ProjectsPage = ({ initialProjects = [] }) => {
       // יצירת קובץ ZIP והורדה
       const zipBlob = await zip.generateAsync({ type: "blob" });
 
-      const zipFileName = `קבצים_${
-        selectedProject
+      const zipFileName = `קבצים_${selectedProject
           ? projectsToProcess[0]?.name.replace(/[^א-תa-zA-Z0-9]/g, "_") ||
-            "פרויקט"
+          "פרויקט"
           : "כל_הפרויקטים"
-      }_${new Date().toLocaleDateString("he-IL").replace(/\//g, "-")}.zip`;
+        }_${new Date().toLocaleDateString("he-IL").replace(/\//g, "-")}.zip`;
 
       saveAs(zipBlob, zipFileName);
 
@@ -912,7 +901,7 @@ const ProjectsPage = ({ initialProjects = [] }) => {
           (project) =>
             project.remainingBudget !== undefined &&
             project.remainingBudget >=
-              parseInt(advancedFilters.remainingBudgetMin)
+            parseInt(advancedFilters.remainingBudgetMin)
         );
       }
       if (advancedFilters.remainingBudgetMax) {
@@ -920,7 +909,7 @@ const ProjectsPage = ({ initialProjects = [] }) => {
           (project) =>
             project.remainingBudget !== undefined &&
             project.remainingBudget <=
-              parseInt(advancedFilters.remainingBudgetMax)
+            parseInt(advancedFilters.remainingBudgetMax)
         );
       }
       if (advancedFilters.projectName) {
@@ -1368,8 +1357,8 @@ const ProjectsPage = ({ initialProjects = [] }) => {
         const data = Array.isArray(response.data?.data)
           ? response.data.data
           : Array.isArray(response.data)
-          ? response.data
-          : [];
+            ? response.data
+            : [];
 
         // אם עדיין טוען את המשתמש – אל תסנן כלום, תציג את כל הפרויקטים זמנית
         if (authLoading) {
@@ -2028,11 +2017,10 @@ const ProjectsPage = ({ initialProjects = [] }) => {
                         {availableColumns.map((column) => (
                           <label
                             key={column.key}
-                            className={`flex items-center gap-3 p-3 rounded-xl border-2 cursor-pointer transition-all ${
-                              exportColumns[column.key]
+                            className={`flex items-center gap-3 p-3 rounded-xl border-2 cursor-pointer transition-all ${exportColumns[column.key]
                                 ? "bg-gradient-to-br from-orange-50 to-amber-50 border-orange-400"
                                 : "bg-gray-50 border-gray-200 hover:border-gray-300"
-                            }`}
+                              }`}
                           >
                             <input
                               type="checkbox"
@@ -2041,11 +2029,10 @@ const ProjectsPage = ({ initialProjects = [] }) => {
                               className="w-5 h-5 text-orange-600 rounded focus:ring-2 focus:ring-orange-500"
                             />
                             <span
-                              className={`text-sm font-medium ${
-                                exportColumns[column.key]
+                              className={`text-sm font-medium ${exportColumns[column.key]
                                   ? "text-gray-900"
                                   : "text-gray-600"
-                              }`}
+                                }`}
                             >
                               {column.label}
                             </span>

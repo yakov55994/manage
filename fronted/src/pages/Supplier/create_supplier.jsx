@@ -40,8 +40,10 @@ const CreateSupplier = () => {
 
   const location = useLocation();
   const params = new URLSearchParams(location.search);
-  const returnTo = params.get("returnTo") || "/suppliers";
-
+  const rawReturnTo = params.get("returnTo");
+  const returnTo = rawReturnTo
+    ? (rawReturnTo.startsWith("/") ? rawReturnTo : `/${rawReturnTo}`)
+    : "/suppliers";
   useEffect(() => {
     setBanks(banksData);
   }, []);
@@ -100,13 +102,13 @@ const CreateSupplier = () => {
   };
 
   const getFieldName = (field) =>
-    ({
-      name: "שם הספק",
-      business_tax: "מספר עוסק",
-      address: "כתובת",
-      phone: "טלפון",
-      email: "אימייל",
-    }[field] || field);
+  ({
+    name: "שם הספק",
+    business_tax: "מספר עוסק",
+    address: "כתובת",
+    phone: "טלפון",
+    email: "אימייל",
+  }[field] || field);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
