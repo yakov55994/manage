@@ -36,7 +36,7 @@ const invoiceSchema = new mongoose.Schema({
 
   createdAt: { type: Date, required: true },
   status: { type: String, enum: ['הוגש', 'לא הוגש', 'בעיבוד'], required: true },
-  invitingName: { type: String, required: true },
+  invitingName: { type: String, required: false },
   detail: { type: String },
 
   paid: {
@@ -69,6 +69,15 @@ const invoiceSchema = new mongoose.Schema({
     type: String,
     enum: ["", "check", "bank_transfer"],
     default: "",
+  },
+  checkNumber: {
+    type: String,
+    default: null
+  },
+
+  checkDate: {
+    type: Date,
+    default: null
   },
 
   createdBy: {

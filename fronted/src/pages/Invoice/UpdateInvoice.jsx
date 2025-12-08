@@ -38,6 +38,9 @@ const InvoiceEditPage = () => {
     paid: "לא",
     paymentDate: "",
     paymentMethod: "",
+    checkNumber: "", // ✅ הוסף
+    checkDate: "",
+    files: [],
   });
 
   const { id } = useParams();
@@ -80,11 +83,18 @@ const InvoiceEditPage = () => {
     try {
       const { data } = await api.get(`/invoices/${id}`);
       const invoice = data.data;
+      // -------- MAIN INVOICE FILES ----------
+      const invoiceFiles = await ensureFilesHydrated(invoice.files || []);
+      setGlobalFields((prev) => ({
+        ...prev,
+        files: invoiceFiles,
+      }));
 
       if (!invoice) return;
 
       // -------- GLOBAL FIELDS ----------
-      setGlobalFields({
+      setGlobalFields((prev) => ({
+        ...prev,
         invoiceNumber: invoice.invoiceNumber || "",
         invitingName: invoice.invitingName || "",
         supplierId: invoice.supplierId?._id || invoice.supplierId || "",
@@ -98,7 +108,11 @@ const InvoiceEditPage = () => {
           ? invoice.paymentDate.split("T")[0]
           : "",
         paymentMethod: invoice.paymentMethod || "",
-      });
+        checkNumber: invoice.checkNumber || "", // ✅ הוסף
+        checkDate: invoice.checkDate // ✅ הוסף
+          ? invoice.checkDate.split("T")[0]
+          : "",
+      }));
 
       // -------- SELECTED PROJECTS ----------
       const selected = invoice.projects.map((p) => ({
@@ -226,6 +240,13 @@ const InvoiceEditPage = () => {
     if (!globalFields.documentType) return toast.error("יש לבחור סוג מסמך");
     if (!rows.length) return toast.error("בחר לפחות פרויקט אחד");
 
+    if (
+      globalFields.paid === "כן" &&
+      globalFields.paymentMethod === "check" &&
+      !globalFields.checkNumber
+    ) {
+      return toast.error("יש למלא מספר צ'ק");
+    }
     for (let i = 0; i < rows.length; i++) {
       if (!rows[i].sum || rows[i].sum <= 0) {
         return toast.error(`סכום לא תקין בשורה ${i + 1}`);
@@ -274,8 +295,15 @@ const InvoiceEditPage = () => {
         ...globalFields,
         paymentMethod:
           globalFields.paid === "כן" ? globalFields.paymentMethod : "",
-        paymentDate:
-          globalFields.paid === "כן" ? globalFields.paymentDate : "",
+        paymentDate: globalFields.paid === "כן" ? globalFields.paymentDate : "",
+        checkNumber:
+          globalFields.paid === "כן" && globalFields.paymentMethod === "check"
+            ? globalFields.checkNumber
+            : null, // ✅ הוסף
+        checkDate:
+          globalFields.paid === "כן" && globalFields.paymentMethod === "check"
+            ? globalFields.checkDate
+            : null, // ✅ הוסף
         projects: finalProjects,
       };
 
@@ -307,7 +335,6 @@ const InvoiceEditPage = () => {
   return (
     <div className="min-h-screen bg-orange-50 py-10">
       <div className="container max-w-5xl mx-auto">
-
         {/* TITLE */}
         <div className="flex justify-center items-center gap-3 mb-8">
           <ClipboardList className="w-10 h-10 text-orange-600" />
@@ -344,10 +371,11 @@ const InvoiceEditPage = () => {
                 return (
                   <div
                     key={p._id}
-                    className={`p-3 border rounded-xl cursor-pointer ${isSelected
+                    className={`p-3 border rounded-xl cursor-pointer ${
+                      isSelected
                         ? "bg-orange-100 border-orange-300"
                         : "hover:bg-orange-50"
-                      }`}
+                    }`}
                     onClick={() => toggleProject(p)}
                   >
                     {p.name}
@@ -369,9 +397,7 @@ const InvoiceEditPage = () => {
             <input
               type="text"
               value={globalFields.invoiceNumber}
-              onChange={(e) =>
-                updateGlobal("invoiceNumber", e.target.value)
-              }
+              onChange={(e) => updateGlobal("invoiceNumber", e.target.value)}
               className="w-full p-3 border rounded-xl"
             />
           </div>
@@ -387,18 +413,14 @@ const InvoiceEditPage = () => {
             <label className="font-bold mb-1 block">סוג מסמך</label>
             <select
               value={globalFields.documentType}
-              onChange={(e) =>
-                updateGlobal("documentType", e.target.value)
-              }
+              onChange={(e) => updateGlobal("documentType", e.target.value)}
               className="w-full p-3 border rounded-xl"
             >
               <option value="">בחר...</option>
               <option value="ח. עסקה">ח. עסקה</option>
               <option value="ה. עבודה">ה. עבודה</option>
               <option value="ד. תשלום">ד. תשלום</option>
-              <option value="חשבונית מס / קבלה">
-                חשבונית מס / קבלה
-              </option>
+              <option value="חשבונית מס / קבלה">חשבונית מס / קבלה</option>
             </select>
           </div>
 
@@ -432,21 +454,57 @@ const InvoiceEditPage = () => {
                   />
 
                   <div>
-                    <label className="font-bold mb-1 block">
-                      צורת תשלום
-                    </label>
+                    <label className="font-bold mb-1 block">צורת תשלום</label>
                     <select
                       value={globalFields.paymentMethod}
-                      onChange={(e) =>
-                        updateGlobal("paymentMethod", e.target.value)
-                      }
+                      onChange={(e) => {
+                        const method = e.target.value;
+                        updateGlobal("paymentMethod", method);
+
+                        // ✅ אם לא בחרו צ'ק - נקה את שדות הצ'ק
+                        if (method !== "check") {
+                          updateGlobal("checkNumber", "");
+                          updateGlobal("checkDate", "");
+                        }
+                      }}
                       className="w-full p-3 border rounded-xl"
                     >
                       <option value="">בחר...</option>
                       <option value="bank_transfer">העברה בנקאית</option>
-                      <option value="check">צ׳ק</option>
+                      <option value="check">צ'ק</option>
                     </select>
                   </div>
+
+                  {/* ✅ שדות צ'ק - מופיעים רק אם בחרו צ'ק */}
+                  {globalFields.paymentMethod === "check" && (
+                    <>
+                      <div>
+                        <label className="font-bold mb-1 block">
+                          מספר צ'ק <span className="text-red-500">*</span>
+                        </label>
+                        <input
+                          type="text"
+                          value={globalFields.checkNumber}
+                          onChange={(e) =>
+                            updateGlobal("checkNumber", e.target.value)
+                          }
+                          placeholder="הזן מספר צ'ק"
+                          className="w-full p-3 border rounded-xl"
+                        />
+                      </div>
+
+                      <div>
+                        <label className="font-bold mb-1 block">
+                          תאריך פירעון צ'ק (אופציונלי)
+                        </label>
+                        <DateField
+                          type="date"
+                          value={globalFields.checkDate}
+                          onChange={(v) => updateGlobal("checkDate", v)}
+                        />
+                      </div>
+                    </>
+                  )}
                 </>
               )}
             </>
@@ -459,6 +517,45 @@ const InvoiceEditPage = () => {
               onChange={(e) => updateGlobal("detail", e.target.value)}
               className="w-full p-3 border rounded-xl min-h-[100px]"
             />
+          </div>
+
+          <div className="bg-white shadow-xl p-6 mb-10">
+            <FileUploader
+              folder="invoices"
+              onUploadSuccess={(files) =>
+                setGlobalFields((prev) => ({
+                  ...prev,
+                  files: [...prev.files, ...files],
+                }))
+              }
+            />
+
+            {globalFields.files?.length > 0 &&
+              globalFields.files.map((file, index) => (
+                <div
+                  key={index}
+                  className="flex justify-between items-center mt-2 p-2 bg-white border rounded-xl"
+                >
+                  <a
+                    href={file.url}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="truncate"
+                  >
+                    {file.name}
+                  </a>
+                  <button
+                    className="text-red-600"
+                    onClick={() => {
+                      const copy = [...globalFields.files];
+                      copy.splice(index, 1);
+                      setGlobalFields((prev) => ({ ...prev, files: copy }));
+                    }}
+                  >
+                    הסר
+                  </button>
+                </div>
+              ))}
           </div>
         </div>
 

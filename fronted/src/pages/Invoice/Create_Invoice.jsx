@@ -55,6 +55,8 @@ const CreateInvoice = () => {
       paid: "לא",
       paymentDate: "",
       paymentMethod: "",
+      checkNumber: "",
+      checkDate: "",
       files: [],
     }
   );
@@ -177,8 +179,14 @@ const CreateInvoice = () => {
     if (!form.documentType) return toast.error("יש לבחור סוג מסמך");
     if (!form.createdAt) return toast.error("יש לבחור תאריך יצירה");
     if (rows.length === 0) return toast.error("בחר לפחות פרויקט אחד");
-    if (!form.invitingName.trim()) return toast.error("שם מזמין חובה");
 
+    if (
+      form.paid === "כן" &&
+      form.paymentMethod === "check" &&
+      !form.checkNumber
+    ) {
+      return toast.error("יש למלא מספר צ'ק");
+    };
     for (const row of rows) {
       if (!row.sum || Number(row.sum) <= 0) {
         return toast.error(`סכום לא תקין לפרויקט ${row.projectName}`);
@@ -229,6 +237,15 @@ const CreateInvoice = () => {
         paid: form.paid,
         paymentDate: form.paid === "כן" ? form.paymentDate : "",
         paymentMethod: form.paid === "כן" ? form.paymentMethod : "",
+        checkNumber:
+          form.paid === "כן" && form.paymentMethod === "check"
+            ? form.checkNumber
+            : null, // ✅
+        checkDate:
+          form.paid === "כן" && form.paymentMethod === "check"
+            ? form.checkDate
+            : null, // ✅
+
         files: uploadedFiles,
 
         status: "לא הוגש",
@@ -369,6 +386,8 @@ const CreateInvoice = () => {
                   supplierId: s._id,
                 }))
               }
+                supplierType="invoices"  // 🆕 הוסף את זה!
+
             />
           </div>
 
@@ -513,18 +532,71 @@ const CreateInvoice = () => {
               <select
                 className="w-full p-3 border rounded-xl"
                 value={form.paymentMethod}
-                onChange={(e) =>
+                onChange={(e) => {
+                  const method = e.target.value;
                   setForm((prev) => ({
                     ...prev,
-                    paymentMethod: e.target.value,
-                  }))
-                }
+                    paymentMethod: method,
+                    // ✅ אם לא בחרו צ'ק - נקה את שדות הצ'ק
+                    ...(method !== "check" && {
+                      checkNumber: "",
+                      checkDate: "",
+                    }),
+                  }));
+                }}
               >
                 <option value="">בחר אמצעי תשלום...</option>
                 <option value="bank_transfer">העברה בנקאית</option>
                 <option value="check">צ'ק</option>
               </select>
             </div>
+          )}
+
+          {/* ✅ מספר צ'ק - מופיע רק אם בחרו צ'ק */}
+          {form.paid === "כן" && form.paymentMethod === "check" && (
+            <>
+              <div>
+                <label className="block font-bold mb-2">
+                  מספר צ'ק <span className="text-red-500">*</span>
+                </label>
+                <input
+                  type="text"
+                  className="w-full p-3 border rounded-xl"
+                  value={form.checkNumber}
+                  onChange={(e) =>
+                    setForm((prev) => ({
+                      ...prev,
+                      checkNumber: e.target.value,
+                    }))
+                  }
+                  placeholder="הזן מספר צ'ק"
+                />
+              </div>
+
+              <div>
+                <label className="block font-bold mb-2">
+                  תאריך פירעון צ'ק (אופציונלי)
+                </label>
+                <input
+                  type="date"
+                  className="w-full p-3 border rounded-xl cursor-pointer"
+                  value={form.checkDate}
+                  onChange={(e) =>
+                    setForm((prev) => ({
+                      ...prev,
+                      checkDate: e.target.value,
+                    }))
+                  }
+                  onClick={(e) => {
+                    try {
+                      e.target.showPicker();
+                    } catch {
+                      e.target.focus();
+                    }
+                  }}
+                />
+              </div>
+            </>
           )}
 
           {/* פירוט */}

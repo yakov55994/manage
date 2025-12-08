@@ -86,14 +86,16 @@ async updateInvoice  (req, res)  {
 // ===============================================
 async updatePaymentStatus  (req, res)  {
   try {
-    const { status, paymentDate, paymentMethod } = req.body;
+    const { status, paymentDate, paymentMethod, checkNumber, checkDate } = req.body;
 
     const updated = await invoiceService.updatePaymentStatus(
       req.user,
       req.params.id,
       status,
       paymentDate,
-      paymentMethod
+      paymentMethod,
+      checkNumber,
+      checkDate
     );
 
     res.json({ success: true, data: updated });

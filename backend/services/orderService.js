@@ -2,14 +2,31 @@ import Order from "../models/Order.js";
 import Project from "../models/Project.js";
 
 
+// ======================================================
+// פונקציית עזר — חישוב תקציב מחדש מהזמנות
+// ======================================================
+async function recalcProjectBudget(projectId) {
+  const orders = await Order.find({ projectId });
 
+  const total = orders.reduce((acc, o) => acc + Number(o.sum || 0), 0);
+
+  await Project.findByIdAndUpdate(projectId, {
+    budget: total
+  });
+
+  return total;
+}
+
+
+
+// ======================================================
+// שירות ההזמנות
+// ======================================================
 export default {
-
 
   async searchOrders(query) {
     const regex = new RegExp(query, "i");
 
-    // אם query מספר — נשתמש בו לחיפוש מספרי
     const isNumber = !isNaN(query);
 
     const conditions = [
@@ -19,13 +36,13 @@ export default {
       { status: regex }
     ];
 
-    // במידה והחיפוש הוא מספר, נוסיף את orderNumber
     if (isNumber) {
       conditions.push({ orderNumber: Number(query) });
     }
 
     return Order.find({ $or: conditions }).limit(50);
   },
+
 
   async getOrders(user) {
     let query = {};
@@ -48,6 +65,7 @@ export default {
       });
   },
 
+
   async getOrderById(user, orderId) {
     const order = await Order.findById(orderId)
       .populate({ path: "supplierId", select: "name phone email" })
@@ -67,73 +85,11 @@ export default {
 
     return order;
   },
-  async createBulkOrders(user, orders) {
-    const normalizeId = (val) => {
-      if (!val) return "";
-      if (typeof val === "string") return val;
-      if (val._id) return String(val._id);
-      return String(val);
-    };
 
-    const created = [];
 
-    for (const data of orders) {
-      // 🔐 הרשאות
-      if (user.role !== "admin") {
-        if (!user.permissions || !Array.isArray(user.permissions)) {
-          throw new Error("למשתמש אין הרשאות מוגדרות");
-        }
-
-        const allowed = user.permissions.map(
-          (p) => normalizeId(p.project)
-        );
-
-        const userProjectId = normalizeId(data.projectId);
-
-        if (!allowed.includes(userProjectId)) {
-          throw new Error(`אין הרשאה לפרויקט ${userProjectId}`);
-        }
-      }
-
-      // 📌 שליפת הפרויקט
-      const project = await Project.findById(data.projectId);
-      if (!project) throw new Error("פרויקט לא נמצא");
-
-      // 📌 סכום
-      const sum = Number(data.sum);
-      if (isNaN(sum) || sum <= 0) {
-        throw new Error("סכום ההזמנה אינו תקין");
-      }
-
-      // 📌 ודא שתקציב מוגדר
-      project.remainingBudget = Number(project.remainingBudget || 0);
-
-      // 📌 הוסף סכום ההזמנה לתקציב הנותר
-      project.remainingBudget += sum;
-
-      await project.save();
-
-      // ✅ הוספת פרטי המשתמש שיצר
-      const orderData = {
-        ...data,
-        createdBy: user._id,
-        createdByName: user.username || user.name || 'משתמש'
-      };
-
-      // 📌 יצירת ההזמנה
-      const order = await Order.create(orderData);
-
-      await Project.findByIdAndUpdate(
-        data.projectId,
-        { $push: { orders: order._id } }
-      );
-
-      created.push(order);
-    }
-
-    return created;
-  },
-
+  // ======================================================
+  // יצירת הזמנה
+  // ======================================================
   async createOrder(user, data) {
     if (user.role !== "admin") {
       const allowed = user.permissions.map(
@@ -147,27 +103,20 @@ export default {
     const project = await Project.findById(data.projectId);
     if (!project) throw new Error("פרויקט לא נמצא");
 
-    // 🔺 הוספת סכום ההזמנה לתקציב הנותר
     const sum = Number(data.sum);
     if (isNaN(sum)) throw new Error("סכום ההזמנה אינו תקין");
 
-    if (project.budget === undefined || project.budget === null) {
-      project.budget = 0;
-    }
-    project.remainingBudget = Number(project.remainingBudget || 0);
-    project.remainingBudget = project.remainingBudget + sum;
+    project.budget = sum;
     await project.save();
 
-    // ✅ הוספת פרטי המשתמש שיצר
     const orderData = {
       ...data,
       createdBy: user._id,
-      createdByName: user.username || user.name || 'משתמש'
+      createdByName: user.username || user.name || "משתמש"
     };
 
     const order = await Order.create(orderData);
 
-    // ✅ הוספה למערך ההזמנות של הפרויקט
     await Project.findByIdAndUpdate(
       data.projectId,
       { $push: { orders: order._id } }
@@ -176,23 +125,64 @@ export default {
     return order;
   },
 
+
+  // ======================================================
+  // יצירה מרובה — (ייבוא אקסל)
+  // ======================================================
+  async createBulkOrders(user, orders) {
+    const created = [];
+
+    for (const data of orders) {
+      const project = await Project.findById(data.projectId);
+      if (!project) throw new Error("פרויקט לא נמצא");
+
+      const sum = Number(data.sum);
+      if (isNaN(sum) || sum <= 0) {
+        throw new Error("סכום ההזמנה אינו תקין");
+      }
+
+      project.budget = sum;
+      await project.save();
+
+      const order = await Order.create({
+        ...data,
+        createdBy: user._id,
+        createdByName: user.username || user.name || "משתמש"
+      });
+
+      await Project.findByIdAndUpdate(
+        data.projectId,
+        { $push: { orders: order._id } }
+      );
+
+      created.push(order);
+    }
+
+    return created;
+  },
+
+
+
+  // ======================================================
+  // עדכון הזמנה — כולל חישוב תקציב מחדש
+  // ======================================================
   async updateOrder(user, orderId, data) {
     const order = await Order.findById(orderId);
     if (!order) throw new Error("הזמנה לא נמצאה");
 
-    const project = await Project.findById(order.projectId);
+    const updatedOrder = await Order.findByIdAndUpdate(orderId, data, { new: true });
 
-    const oldSum = Number(order.sum);
-    const newSum = Number(data.sum ?? order.sum);
-    const diff = newSum - oldSum;
+    // 🟢 מחשבים תקציב מחדש מכל ההזמנות של הפרויקט
+    await recalcProjectBudget(order.projectId);
 
-    // 🔺 אם diff חיובי — להוסיף / אם שלילי — להוריד (כלומר מבטל)
-    project.remainingBudget += diff;
-    await project.save();
-
-    return Order.findByIdAndUpdate(orderId, data, { new: true });
+    return updatedOrder;
   },
 
+
+
+  // ======================================================
+  // שינוי סטטוס תשלום
+  // ======================================================
   async updatePaymentStatus(user, orderId, status, paymentDate) {
     const order = await Order.findById(orderId);
     if (!order) throw new Error("הזמנה לא נמצאה");
@@ -204,16 +194,22 @@ export default {
     );
   },
 
+
+
+  // ======================================================
+  // מחיקת הזמנה — כולל חישוב תקציב מחדש
+  // ======================================================
   async deleteOrder(user, orderId) {
     const order = await Order.findById(orderId);
     if (!order) throw new Error("הזמנה לא נמצאה");
 
-    const project = await Project.findById(order.projectId);
-    project.remainingBudget -= Number(order.sum);
-    await project.save();
+    const projectId = order.projectId;
 
-    // ✅ שינוי כאן!
     await order.deleteOne();
+
+    // 🟢 חישוב התקציב מחדש מכל ההזמנות שנשארו בפרויקט
+    await recalcProjectBudget(projectId);
+
     return order;
   }
 

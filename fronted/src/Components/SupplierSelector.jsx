@@ -14,6 +14,7 @@ const SupplierSelector = ({
   required = false,
   className = "",
   disabled = false,
+  supplierType = "both", // 🆕 ברירת מחדל - כולם
 }) => {
   const [suppliers, setSuppliers] = useState([]);
   const [loading, setLoading] = useState(false);
@@ -22,15 +23,28 @@ const SupplierSelector = ({
   const [selectedSupplier, setSelectedSupplier] = useState(null);
   const navigate = useNavigate();
 
-  // טעינת ספקים
+  // 🔄 טעינת ספקים עם סינון לפי supplierType
   useEffect(() => {
     const fetchSuppliers = async () => {
       try {
         setLoading(true);
 
-        const url = projectId
-          ? `/suppliers?projectId=${projectId}`
-          : `/suppliers`; // ← מביא את כל הספקים
+        // 🆕 בנה את ה-URL עם query parameters
+        let url = `/suppliers`;
+        const params = new URLSearchParams();
+        
+        if (projectId) {
+          params.append('projectId', projectId);
+        }
+        
+        // 🆕 הוסף סינון לפי סוג ספק
+        if (supplierType && supplierType !== "both") {
+          params.append('type', supplierType);
+        }
+        
+        if (params.toString()) {
+          url += `?${params.toString()}`;
+        }
 
         const res = await api.get(url);
         setSuppliers(res?.data?.data || []);
@@ -46,7 +60,7 @@ const SupplierSelector = ({
     };
 
     fetchSuppliers();
-  }, [projectId]);
+  }, [projectId, supplierType]); // 🆕 הוסף supplierType לתלויות
 
   // עדכון הספק הנבחר כשמשנים את value מבחוץ
   useEffect(() => {
@@ -180,30 +194,29 @@ const SupplierSelector = ({
             </div>
 
             {/* ➕ צור ספק חדש — תמיד מופיע */}
-              <div className="grid grid-cols-2 gap-2">
-            <div
-              onClick={() => {
-                setIsOpen(false);
-                navigate("/create-supplier?returnTo=create-invoice");
-              }}
-              className="mt-2 rounded-2xl p-2 cursor-pointer bg-slate-200 font-bold text-center hover:bg-slate-300 
+            <div className="grid grid-cols-2 gap-2">
+              <div
+                onClick={() => {
+                  setIsOpen(false);
+                  navigate("/create-supplier?returnTo=create-invoice");
+                }}
+                className="mt-2 rounded-2xl p-2 cursor-pointer bg-slate-200 font-bold text-center hover:bg-slate-300 
      border-t border-gray-200"
-            >
-              ➕ צור ספק חדש
-            </div>
-
-            {/* כפתור סגירה */}
-            <div  className="mt-2 rounded-2xl p-1 cursor-pointer bg-slate-200 font-bold text-center hover:bg-slate-300 
-     border-t border-gray-200">
-              <button
-                onClick={() => setIsOpen(false)}
-                className="w-full p-2 text-sm transition-colors"
               >
-                סגור
-              </button>
-            </div>
-
+                ➕ צור ספק חדש
               </div>
+
+              {/* כפתור סגירה */}
+              <div className="mt-2 rounded-2xl p-1 cursor-pointer bg-slate-200 font-bold text-center hover:bg-slate-300 
+     border-t border-gray-200">
+                <button
+                  onClick={() => setIsOpen(false)}
+                  className="w-full p-2 text-sm transition-colors"
+                >
+                  סגור
+                </button>
+              </div>
+            </div>
           </div>
         )}
       </div>

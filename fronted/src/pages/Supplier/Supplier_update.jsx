@@ -29,6 +29,8 @@ const SupplierEditPage = () => {
     address: "",
     phone: "",
     email: "",
+    supplierType: "", // 🆕 הוסף את זה!
+
     bankDetails: {
       bankName: "",
       branchNumber: "",
@@ -63,6 +65,8 @@ const SupplierEditPage = () => {
           address: supplierData.address || "",
           phone: supplierData.phone || "",
           email: supplierData.email || "",
+          supplierType: supplierData.supplierType || "", // 🆕 הוסף
+
           bankDetails: {
             bankName: supplierData.bankDetails?.bankName || "",
             bankObj: bankObj || null,
@@ -102,7 +106,7 @@ const SupplierEditPage = () => {
   };
 
   const validateForm = () => {
-    const requiredFields = ["name", "business_tax"];
+    const requiredFields = ["name", "business_tax", "supplierType"];
 
     for (let field of requiredFields) {
       if (!supplier[field] || supplier[field].toString().trim() === "") {
@@ -144,6 +148,7 @@ const SupplierEditPage = () => {
       business_tax: "מספר עוסק",
       address: "כתובת",
       email: "אימייל",
+      supplierType: "סוג ספק", // 🆕 הוסף
     };
     return fieldNames[field] || field;
   };
@@ -163,6 +168,7 @@ const SupplierEditPage = () => {
         phone: supplier.phone.trim() || "",
         address: supplier.address?.trim() || undefined,
         email: supplier.email?.trim() || undefined,
+        supplierType: supplier.supplierType, // 🆕 הוסף
       };
 
       const { bankName, branchNumber, accountNumber } = supplier.bankDetails;
@@ -317,6 +323,30 @@ const SupplierEditPage = () => {
                   className="w-full px-4 py-3 bg-gradient-to-br from-purple-50 to-pink-50 border-2 border-purple-200 rounded-xl font-medium focus:border-purple-400 focus:outline-none focus:ring-2 focus:ring-purple-200 transition-all"
                   placeholder="הזן כתובת אימייל"
                 />
+              </div>
+
+              {/* 🆕 סוג ספק */}
+              <div className="space-y-2">
+                <label className="flex items-center gap-2 text-sm font-semibold text-gray-700">
+                  <div className="bg-amber-100 p-1.5 rounded-lg">
+                    <Building2 className="w-4 h-4 text-amber-600" />
+                  </div>
+                  סוג ספק
+                  <span className="text-red-500">*</span>
+                </label>
+                <select
+                  value={supplier.supplierType}
+                  onChange={(e) =>
+                    handleInputChange("supplierType", e.target.value)
+                  }
+                  className="w-full px-4 py-3 bg-gradient-to-br from-amber-50 to-yellow-50 border-2 border-amber-200 rounded-xl font-medium focus:border-amber-400 focus:outline-none focus:ring-2 focus:ring-amber-200 transition-all"
+                  required
+                >
+                  <option value="">-- בחר סוג ספק --</option>
+                  <option value="invoices">חשבוניות בלבד</option>
+                  <option value="orders">הזמנות בלבד</option>
+                  <option value="both">שניהם</option>
+                </select>
               </div>
 
               {/* כתובת */}

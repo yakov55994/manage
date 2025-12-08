@@ -44,6 +44,7 @@ const SuppliersPage = () => {
     hasBankDetails: "all",
     hasEmail: "all",
     businessTaxRange: { min: "", max: "" },
+    supplierType: "all", // 🆕
   });
 
   const [exportColumns, setExportColumns] = useState({
@@ -59,6 +60,7 @@ const SuppliersPage = () => {
     invoicesCount: true,
     invoicesIds: false,
     createdAt: true,
+    supplierType: true, // 🆕
   });
 
   const navigate = useNavigate();
@@ -78,6 +80,7 @@ const SuppliersPage = () => {
     { key: "_id", label: "מזהה ספק" },
     { key: "name", label: "שם הספק" },
     { key: "business_tax", label: "מספר עוסק" },
+    { key: "supplierType", label: "סוג ספק" }, // 🆕
     { key: "address", label: "כתובת" },
     { key: "phone", label: "טלפון" },
     { key: "email", label: "אימייל" },
@@ -92,6 +95,11 @@ const SuppliersPage = () => {
   const filteredSuppliers = React.useMemo(() => {
     if (!Array.isArray(suppliers)) return [];
     let filtered = suppliers;
+
+    console.log("🔍 Filtering suppliers:", {
+      total: suppliers.length,
+      supplierType: advancedFilters.supplierType,
+    });
 
     if (searchTerm) {
       const q = searchTerm.toLowerCase();
@@ -148,9 +156,33 @@ const SuppliersPage = () => {
       );
     }
 
+    // 🆕 פילטר לפי סוג ספק - עם debugging
+    // 🆕 פילטר לפי סוג ספק - כולל "both"
+    if (
+      advancedFilters.supplierType &&
+      advancedFilters.supplierType !== "all"
+    ) {
+      console.log("🔍 Before supplierType filter:", filtered.length);
+
+      filtered = filtered.filter((s) => {
+        // אם הספק הוא מהסוג המבוקש או "both" - כלול אותו
+        const matches =
+          s.supplierType === advancedFilters.supplierType ||
+          s.supplierType === "both";
+
+        console.log(
+          `🔍 ${s.name}: supplierType=${s.supplierType}, looking for=${advancedFilters.supplierType}, matches=${matches}`
+        );
+
+        return matches;
+      });
+
+      console.log("🔍 After supplierType filter:", filtered.length);
+    }
+
+    console.log("✅ Final filtered count:", filtered.length);
     return filtered;
   }, [suppliers, searchTerm, advancedFilters]);
-
   const sortedSuppliers = React.useMemo(() => {
     if (!Array.isArray(filteredSuppliers)) return [];
 
@@ -184,6 +216,7 @@ const SuppliersPage = () => {
       _id: "מזהה ספק",
       name: "שם הספק",
       business_tax: "מספר עוסק",
+      supplierType: "סוג ספק", // 🆕
       address: "כתובת",
       phone: "טלפון",
       email: "אימייל",
@@ -218,6 +251,17 @@ const SuppliersPage = () => {
             break;
           case "business_tax":
             row[columnMapping.business_tax] = s?.business_tax ?? "";
+            break;
+          // 🆕 סוג ספק
+          case "supplierType":
+            row[columnMapping.supplierType] =
+              s?.supplierType === "invoices"
+                ? "חשבוניות"
+                : s?.supplierType === "orders"
+                ? "הזמנות"
+                : s?.supplierType === "both"
+                ? "שניהם"
+                : "לא הוגדר";
             break;
           case "address":
             row[columnMapping.address] = s?.address || "";
@@ -287,6 +331,7 @@ const SuppliersPage = () => {
       hasBankDetails: "all",
       hasEmail: "all",
       businessTaxRange: { min: "", max: "" },
+      supplierType: "all", // 🆕
     });
     setSearchTerm("");
   };
@@ -479,7 +524,8 @@ const SuppliersPage = () => {
                 advancedFilters.dateFrom ||
                 advancedFilters.dateTo ||
                 advancedFilters.hasBankDetails !== "all" ||
-                advancedFilters.hasEmail !== "all") && (
+                advancedFilters.hasEmail !== "all" ||
+                advancedFilters.supplierType !== "all") && (
                 <button
                   onClick={clearFilters}
                   className="px-4 py-2 bg-slate-200 text-slate-700 rounded-xl hover:bg-slate-300 transition-all font-bold"
@@ -600,6 +646,28 @@ const SuppliersPage = () => {
                 <option value="no">אין אימייל</option>
               </select>
             </div>
+
+            {/* 🆕 פילטר סוג ספק */}
+            <div>
+              <label className="flex items-center gap-2 text-sm font-semibold text-gray-700 mb-2">
+                <Building2 className="w-4 h-4 text-indigo-600" /> סוג ספק:
+              </label>
+              <select
+                value={advancedFilters.supplierType}
+                onChange={(e) =>
+                  setAdvancedFilters((prev) => ({
+                    ...prev,
+                    supplierType: e.target.value,
+                  }))
+                }
+                className="w-full px-4 py-3 bg-gradient-to-br from-indigo-50 to-purple-50 border-2 border-indigo-200 rounded-xl focus:border-indigo-400 focus:outline-none focus:ring-2 focus:ring-indigo-200 transition-all font-medium cursor-pointer"
+              >
+                <option value="all">הכל</option>
+                <option value="invoices">חשבוניות בלבד</option>
+                <option value="orders">הזמנות בלבד</option>
+                <option value="both">שניהם</option>
+              </select>
+            </div>
           </div>
 
           <div className="flex flex-wrap items-center gap-4">
@@ -655,8 +723,8 @@ const SuppliersPage = () => {
                   style={{
                     display: "grid",
                     gridTemplateColumns: isAdmin
-                      ? "1.5fr 1fr 1fr 1.5fr 1.5fr 1.2fr"
-                      : "1.5fr 1fr 1fr 1.5fr 1.5fr 0.8fr",
+                      ? "1.5fr 1fr 1fr 1fr 1.5fr 1.5fr 1.2fr"
+                      : "1.5fr 1fr 1fr 1fr 1.5fr 1.5fr 0.8fr",
                   }}
                 >
                   <th className="px-4 py-4 text-sm font-bold text-center text-white">
@@ -664,6 +732,10 @@ const SuppliersPage = () => {
                   </th>
                   <th className="px-4 py-4 text-sm font-bold text-center text-white">
                     מספר עוסק
+                  </th>
+                  {/* 🆕 עמודה חדשה */}
+                  <th className="px-4 py-4 text-sm font-bold text-center text-white">
+                    סוג ספק
                   </th>
                   <th className="px-4 py-4 text-sm font-bold text-center text-white">
                     טלפון
@@ -689,8 +761,8 @@ const SuppliersPage = () => {
                     style={{
                       display: "grid",
                       gridTemplateColumns: isAdmin
-                        ? "1.5fr 1fr 1fr 1.5fr 1.5fr 1.2fr"
-                        : "1.5fr 1fr 1fr 1.5fr 1.5fr 0.8fr",
+                        ? "1.5fr 1fr 1fr 1fr 1.5fr 1.5fr 1.2fr"
+                        : "1.5fr 1fr 1fr 1fr 1.5fr 1.5fr 0.8fr",
                     }}
                   >
                     <td className="px-4 py-4 text-sm font-bold text-center text-slate-900">
@@ -699,6 +771,28 @@ const SuppliersPage = () => {
                     <td className="px-4 py-4 text-sm font-medium text-center text-slate-700">
                       {supplier.business_tax}
                     </td>
+
+                    {/* 🆕 תא סוג ספק */}
+                    <td className="px-4 py-4 text-center">
+                      {supplier.supplierType === "invoices" ? (
+                        <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-bold bg-blue-100 text-blue-700 border border-blue-200">
+                          📄 חשבוניות
+                        </span>
+                      ) : supplier.supplierType === "orders" ? (
+                        <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-bold bg-green-100 text-green-700 border border-green-200">
+                          📦 הזמנות
+                        </span>
+                      ) : supplier.supplierType === "both" ? (
+                        <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-bold bg-purple-100 text-purple-700 border border-purple-200">
+                          🔄 שניהם
+                        </span>
+                      ) : (
+                        <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-bold bg-gray-100 text-gray-500 border border-gray-200">
+                          ❓ לא הוגדר
+                        </span>
+                      )}
+                    </td>
+
                     <td className="px-4 py-4 text-sm font-medium text-center text-slate-700">
                       {supplier.phone}
                     </td>

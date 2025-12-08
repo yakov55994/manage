@@ -4,7 +4,6 @@ import { sendError } from "../utils/sendError.js";
 
 const supplierController = {
 
-
   async searchSuppliers(req, res) {
     try {
       const q = req.query.query || "";
@@ -14,14 +13,17 @@ const supplierController = {
       res.status(500).json({ message: err.message });
     }
   },
- async getAllSuppliers(req, res) {
-  try {
-    const suppliers = await supplierService.getAllSuppliers();
-    res.json({ success: true, data: suppliers });
-  } catch (err) {
-    res.status(500).json({ success: false, message: err.message });
-  }
-},
+
+  // ✅ עדכון - הוסף תמיכה ב-query parameter "type"
+  async getAllSuppliers(req, res) {
+    try {
+      const type = req.query.type; // 🆕 'invoices' | 'orders' | 'both' | null
+      const suppliers = await supplierService.getAllSuppliers(type);
+      res.json({ success: true, data: suppliers });
+    } catch (err) {
+      res.status(500).json({ success: false, message: err.message });
+    }
+  },
 
   async getAllSuppliersWithoutRestrictions(req, res) {
     try {

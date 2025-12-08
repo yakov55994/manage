@@ -1,4 +1,5 @@
-import React, { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
+import { Hash, Calendar } from "lucide-react";
 
 const METHODS = [
   { value: "check", label: "צ׳ק" },
@@ -8,21 +9,33 @@ const METHODS = [
 export default function PaymentCaptureModal({
   open,
   onClose,
-  onSave,            // (payload) => void   payload = { paymentDate: 'YYYY-MM-DD', paymentMethod: 'check'|'bank_transfer' }
+  onSave,            // (payload) => void   payload = { paymentDate, paymentMethod, checkNumber?, checkDate? }
   defaultDate,       // optional 'YYYY-MM-DD'
   defaultMethod,     // optional 'check' | 'bank_transfer'
   title = "פרטי תשלום",
 }) {
   const [date, setDate] = useState(defaultDate || new Date().toISOString().slice(0,10));
   const [method, setMethod] = useState(defaultMethod || "");
+  const [checkNumber, setCheckNumber] = useState("");
+  const [checkDate, setCheckDate] = useState("");
   const dialogRef = useRef(null);
 
   useEffect(() => {
     if (open) {
       setDate(defaultDate || new Date().toISOString().slice(0,10));
       setMethod(defaultMethod || "");
+      setCheckNumber("");
+      setCheckDate("");
     }
   }, [open, defaultDate, defaultMethod]);
+
+  // 🔥 נקה שדות צ'ק כשמשנים את אמצעי התשלום
+  useEffect(() => {
+    if (method !== "check") {
+      setCheckNumber("");
+      setCheckDate("");
+    }
+  }, [method]);
 
   useEffect(() => {
     const onEsc = (e) => { if (e.key === "Escape" && open) onClose?.(); };
@@ -35,7 +48,18 @@ export default function PaymentCaptureModal({
   const submit = () => {
     if (!method) return alert("בחר אמצעי תשלום");
     if (!date) return alert("בחר תאריך תשלום");
-    onSave?.({ paymentDate: date, paymentMethod: method });
+    
+    // ✅ ולידציה - אם צ'ק חייב מספר צ'ק
+    if (method === "check" && !checkNumber.trim()) {
+      return alert("יש למלא מספר צ'ק");
+    }
+    
+    onSave?.({ 
+      paymentDate: date, 
+      paymentMethod: method,
+      checkNumber: method === "check" ? checkNumber : undefined,
+      checkDate: method === "check" ? checkDate : undefined,
+    });
   };
 
   return (
@@ -77,6 +101,44 @@ export default function PaymentCaptureModal({
               onFocus={(e) => e.target.showPicker?.()}
             />
           </div>
+
+          {/* 🆕 שדות צ'ק - מוצגים רק אם בחרו "צ'ק" */}
+          {method === "check" && (
+            <div className="bg-gradient-to-br from-blue-50 to-cyan-50 border-2 border-blue-200 rounded-xl p-4 space-y-4">
+              {/* מספר צ'ק */}
+              <div>
+                <label className="flex items-center gap-2 text-sm font-medium mb-1">
+                  <Hash className="w-4 h-4 text-blue-600" />
+                  מספר צ'ק <span className="text-red-500">*</span>
+                </label>
+                <input
+                  type="text"
+                  value={checkNumber}
+                  onChange={(e) => setCheckNumber(e.target.value)}
+                  placeholder="הזן מספר צ'ק"
+                  className="w-full px-3 py-2 border-2 border-blue-200 rounded-lg focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-200 transition-all"
+                />
+              </div>
+
+              {/* תאריך פירעון צ'ק */}
+              <div>
+                <label className="flex items-center gap-2 text-sm font-medium mb-1">
+                  <Calendar className="w-4 h-4 text-blue-600" />
+                  תאריך פירעון צ'ק
+                </label>
+                <input
+                  type="date"
+                  value={checkDate}
+                  onChange={(e) => setCheckDate(e.target.value)}
+                  className="w-full px-3 py-2 border-2 border-blue-200 rounded-lg focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-200 transition-all"
+                  onFocus={(e) => e.target.showPicker?.()}
+                />
+                <p className="text-xs text-slate-500 mt-1">
+                  אופציונלי - תאריך פירעון הצ'ק
+                </p>
+              </div>
+            </div>
+          )}
         </div>
 
         <div className="flex justify-center gap-3 mt-6">
@@ -98,9 +160,15 @@ export default function PaymentCaptureModal({
   );
 }
 
-export function PaymentMethodBadge({ method }) {
+export function PaymentMethodBadge({ method, checkNumber }) {
   if (!method) return null;
-  const label = method === "check" ? "צ׳ק" : method === "bank_transfer" ? "העברה" : method;
+  
+  let label = method === "check" 
+    ? checkNumber ? `צ׳ק ${checkNumber}` : "צ׳ק"
+    : method === "bank_transfer" 
+    ? "העברה" 
+    : method;
+  
   return (
     <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-slate-200 text-slate-700">
       {label}

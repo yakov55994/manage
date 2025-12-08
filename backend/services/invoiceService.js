@@ -171,8 +171,15 @@ async function updateInvoice(user, invoiceId, data) {
     p.projectId.toString()
   );
 
-  const { projects: newProjects, files, ...basic } = data;
+  const { projects: newProjects, files: newFiles = [], ...basic } = data;
 
+  // ⭐ מיזוג קבצים — שומר את הישנים + מוסיף חדשים
+  const mergedFiles = [
+    ...invoice.files,              // קבצים קיימים
+    ...newFiles.filter(f => f.isLocal || !invoice.files.some(old => old.url === f.url)) // רק חדשים
+  ];
+
+  // ⭐ עדכון החשבונית
   const updated = await Invoice.findByIdAndUpdate(
     invoiceId,
     {
@@ -182,16 +189,16 @@ async function updateInvoice(user, invoiceId, data) {
         (sum, p) => sum + Number(p.sum),
         0
       ),
-      files,
+      files: mergedFiles, // ✔ מעכשיו קבצים לעולם לא נמחקים עד שהמשתמש מוחק ידנית!
     },
     { new: true }
   );
 
+  // ⭐ טיפול בקישורי פרויקטים
   const newProjectIds = newProjects.map((p) =>
     p.projectId.toString()
   );
 
-  // הסרת קישור מפרויקטים שכבר לא קשורים לחשבונית
   for (const oldId of oldProjects) {
     if (!newProjectIds.includes(oldId)) {
       await Project.findByIdAndUpdate(oldId, {
@@ -201,7 +208,6 @@ async function updateInvoice(user, invoiceId, data) {
     }
   }
 
-  // הוספת קישור לפרויקטים חדשים
   for (const p of newProjects) {
     await Project.findByIdAndUpdate(p.projectId, {
       $addToSet: { invoices: invoiceId }
@@ -211,6 +217,7 @@ async function updateInvoice(user, invoiceId, data) {
 
   return updated;
 }
+  
 
 // ===============================================
 // MOVE INVOICE – עבור מבנה מרובה פרויקטים
@@ -245,16 +252,37 @@ async function moveInvoice(user, invoiceId, fromProjectId, toProjectId) {
 // ===============================================
 // UPDATE PAYMENT STATUS
 // ===============================================
-async function updatePaymentStatus(user, invoiceId, status, date, method) {
+async function updatePaymentStatus(
+  user, 
+  invoiceId, 
+  status, 
+  date, 
+  method, 
+  checkNumber,  // ✅ הוסף פרמטר
+  checkDate     // ✅ הוסף פרמטר
+) {
+  // ✅ בנה את האובייקט לעדכון
+  const updateData = {
+    paid: status,
+    ...(date && { paymentDate: date }),
+    ...(method && { paymentMethod: method }),
+  };
+
+  // ✅ אם זה תשלום בצ'ק - הוסף את השדות
+  if (status === "כן" && method === "check") {
+    if (checkNumber) updateData.checkNumber = checkNumber;
+    if (checkDate) updateData.checkDate = checkDate;
+  } else {
+    // ✅ אם זה לא צ'ק או ביטול תשלום - נקה את השדות
+    updateData.checkNumber = null;
+    updateData.checkDate = null;
+  }
+
   return Invoice.findByIdAndUpdate(
     invoiceId,
-    {
-      paid: status,
-      ...(date && { paymentDate: date }),
-      ...(method && { paymentMethod: method }),
-    },
+    updateData,
     { new: true }
-  );
+  ).populate("supplierId", "name phone email bankDetails");
 }
 
 // ===============================================

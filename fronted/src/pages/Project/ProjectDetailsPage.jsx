@@ -694,12 +694,18 @@ const ProjectDetailsPage = () => {
 
                             {/* ✅ שם הפרויקט מתוך המערך */}
                             <td className="px-4 py-3 text-sm font-bold text-center">
-                              {proj?.projectName || "—"}
+                              {proj?.projectName ||
+                                proj?.projectId?.name ||
+                                "—"}
                             </td>
 
                             {/* ✅ סכום הפרויקט מתוך המערך */}
                             <td className="px-4 py-3 text-center">
-                              {formatCurrencyWithAlert(proj?.sum)}
+                              {proj?.sum !== undefined ? (
+                                formatCurrencyWithAlert(proj.sum)
+                              ) : (
+                                <span className="text-slate-400">—</span>
+                              )}{" "}
                             </td>
 
                             <td className="px-4 py-3 text-sm font-bold text-center">

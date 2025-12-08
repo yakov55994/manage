@@ -241,6 +241,24 @@ const InvoiceDetailsPage = () => {
             }
           />
 
+          {/* ✅ אם זה צ'ק - הצג מספר צ'ק */}
+          {invoice.paymentMethod === "check" && invoice.checkNumber && (
+            <DetailCard
+              label="מספר צ'ק"
+              icon={<Hash />}
+              value={invoice.checkNumber}
+            />
+          )}
+
+          {/* ✅ אם זה צ'ק - הצג תאריך פירעון */}
+          {invoice.paymentMethod === "check" && invoice.checkDate && (
+            <DetailCard
+              label="תאריך פירעון צ'ק"
+              icon={<Calendar />}
+              value={formatDate(invoice.checkDate)}
+            />
+          )}
+
           <DetailCard
             label="פירוט"
             icon={<FileText />}

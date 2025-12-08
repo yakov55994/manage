@@ -27,6 +27,8 @@ const CreateSupplier = () => {
     address: "",
     phone: "",
     email: "",
+    supplierType: "", // 🆕 הוסף את זה!
+
     bankDetails: {
       bankName: "",
       branchNumber: "",
@@ -42,7 +44,9 @@ const CreateSupplier = () => {
   const params = new URLSearchParams(location.search);
   const rawReturnTo = params.get("returnTo");
   const returnTo = rawReturnTo
-    ? (rawReturnTo.startsWith("/") ? rawReturnTo : `/${rawReturnTo}`)
+    ? rawReturnTo.startsWith("/")
+      ? rawReturnTo
+      : `/${rawReturnTo}`
     : "/suppliers";
   useEffect(() => {
     setBanks(banksData);
@@ -66,7 +70,7 @@ const CreateSupplier = () => {
   };
 
   const validateForm = () => {
-    const requiredFields = ["name", "business_tax", "phone"];
+    const requiredFields = ["name", "business_tax", "phone", "supplierType"];
 
     for (let field of requiredFields) {
       if (field === "phone") continue;
@@ -102,13 +106,14 @@ const CreateSupplier = () => {
   };
 
   const getFieldName = (field) =>
-  ({
-    name: "שם הספק",
-    business_tax: "מספר עוסק",
-    address: "כתובת",
-    phone: "טלפון",
-    email: "אימייל",
-  }[field] || field);
+    ({
+      name: "שם הספק",
+      business_tax: "מספר עוסק",
+      address: "כתובת",
+      phone: "טלפון",
+      email: "אימייל",
+      supplierType: "סוג ספק", // 🆕 הוסף
+    }[field] || field);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -122,6 +127,7 @@ const CreateSupplier = () => {
         phone: supplier.phone.trim(),
         address: supplier.address?.trim() || undefined,
         email: supplier.email?.trim() || undefined,
+        supplierType: supplier.supplierType, // 🆕 הוסף את זה!
       };
 
       const { bankName, branchNumber, accountNumber } = supplier.bankDetails;
@@ -296,6 +302,28 @@ const CreateSupplier = () => {
                         className="mt-2 w-full rounded-xl border-2 border-slate-200 bg-white px-4 py-3 text-sm font-medium focus:border-orange-500 focus:outline-none focus:ring-4 focus:ring-orange-500/20 transition-all group-hover:border-orange-300"
                         placeholder="הזן כתובת אימייל..."
                       />
+                    </div>
+
+                    {/* 🆕 סוג ספק */}
+                    <div className="group">
+                      <label className="text-sm font-bold text-slate-700 mb-2 flex items-center gap-2">
+                        <Building2 className="w-4 h-4 text-orange-500" />
+                        סוג ספק
+                        <span className="text-red-500">*</span>
+                      </label>
+                      <select
+                        value={supplier.supplierType}
+                        onChange={(e) =>
+                          handleInputChange("supplierType", e.target.value)
+                        }
+                        className="mt-2 w-full rounded-xl border-2 border-slate-200 bg-white px-4 py-3 text-sm font-medium focus:border-orange-500 focus:outline-none focus:ring-4 focus:ring-orange-500/20 transition-all group-hover:border-orange-300"
+                        required
+                      >
+                        <option value="">-- בחר סוג ספק --</option>
+                        <option value="invoices">חשבוניות בלבד</option>
+                        <option value="orders">הזמנות בלבד</option>
+                        <option value="both">שניהם</option>
+                      </select>
                     </div>
 
                     {/* Address */}

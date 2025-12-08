@@ -1297,7 +1297,7 @@ const InvoicesPage = () => {
       try {
         const res = await api.get("/invoices");
         const allData = arr(res.data.data);
-
+        console.log("allData ", allData);
         // ✅ סנן חשבוניות לפי הרשאות
         const allowedProjectIds = getAllowedProjectIds();
 
@@ -1474,7 +1474,12 @@ const InvoicesPage = () => {
       });
     }
   };
-  const handleSavePaymentCapture = async ({ paymentDate, paymentMethod }) => {
+  const handleSavePaymentCapture = async ({
+    paymentDate,
+    paymentMethod,
+    checkNumber,
+    checkDate,
+  }) => {
     const invoice = paymentCapture.invoice;
     if (!invoice) return;
 
@@ -1484,6 +1489,8 @@ const InvoicesPage = () => {
         status: "כן",
         paymentDate,
         paymentMethod,
+        checkNumber,
+        checkDate,
       });
 
       // ✅ השתמש בנתונים שחזרו מה-Backend
@@ -1498,10 +1505,12 @@ const InvoicesPage = () => {
         prev.map((inv) => (inv._id === invoice._id ? updatedInvoice : inv))
       );
 
-      toast.success(
-        `עודכן לשולם (${paymentMethod === "check" ? "צ'ק" : "העברה"})`,
-        { className: "sonner-toast success rtl" }
-      );
+      const paymentInfo =
+        paymentMethod === "check" ? `צ'ק ${checkNumber}` : "העברה בנקאית";
+
+      toast.success(`עודכן לשולם (${paymentInfo})`, {
+        className: "sonner-toast success rtl",
+      });
     } catch (err) {
       console.error(err);
       toast.error("שגיאה בשמירת פרטי התשלום", {
@@ -1883,7 +1892,7 @@ const InvoicesPage = () => {
             </div>
 
             {/* Export Buttons */}
-            <div className="flex gap-3">
+            <div className="flex flex-wrap gap-3 justify-center">
               <button
                 onClick={() => setMasavModal(true)}
                 className="flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-orange-500 to-amber-500 text-white font-bold rounded-full hover:from-orange-600 hover:to-amber-600 transition-all shadow-lg whitespace-nowrap"
@@ -1915,9 +1924,15 @@ const InvoicesPage = () => {
                 <DownloadCloud className="w-5 h-5" />
                 <span>ייצוא מהיר</span>
               </button>
+              <button
+                onClick={() => navigate("/create-invoice")}
+                className="flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-orange-500 to-amber-500 text-white font-bold rounded-full hover:from-orange-600 hover:to-amber-600 transition-all shadow-lg whitespace-nowrap"
+              >
+                <Sparkles className="w-5 h-5" />
+                <span>הוסף חשבונית</span>
+              </button>
             </div>
           </div>
-
           {/* Results Count */}
           <div className="text-sm text-slate-600 font-medium flex items-center gap-4">
             <span>
@@ -2131,7 +2146,12 @@ const InvoicesPage = () => {
                     {/* עמודה 8/7: שם פרוייקט */}
                     <td className="px-2 py-4 text-xs text-center font-medium text-slate-900">
                       {invoice.projects?.length
-                        ? invoice.projects.map((p) => p.projectName).join(", ")
+                        ? invoice.projects
+                            .map(
+                              (p) =>
+                                p.projectName || p.projectId?.name || "ללא שם"
+                            )
+                            .join(", ")
                         : "—"}
                     </td>
 
