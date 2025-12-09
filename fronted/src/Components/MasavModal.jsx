@@ -5,127 +5,9 @@ import { bankCodeMap } from "../utils/bankMap";
 
 
 export default function MasavModal({ open, onClose, invoices }) {
-<<<<<<< Updated upstream
-<<<<<<< Updated upstream
-  const [selected, setSelected] = useState([]);
-  const [executionDate, setExecutionDate] = useState(
-    new Date().toISOString().slice(0, 10)
-  );
-  const [searchTerm, setSearchTerm] = useState("");
-
-  useEffect(() => {
-    if (open) {
-      setSelected([]);
-      setSearchTerm("");
-    }
-  }, [open]);
-
-  const toggleInvoice = (inv) => {
-    if (selected.some((x) => x._id === inv._id)) {
-      setSelected((prev) => prev.filter((x) => x._id !== inv._id));
-    } else {
-      setSelected((prev) => [...prev, inv]);
-    }
-  };
-
-  const toggleSelectAll = () => {
-    if (
-      selected.length === filteredInvoices.length &&
-      filteredInvoices.length > 0
-    ) {
-      setSelected([]);
-    } else {
-      setSelected(filteredInvoices);
-    }
-  };
-
-  const generate = async () => {
-    if (selected.length === 0) return toast.error("בחר חשבוניות");
-
-    try {
-      const withBankDetails = [];
-      const withoutBankDetails = [];
-
-      selected.forEach((inv) => {
-        const s = inv.supplierId;
-        if (
-          !s?.bankDetails ||
-          !s.bankDetails.bankName ||
-          !s.bankDetails.branchNumber ||
-          !s.bankDetails.accountNumber
-        ) {
-          withoutBankDetails.push({
-            invoice: inv,
-            supplierName: s?.name || "ספק לא ידוע",
-          });
-        } else {
-          withBankDetails.push(inv);
-        }
-      });
-
-      if (withBankDetails.length === 0) {
-        const supplierNames = withoutBankDetails
-          .map((x) => x.supplierName)
-          .join(", ");
-        return toast.error(`אין פרטי בנק לספקים: ${supplierNames}`);
-      }
-
-      const payments = withBankDetails.map((inv) => ({
-        bankNumber: inv.supplierId.bankDetails.bankName,
-        branchNumber: inv.supplierId.bankDetails.branchNumber,
-        accountNumber: inv.supplierId.bankDetails.accountNumber,
-        amount: inv.sum,
-        name: inv.supplierId.name,
-        supplierId: inv.supplierId.business_tax || "",
-        invoiceNumber: inv.invoiceNumber,
-      }));
-
-      // 🟦 חובה — אחרת השרת מתפוצץ!
-      const companyInfo = {
-        companyId: "1234567",
-        companyName: "My Company",
-        accountNumber: "123456789012",
-      };
-
-      const res = await api.post(
-        "/masav/generate",
-        {
-          companyInfo,
-          payments,
-          executionDate,
-        },
-        { responseType: "blob" }
-      );
-
-      const url = window.URL.createObjectURL(new Blob([res.data]));
-      const link = document.createElement("a");
-      link.href = url;
-      link.download = "masav.txt";
-      link.click();
-
-      toast.success(`קובץ מס״ב נוצר בהצלחה (${withBankDetails.length})`);
-      onClose();
-    } catch (err) {
-      toast.error(err.message || 'שגיאה ביצירת קובץ מס"ב');
-    }
-  };
-
-  const filteredInvoices = invoices.filter((inv) => {
-    const searchLower = searchTerm.toLowerCase();
-    return (
-      inv.invoiceNumber?.toString().includes(searchLower) ||
-      inv.supplierId?.name?.toLowerCase().includes(searchLower) ||
-      inv.sum?.toString().includes(searchLower)
-=======
     const [selected, setSelected] = useState([]);
     const [executionDate, setExecutionDate] = useState(
         new Date().toISOString().slice(0, 10)
->>>>>>> Stashed changes
-=======
-    const [selected, setSelected] = useState([]);
-    const [executionDate, setExecutionDate] = useState(
-        new Date().toISOString().slice(0, 10)
->>>>>>> Stashed changes
     );
     const [searchTerm, setSearchTerm] = useState("");
 
@@ -137,20 +19,49 @@ export default function MasavModal({ open, onClose, invoices }) {
 
         const bd = supplier.bankDetails;
 
-        // קוד בנק אמיתי מתוך המפה
-        const bankCode = bankCodeMap[bd.bankName] || null;
+        const bankCode = String(bankCodeMap[bd.bankName] || "000").padStart(3, "0");
+        const branch = String(bd.branchNumber).padStart(3, "0");
+        const account = bd.accountNumber?.padStart(13, "0");
 
         return (
             bankCode &&
-            /^[0-9]{2}$/.test(bankCode) &&
-
-            bd.branchNumber &&
-            /^[0-9]{1,3}$/.test(bd.branchNumber) &&
-
-            bd.accountNumber &&
-            /^[0-9]{5,12}$/.test(bd.accountNumber)
+            /^[0-9]{3}$/.test(bankCode) &&
+            branch &&
+            /^[0-9]{3}$/.test(branch) &&
+            account &&
+            /^[0-9]{13}$/.test(account)
         );
     }
+
+    function validateClient(payments) {
+        const errors = [];
+
+        payments.forEach((p, i) => {
+            const row = i + 1;
+
+            if (!/^[0-9]{2}$/.test(p.bankNumber))
+                errors.push(`שורה ${row}: קוד בנק חייב להיות 2 ספרות`);
+
+            if (!/^[0-9]{3}$/.test(p.branchNumber))
+                errors.push(`שורה ${row}: מספר סניף חייב להיות 3 ספרות`);
+
+            if (!/^[0-9]{9}$/.test(p.accountNumber))
+                errors.push(`שורה ${row}: מספר חשבון חייב להיות 9 ספרות`);
+
+            if (!p.supplierName?.trim())
+                errors.push(`שורה ${row}: שם ספק חסר`);
+
+            if (!/^[0-9]+$/.test(p.amount) || p.amount <= 0)
+                errors.push(`שורה ${row}: סכום חייב להיות גדול מ-0`);
+
+            if (!/^[0-9]{9}$/.test(p.internalId))
+                errors.push(`שורה ${row}: מזהה ספק חייב להיות 9 ספרות`);
+        });
+
+        return errors;
+    }
+
+
 
 
     // ============================
@@ -186,54 +97,75 @@ export default function MasavModal({ open, onClose, invoices }) {
     // GENERATE MASAV FILE
     // ============================
     const generate = async () => {
-        if (selected.length === 0) return toast.error("בחר חשבוניות");
+        if (selected.length === 0) {
+            return toast.error("בחר חשבוניות");
+        }
 
-        try {
-            const withBankDetails = [];
-            const withoutBankDetails = [];
+        const withBankDetails = [];
+        const withoutBankDetails = [];
 
-            selected.forEach((inv) => {
-                const s = inv.supplierId;
-                if (!hasBankDetails(s)) {
-                    withoutBankDetails.push(s.name);
-                } else {
-                    withBankDetails.push(inv);
-                }
-            });
-
-            if (withBankDetails.length === 0) {
-                return toast.error(
-                    `אין פרטי בנק תקינים לחשבוניות: ${withoutBankDetails.join(", ")}`
-                );
+        selected.forEach((inv) => {
+            const s = inv.supplierId;
+            if (!hasBankDetails(s)) {
+                withoutBankDetails.push(s.name);
+            } else {
+                withBankDetails.push(inv);
             }
+        });
 
-            const payments = withBankDetails.map((inv) => {
-                const s = inv.supplierId;
-                const bd = s.bankDetails;
-
-                return {
-                    bankNumber: bankCodeMap[bd.bankName] || "00",
-                    branchNumber: bd.branchNumber.padStart(3, "0"),
-                    accountNumber: bd.accountNumber.padStart(9, "0"),
-                    amount: Number(inv.totalAmount),  // 🎯 זה הפתרון
-                    supplierName: s.name.substring(0, 16),
-                    internalId: String(s.business_tax || "0").padStart(10, "0"),
-                };
-            });
-
-            console.log("payments:", payments)
+        if (withBankDetails.length === 0) {
+            return toast.error(`אין פרטי בנק תקינים: ${withoutBankDetails.join(", ")}`);
+        }
 
 
-            // שליחת נתונים לשרת
+        const payments = withBankDetails.map((inv) => {
+            const s = inv.supplierId;
+            const bd = s.bankDetails;
+
+            // ⬅ פה התיקון
+            const rawAccount = String(bd.accountNumber || "")
+                .replace(/\D/g, "");  // מנקה תווים לא מספריים
+            const account9 = rawAccount.slice(-9);    // רק 9 ספרות אחרונות
+
+            return {
+                bankNumber: String(bankCodeMap[bd.bankName] || "00").padStart(2, "0"),
+                branchNumber: String(bd.branchNumber).padStart(3, "0"),
+                accountNumber: account9.padStart(9, "0"),  // ⬅ זה המפתח
+                amount: Math.round(inv.totalAmount * 100),
+                supplierName: s.name,
+                internalId: String(s.business_tax || "0").padStart(9, "0"),
+            };
+        });
+
+
+        // ולידציה בצד לקוח
+        const clientErrors = validateClient(payments);
+
+        if (clientErrors.length > 0) {
+            return toast.error(
+                <div className="rtl text-right">
+                    <b>השגיאות הבאות נמצאו:</b>
+                    <ul className="mt-2 list-disc pr-5">
+                        {clientErrors.map((e, i) => (
+                            <li key={i}>{e}</li>
+                        ))}
+                    </ul>
+                </div>,
+                { duration: 8000 }
+            );
+        }
+
+        // אם הכל תקין — נשלח לשרת
+        try {
             const res = await api.post(
                 "/masav/generate",
                 {
                     payments,
-                    executionDate,
+                    executionDate, // מהטופס YYYY-MM-DD
                     companyInfo: {
-                        companyId: "1234567", // עדכן למה שיש לך
-                        companyName: "My Company",
-                        accountNumber: "12345678901",
+                        instituteId: "92982289",
+                        senderId: "92982",
+                        companyName: "חינוך עם חיוך",
                     },
                 },
                 { responseType: "blob" }
@@ -245,44 +177,12 @@ export default function MasavModal({ open, onClose, invoices }) {
             link.download = "masav.txt";
             link.click();
 
-            // הודעה משולבת
-            if (withoutBankDetails.length > 0) {
-                toast.success(
-                    <div className="space-y-2">
-                        <div className="font-bold">
-                            ✅ קובץ מס"ב נוצר בהצלחה עם {withBankDetails.length} חשבוניות
-                        </div>
-                        <div className="text-sm text-amber-700 bg-amber-50 p-2 rounded-lg border border-amber-200">
-                            ⚠️ לא נכללו {withoutBankDetails.length} ספקים:
-                            <div className="mt-1 font-semibold">{withoutBankDetails.join(", ")}</div>
-                        </div>
-                    </div>,
-                    { duration: 8000 }
-                );
-            } else {
-                toast.success(`✅ קובץ מס"ב נוצר בהצלחה! (${withBankDetails.length})`);
-            }
+            toast.success("קובץ מס\"ב נוצר בהצלחה!");
 
             onClose();
         } catch (err) {
-            const serverErrors = err.response?.data?.errors;
-
-            if (serverErrors?.length) {
-                toast.error(
-                    <div className="text-right">
-                        <b>לא ניתן לייצר קובץ מס״ב:</b>
-                        <ul className="mt-2 list-disc pr-5">
-                            {serverErrors.map((e, i) => (
-                                <li key={i}>{e}</li>
-                            ))}
-                        </ul>
-                    </div>
-                );
-            } else {
-                toast.error("שגיאה ביצירת קובץ מס\"ב");
-            }
+            toast.error("שגיאה ביצירת מס\"ב: " + err.message);
         }
-
     };
 
     // ============================
@@ -290,12 +190,10 @@ export default function MasavModal({ open, onClose, invoices }) {
     // ============================
     const filteredInvoices = invoices.filter((inv) => {
         const q = searchTerm.toLowerCase();
-        console.log("INV:", inv);
-
         return (
             inv.invoiceNumber?.toString().includes(q) ||
             inv.supplierId?.name?.toLowerCase().includes(q) ||
-            inv.sum?.toString().includes(q)
+            inv.totalAmount?.toString().includes(q)
         );
     });
 
@@ -422,7 +320,7 @@ export default function MasavModal({ open, onClose, invoices }) {
                                                 </div>
                                             </div>
                                             <span className="font-bold text-orange-700">
-                                                ₪{inv.sum?.toLocaleString()}
+                                                ₪{inv.totalAmount?.toLocaleString()}
                                             </span>
                                         </div>
                                     </label>
@@ -440,7 +338,7 @@ export default function MasavModal({ open, onClose, invoices }) {
                         <div className="mt-4 text-center">
                             <span className="inline-block px-4 py-2 bg-orange-100 text-orange-700 rounded-full text-sm font-bold">
                                 נבחרו {selected.length} חשבוניות • סה"כ ₪
-                                {selected.reduce((sum, inv) => sum + inv.sum, 0).toLocaleString()}
+                                {selected.reduce((sum, inv) => sum + inv.totalAmount, 0).toLocaleString()}
                             </span>
                         </div>
                     )}

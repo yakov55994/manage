@@ -1,141 +1,148 @@
-import fs from "fs";
-import path from "path";
+// ================================================
+// MASAV FILE SERVICE – לפי המפרט הרשמי
+// ================================================
 
-// 🌟 טוען את קובץ הבנקים בצורה בטוחה שעובדת בכל Node
-const banksPath = path.join(process.cwd(), "data", "banks_and_branches.json");
-const banks = JSON.parse(fs.readFileSync(banksPath, "utf8"));
+function fixLen(str, len, pad = " ", dir = "right") {
+  if (!str) str = "";
+  if (str.length > len) return str.substring(0, len);
+  return dir === "left" ? str.padStart(len, pad) : str.padEnd(len, pad);
+}
 
-// ==========================================
-// VALIDATOR
-// ==========================================
-export function validatePayments(payments) {
+// ------------------------------------------------
+// VALIDATION
+// ------------------------------------------------
+export function validatePayments(payments = []) {
   const errors = [];
 
-  payments.forEach((p, index) => {
-    const row = index + 1;
+  if (!Array.isArray(payments) || payments.length === 0) {
+    errors.push("לא נבחרו תשלומים למס\"ב");
+    return errors;
+  }
 
-    if (!/^\d{2}$/.test(p.bankNumber)) {
-      errors.push(`רשומה ${row}: קוד בנק לא תקין (${p.bankNumber})`);
+  payments.forEach((p, i) => {
+    const row = i + 1;
+
+    if (!/^[0-9]{2}$/.test(p.bankNumber)) {
+      errors.push(`רשומה ${row}: קוד בנק חייב להיות 2 ספרות`);
     }
-
-    if (!/^\d{3}$/.test(p.branchNumber)) {
+    if (!/^[0-9]{3}$/.test(p.branchNumber)) {
       errors.push(`רשומה ${row}: מספר סניף חייב להיות 3 ספרות`);
     }
-
-    if (!/^\d{9}$/.test(p.accountNumber)) {
+    if (!/^[0-9]{9}$/.test(p.accountNumber)) {
       errors.push(`רשומה ${row}: מספר חשבון חייב להיות 9 ספרות`);
     }
-
-    if (!p.amount || p.amount <= 0) {
-      errors.push(`רשומה ${row}: סכום תשלום חייב להיות גדול מ-0`);
-    }
-
-    if (!p.supplierName || p.supplierName.trim().length === 0) {
+    if (!p.supplierName?.trim()) {
       errors.push(`רשומה ${row}: שם ספק חסר`);
     }
-
-    if (p.supplierName.length > 16) {
-      errors.push(`רשומה ${row}: שם ספק ארוך מדי (מקסימום 16 תווים)`);
+    if (!/^[0-9]+$/.test(p.amount) || p.amount <= 0) {
+      errors.push(`רשומה ${row}: סכום חייב להיות גדול מ-0`);
     }
-
-    if (!/^\d{10}$/.test(p.internalId)) {
-      errors.push(`רשומה ${row}: מזהה ספק חייב להיות 10 ספרות`);
+    if (!/^[0-9]{9}$/.test(p.internalId)) {
+      errors.push(`רשומה ${row}: מס׳ זהות/ספק חייב להיות 9 ספרות`);
     }
   });
 
   return errors;
 }
+function fixCompanyNameRTL(name) {
+  // שם המוסד צריך להיות באורך 30 תווים לפי תקן.
+  // כאן אנו דוחפים אותו ימינה כדי שיהיה בצד כמו בקובץ שקיבלת.
+  return name.trim().padStart(30, " ");
+}
 
-// ==========================================
-// GENERATE MASAV FILE
-// ==========================================
-export function generateCreditFile(companyInfo, payments, executionDate) {
-  const lines = [];
+// ------------------------------------------------
+//  FILE GENERATION
+// ------------------------------------------------
+export function generateMasavFile(companyInfo, payments, executionDate) {
+  const { instituteId, senderId, companyName } = companyInfo;
 
-  // תאריך בפורמט YYMMDD
-  const y = executionDate.slice(2, 4);
-  const m = executionDate.slice(5, 7);
-  const d = executionDate.slice(8, 10);
-  const dateYYMMDD = `${y}${m}${d}`;
+  // -----------------------------
+  // תאריך ביצוע YYMMDD
+  // -----------------------------
+  const dateObj = new Date(executionDate);
+  if (isNaN(dateObj)) throw new Error("תאריך ביצוע לא תקין");
 
-  const companyId = companyInfo.companyId.toString().padStart(7, "0");
-  const sequence = `00${dateYYMMDD}0001`;
-  const companyAccount = companyInfo.accountNumber.padStart(11, "0");
+  const execDate = dateObj.toISOString().slice(2, 10).replace(/-/g, "");
+  const createDate = execDate;
 
-  const companyName = (companyInfo.companyName || "")
-    .padEnd(30, " ")
-    .substring(0, 30);
+  let lines = [];
 
-  // HEADER
+  // =====================================================
+  // HEADER — K
+  // =====================================================
   const header =
     "K" +
-    companyId +
-    sequence +
-    dateYYMMDD +
-    companyAccount +
-    "000000" +
-    "".padEnd(17, " ") +
-    companyName +
-    "".padEnd(52, " ") +
-    "KOT";
+    fixLen(instituteId, 8, "0", "left") +  // 8
+    "00" +                                 // 2
+    execDate +                             // 6
+    "0" +                                  // 1
+    "001" +                                // 3
+    "0" +                                  // 1
+    execDate +                             // 6
+    fixLen(senderId, 5, "0", "left") +     // 5
+    fixLen("", 6, "0") +                   // 6
+    fixCompanyNameRTL(companyName) +              // 30 ← שם מוסד כאן!
+    fixLen("", 56) +                       // 56
+    "KOT";                                 // 3
 
+  console.log(header.split(""));
+  console.log(header.length);
+  console.log(header);
+  console.log("1234567890123456789012345678901234567890123456789012345678901234567890")
   lines.push(header);
 
-  // RECORDS
-  let totalAgorot = 0;
+  // =====================================================
+  // MOVEMENT RECORDS — TYPE 1
+  // =====================================================
+  let totalAmount = 0;
 
   payments.forEach((p) => {
-    const bankCode = p.bankNumber.padStart(2, "0");
-    const branch = p.branchNumber.padStart(3, "0");
-    const account = p.accountNumber.padStart(9, "0");
-
-    const amountAgorot = Math.round(p.amount * 100)
-      .toString()
-      .padStart(10, "0");
-
-    totalAgorot += Number(amountAgorot);
-
-    const internalId = p.internalId.padStart(10, "0");
-
-    const supplierName = (p.name || "")
-      .padEnd(16, " ")
-      .substring(0, 16);
+    totalAmount += Number(p.amount);
 
     const line =
       "1" +
-      companyId +
-      "0000000" +
-      bankCode +
-      branch +
-      account +
-      amountAgorot +
-      internalId +
-      "AB" +
-      " " +
-      supplierName +
-      "".padEnd(60, "0");
+      fixLen(instituteId, 8, "0", "left") +
+      "00" +
+      "000000" +                               // filler
+      fixLen(p.bankNumber, 2, "0", "left") +   // קוד בנק
+      fixLen(p.branchNumber, 3, "0", "left") + // סניף
+      "0000" +                                 // סוג חשבון
+      fixLen(p.accountNumber, 9, "0") +        // מספר חשבון
+      "0" +                                    // filler
+      fixLen(p.internalId, 9, "0") +           // מזהה זכאי
+      fixLen(p.supplierName, 16) +             // שם זכאי
+      fixLen(String(p.amount), 13, "0") +      // סכום
+      fixLen(p.internalId, 20, "0") +          // אסמכתא
+      fixLen("0", 8, "0") +                    // תקופה
+      "000" +                                  // קוד מלל
+      "006" +                                  // סוג תנועה
+      fixLen("", 18) +
+      fixLen("", 2);
 
     lines.push(line);
   });
 
-  // TRAILER
-  const totalRecords = payments.length.toString().padStart(7, "0");
-  const totalAgorotStr = totalAgorot.toString().padStart(12, "0");
-
+  // =====================================================
+  // TRAILER — TYPE 5
+  // =====================================================
   const trailer =
     "5" +
-    companyId +
-    sequence +
-    totalRecords +
-    totalAgorotStr +
-    "".padStart(20, "0") +
-    payments.length.toString().padStart(6, "0") +
-    "".padEnd(74, " ");
+    fixLen(instituteId, 8, "0", "left") +
+    "00" +
+    execDate +
+    "0" +
+    "001" +
+    fixLen(String(totalAmount), 15, "0") +   // סכום כללי
+    fixLen("", 15, "0") +                    // filler
+    fixLen(String(payments.length), 7, "0") +// מספר רשומות
+    fixLen("", 63);
 
   lines.push(trailer);
 
-  // -------------------------------------------------
-  // החזרת קובץ MASAV (ללא BOM — הכי בטוח לבנקים)
-  // -------------------------------------------------
+  // =====================================================
+  // END RECORD — חובה
+  // =====================================================
+  lines.push("9".repeat(128));
+
   return lines.join("\r\n");
 }
