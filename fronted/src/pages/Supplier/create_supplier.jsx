@@ -11,7 +11,6 @@ import {
   CreditCard,
   Sparkles,
   Save,
-  FileText,
   User,
   Hash,
   Landmark,

@@ -802,9 +802,9 @@ const ProjectsPage = ({ initialProjects = [] }) => {
       const zipBlob = await zip.generateAsync({ type: "blob" });
 
       const zipFileName = `קבצים_${selectedProject
-          ? projectsToProcess[0]?.name.replace(/[^א-תa-zA-Z0-9]/g, "_") ||
-          "פרויקט"
-          : "כל_הפרויקטים"
+        ? projectsToProcess[0]?.name.replace(/[^א-תa-zA-Z0-9]/g, "_") ||
+        "פרויקט"
+        : "כל_הפרויקטים"
         }_${new Date().toLocaleDateString("he-IL").replace(/\//g, "-")}.zip`;
 
       saveAs(zipBlob, zipFileName);
@@ -1563,15 +1563,22 @@ const ProjectsPage = ({ initialProjects = [] }) => {
             {/* Export Buttons */}
             <div className="flex gap-3">
               <button
+                onClick={() => navigate("/create-project")}
+                className="flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-orange-500 to-amber-500 text-white font-bold rounded-full hover:from-orange-600 hover:to-amber-600 transition-all shadow-lg whitespace-nowrap"
+              >
+                <Sparkles className="w-5 h-5" />
+                <span>יצירת פרוייקט</span>
+              </button>
+              <button
                 onClick={() => setShowPrintModal(true)}
-                className="px-4 py-2 bg-orange-500 text-white rounded-xl font-medium hover:bg-orange-600"
+                className="flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-orange-500 to-amber-500 text-white font-bold rounded-full hover:from-orange-600 hover:to-amber-600 transition-all shadow-lg whitespace-nowrap"
               >
                 הדפסת מסמכים
               </button>
 
               <button
                 onClick={() => setShowReportModal(true)}
-                className="flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-orange-600 to-orange-600 text-white font-bold rounded-xl hover:from-orange-700 hover:to-orange-700 transition-all shadow-lg shadow-purple-500/30"
+                className="flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-orange-500 to-amber-500 text-white font-bold rounded-full hover:from-orange-600 hover:to-amber-600 transition-all shadow-lg whitespace-nowrap"
               >
                 <FileSpreadsheet className="w-5 h-5" />
                 <span>מחולל דוחות</span>
@@ -1579,11 +1586,12 @@ const ProjectsPage = ({ initialProjects = [] }) => {
 
               <button
                 onClick={exportToExcel}
-                className="flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-orange-600 to-orange-600 text-white font-bold rounded-xl hover:from-orange-700 hover:to-orange-700 transition-all shadow-lg shadow-emerald-500/30"
+                className="flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-orange-500 to-amber-500 text-white font-bold rounded-full hover:from-orange-600 hover:to-amber-600 transition-all shadow-lg whitespace-nowrap"
               >
                 <DownloadCloud className="w-5 h-5" />
                 <span>ייצוא מהיר</span>
               </button>
+
             </div>
           </div>
 
@@ -2018,8 +2026,8 @@ const ProjectsPage = ({ initialProjects = [] }) => {
                           <label
                             key={column.key}
                             className={`flex items-center gap-3 p-3 rounded-xl border-2 cursor-pointer transition-all ${exportColumns[column.key]
-                                ? "bg-gradient-to-br from-orange-50 to-amber-50 border-orange-400"
-                                : "bg-gray-50 border-gray-200 hover:border-gray-300"
+                              ? "bg-gradient-to-br from-orange-50 to-amber-50 border-orange-400"
+                              : "bg-gray-50 border-gray-200 hover:border-gray-300"
                               }`}
                           >
                             <input
@@ -2030,8 +2038,8 @@ const ProjectsPage = ({ initialProjects = [] }) => {
                             />
                             <span
                               className={`text-sm font-medium ${exportColumns[column.key]
-                                  ? "text-gray-900"
-                                  : "text-gray-600"
+                                ? "text-gray-900"
+                                : "text-gray-600"
                                 }`}
                             >
                               {column.label}

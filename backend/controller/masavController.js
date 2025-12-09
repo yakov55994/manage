@@ -2,15 +2,18 @@
 // MASAV CONTROLLER
 // =======================================
 
-import { generateMasavFile } from "../services/masavService.js";
+import { generateCreditFile } from "../services/masavService.js";
 
 export default {
-  // Generate Masav file
   async generateMasav(req, res) {
     try {
-      const { payments, executionDate } = req.body;
+      console.log("🟦 BODY RECEIVED:", req.body);
+      console.log("🟪 payments:", req.body.payments);
+      console.log("🟩 type:", typeof req.body.payments);
 
-      const fileContent = generateMasavFile(payments, executionDate);
+      const { payments, companyInfo, executionDate } = req.body;
+
+      const fileContent = generateCreditFile(companyInfo, payments, executionDate);
 
       res.setHeader("Content-Type", "text/plain; charset=utf-8");
       res.setHeader("Content-Disposition", "attachment; filename=masav.txt");
@@ -23,3 +26,4 @@ export default {
     }
   }
 };
+
