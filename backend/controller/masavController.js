@@ -5,12 +5,6 @@
 import { generateCreditFile } from "../services/masavService.js";
 
 export default {
-  // Generate Masav file
-  async generateMasav(req, res) {
-    try {
-      console.log("MASAV Request Body:", req.body);
-
-      const { companyInfo, payments, executionDate } = req.body;
   async generateMasav(req, res) {
         try {
           console.log("🟦 BODY RECEIVED:", req.body);
@@ -35,6 +29,4 @@ export default {
       }
 
     }
- }
-
-}
+ 
