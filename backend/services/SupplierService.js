@@ -30,7 +30,7 @@ export default {
     }).limit(50);
   },
 
-  async getAllSuppliers(type = null) {
+async getAllSuppliers(type = null) {
     const query = {};
 
     // 🆕 אם נשלח type - סנן לפי supplierType

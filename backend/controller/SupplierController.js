@@ -35,13 +35,13 @@ const supplierController = {
   },
 
   async getSuppliers(req, res) {
-    try {
-      const suppliers = await supplierService.getAllSuppliers(req.user);
-      res.json({ success: true, data: suppliers });
-    } catch (e) {
-      sendError(res, e);
-    }
-  },
+  try {
+    const suppliers = await supplierService.getAllSuppliers(); // 👈 בלי req.user!
+    res.json({ success: true, data: suppliers });
+  } catch (e) {
+    sendError(res, e);
+  }
+},
 
   async getSuppliersByProject(req, res) {
     try {

@@ -1389,6 +1389,14 @@ const OrdersPage = () => {
 
             {/* Export Buttons */}
             <div className="flex gap-3">
+                   <button
+                onClick={() => navigate("/create-order")}
+                className="flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-orange-500 to-amber-500 text-white font-bold rounded-full hover:from-orange-600 hover:to-amber-600 transition-all shadow-lg whitespace-nowrap"
+              >
+                <Sparkles className="w-5 h-5" />
+                <span>יצירת הזמנה</span>
+              </button>
+
               <button
                 onClick={() => setShowPrintModal(true)}
                 className="flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-orange-500 to-amber-500 text-white font-bold rounded-full hover:from-orange-600 hover:to-amber-600 transition-all shadow-lg whitespace-nowrap"

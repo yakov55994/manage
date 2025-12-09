@@ -1,159 +1,114 @@
-// ===============================================
-// MASAV SERVICE – תקן בנק ישראל 2025
-// ===============================================
+export function generateCreditFile(companyInfo, payments, date) {
+  const lines = [];
 
-// --------- מפת קודי הבנקים ---------
-const BANK_CODES = {
-  "10": "10", "לאומי": "10", "בנק לאומי לישראל בע\"מ": "10",
-  "12": "12", "הפועלים": "12", "בנק הפועלים בע\"מ": "12",
-  "11": "11", "דיסקונט": "11", "בנק דיסקונט לישראל בע\"מ": "11",
-  "20": "20", "מזרחי": "20", "מזרחי טפחות": "20", "בנק מזרחי טפחות בע\"מ": "20",
-  "31": "31", "בינלאומי": "31", "בנק הבינלאומי הראשון לישראל בע\"מ": "31",
-  "17": "17", "מרכנתיל": "17", "בנק מרכנתיל דיסקונט בע\"מ": "17",
-  "14": "14", "אוצר החייל": "14", "בנק אוצר החייל בע\"מ": "14",
-  "04": "04", "יהב": "04", "בנק יהב לעובדי המדינה בע\"מ": "04",
-  "54": "54", "ירושלים": "54", "בנק ירושלים בע\"מ": "54",
-  "46": "46", "מסד": "46", "בנק מסד בע\"מ": "46",
-  "13": "13", "אגוד": "13", "בנק אגוד לישראל בע\"מ": "13",
-  "26": "26", "יובנק": "26", "יובנק בע\"מ": "26",
-  "09": "09", "בנק הדואר": "09", "הדואר": "09",
-  "18": "18", "One Zero": "18", "One Zero - הבנק הדיגיטלי בע\"מ": "18",
-  "default": "10"
-};
+  if (!Array.isArray(payments)) {
+    throw new Error("payments must be an array");
+  }
 
-// -------------------------------------------------
-// קוד בנק תקני (כולל fallback)
-// -------------------------------------------------
-function getBankCode(bankName) {
-  if (!bankName) return BANK_CODES.default;
-  const clean = String(bankName).trim();
-
-  // אם נתון מספר – תקני
-  if (/^\d+$/.test(clean)) return BANK_CODES[clean] || BANK_CODES.default;
-
-  // אם נתון שם בנק – תקני
-  return (
-    BANK_CODES[clean] ||
-    BANK_CODES[clean.replace(/^בנק\s+/g, "")] ||
-    BANK_CODES.default
-  );
-}
-
-// -------------------------------------------------
-// תאריך YYMMDD (ללא UTC BUG)
-// -------------------------------------------------
-function formatYYMMDD(dateStr) {
-  const d = new Date(dateStr);
-  if (isNaN(d.getTime())) return "000000";
-
-  const yy = String(d.getFullYear()).slice(-2);
-  const mm = String(d.getMonth() + 1).padStart(2, "0");
-  const dd = String(d.getDate()).padStart(2, "0");
-
-  return yy + mm + dd;
-}
-
-// ===============================================
-// יצירת קובץ MASAV תקני
-// ===============================================
-export function generateMasavFile({ companyInfo, payments, executionDate }) {
-  const dateYYMMDD =
-    formatYYMMDD(executionDate) !== "000000"
-      ? formatYYMMDD(executionDate)
-      : formatYYMMDD(new Date());
-
-  const companyId = String(companyInfo.companyId || "0000000").padStart(7, "0");
-  const account = String(companyInfo.accountNumber || "000000000").padStart(9, "0");
-  const companyName = String(companyInfo.companyName || "COMPANY")
-    .normalize("NFKD")
-    .replace(/[^\x00-\x7F]/g, "") // הסרת עברית
+  // ======================================
+  // BASIC FIELDS
+  // ======================================
+  const companyId = (companyInfo.companyId || "").toString().padStart(7, "0");
+  const companyName = (companyInfo.companyName || "")
     .padEnd(16, " ")
     .substring(0, 16);
 
-  const lines = [];
+  // תאריך YYMMDD
+  const formattedDate = date.padStart(6, "0");
 
-  // -------------------------------------------------
-  // HEADER (תקני 100%)
-  // -------------------------------------------------
+  // מספר חשבון החברה – 12 ספרות
+  const headerAccount = (companyInfo.accountNumber || "")
+    .toString()
+    .padStart(12, "0");
+
+  // מספר רצף – במקרה שלך קבוע
+  const sequenceNumber = "9002512040001";
+
+  // סכום כולל
+  let totalAmount = 0;
+  payments.forEach(p => {
+    totalAmount += Math.round((p.amount || 0) * 100);
+  });
+
+  // ======================================
+  // HEADER LINE (K)
+  // ======================================
   const header =
-    "K" +
-    companyId +
-    dateYYMMDD +
-    "0001" +
-    dateYYMMDD +
-    account +
-    "000000" + // בנק מייצג
-    "".padEnd(17, " ") +
-    companyName +
-    "".padEnd(64, " ") +
-    "KOT";
+    "K" +                        // סוג שורה
+    companyId +                  // מזהה חברה (7)
+    sequenceNumber +             // מספר רצף (13)
+    formattedDate +              // תאריך YYMMDD
+    headerAccount +              // חשבון (12)
+    "000000" +                   // אפסים (6)
+    "".padEnd(17, " ") +         // רווחים (17)
+    companyName +                // שם חברה (16)
+    "".padEnd(64, " ") +         // רווחים (64)
+    "KOT";                       // סיומת (3)
 
   lines.push(header);
 
-  // -------------------------------------------------
-  // RECORD 1 – תשלומים (כל שורה EXACT 160 תווים)
-  // -------------------------------------------------
-  payments.forEach((p, i) => {
-    const bankCode = getBankCode(p.bankNumber);
-    const branch = String(p.branchNumber || "").replace(/\D/g, "").padStart(3, "0");
-    const accountNum = String(p.accountNumber || "")
-      .replace(/\D/g, "")
-      .padStart(9, "0");
+  // ======================================
+  // PAYMENT LINES (1)
+  // ======================================
+  payments.forEach((payment, index) => {
+    const recordNumber = (index + 2).toString().padStart(10, "0");
 
-    const amountCents = Math.round((p.amount || 0) * 100);
-    const amountStr = String(amountCents).padStart(13, "0");
+    const bankCode = (payment.bankNumber || "").toString().padStart(6, "0");
+    const branchCode = (payment.branchNumber || "").toString().padStart(5, "0");
+    const accountNum = (payment.accountNumber || "").toString().padStart(7, "0");
 
-    const supplierId = String(p.supplierId || "0")
-      .replace(/\D/g, "")
-      .padStart(9, "0");
+    const supplierId = (payment.supplierId || "").toString().padStart(9, "0");
 
-    const name =
-      String(p.name || "PAYEE")
-        .normalize("NFKD")
-        .replace(/[^\x00-\x7F]/g, "")
-        .padEnd(16, " ")
-        .substring(0, 16);
+    const supplierName = (payment.name || "")
+      .toString()
+      .padEnd(16, " ")
+      .substring(0, 16);
 
-    const reference =
-      p.invoiceNumber && /^\d+$/.test(String(p.invoiceNumber))
-        ? String(p.invoiceNumber).padStart(6, "0")
-        : String(i + 100001).padStart(6, "0");
+    const amountAgorot = Math.round((payment.amount || 0) * 100)
+      .toString()
+      .padStart(8, "0");
 
-    const seq = String(i + 2).padStart(7, "0");
+    const reference = (payment.invoiceNumber || "")
+      .toString()
+      .padStart(6, "0");
 
     const line =
       "1" +
       companyId +
-      seq +
+      recordNumber +
       bankCode +
-      branch +
+      branchCode +
       accountNum +
-      amountStr +
       supplierId +
-      "AB" +
-      name +
+      "AB" +               // קוד פעולה
+      " " +                // רווח
+      supplierName +
+      amountAgorot +
+      "".padStart(20, "0") +
       reference +
-      "".padEnd(60, "0");
+      "".padStart(30, "0") +
+      "6" +
+      "".padStart(21, "0");
 
     lines.push(line);
   });
 
-  // -------------------------------------------------
-  // TRAILER (5)
-  // -------------------------------------------------
-  const totalCents = payments.reduce(
-    (sum, p) => sum + Math.round((p.amount || 0) * 100),
-    0
-  );
+  // ======================================
+  // TRAILER LINE (5)
+  // ======================================
+  const totalRecords = (payments.length + 1).toString().padStart(7, "0");
+  const totalAmountStr = totalAmount.toString().padStart(12, "0");
+  const recordCount = payments.length.toString().padStart(6, "0");
 
   const trailer =
     "5" +
     companyId +
-    dateYYMMDD +
-    "0001" +
-    String(payments.length).padStart(7, "0") +
-    String(totalCents).padStart(13, "0") +
-    "".padEnd(80, "0");
+    sequenceNumber +
+    totalRecords +
+    totalAmountStr +
+    "".padStart(18, "0") +
+    recordCount +
+    "".padEnd(74, " ");
 
   lines.push(trailer);
 

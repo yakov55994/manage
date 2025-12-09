@@ -15,8 +15,6 @@ import {
   Sparkles,
   Search,
   ArrowUpDown,
-  CheckCircle2,
-  XCircle,
   ArrowLeftRight,
   AlertTriangle,
   CheckSquare,
@@ -27,7 +25,6 @@ import MoveInvoiceModal from "../../Components/MoveInvoiceModal.jsx";
 import PaymentCaptureModal from "../../Components/PaymentCaptureModal.jsx";
 import { useAuth } from "../../context/AuthContext.jsx";
 import { FileText, Paperclip } from "lucide-react";
-import JSZip from "jszip";
 import MasavModal from "../../Components/MasavModal.jsx";
 
 const InvoicesPage = () => {
@@ -1929,7 +1926,7 @@ const InvoicesPage = () => {
                 className="flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-orange-500 to-amber-500 text-white font-bold rounded-full hover:from-orange-600 hover:to-amber-600 transition-all shadow-lg whitespace-nowrap"
               >
                 <Sparkles className="w-5 h-5" />
-                <span>הוסף חשבונית</span>
+                <span>יצירת חשבונית</span>
               </button>
             </div>
           </div>
