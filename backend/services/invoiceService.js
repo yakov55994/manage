@@ -356,10 +356,9 @@ async function deleteInvoice(user, invoiceId) {
     await invoice.deleteOne();
   } catch (err) {
     console.error("❌ Error deleting invoice or files:", err);
-    // לא נחזיר 400 — רק נדלג
   }
 
-  //עדכון פרויקטים
+  // עדכון תקציב לכל הפרויקטים שמופיעים ב-invoice.projects (לרוב: מילגה)
   for (const pid of projectIds) {
     try {
       await Project.findByIdAndUpdate(pid, {
@@ -369,12 +368,18 @@ async function deleteInvoice(user, invoiceId) {
       await recalculateRemainingBudget(pid);
     } catch (err) {
       console.error(`❌ Error updating project ${pid}:`, err);
-      // לא מפילים את המחיקה
     }
+  }
+
+  // ⭐⭐⭐ התיקון הקריטי:
+  // אם החשבונית מומנה מפרויקט אחר — חייבים לעדכן את התקציב שלו!
+  if (invoice.fundedFromProjectId) {
+    await recalculateRemainingBudget(invoice.fundedFromProjectId);
   }
 
   return true;
 }
+
 
 
 // ===============================================

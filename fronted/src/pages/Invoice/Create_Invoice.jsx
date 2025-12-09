@@ -417,6 +417,7 @@ const CreateInvoice = () => {
                 }))
               }
               supplierType="invoices" // 🆕 הוסף את זה!
+              returnTo="create-invoice"
             />
           </div>
 

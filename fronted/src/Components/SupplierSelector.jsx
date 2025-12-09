@@ -15,6 +15,7 @@ const SupplierSelector = ({
   className = "",
   disabled = false,
   supplierType = "both", // 🆕 ברירת מחדל - כולם
+  returnTo = "create-invoice", // 🆕 ברירת מחדל
 }) => {
   const [suppliers, setSuppliers] = useState([]);
   const [loading, setLoading] = useState(false);
@@ -32,16 +33,16 @@ const SupplierSelector = ({
         // 🆕 בנה את ה-URL עם query parameters
         let url = `/suppliers`;
         const params = new URLSearchParams();
-        
+
         if (projectId) {
-          params.append('projectId', projectId);
+          params.append("projectId", projectId);
         }
-        
+
         // 🆕 הוסף סינון לפי סוג ספק
         if (supplierType && supplierType !== "both") {
-          params.append('type', supplierType);
+          params.append("type", supplierType);
         }
-        
+
         if (params.toString()) {
           url += `?${params.toString()}`;
         }
@@ -75,6 +76,20 @@ const SupplierSelector = ({
     }
   }, [value, suppliers]);
 
+  // 🆕 זיהוי ספק חדש מה-query string
+useEffect(() => {
+  const params = new URLSearchParams(window.location.search);
+  const newSupplierId = params.get('newSupplierId');
+  
+  if (newSupplierId && suppliers.length > 0) {
+    const newSupplier = suppliers.find(s => s._id === newSupplierId);
+    if (newSupplier) {
+      handleSupplierSelect(newSupplier);
+      // נקה את ה-URL
+      window.history.replaceState({}, '', window.location.pathname);
+    }
+  }
+}, [suppliers]);
   // סינון ספקים לפי חיפוש
   const filteredSuppliers = (suppliers || []).filter((supplier) => {
     const name = String(supplier?.name ?? "").toLowerCase();
@@ -198,7 +213,7 @@ const SupplierSelector = ({
               <div
                 onClick={() => {
                   setIsOpen(false);
-                  navigate("/create-supplier?returnTo=create-invoice");
+    navigate(`/create-supplier?returnTo=${returnTo}`);
                 }}
                 className="mt-2 rounded-2xl p-2 cursor-pointer bg-slate-200 font-bold text-center hover:bg-slate-300 
      border-t border-gray-200"
@@ -207,8 +222,10 @@ const SupplierSelector = ({
               </div>
 
               {/* כפתור סגירה */}
-              <div className="mt-2 rounded-2xl p-1 cursor-pointer bg-slate-200 font-bold text-center hover:bg-slate-300 
-     border-t border-gray-200">
+              <div
+                className="mt-2 rounded-2xl p-1 cursor-pointer bg-slate-200 font-bold text-center hover:bg-slate-300 
+     border-t border-gray-200"
+              >
                 <button
                   onClick={() => setIsOpen(false)}
                   className="w-full p-2 text-sm transition-colors"

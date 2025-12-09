@@ -126,7 +126,7 @@ const CreateSupplier = () => {
         phone: supplier.phone.trim(),
         address: supplier.address?.trim() || undefined,
         email: supplier.email?.trim() || undefined,
-        supplierType: supplier.supplierType, // 🆕 הוסף את זה!
+        supplierType: supplier.supplierType,
       };
 
       const { bankName, branchNumber, accountNumber } = supplier.bankDetails;
@@ -141,26 +141,21 @@ const CreateSupplier = () => {
       const res = await api.post("/suppliers", supplierData);
       const createdSupplier = res.data.data || res.data;
 
-      // ✅ שמור את ה-ID של הספק החדש ב-localStorage
-      localStorage.setItem("newSupplierId", createdSupplier._id);
-
       toast.success("הספק נוצר בהצלחה!", {
         className: "sonner-toast success rtl",
       });
-      const params = new URLSearchParams(location.search);
-      const returnTo = params.get("returnTo");
 
-      if (returnTo === "create-invoice") {
-        navigate("/create-invoice", { state: { newSupplier: res.data.data } });
+      // 🎯 ניווט חכם
+      const returnTo = new URLSearchParams(window.location.search).get(
+        "returnTo"
+      );
+
+      if (returnTo) {
+        // אם יש returnTo - חזור לדף המקורי עם ה-ID של הספק החדש
+        navigate(`/${returnTo}?newSupplierId=${createdSupplier._id}`);
       } else {
+        // אם אין returnTo - לך לרשימת הספקים
         navigate("/suppliers");
-      }
-
-      if (res?.data?.supplier) {
-        sessionStorage.setItem(
-          "createdSupplier",
-          JSON.stringify(res.data.supplier)
-        );
       }
     } catch (err) {
       console.error("Error details:", err.response?.data);

@@ -681,6 +681,7 @@ const CreateOrder = () => {
                           handleOrderChange(index, "supplierId", supplier._id);
                         }}
                         supplierType="orders" // 🆕 הוסף את זה!
+                        returnTo="create-order"
                       />
                     </div>
 
