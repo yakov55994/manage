@@ -24,6 +24,9 @@ const CreateInvoice = () => {
   // ============================
 
   const [projects, setProjects] = useState([]);
+  const milgaProject = projects.find((p) => p.name === "מילגה");
+  const MILGA_ID = milgaProject?._id;
+
   // ✅ טען טיוטה שמורה אם יש
   const loadDraft = () => {
     const saved = localStorage.getItem("invoiceDraft");
@@ -62,17 +65,19 @@ const CreateInvoice = () => {
   );
 
   const [rows, setRows] = useState(draft?.rows || []);
+  const [fundedFromProjectId, setFundedFromProjectId] = useState("");
 
   // ✅ הוסף את זה אחרי ה-useState של form
   useEffect(() => {
-    // שמור את הטופס ב-localStorage כל פעם שמשהו משתנה
     const dataToSave = {
       form,
       selectedProjects,
       rows,
+      fundedFromProjectId, // ← הוספנו
     };
     localStorage.setItem("invoiceDraft", JSON.stringify(dataToSave));
-  }, [form, selectedProjects, rows]);
+  }, [form, selectedProjects, rows, fundedFromProjectId]);
+
   const [loading, setLoading] = useState(false);
   const [showPaymentModal, setShowPaymentModal] = useState(false);
 
@@ -186,7 +191,7 @@ const CreateInvoice = () => {
       !form.checkNumber
     ) {
       return toast.error("יש למלא מספר צ'ק");
-    };
+    }
     for (const row of rows) {
       if (!row.sum || Number(row.sum) <= 0) {
         return toast.error(`סכום לא תקין לפרויקט ${row.projectName}`);
@@ -240,14 +245,13 @@ const CreateInvoice = () => {
         checkNumber:
           form.paid === "כן" && form.paymentMethod === "check"
             ? form.checkNumber
-            : null, // ✅
+            : null,
         checkDate:
           form.paid === "כן" && form.paymentMethod === "check"
             ? form.checkDate
-            : null, // ✅
+            : null,
 
         files: uploadedFiles,
-
         status: "לא הוגש",
 
         totalAmount: rows.reduce((acc, r) => acc + Number(r.sum || 0), 0),
@@ -257,6 +261,8 @@ const CreateInvoice = () => {
           projectName: r.projectName,
           sum: Number(r.sum),
         })),
+
+        fundedFromProjectId: fundedFromProjectId || null, // ← הוספה חשובה!!
       };
 
       console.log("📤 FINAL PAYLOAD:", payload);
@@ -373,6 +379,30 @@ const CreateInvoice = () => {
                 );
               })}
           </div>
+          {/* בחירת פרויקט מממן — רק אם נבחר פרויקט "מילגה" */}
+          {selectedProjects.some((p) => p._id === MILGA_ID) && (
+            <div className="mt-4">
+              <label className="block font-semibold text-slate-700 mb-2">
+                מאיזה פרויקט יורד התקציב?
+              </label>
+
+              <select
+                className="w-full p-3 border-2 rounded-xl bg-white focus:border-orange-500 outline-none"
+                value={fundedFromProjectId}
+                onChange={(e) => setFundedFromProjectId(e.target.value)}
+              >
+                <option value="">בחר פרויקט מממן</option>
+
+                {projects
+                  .filter((p) => p._id !== MILGA_ID) // לא להציג את מילגה
+                  .map((p) => (
+                    <option key={p._id} value={p._id}>
+                      {p.name}
+                    </option>
+                  ))}
+              </select>
+            </div>
+          )}
         </div>
 
         {/* GLOBAL FIELDS */}
@@ -386,8 +416,7 @@ const CreateInvoice = () => {
                   supplierId: s._id,
                 }))
               }
-                supplierType="invoices"  // 🆕 הוסף את זה!
-
+              supplierType="invoices" // 🆕 הוסף את זה!
             />
           </div>
 

@@ -85,7 +85,16 @@ const invoiceSchema = new mongoose.Schema({
     ref: 'User',
   },
   createdByName: { type: String },
+
+  fundedFromProjectId: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: "Project",
+    default: null
+  },
+
 });
+
+
 invoiceSchema.pre('deleteOne', { document: true, query: false }, async function (next) {
   try {
     if (this.files?.length) {

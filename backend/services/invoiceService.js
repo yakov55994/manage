@@ -15,35 +15,36 @@ export const recalculateRemainingBudget = async (projectId) => {
   const project = await Project.findById(projectId);
   if (!project) return;
 
-  // הגנות חובה:
-  const budget = Number(project.budget || 0);
+  const isMilga = project.name === "מילגה";
 
-  const invoices = await Invoice.find({ "projects.projectId": projectId });
-
-  let totalSpent = 0;
-
-  for (const inv of invoices) {
-    const part = inv.projects.find(
-      (p) => p.projectId.toString() === projectId.toString()
-    );
-
-    if (part) {
-      const sum = Number(part.sum || 0);
-      if (!isNaN(sum)) totalSpent += sum;
-    }
+  // אם זה פרויקט מילגה — לא מורידים כלום מהתקציב
+  if (isMilga) {
+    project.remainingBudget = project.budget;
+    await project.save();
+    return;
   }
 
-  project.remainingBudget = budget - totalSpent;
+  // חשבוניות רגילות של הפרויקט
+  const regularInvoices = await Invoice.find({
+    "projects.projectId": projectId,
+    fundedFromProjectId: null
+  });
 
-  // שלא יהיה NaN לעולם:
-  if (isNaN(project.remainingBudget)) {
-    project.remainingBudget = budget;
-  }
+  // חשבוניות של מילגה שממומנות מהפרויקט הזה
+  const milgaInvoices = await Invoice.find({
+    fundedFromProjectId: projectId
+  });
 
+  const sumInvoices = (invoices) =>
+    invoices.reduce((sum, inv) => sum + Number(inv.totalAmount || 0), 0);
+
+  const totalSpent =
+    sumInvoices(regularInvoices) + sumInvoices(milgaInvoices);
+
+  project.remainingBudget = project.budget - totalSpent;
   await project.save();
-
-  return project;
 };
+
 
 
 // ===============================================
@@ -113,7 +114,7 @@ async function getInvoiceById(user, invoiceId) {
 // CREATE INVOICE – חשבונית אחת + כמה פרויקטים
 // ===============================================
 async function createInvoice(user, data) {
-  const { projects, files, ...basic } = data;
+  const { projects, files, fundedFromProjectId, ...basic } = data;
 
   if (!projects || !projects.length) {
     throw new Error("חובה לבחור לפחות פרויקט אחד");
@@ -121,10 +122,7 @@ async function createInvoice(user, data) {
 
   // בדיקת הרשאות
   if (user.role !== "admin") {
-    const allowed = user.permissions.map(
-      (p) => String(p.project?._id || p.project)
-    );
-
+    const allowed = user.permissions.map(p => String(p.project?._id || p.project));
     for (const p of projects) {
       if (!allowed.includes(String(p.projectId))) {
         throw new Error("אין הרשאה להוסיף חשבונית לאחד הפרויקטים");
@@ -133,10 +131,7 @@ async function createInvoice(user, data) {
   }
 
   // סכום כולל
-  const totalAmount = projects.reduce(
-    (sum, p) => sum + Number(p.sum),
-    0
-  );
+  const totalAmount = projects.reduce((sum, p) => sum + Number(p.sum), 0);
 
   // יצירת החשבונית
   const invoice = await Invoice.create({
@@ -144,6 +139,7 @@ async function createInvoice(user, data) {
     projects,
     totalAmount,
     files,
+    fundedFromProjectId: fundedFromProjectId || null,   // ✔ כאן!
     createdBy: user._id,
     createdByName: user.username || user.name,
   });
@@ -157,8 +153,14 @@ async function createInvoice(user, data) {
     await recalculateRemainingBudget(p.projectId);
   }
 
+  // ❗ אם החשבונית ממומנת מכספי פרויקט אחר — צריך לעדכן גם אותו
+  if (invoice.fundedFromProjectId) {
+    await recalculateRemainingBudget(invoice.fundedFromProjectId);
+  }
+
   return invoice;
 }
+
 
 // ===============================================
 // UPDATE INVOICE
@@ -167,56 +169,49 @@ async function updateInvoice(user, invoiceId, data) {
   const invoice = await Invoice.findById(invoiceId);
   if (!invoice) throw new Error("חשבונית לא נמצאה");
 
-  const oldProjects = invoice.projects.map((p) =>
-    p.projectId.toString()
-  );
+  const oldProjects = invoice.projects.map(p => p.projectId.toString());
+  const { projects: newProjects, files: newFiles = [], fundedFromProjectId, ...basic } = data;
 
-  const { projects: newProjects, files: newFiles = [], ...basic } = data;
-
-  // ⭐ מיזוג קבצים — שומר את הישנים + מוסיף חדשים
   const mergedFiles = [
-    ...invoice.files,              // קבצים קיימים
-    ...newFiles.filter(f => f.isLocal || !invoice.files.some(old => old.url === f.url)) // רק חדשים
+    ...invoice.files,
+    ...newFiles.filter(f => f.isLocal || !invoice.files.some(old => old.url === f.url))
   ];
 
-  // ⭐ עדכון החשבונית
   const updated = await Invoice.findByIdAndUpdate(
     invoiceId,
     {
       ...basic,
       projects: newProjects,
-      totalAmount: newProjects.reduce(
-        (sum, p) => sum + Number(p.sum),
-        0
-      ),
-      files: mergedFiles, // ✔ מעכשיו קבצים לעולם לא נמחקים עד שהמשתמש מוחק ידנית!
+      totalAmount: newProjects.reduce((sum, p) => sum + Number(p.sum), 0),
+      files: mergedFiles,
+      fundedFromProjectId: fundedFromProjectId || null,   // ✔ כאן!
     },
     { new: true }
   );
 
-  // ⭐ טיפול בקישורי פרויקטים
-  const newProjectIds = newProjects.map((p) =>
-    p.projectId.toString()
-  );
+  // טיפול בקישורים
+  const newProjectIds = newProjects.map(p => p.projectId.toString());
 
   for (const oldId of oldProjects) {
     if (!newProjectIds.includes(oldId)) {
-      await Project.findByIdAndUpdate(oldId, {
-        $pull: { invoices: invoiceId }
-      });
+      await Project.findByIdAndUpdate(oldId, { $pull: { invoices: invoiceId } });
       await recalculateRemainingBudget(oldId);
     }
   }
 
   for (const p of newProjects) {
-    await Project.findByIdAndUpdate(p.projectId, {
-      $addToSet: { invoices: invoiceId }
-    });
+    await Project.findByIdAndUpdate(p.projectId, { $addToSet: { invoices: invoiceId } });
     await recalculateRemainingBudget(p.projectId);
+  }
+
+  // ❗ אם החשבונית ממומנת מפרויקט אחר — מחשבים גם אותו
+  if (updated.fundedFromProjectId) {
+    await recalculateRemainingBudget(updated.fundedFromProjectId);
   }
 
   return updated;
 }
+
 
 
 // ===============================================
@@ -230,32 +225,28 @@ async function moveInvoice(user, invoiceId, fromProjectId, toProjectId) {
   toProjectId = String(toProjectId);
 
   if (!Array.isArray(invoice.projects)) {
-    throw new Error("מבנה פרויקטים בחשבונית לא תקין");
+    throw new Error("מבנה פרויקטים בחחשבונית לא תקין");
   }
 
-  // מוצא חלק לפי שני מצבים: פופולייט מלא או ObjectId
   const part = invoice.projects.find((p) => {
     const pid = p?.projectId?._id || p?.projectId;
     return String(pid) === fromProjectId;
   });
 
-  if (!part) {
-    console.error("📛 פרויקטים בחשבונית:", invoice.projects);
-    console.error("📛 fromProjectId שקיבלת:", fromProjectId);
-    throw new Error("החשבונית לא משויכת לפרויקט שממנו מבצעים העברה");
-  }
+  if (!part) throw new Error("החשבונית לא משויכת לפרויקט שממנו מבצעים העברה");
 
-  // בדיקות הרשאות
+  // הרשאות
   if (user.role !== "admin") {
-    const allowed = user.permissions.map(
-      (p) => String(p.project?._id || p.project)
-    );
+    const allowed = user.permissions.map(p => String(p.project?._id || p.project));
     if (!allowed.includes(fromProjectId) || !allowed.includes(toProjectId)) {
       throw new Error("אין הרשאה להעברה בין הפרויקטים האלה");
     }
   }
 
-  // מציאת יעד (תואם פופולייט)
+  // שם הפרויקט החדש
+  const newProject = await Project.findById(toProjectId).select("name");
+  if (!newProject) throw new Error("פרויקט יעד לא נמצא");
+
   const existingTarget = invoice.projects.find((p) => {
     const pid = p?.projectId?._id || p?.projectId;
     return String(pid) === toProjectId;
@@ -270,6 +261,15 @@ async function moveInvoice(user, invoiceId, fromProjectId, toProjectId) {
     });
   } else {
     part.projectId = toProjectId;
+    part.projectName = newProject.name; // ← חובה!
+  }
+
+  // ⭐ תיקון חשוב — לוודא שכל החלקים הקשורים לפרויקט יעד מעודכנים בשם:
+  for (const p of invoice.projects) {
+    const pid = p?.projectId?._id || p?.projectId;
+    if (String(pid) === toProjectId) {
+      p.projectName = newProject.name;
+    }
   }
 
   invoice.totalAmount = invoice.projects.reduce(
@@ -279,19 +279,28 @@ async function moveInvoice(user, invoiceId, fromProjectId, toProjectId) {
 
   await invoice.save();
 
-  await Project.findByIdAndUpdate(fromProjectId, {
-    $pull: { invoices: invoiceId },
-  });
-
-  await Project.findByIdAndUpdate(toProjectId, {
-    $addToSet: { invoices: invoiceId },
-  });
+  await Project.findByIdAndUpdate(fromProjectId, { $pull: { invoices: invoiceId } });
+  await Project.findByIdAndUpdate(toProjectId, { $addToSet: { invoices: invoiceId } });
 
   await recalculateRemainingBudget(fromProjectId);
   await recalculateRemainingBudget(toProjectId);
 
-  return invoice;
+  // החזרה עם populate
+  const populated = await Invoice.findById(invoice._id)
+    .populate("projects.projectId", "name")
+    .populate("supplierId", "name phone email bankDetails");
+
+
+  populated.projects = populated.projects.map((p) => ({
+    ...p.toObject(),
+    projectName: p.projectId?.name || p.projectName || "",
+  }));
+
+  return populated;
+
 }
+
+
 
 
 // ===============================================

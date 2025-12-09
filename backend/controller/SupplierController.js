@@ -36,7 +36,8 @@ const supplierController = {
 
   async getSuppliers(req, res) {
   try {
-    const suppliers = await supplierService.getAllSuppliers(); // 👈 בלי req.user!
+    const type = req.query.type || null;  // ⬅ שלוף את type מה-URL
+    const suppliers = await supplierService.getAllSuppliers(type);
     res.json({ success: true, data: suppliers });
   } catch (e) {
     sendError(res, e);

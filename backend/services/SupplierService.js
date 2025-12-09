@@ -30,16 +30,13 @@ export default {
     }).limit(50);
   },
 
-async getAllSuppliers(type = null) {
+  async getAllSuppliers(type = null) {
     const query = {};
 
-    // 🆕 אם נשלח type - סנן לפי supplierType
-    if (type && type !== "all") {
+    if (type && type !== "all" && type !== "both") {
       query.$or = [
-        { supplierType: type },
-        { supplierType: "both" },
-        { supplierType: null },              // 🆕 ספקים ישנים
-        { supplierType: { $exists: false } } // 🆕 ספקים ללא השדה בכלל
+        { supplierType: type },   // למשל "orders"
+        { supplierType: "both" }, // ספקים שמשרתים את שני הסוגים
       ];
     }
 

@@ -674,14 +674,14 @@ const CreateOrder = () => {
                   <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                     {/* ✅ בחירת ספק */}
                     <div className="group">
-                    <SupplierSelector
-  projectId={null}
-  value={order.supplierId}
-  onSelect={(supplier) => {
-    handleOrderChange(index, "supplierId", supplier._id);
-  }}
-  supplierType="orders"  // 🆕 הוסף את זה!
-/>
+                      <SupplierSelector
+                        projectId={null}
+                        value={order.supplierId}
+                        onSelect={(supplier) => {
+                          handleOrderChange(index, "supplierId", supplier._id);
+                        }}
+                        supplierType="orders" // 🆕 הוסף את זה!
+                      />
                     </div>
 
                     {/* ✅ שם מזמין - שדה עצמאי לחלוטין */}
