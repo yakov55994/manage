@@ -1,113 +1,135 @@
-export function generateCreditFile(companyInfo, payments, date) {
-  const lines = [];
+import fs from "fs";
+import path from "path";
 
-  if (!Array.isArray(payments)) {
-    throw new Error("payments must be an array");
-  }
+// 🌟 טוען את קובץ הבנקים בצורה בטוחה שעובדת בכל Node
+const banksPath = path.join(process.cwd(), "data", "banks_and_branches.json");
+const banks = JSON.parse(fs.readFileSync(banksPath, "utf8"));
 
-  // ======================================
-  // BASIC FIELDS
-  // ======================================
-  const companyId = (companyInfo.companyId || "").toString().padStart(7, "0");
-  const companyName = (companyInfo.companyName || "")
-    .padEnd(16, " ")
-    .substring(0, 16);
+// ==========================================
+// VALIDATOR
+// ==========================================
+export function validatePayments(payments) {
+  const errors = [];
 
-  // תאריך YYMMDD
-  const formattedDate = date.padStart(6, "0");
+  payments.forEach((p, index) => {
+    const row = index + 1;
 
-  // מספר חשבון החברה – 12 ספרות
-  const headerAccount = (companyInfo.accountNumber || "")
-    .toString()
-    .padStart(12, "0");
+    if (!/^\d{2}$/.test(p.bankNumber)) {
+      errors.push(`רשומה ${row}: קוד בנק לא תקין (${p.bankNumber})`);
+    }
 
-  // מספר רצף – במקרה שלך קבוע
-  const sequenceNumber = "9002512040001";
+    if (!/^\d{3}$/.test(p.branchNumber)) {
+      errors.push(`רשומה ${row}: מספר סניף חייב להיות 3 ספרות`);
+    }
 
-  // סכום כולל
-  let totalAmount = 0;
-  payments.forEach(p => {
-    totalAmount += Math.round((p.amount || 0) * 100);
+    if (!/^\d{9}$/.test(p.accountNumber)) {
+      errors.push(`רשומה ${row}: מספר חשבון חייב להיות 9 ספרות`);
+    }
+
+    if (!p.amount || p.amount <= 0) {
+      errors.push(`רשומה ${row}: סכום תשלום חייב להיות גדול מ-0`);
+    }
+
+    if (!p.supplierName || p.supplierName.trim().length === 0) {
+      errors.push(`רשומה ${row}: שם ספק חסר`);
+    }
+
+    if (p.supplierName.length > 16) {
+      errors.push(`רשומה ${row}: שם ספק ארוך מדי (מקסימום 16 תווים)`);
+    }
+
+    if (!/^\d{10}$/.test(p.internalId)) {
+      errors.push(`רשומה ${row}: מזהה ספק חייב להיות 10 ספרות`);
+    }
   });
 
-  // ======================================
-  // HEADER LINE (K)
-  // ======================================
+  return errors;
+}
+
+// ==========================================
+// GENERATE MASAV FILE
+// ==========================================
+export function generateCreditFile(companyInfo, payments, executionDate) {
+  const lines = [];
+
+  // תאריך בפורמט YYMMDD
+  const y = executionDate.slice(2, 4);
+  const m = executionDate.slice(5, 7);
+  const d = executionDate.slice(8, 10);
+  const dateYYMMDD = `${y}${m}${d}`;
+
+  const companyId = companyInfo.companyId.toString().padStart(7, "0");
+  const sequence = `00${dateYYMMDD}0001`;
+  const companyAccount = companyInfo.accountNumber.padStart(11, "0");
+
+  const companyName = (companyInfo.companyName || "")
+    .padEnd(30, " ")
+    .substring(0, 30);
+
+  // HEADER
   const header =
-    "K" +                        // סוג שורה
-    companyId +                  // מזהה חברה (7)
-    sequenceNumber +             // מספר רצף (13)
-    formattedDate +              // תאריך YYMMDD
-    headerAccount +              // חשבון (12)
-    "000000" +                   // אפסים (6)
-    "".padEnd(17, " ") +         // רווחים (17)
-    companyName +                // שם חברה (16)
-    "".padEnd(64, " ") +         // רווחים (64)
-    "KOT";                       // סיומת (3)
+    "K" +
+    companyId +
+    sequence +
+    dateYYMMDD +
+    companyAccount +
+    "000000" +
+    "".padEnd(17, " ") +
+    companyName +
+    "".padEnd(52, " ") +
+    "KOT";
 
   lines.push(header);
 
-  // ======================================
-  // PAYMENT LINES (1)
-  // ======================================
-  payments.forEach((payment, index) => {
-    const recordNumber = (index + 2).toString().padStart(10, "0");
+  // RECORDS
+  let totalAgorot = 0;
 
-    const bankCode = (payment.bankNumber || "").toString().padStart(6, "0");
-    const branchCode = (payment.branchNumber || "").toString().padStart(5, "0");
-    const accountNum = (payment.accountNumber || "").toString().padStart(7, "0");
+  payments.forEach((p) => {
+    const bankCode = p.bankNumber.padStart(2, "0");
+    const branch = p.branchNumber.padStart(3, "0");
+    const account = p.accountNumber.padStart(9, "0");
 
-    const supplierId = (payment.supplierId || "").toString().padStart(9, "0");
-
-    const supplierName = (payment.name || "")
+    const amountAgorot = Math.round(p.amount * 100)
       .toString()
+      .padStart(10, "0");
+
+    totalAgorot += Number(amountAgorot);
+
+    const internalId = p.internalId.padStart(10, "0");
+
+    const supplierName = (p.name || "")
       .padEnd(16, " ")
       .substring(0, 16);
-
-    const amountAgorot = Math.round((payment.amount || 0) * 100)
-      .toString()
-      .padStart(8, "0");
-
-    const reference = (payment.invoiceNumber || "")
-      .toString()
-      .padStart(6, "0");
 
     const line =
       "1" +
       companyId +
-      recordNumber +
+      "0000000" +
       bankCode +
-      branchCode +
-      accountNum +
-      supplierId +
-      "AB" +               // קוד פעולה
-      " " +                // רווח
-      supplierName +
+      branch +
+      account +
       amountAgorot +
-      "".padStart(20, "0") +
-      reference +
-      "".padStart(30, "0") +
-      "6" +
-      "".padStart(21, "0");
+      internalId +
+      "AB" +
+      " " +
+      supplierName +
+      "".padEnd(60, "0");
 
     lines.push(line);
   });
 
-  // ======================================
-  // TRAILER LINE (5)
-  // ======================================
-  const totalRecords = (payments.length + 1).toString().padStart(7, "0");
-  const totalAmountStr = totalAmount.toString().padStart(12, "0");
-  const recordCount = payments.length.toString().padStart(6, "0");
+  // TRAILER
+  const totalRecords = payments.length.toString().padStart(7, "0");
+  const totalAgorotStr = totalAgorot.toString().padStart(12, "0");
 
   const trailer =
     "5" +
     companyId +
-    sequenceNumber +
+    sequence +
     totalRecords +
-    totalAmountStr +
-    "".padStart(18, "0") +
-    recordCount +
+    totalAgorotStr +
+    "".padStart(20, "0") +
+    payments.length.toString().padStart(6, "0") +
     "".padEnd(74, " ");
 
   lines.push(trailer);
