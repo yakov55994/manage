@@ -217,7 +217,7 @@ async function updateInvoice(user, invoiceId, data) {
 
   return updated;
 }
-  
+
 
 // ===============================================
 // MOVE INVOICE – עבור מבנה מרובה פרויקטים
@@ -226,21 +226,65 @@ async function moveInvoice(user, invoiceId, fromProjectId, toProjectId) {
   const invoice = await Invoice.findById(invoiceId);
   if (!invoice) throw new Error("חשבונית לא נמצאה");
 
-  const part = invoice.projects.find(
-    (p) => p.projectId.toString() === fromProjectId
+  fromProjectId = String(fromProjectId);
+  toProjectId = String(toProjectId);
+
+  if (!Array.isArray(invoice.projects)) {
+    throw new Error("מבנה פרויקטים בחשבונית לא תקין");
+  }
+
+  // מוצא חלק לפי שני מצבים: פופולייט מלא או ObjectId
+  const part = invoice.projects.find((p) => {
+    const pid = p?.projectId?._id || p?.projectId;
+    return String(pid) === fromProjectId;
+  });
+
+  if (!part) {
+    console.error("📛 פרויקטים בחשבונית:", invoice.projects);
+    console.error("📛 fromProjectId שקיבלת:", fromProjectId);
+    throw new Error("החשבונית לא משויכת לפרויקט שממנו מבצעים העברה");
+  }
+
+  // בדיקות הרשאות
+  if (user.role !== "admin") {
+    const allowed = user.permissions.map(
+      (p) => String(p.project?._id || p.project)
+    );
+    if (!allowed.includes(fromProjectId) || !allowed.includes(toProjectId)) {
+      throw new Error("אין הרשאה להעברה בין הפרויקטים האלה");
+    }
+  }
+
+  // מציאת יעד (תואם פופולייט)
+  const existingTarget = invoice.projects.find((p) => {
+    const pid = p?.projectId?._id || p?.projectId;
+    return String(pid) === toProjectId;
+  });
+
+  if (existingTarget) {
+    existingTarget.sum = Number(existingTarget.sum) + Number(part.sum);
+
+    invoice.projects = invoice.projects.filter((p) => {
+      const pid = p?.projectId?._id || p?.projectId;
+      return String(pid) !== fromProjectId;
+    });
+  } else {
+    part.projectId = toProjectId;
+  }
+
+  invoice.totalAmount = invoice.projects.reduce(
+    (sum, p) => sum + Number(p?.sum || 0),
+    0
   );
 
-  if (!part) throw new Error("החשבונית לא משויכת לפרויקט הזה");
-
-  part.projectId = toProjectId;
   await invoice.save();
 
   await Project.findByIdAndUpdate(fromProjectId, {
-    $pull: { invoices: invoiceId }
+    $pull: { invoices: invoiceId },
   });
 
   await Project.findByIdAndUpdate(toProjectId, {
-    $addToSet: { invoices: invoiceId }
+    $addToSet: { invoices: invoiceId },
   });
 
   await recalculateRemainingBudget(fromProjectId);
@@ -249,15 +293,16 @@ async function moveInvoice(user, invoiceId, fromProjectId, toProjectId) {
   return invoice;
 }
 
+
 // ===============================================
 // UPDATE PAYMENT STATUS
 // ===============================================
 async function updatePaymentStatus(
-  user, 
-  invoiceId, 
-  status, 
-  date, 
-  method, 
+  user,
+  invoiceId,
+  status,
+  date,
+  method,
   checkNumber,  // ✅ הוסף פרמטר
   checkDate     // ✅ הוסף פרמטר
 ) {

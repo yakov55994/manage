@@ -39,7 +39,6 @@ export default function MasavModal({ open, onClose, invoices }) {
     if (selected.length === 0) return toast.error("בחר חשבוניות");
 
     try {
-      // הפרד בין חשבוניות עם ובלי פרטי בנק
       const withBankDetails = [];
       const withoutBankDetails = [];
 
@@ -60,28 +59,34 @@ export default function MasavModal({ open, onClose, invoices }) {
         }
       });
 
-      // אם אין אף חשבונית תקינה
       if (withBankDetails.length === 0) {
         const supplierNames = withoutBankDetails
-          .map((item) => item.supplierName)
+          .map((x) => x.supplierName)
           .join(", ");
         return toast.error(`אין פרטי בנק לספקים: ${supplierNames}`);
       }
 
-      // צור את הקובץ רק עם החשבוניות התקינות
-      const payments = withBankDetails.map((inv) => {
-        const s = inv.supplierId;
-        return {
-          bankNumber: s.bankDetails.bankName,
-          branchNumber: s.bankDetails.branchNumber,
-          accountNumber: s.bankDetails.accountNumber,
-          amount: inv.sum,
-        };
-      });
+      const payments = withBankDetails.map((inv) => ({
+        bankNumber: inv.supplierId.bankDetails.bankName,
+        branchNumber: inv.supplierId.bankDetails.branchNumber,
+        accountNumber: inv.supplierId.bankDetails.accountNumber,
+        amount: inv.sum,
+        name: inv.supplierId.name,
+        supplierId: inv.supplierId.business_tax || "",
+        invoiceNumber: inv.invoiceNumber,
+      }));
+
+      // 🟦 חובה — אחרת השרת מתפוצץ!
+      const companyInfo = {
+        companyId: "1234567",
+        companyName: "My Company",
+        accountNumber: "123456789012",
+      };
 
       const res = await api.post(
         "/masav/generate",
         {
+          companyInfo,
           payments,
           executionDate,
         },
@@ -94,33 +99,7 @@ export default function MasavModal({ open, onClose, invoices }) {
       link.download = "masav.txt";
       link.click();
 
-      // הודעת הצלחה משולבת
-      if (withoutBankDetails.length > 0) {
-        const supplierNames = withoutBankDetails
-          .map((item) => item.supplierName)
-          .join(", ");
-        toast.success(
-          <div className="space-y-2">
-            <div className="font-bold">
-              ✅ קובץ מס"ב נוצר בהצלחה עם {withBankDetails.length} חשבוניות
-            </div>
-            <div className="text-sm text-amber-700 bg-amber-50 p-2 rounded-lg border border-amber-200">
-              ⚠️ {withoutBankDetails.length} חשבוניות לא נכללו (חסר פרטי בנק):
-              <div className="font-semibold mt-1">{supplierNames}</div>
-            </div>
-          </div>,
-          {
-            duration: 8000,
-            style: { minWidth: "400px" },
-          }
-        );
-      } else {
-        toast.success(
-          `✅ קובץ מס"ב נוצר בהצלחה עם ${withBankDetails.length} חשבוניות`,
-          { duration: 4000 }
-        );
-      }
-
+      toast.success(`קובץ מס״ב נוצר בהצלחה (${withBankDetails.length})`);
       onClose();
     } catch (err) {
       toast.error(err.message || 'שגיאה ביצירת קובץ מס"ב');

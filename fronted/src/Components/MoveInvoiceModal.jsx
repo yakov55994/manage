@@ -44,57 +44,53 @@ export default function MoveInvoiceModal({
   }, [projects, search]);
 
   const handleSubmit = async () => {
-  if (!selectedProjectId) {
-    toast.error("יש לבחור פרויקט יעד", {
-      className: "sonner-toast error rtl",
-    });
-    return;
-  }
-  if (!invoice?._id) return;
+    if (!selectedProjectId) {
+      toast.error("יש לבחור פרויקט יעד");
+      return;
+    }
 
-  if (
-    invoice.projectId &&
-    String(invoice.projectId) === String(selectedProjectId)
-  ) {
-    toast.info("החשבונית כבר משויכת לפרויקט זה");
-    return;
-  }
+    if (!invoice?._id) return;
 
-  try {
-    setLoading(true);
-    const { data } = await api.put(`/invoices/${invoice._id}/move`, {
-      newProjectId: selectedProjectId,
-    });
+    // projectId אמיתי מתוך המבנה החדש
+    const currentProjectId =
+      invoice?.projects?.[0]?.projectId?._id ||
+      invoice?.projects?.[0]?.projectId;
 
-    const moved = data?.data || data;
-    
-    // ✅ וודא שיש projectName בחשבונית המעודכנת
-    const targetProject = projects.find(
-      (p) => String(p._id) === String(selectedProjectId)
-    );
-    
-    // ✅ עדכן את שם הפרויקט בחשבונית
-    const updatedInvoice = {
-      ...moved,
-      projectName: targetProject?.name || moved.projectName,
-      projectId: selectedProjectId
-    };
+    if (!currentProjectId) {
+      toast.error("לא נמצא projectId לחשבונית");
+      return;
+    }
 
-    if (onMoved) onMoved(updatedInvoice); // ✅ העבר את החשבונית המעודכנת
+    try {
+      setLoading(true);
 
-    toast.success(`החשבונית הועברה אל "${targetProject?.name || "פרויקט היעד"}"`, {
-      className: "sonner-toast success rtl",
-    });
-    onClose();
-  } catch (err) {
-    console.error(err);
-    toast.error(err.response?.data?.message || "שגיאה בהעברת החשבונית", {
-      className: "sonner-toast error rtl",
-    });
-  } finally {
-    setLoading(false);
-  }
-};
+      const { data } = await api.put(`/invoices/${invoice._id}/move`, {
+        fromProjectId: currentProjectId,
+        toProjectId: selectedProjectId,
+      });
+
+      const moved = data?.data || data;
+
+      const targetProject = projects.find(
+        (p) => String(p._id) === String(selectedProjectId)
+      );
+
+      const updatedInvoice = {
+        ...moved,
+        projects: moved.projects, // מודל החדש
+      };
+
+      onMoved?.(updatedInvoice);
+
+      toast.success(`החשבונית הועברה אל "${targetProject?.name}"`);
+      onClose();
+    } catch (err) {
+      console.error(err);
+      toast.error("שגיאה בהעברת חשבונית");
+    } finally {
+      setLoading(false);
+    }
+  };
 
   if (!open) return null;
 
