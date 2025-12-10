@@ -1,0 +1,148 @@
+body {
+  font-family: 'Segoe UI', Tahoma, Arial;
+  background: #fff;
+  padding: 30px;
+  color: #1f2937;
+}
+
+/* HEADER */
+.header {
+  text-align: center;
+  margin-bottom: 40px;
+  padding-bottom: 20px;
+  border-bottom: 3px solid #f97316;
+}
+
+.logo {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  margin-bottom: 15px;
+}
+
+.logo-text {
+  font-size: 36px;
+  font-weight: 700;
+  color: #6b7280;
+  letter-spacing: 2px;
+}
+
+.logo-icon {
+  width: 45px;
+  height: 45px;
+  background: #f97316;
+  border-radius: 10px;
+}
+
+.header h1 {
+  font-size: 24px;
+  margin-bottom: 10px;
+  color: #1f2937;
+}
+
+/* DATE */
+.date {
+  color: #6b7280;
+  font-size: 14px;
+}
+
+
+/* מוסד */
+.filters {
+  background: #fff7ed;
+  padding: 15px 20px;
+  border-radius: 8px;
+  margin-bottom: 30px;
+  border-right: 4px solid #f97316;
+}
+
+.filters h3 {
+  color: #f97316;
+  margin-bottom: 10px;
+  font-size: 16px;
+}
+
+.filters p {
+  color: #374151;
+  font-size: 14px;
+  margin: 5px 0;
+}
+
+
+/* TABLE */
+table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-bottom: 30px;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+}
+
+thead {
+  background: linear-gradient(135deg, #f97316, #fb923c);
+  color: white;
+}
+
+thead th {
+  padding: 12px;
+  font-weight: 600;
+  font-size: 13px;
+  text-align: center;
+}
+
+tbody tr {
+  border-bottom: 1px solid #e5e7eb;
+}
+
+tbody tr:nth-child(even) {
+  background: #f9fafb;
+}
+
+tbody td {
+  padding: 12px;
+  text-align: center;
+  font-size: 12px;
+  color: #374151;
+}
+
+
+/* SUMMARY */
+.summary-box {
+  background: #ecfccb;
+  border: 2px solid #84cc16;
+  padding: 20px;
+  border-radius: 12px;
+}
+
+.summary-box h3 {
+  color: #365314;
+  margin-bottom: 15px;
+  font-size: 20px;
+}
+
+.summary-row {
+  display: flex;
+  justify-content: space-between;
+  padding: 10px 0;
+  border-bottom: 1px solid #a3e635;
+}
+
+.summary-row:last-child {
+  border-bottom: none;
+}
+
+.summary-row.total {
+  font-weight: bold;
+  color: #15803d;
+}
+
+
+/* FOOTER */
+.footer {
+  margin-top: 40px;
+  text-align: center;
+  color: #9ca3af;
+  font-size: 12px;
+  padding-top: 20px;
+  border-top: 1px solid #e5e7eb;
+}

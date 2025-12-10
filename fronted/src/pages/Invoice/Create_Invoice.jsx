@@ -657,7 +657,7 @@ const CreateInvoice = () => {
               <div className="font-bold mb-2">{row.projectName}</div>
 
               <input
-                type="number"
+                // type="number"
                 placeholder="סכום"
                 className="border p-2 rounded-xl w-40"
                 value={row.sum}

@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html dir="rtl" lang="he">
+<head>
+  <meta charset="UTF-8" />
+<link rel="stylesheet" href="file://{{cssPath}}">
+  <title>דוח הוראות לזיכוי</title>
+</head>
+
+<body>
+
+  <!-- HEADER -->
+  <div class="header">
+    <div class="logo">
+      <div class="logo-icon"></div>
+      <div class="logo-text">ניהולון</div>
+    </div>
+
+    <h1>📋 דוח הוראות לזיכוי</h1>
+
+    <div class="date">
+      תאריך הפקה: {{generatedAt}}
+    </div>
+  </div>
+
+  <!-- מוסד -->
+  <div class="filters">
+    <h3>🔍 פרטי מוסד</h3>
+
+    <p><strong>שם מוסד:</strong> {{companyName}}</p>
+    <p><strong>מס׳ מוסד:</strong> {{instituteId}}</p>
+    <p><strong>מס׳ שולח:</strong> {{senderId}}</p>
+    <p><strong>תאריך ביצוע:</strong> {{executionDate}}</p>
+  </div>
+
+  <!-- TABLE -->
+  <table>
+    <thead>
+      <tr>
+        <th>מס׳</th>
+        <th>שם ספק</th>
+        <th>ח.פ/ע.מ</th>
+        <th>בנק</th>
+        <th>סניף</th>
+        <th>חשבון</th>
+        <th>סכום</th>
+        <th>חשבוניות</th>
+      </tr>
+    </thead>
+
+    <tbody>
+      {{rows}}
+    </tbody>
+  </table>
+
+  <!-- SUMMARY -->
+  <div class="summary-box">
+    <h3>📊 סיכום</h3>
+
+    <div class="summary-row">
+      <span>סה"כ רשומות:</span>
+      <strong>{{count}}</strong>
+    </div>
+
+    <div class="summary-row total">
+      <span>סה"כ סכום כולל:</span>
+      <strong>{{total}} ₪</strong>
+    </div>
+  </div>
+
+  <!-- FOOTER -->
+  <div class="footer">
+    <p>מסמך זה הופק אוטומטית ממערכת ניהולון</p>
+    <p>© {{year}} כל הזכויות שמורות</p>
+  </div>
+
+</body>
+</html>

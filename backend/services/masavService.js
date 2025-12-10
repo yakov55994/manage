@@ -110,8 +110,8 @@ export function generateMasavFile(companyInfo, payments, executionDate) {
       fixLen(p.accountNumber, 9, "0") +        // מספר חשבון
       "0" +                                    // filler
       fixLen(p.internalId, 9, "0") +           // מזהה זכאי
-      fixLen(p.supplierName, 16) +             // שם זכאי
-      fixLen(String(p.amount), 13, "0") +      // סכום
+      fixLen(p.supplierName, 30) +             // שם זכאי
+      fixLen(String(p.amount), 11, "0") +      // סכום
       fixLen(p.internalId, 20, "0") +          // אסמכתא
       fixLen("0", 8, "0") +                    // תקופה
       "000" +                                  // קוד מלל
