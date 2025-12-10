@@ -30,6 +30,9 @@ export const protect = async (req, res, next) => {
     const decoded = jwt.verify(token, JWT_SECRET);
 
     const user = await User.findById(decoded.id).select("-password");
+    if (user.role === "accountant") {
+      req.user.isAccountant = true;
+    }
 
     if (!user) return res.status(401).json({ message: "משתמש לא קיים" });
     if (!user.isActive) return res.status(403).json({ message: "משתמש לא פעיל" });
@@ -89,6 +92,48 @@ export const checkAccess = (moduleName, action) => {
   return async (req, res, next) => {
     try {
       const user = req.user;
+
+      // ==========================================
+      // 0) רואת חשבון – גישת קריאה בלבד בכל המערכת
+      // ==========================================
+      if (user.role === "accountant") {
+
+        // ✔ 1) זיהוי פרויקט החשבונית/ההזמנה/הפרויקט
+        const id =
+          req.params.id ||
+          req.params.invoiceId ||
+          req.params.orderId ||
+          req.params.projectId;
+
+        let item = null;
+        let projectId = null;
+
+        if (moduleName === "invoices") {
+          item = await Invoice.findById(id).populate("projectId");
+          projectId = item?.projectId;
+        }
+
+        if (moduleName === "projects") {
+          item = await Project.findById(id);
+          projectId = item;
+        }
+
+        // ❌ אם אין פרויקט — אין כניסה
+        if (!projectId) {
+          return res.status(403).json({ message: "אין גישה לחשבונית זו" });
+        }
+
+        // ❌ אם זה לא פרויקט מילגה — חסימה
+        if (!projectId.isMilga) {
+          return res.status(403).json({ message: "גישה מותרת רק לפרויקט מילגה" });
+        }
+
+        // ✔ רואת חשבון יכולה רק לצפות
+        if (action === "view") return next();
+
+        return res.status(403).json({ message: "אין הרשאה לערוך" });
+      }
+
 
       // מנהל עובר הכול
       if (user.role === "admin") return next();
@@ -178,3 +223,9 @@ export const checkAccess = (moduleName, action) => {
     }
   };
 };
+
+
+export function isAccountant(req, res, next) {
+  if (req.user?.role === "accountant") return next();
+  return res.status(403).json({ error: "אין הרשאה" });
+}
