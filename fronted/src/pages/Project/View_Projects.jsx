@@ -1664,17 +1664,11 @@ const ProjectsPage = ({ initialProjects = [] }) => {
                       <td className="px-4 py-4 text-sm font-medium text-center text-slate-900">
                         {(() => {
                           // 🔍 דיבוג מפורט
-                          console.log("🔎 Project:", project.name);
-                          console.log("📁 Invoices:", project.invoices);
-                          console.log("📦 Orders:", project.orders);
-
                           const invoiceFiles = invoiceStats(project).fileCount;
 
                           let orderFiles = 0;
                           if (Array.isArray(project.orders)) {
                             project.orders.forEach((order) => {
-                              console.log("📋 Order files:", order.files);
-                              console.log("📄 Order file:", order.file);
 
                               if (
                                 Array.isArray(order.files) &&
@@ -1695,7 +1689,6 @@ const ProjectsPage = ({ initialProjects = [] }) => {
                           }
 
                           const total = invoiceFiles + orderFiles;
-                          console.log("✅ Total files:", total);
 
                           return (
                             <div className="flex flex-col items-center">

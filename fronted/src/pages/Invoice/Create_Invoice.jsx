@@ -265,8 +265,6 @@ const CreateInvoice = () => {
         fundedFromProjectId: fundedFromProjectId || null, // ← הוספה חשובה!!
       };
 
-      console.log("📤 FINAL PAYLOAD:", payload);
-
       // ============================
       // SEND
       // ============================

@@ -67,8 +67,4 @@ async generateMasav(req, res) {
 
   }
 }
-
- 
-
-
 };

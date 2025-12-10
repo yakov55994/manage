@@ -75,174 +75,247 @@
 //   return outputPath;
 // }
 
+
+
+
+
+
+// import fs from "fs";
+// import path from "path";
+// import puppeteer from "puppeteer";
+
+// export async function generateMasavPDF({ payments, companyInfo, executionDate }) {
+//   console.log("🔥🔥 THIS IS THE REAL generateMasavPDF FILE 🔥🔥");
+//   console.log("🔥 PAYMENTS IN FUNCTION:", payments);
+//   console.log("🔥 FIRST PAYMENT:", payments?.[0]);
+//   console.log("📄 MASAV PDF STARTED");
+
+//   // ---------------------------
+//   // TMP FOLDER CHECK
+//   // ---------------------------
+//   const tmpDir = path.join(process.cwd(), "tmp");
+//   if (!fs.existsSync(tmpDir)) {
+//     console.log("📁 tmp folder missing → creating…");
+//     fs.mkdirSync(tmpDir, { recursive: true });
+//   }
+
+//   const templatePath = path.join(process.cwd(), "templates", "masav-report.html");
+//   const cssPath = path.join(process.cwd(), "templates", "masav-report.css");
+
+//   // ---------------------------
+//   // LOAD HTML TEMPLATE
+//   // ---------------------------
+//   if (!fs.existsSync(templatePath)) {
+//     console.error("❌ ERROR: masav-report.html not found!", templatePath);
+//     throw new Error("Missing masav-report.html");
+//   }
+//   console.log("📄 HTML template loaded:", templatePath);
+
+//   let html;
+//   try {
+//     html = fs.readFileSync(templatePath, "utf8");
+//   } catch (err) {
+//     console.error("❌ ERROR reading HTML:", err);
+//     throw err;
+//   }
+
+//   // ---------------------------
+//   // LOAD CSS
+//   // ---------------------------
+//   if (!fs.existsSync(cssPath)) {
+//     console.error("❌ ERROR: masav-report.css not found!", cssPath);
+//     throw new Error("Missing masav-report.css");
+//   }
+//   console.log("🎨 CSS loaded:", cssPath);
+
+//   let css;
+//   try {
+//     css = fs.readFileSync(cssPath, "utf8");
+//   } catch (err) {
+//     console.error("❌ ERROR reading CSS:", err);
+//     throw err;
+//   }
+
+//   // ---------------------------
+//   // BUILD ROWS
+//   // ---------------------------
+//   console.log(`📊 Building ${payments.length} table rows…`);
+//   const rowsHTML = payments
+//     .map((p, i) => {
+//       const amount = (p.amount / 100).toLocaleString("he-IL");
+//       const bankCode = p.bankNumber?.toString().padStart(2, "0") || "";
+//       const branchCode = p.branchNumber?.toString().padStart(3, "0") || "";
+
+//       return `
+//   <tr>
+//     <td>${i + 1}</td>
+//     <td>${p.supplierName}</td>
+//     <td>${p.internalId}</td>
+//     <td>${bankCode}</td>
+//     <td>${branchCode}</td>
+//     <td>${p.accountNumber}</td>
+//     <td>${amount} ₪</td>
+//     <td>${p.invoiceNumbers || "-"}</td>
+//   </tr>
+//       `;
+//     })
+//     .join("");
+
+//   console.log("📊 Rows built successfully.");
+
+//   const totalAmount = (
+//     payments.reduce((sum, p) => sum + p.amount, 0) / 100
+//   ).toLocaleString("he-IL");
+
+//   // ---------------------------
+//   // INJECT DATA INTO HTML
+//   // ---------------------------
+//   try {
+//     html = html
+//       .replace("{{css}}", `<style>${css}</style>`)
+//       .replace("{{companyName}}", companyInfo.companyName)
+//       .replace("{{instituteId}}", companyInfo.instituteId)
+//       .replace("{{senderId}}", companyInfo.senderId)
+//       .replace("{{executionDate}}", executionDate)
+//       .replace("{{generatedAt}}", new Date().toLocaleString("he-IL"))
+//       .replace("{{rows}}", rowsHTML)
+//       .replace("{{total}}", totalAmount)
+//       .replace("{{count}}", payments.length)
+//       .replace("{{year}}", new Date().getFullYear());
+//   } catch (err) {
+//     console.error("❌ ERROR injecting HTML placeholders:", err);
+//     throw err;
+//   }
+
+//   // ---------------------------
+//   // SAVE TEMP HTML
+//   // ---------------------------
+//   const htmlFile = path.join(tmpDir, "masavReport.html");
+//   try {
+//     fs.writeFileSync(htmlFile, html);
+//   } catch (err) {
+//     console.error("❌ ERROR saving temp HTML:", err);
+//     throw err;
+//   }
+//   console.log("📄 Temporary HTML saved:", htmlFile);
+
+//   // ---------------------------
+//   // LAUNCH PUPPETEER
+//   // ---------------------------
+//   console.log("🧪 Launching Puppeteer…");
+//   let browser;
+//   try {
+//     browser = await puppeteer.launch({
+//       headless: "new",
+//       args: ["--no-sandbox", "--disable-setuid-sandbox"],
+//     });
+//   } catch (err) {
+//     console.error("❌ PUPPETEER LAUNCH ERROR:", err);
+//     throw err;
+//   }
+
+//   console.log("🟢 Puppeteer launched successfully.");
+
+//   // ---------------------------
+//   // CREATE PDF
+//   // ---------------------------
+//   const pdfFile = path.join(tmpDir, `masav-${Date.now()}.pdf`);
+
+//   try {
+//     const page = await browser.newPage();
+//     await page.goto("file://" + htmlFile, { waitUntil: "networkidle0" });
+
+//     await page.pdf({
+//       path: pdfFile,
+//       format: "A4",
+//       printBackground: true,
+//     });
+//   } catch (err) {
+//     console.error("❌ ERROR DURING PDF GENERATION:", err);
+//     throw err;
+//   }
+
+//   await browser.close();
+//   console.log("📌 PDF created:", pdfFile);
+
+//   // ---------------------------
+//   // DELETE TEMP HTML
+//   // ---------------------------
+//   try {
+//     fs.unlinkSync(htmlFile);
+//     console.log("🗑 Deleted temp HTML:", htmlFile);
+//   } catch (err) {
+//     console.error("⚠ Could not delete temp HTML:", err.message);
+//   }
+
+//   console.log("✅ MASAV PDF DONE");
+//   return pdfFile;
+// }
+
+
 import fs from "fs";
 import path from "path";
-import puppeteer from "puppeteer";
+import pdf from "html-pdf-node";
 
 export async function generateMasavPDF({ payments, companyInfo, executionDate }) {
-  console.log("🔥🔥 THIS IS THE REAL generateMasavPDF FILE 🔥🔥");
-  console.log("🔥 PAYMENTS IN FUNCTION:", payments);
-  console.log("🔥 FIRST PAYMENT:", payments?.[0]);
-  console.log("📄 MASAV PDF STARTED");
-
-  // ---------------------------
-  // TMP FOLDER CHECK
-  // ---------------------------
-  const tmpDir = path.join(process.cwd(), "tmp");
-  if (!fs.existsSync(tmpDir)) {
-    console.log("📁 tmp folder missing → creating…");
-    fs.mkdirSync(tmpDir, { recursive: true });
-  }
 
   const templatePath = path.join(process.cwd(), "templates", "masav-report.html");
   const cssPath = path.join(process.cwd(), "templates", "masav-report.css");
 
-  // ---------------------------
-  // LOAD HTML TEMPLATE
-  // ---------------------------
-  if (!fs.existsSync(templatePath)) {
-    console.error("❌ ERROR: masav-report.html not found!", templatePath);
-    throw new Error("Missing masav-report.html");
-  }
-  console.log("📄 HTML template loaded:", templatePath);
+  let html = fs.readFileSync(templatePath, "utf8");
+  const css = fs.readFileSync(cssPath, "utf8");
 
-  let html;
-  try {
-    html = fs.readFileSync(templatePath, "utf8");
-  } catch (err) {
-    console.error("❌ ERROR reading HTML:", err);
-    throw err;
-  }
+  // 🚨 מחליפים את {{css}} בתוכן CSS
+  html = html.replace("{{css}}", `<style>${css}</style>`);
 
-  // ---------------------------
-  // LOAD CSS
-  // ---------------------------
-  if (!fs.existsSync(cssPath)) {
-    console.error("❌ ERROR: masav-report.css not found!", cssPath);
-    throw new Error("Missing masav-report.css");
-  }
-  console.log("🎨 CSS loaded:", cssPath);
-
-  let css;
-  try {
-    css = fs.readFileSync(cssPath, "utf8");
-  } catch (err) {
-    console.error("❌ ERROR reading CSS:", err);
-    throw err;
-  }
-
-  // ---------------------------
-  // BUILD ROWS
-  // ---------------------------
-  console.log(`📊 Building ${payments.length} table rows…`);
+  // יצירת שורות טבלה
   const rowsHTML = payments
-    .map((p, i) => {
-      const amount = (p.amount / 100).toLocaleString("he-IL");
-      const bankCode = p.bankNumber?.toString().padStart(2, "0") || "";
-      const branchCode = p.branchNumber?.toString().padStart(3, "0") || "";
-
-      return `
-  <tr>
-    <td>${i + 1}</td>
-    <td>${p.supplierName}</td>
-    <td>${p.internalId}</td>
-    <td>${bankCode}</td>
-    <td>${branchCode}</td>
-    <td>${p.accountNumber}</td>
-    <td>${amount} ₪</td>
-    <td>${p.invoiceNumbers || "-"}</td>
-  </tr>
-      `;
-    })
+    .map(
+      (p, i) => `
+        <tr>
+          <td>${i + 1}</td>
+          <td>${p.supplierName}</td>
+          <td>${p.internalId}</td>
+          <td>${p.bankNumber}</td>
+          <td>${p.branchNumber}</td>
+          <td>${p.accountNumber}</td>
+          <td>${(p.amount / 100).toLocaleString("he-IL")}</td>
+          <td>${p.invoiceNumbers || "-"}</td>
+        </tr>`
+    )
     .join("");
 
-  console.log("📊 Rows built successfully.");
+  // 🚨 מחליפים {{rows}}
+  html = html.replace("{{rows}}", rowsHTML);
 
-  const totalAmount = (
-    payments.reduce((sum, p) => sum + p.amount, 0) / 100
-  ).toLocaleString("he-IL");
+  // 🚨 מחליפים כל המשתנים
+  html = html
+    .replace("{{companyName}}", companyInfo.companyName)
+    .replace("{{instituteId}}", companyInfo.instituteId)
+    .replace("{{senderId}}", companyInfo.senderId)
+    .replace("{{executionDate}}", executionDate)
+    .replace("{{generatedAt}}", new Date().toLocaleString("he-IL"))
+    .replace("{{count}}", payments.length)
+    .replace(
+      "{{total}}",
+      (payments.reduce((a, p) => a + p.amount, 0) / 100).toLocaleString("he-IL")
+    )
+    .replace("{{year}}", new Date().getFullYear());
 
-  // ---------------------------
-  // INJECT DATA INTO HTML
-  // ---------------------------
-  try {
-    html = html
-      .replace("{{css}}", `<style>${css}</style>`)
-      .replace("{{companyName}}", companyInfo.companyName)
-      .replace("{{instituteId}}", companyInfo.instituteId)
-      .replace("{{senderId}}", companyInfo.senderId)
-      .replace("{{executionDate}}", executionDate)
-      .replace("{{generatedAt}}", new Date().toLocaleString("he-IL"))
-      .replace("{{rows}}", rowsHTML)
-      .replace("{{total}}", totalAmount)
-      .replace("{{count}}", payments.length)
-      .replace("{{year}}", new Date().getFullYear());
-  } catch (err) {
-    console.error("❌ ERROR injecting HTML placeholders:", err);
-    throw err;
-  }
+  const file = { content: html };
 
-  // ---------------------------
-  // SAVE TEMP HTML
-  // ---------------------------
-  const htmlFile = path.join(tmpDir, "masavReport.html");
-  try {
-    fs.writeFileSync(htmlFile, html);
-  } catch (err) {
-    console.error("❌ ERROR saving temp HTML:", err);
-    throw err;
-  }
-  console.log("📄 Temporary HTML saved:", htmlFile);
+  const pdfBuffer = await pdf.generatePdf(file, {
+    format: "A4",
+    printBackground: true,
+  });
 
-  // ---------------------------
-  // LAUNCH PUPPETEER
-  // ---------------------------
-  console.log("🧪 Launching Puppeteer…");
-  let browser;
-  try {
-    browser = await puppeteer.launch({
-      headless: "new",
-      args: ["--no-sandbox", "--disable-setuid-sandbox"],
-    });
-  } catch (err) {
-    console.error("❌ PUPPETEER LAUNCH ERROR:", err);
-    throw err;
-  }
+  // שמירה
+  const tmpDir = path.join(process.cwd(), "tmp");
+  if (!fs.existsSync(tmpDir)) fs.mkdirSync(tmpDir);
 
-  console.log("🟢 Puppeteer launched successfully.");
+  const pdfPath = path.join(tmpDir, `masav-summary-${Date.now()}.pdf`);
+  fs.writeFileSync(pdfPath, pdfBuffer);
 
-  // ---------------------------
-  // CREATE PDF
-  // ---------------------------
-  const pdfFile = path.join(tmpDir, `masav-${Date.now()}.pdf`);
-
-  try {
-    const page = await browser.newPage();
-    await page.goto("file://" + htmlFile, { waitUntil: "networkidle0" });
-
-    await page.pdf({
-      path: pdfFile,
-      format: "A4",
-      printBackground: true,
-    });
-  } catch (err) {
-    console.error("❌ ERROR DURING PDF GENERATION:", err);
-    throw err;
-  }
-
-  await browser.close();
-  console.log("📌 PDF created:", pdfFile);
-
-  // ---------------------------
-  // DELETE TEMP HTML
-  // ---------------------------
-  try {
-    fs.unlinkSync(htmlFile);
-    console.log("🗑 Deleted temp HTML:", htmlFile);
-  } catch (err) {
-    console.error("⚠ Could not delete temp HTML:", err.message);
-  }
-
-  console.log("✅ MASAV PDF DONE");
-  return pdfFile;
+  return pdfPath;
 }
+

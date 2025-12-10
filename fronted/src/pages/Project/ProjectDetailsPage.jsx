@@ -127,7 +127,6 @@ const ProjectDetailsPage = () => {
           );
 
           setInvoices(projectInvoices);
-          console.log("Invoices ", projectInvoices);
         }
         setLoadingInvoices(false);
       } catch (error) {
@@ -676,12 +675,6 @@ const ProjectDetailsPage = () => {
                           return String(pid) === String(id);
                         });
 
-                        {
-                          console.log("Invoice:", invoice);
-                          console.log("projects:", invoice.projects);
-
-                          console.log(proj);
-                        }
                         return (
                           <tr
                             key={invoice._id}

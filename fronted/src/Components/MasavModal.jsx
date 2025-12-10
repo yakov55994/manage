@@ -115,7 +115,6 @@ export default function MasavModal({ open, onClose, invoices }) {
     }
 
     const payments = withBankDetails.map((inv) => {
-      console.log(inv)
       const s = inv.supplierId;
       const bd = s.bankDetails;
 

@@ -114,8 +114,6 @@ router.post('/', upload.single('file'), async (req, res) => {
       resource_type: 'auto'    // ← תקין
     });
 
-    console.log("CLOUDINARY RESULT:", result);
-
     const newFile = new File({
       name: req.file.filename,       // ← שם נקי, NOT originalname
       url: result.secure_url,

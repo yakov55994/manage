@@ -1322,7 +1322,6 @@ const InvoicesPage = () => {
       try {
         const res = await api.get("/invoices");
         const allData = arr(res.data.data);
-        console.log("allData ", allData);
         // ✅ סנן חשבוניות לפי הרשאות
         const allowedProjectIds = getAllowedProjectIds();
 

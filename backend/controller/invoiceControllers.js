@@ -88,9 +88,6 @@ async getInvoiceById(req, res) {
   // יצירת חשבונית חדשה (מרובת פרויקטים)
   // ===============================================
   async createInvoice(req, res) {
-    console.log("✔ Invoice Schema Keys:", Object.keys(Invoice.schema.paths));
-
-    console.log("📥 BODY RECEIVED:", req.body);
 
     try {
       const invoice = await invoiceService.createInvoice(req.user, req.body);

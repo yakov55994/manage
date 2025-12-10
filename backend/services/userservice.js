@@ -47,7 +47,6 @@ export const createNewUser = async (userData) => {
         // לא זורקים שגיאה - המשתמש נוצר בהצלחה
       }
     } else {
-      console.log("ℹ️ No email provided, skipping welcome email");
     }
 
     return newUser;

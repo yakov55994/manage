@@ -72,7 +72,6 @@ orderSchema.pre('deleteOne', { document: true, query: false }, async function(ne
           const result = await cloudinary.uploader.destroy(publicId, {
             resource_type: file.resourceType || 'raw'
           });
-          console.log('✅ תוצאה:', result);
         } else {
           console.log('⚠️ לא נמצא publicId עבור:', file.name);
         }

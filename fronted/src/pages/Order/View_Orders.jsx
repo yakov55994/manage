@@ -980,25 +980,17 @@ const OrdersPage = () => {
           ? res.data
           : [];
 
-        console.log("========== DEBUG ORDERS ==========");
         ordersData.slice(0, 10).forEach((ord, i) => {
           console.log(`ORDER #${i + 1}:`);
-
-          console.log("supplierId:", ord.supplierId);
-          console.log("typeof supplierId:", typeof ord.supplierId);
 
           if (ord.supplierId && typeof ord.supplierId === "object") {
             console.log("supplierId keys:", Object.keys(ord.supplierId));
             console.log("bankDetails:", ord.supplierId.bankDetails);
           }
 
-          console.log("-----------------------------------");
         });
 
         setAllOrders(ordersData);
-        console.log("🔥 DEBUG ORDER SAMPLE:", ordersData[0]);
-        console.log("🔥 supplierId:", ordersData[0]?.supplierId);
-        console.log("🔥 type:", typeof ordersData[0]?.supplierId);
 
         setOrders(ordersData);
       } catch (error) {

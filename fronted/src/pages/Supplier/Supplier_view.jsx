@@ -96,10 +96,7 @@ const SuppliersPage = () => {
     if (!Array.isArray(suppliers)) return [];
     let filtered = suppliers;
 
-    console.log("🔍 Filtering suppliers:", {
-      total: suppliers.length,
-      supplierType: advancedFilters.supplierType,
-    });
+
 
     if (searchTerm) {
       const q = searchTerm.toLowerCase();
@@ -172,7 +169,6 @@ const SuppliersPage = () => {
       });
     }
 
-    console.log("✅ Final filtered count:", filtered.length);
     return filtered;
   }, [suppliers, searchTerm, advancedFilters]);
   const sortedSuppliers = React.useMemo(() => {
@@ -373,7 +369,6 @@ const SuppliersPage = () => {
       try {
         const res = await api.get("/suppliers");
         const data = arr(res);
-        console.log(data)
         setAllSuppliers(data);
         setSuppliers(data);
       } catch (error) {
