@@ -34,24 +34,25 @@ const invoiceSchema = new mongoose.Schema({
   // סכום כולל (מחושב)
   totalAmount: { type: Number, required: true },
 
-  createdAt: { type: Date, required: true },
-  status: { type: String, enum: ['הוגש', 'לא הוגש', 'בעיבוד'], required: true },
+  createdAt: { type: Date, required: false },
+  status: { type: String, enum: ['הוגש', 'לא הוגש', 'בעיבוד'], required: false },
   invitingName: { type: String, required: false },
-  detail: { type: String },
+  detail: { type: String, required: false },
 
   paid: {
     type: String,
     enum: ["כן", "לא"],
-    default: "לא"
+    default: "לא",
+    required: false
   },
-  paymentDate: { type: Date, default: null },
+  paymentDate: { type: Date, default: null, required: false },
 
   files: [FileSchema],
 
   supplierId: {
     type: mongoose.Schema.Types.ObjectId,
     ref: 'Supplier',
-    required: false
+    required: true
   },
 
   documentType: {

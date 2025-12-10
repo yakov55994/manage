@@ -72,6 +72,7 @@ const InvoicesPage = () => {
     hasSupplier: "all",
     paymentStatus: "all",
     submissionStatus: "all",
+    documentStatus: "all",
   });
 
   const [exportColumns, setExportColumns] = useState({
@@ -94,6 +95,7 @@ const InvoicesPage = () => {
   const [masavModal, setMasavModal] = useState(false);
   const [selectedInvoices, setSelectedInvoices] = useState([]);
   const [showBulkDeleteModal, setShowBulkDeleteModal] = useState(false);
+  const [documentStatusFilter, setDocumentStatusFilter] = useState("all");
 
   const { user, isAdmin, canEditModule, canViewModule } = useAuth();
   const navigate = useNavigate();
@@ -415,8 +417,30 @@ const InvoicesPage = () => {
           (inv) => (inv.paymentMethod || "").trim() === wanted
         );
       }
+      if (advancedFilters.documentStatus === "completed") {
+        filtered = filtered.filter((inv) => {
+          const state = getActionState(inv);
+          return state.status === "הושלם";
+        });
+      } else if (advancedFilters.documentStatus === "missing") {
+        filtered = filtered.filter((inv) => {
+          const state = getActionState(inv);
+          return state.status === "חסר";
+        });
+      }
     }
+    // סינון לפי סטטוס מסמך (חסר/הושלם)
 
+    // ✅ סינון רגיל (תמיד פעיל)
+    if (documentStatusFilter !== "all") {
+      filtered = filtered.filter((invoice) => {
+        const state = getActionState(invoice);
+        if (documentStatusFilter === "completed")
+          return state.status === "הושלם";
+        if (documentStatusFilter === "missing") return state.status === "חסר";
+        return true;
+      });
+    }
     return filtered;
   };
 
@@ -458,6 +482,7 @@ const InvoicesPage = () => {
     setStatusFilter("all");
     setSearchTerm("");
     setInvoices(allInvoices);
+    setDocumentStatusFilter("all");
   };
 
   const clearAdvancedFilters = () => {
@@ -475,6 +500,7 @@ const InvoicesPage = () => {
       hasSupplier: "all",
       paymentStatus: "all",
       submissionStatus: "all",
+      documentStatus: "all",
     });
   };
 
@@ -491,35 +517,37 @@ const InvoicesPage = () => {
     return () => window.removeEventListener("keydown", onKeyDown);
   }, [showReportModal]);
 
-  const sortedInvoices = [...(searchTerm ? filteredInvoices : invoices)].sort(
-    (a, b) => {
-      if (sortBy === "totalAmount") {
-        return sortOrder === "asc"
-          ? a.totalAmount - b.totalAmount
-          : b.totalAmount - a.totalAmount;
-      }
-      if (sortBy === "createdAt") {
-        return sortOrder === "asc"
-          ? new Date(a.createdAt) - new Date(b.createdAt)
-          : new Date(b.createdAt) - new Date(a.createdAt);
-      }
-      if (sortBy === "invoiceNumber") {
-        return sortOrder === "asc"
-          ? a.invoiceNumber - b.invoiceNumber
-          : b.invoiceNumber - a.invoiceNumber;
-      }
-      if (sortBy === "projectName") {
-        const aName = a.projects?.[0]?.projectName || "";
-        const bName = b.projects?.[0]?.projectName || "";
-
-        return sortOrder === "asc"
-          ? aName.localeCompare(bName)
-          : bName.localeCompare(aName);
-      }
-
-      return 0;
+  const sortedInvoices = [
+    ...(searchTerm || documentStatusFilter !== "all"
+      ? filteredInvoices
+      : invoices),
+  ].sort((a, b) => {
+    if (sortBy === "totalAmount") {
+      return sortOrder === "asc"
+        ? a.totalAmount - b.totalAmount
+        : b.totalAmount - a.totalAmount;
     }
-  );
+    if (sortBy === "createdAt") {
+      return sortOrder === "asc"
+        ? new Date(a.createdAt) - new Date(b.createdAt)
+        : new Date(b.createdAt) - new Date(a.createdAt);
+    }
+    if (sortBy === "invoiceNumber") {
+      return sortOrder === "asc"
+        ? a.invoiceNumber - b.invoiceNumber
+        : b.invoiceNumber - a.invoiceNumber;
+    }
+    if (sortBy === "projectName") {
+      const aName = a.projects?.[0]?.projectName || "";
+      const bName = b.projects?.[0]?.projectName || "";
+
+      return sortOrder === "asc"
+        ? aName.localeCompare(bName)
+        : bName.localeCompare(aName);
+    }
+
+    return 0;
+  });
 
   const generateInvoicesPrint = () => {
     let filteredForPrint = [...allInvoices];
@@ -1874,10 +1902,21 @@ const InvoicesPage = () => {
                   <option value="inProgress">בעיבוד</option>
                   <option value="notSubmitted">לא הוגשו</option>
                 </select>
+
+                <select
+                  onChange={(e) => setDocumentStatusFilter(e.target.value)}
+                  value={documentStatusFilter}
+                  className="px-4 py-2 border-2 border-orange-200 rounded-xl bg-white font-bold text-slate-900 focus:border-orange-500 focus:outline-none focus:ring-4 focus:ring-orange-500/20 transition-all"
+                >
+                  <option value="all">כל המסמכים</option>
+                  <option value="completed">הושלם</option>
+                  <option value="missing">חסר</option>
+                </select>
               </div>
 
               {(paymentFilter !== "all" ||
                 statusFilter !== "all" ||
+                documentStatusFilter !== "all" ||
                 searchTerm) && (
                 <button
                   onClick={resetFilters}
@@ -2533,6 +2572,27 @@ const InvoicesPage = () => {
                           <option value="all">הכל</option>
                           <option value="paid">שולם</option>
                           <option value="unpaid">לא שולם</option>
+                        </select>
+                      </div>
+
+                      {/* Document Status */}
+                      <div>
+                        <label className="block text-sm font-bold text-slate-700 mb-2">
+                          סטטוס מסמך
+                        </label>
+                        <select
+                          value={advancedFilters.documentStatus}
+                          onChange={(e) =>
+                            setAdvancedFilters({
+                              ...advancedFilters,
+                              documentStatus: e.target.value,
+                            })
+                          }
+                          className="w-full px-4 py-2 border-2 border-gray-200 rounded-xl focus:border-orange-500 focus:outline-none focus:ring-2 focus:ring-orange-200"
+                        >
+                          <option value="all">הכל</option>
+                          <option value="completed">הושלם</option>
+                          <option value="missing">חסר</option>
                         </select>
                       </div>
                     </div>

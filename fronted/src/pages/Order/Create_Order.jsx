@@ -277,19 +277,19 @@ const CreateOrder = () => {
         return false;
       }
 
-      if (!order.detail || order.detail.trim() === "") {
-        toast.error(`הזמנה מספר ${orderNumber}: חסר פירוט ההזמנה`, {
-          className: "sonner-toast error rtl",
-        });
-        return false;
-      }
+      // if (!order.detail || order.detail.trim() === "") {
+      //   toast.error(`הזמנה מספר ${orderNumber}: חסר פירוט ההזמנה`, {
+      //     className: "sonner-toast error rtl",
+      //   });
+      //   return false;
+      // }
 
-      if (!order.Contact_person || order.Contact_person.trim() === "") {
-        toast.error(`הזמנה מספר ${orderNumber}: חסר איש קשר`, {
-          className: "sonner-toast error rtl",
-        });
-        return false;
-      }
+      // if (!order.Contact_person || order.Contact_person.trim() === "") {
+      //   toast.error(`הזמנה מספר ${orderNumber}: חסר איש קשר`, {
+      //     className: "sonner-toast error rtl",
+      //   });
+      //   return false;
+      // }
 
       if (!order.status) {
         toast.error(`הזמנה מספר ${orderNumber}: חסר סטטוס ההזמנה`, {

@@ -7,9 +7,9 @@ const supplierSchema = new mongoose.Schema(
   {
     name: { type: String, required: true },
     business_tax: { type: String, required: true },
-    address: { type: String, required: true },  // ✅ תיקנתי גם required (לא require)
-    phone: String,
-    email: { type: String, required: true },    // ✅ תיקנתי גם required
+    address: { type: String, required: false },  // ✅ תיקנתי גם required (לא require)
+    phone: {type: String, required: false },    // ✅ תיקנתי גם required (לא require)
+    email: { type: String, required: false },    // ✅ תיקנתי גם required
     date: { type: Date, default: Date.now },
 
     bankDetails: {

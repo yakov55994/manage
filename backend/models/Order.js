@@ -21,11 +21,11 @@ const orderSchema = new mongoose.Schema({
   submittedDate: { type: Date, default: null },
 
   invitingName: { type: String, required: true }, // מי ביצע את ההזמנה
-  detail: { type: String, required: true },
+  detail: { type: String, required: false },
 
   remainingBudget: { type: Number },
 
-  Contact_person: { type: String, required: true },
+  Contact_person: { type: String, required: false },
 
   files: [{
     name: { type: String, required: true },

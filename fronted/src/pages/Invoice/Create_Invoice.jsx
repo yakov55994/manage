@@ -182,7 +182,7 @@ const CreateInvoice = () => {
     if (!form.invoiceNumber) return toast.error("מספר חשבונית חובה");
     if (!form.supplierId) return toast.error("יש לבחור ספק");
     if (!form.documentType) return toast.error("יש לבחור סוג מסמך");
-    if (!form.createdAt) return toast.error("יש לבחור תאריך יצירה");
+    // if (!form.createdAt) return toast.error("יש לבחור תאריך יצירה");
     if (rows.length === 0) return toast.error("בחר לפחות פרויקט אחד");
 
     if (
