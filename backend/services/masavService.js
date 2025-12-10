@@ -85,10 +85,6 @@ export function generateMasavFile(companyInfo, payments, executionDate) {
     fixLen("", 56) +                       // 56
     "KOT";                                 // 3
 
-  console.log(header.split(""));
-  console.log(header.length);
-  console.log(header);
-  console.log("1234567890123456789012345678901234567890123456789012345678901234567890")
   lines.push(header);
 
   // =====================================================
@@ -103,21 +99,22 @@ export function generateMasavFile(companyInfo, payments, executionDate) {
       "1" +
       fixLen(instituteId, 8, "0", "left") +
       "00" +
-      "000000" +                               // filler
-      fixLen(p.bankNumber, 2, "0", "left") +   // קוד בנק
-      fixLen(p.branchNumber, 3, "0", "left") + // סניף
-      "0000" +                                 // סוג חשבון
-      fixLen(p.accountNumber, 9, "0") +        // מספר חשבון
-      "0" +                                    // filler
-      fixLen(p.internalId, 9, "0") +           // מזהה זכאי
-      fixLen(p.supplierName, 30) +             // שם זכאי
-      fixLen(String(p.amount), 11, "0") +      // סכום
-      fixLen(p.internalId, 20, "0") +          // אסמכתא
-      fixLen("0", 8, "0") +                    // תקופה
-      "000" +                                  // קוד מלל
-      "006" +                                  // סוג תנועה
+      "000000" +
+      fixLen(p.bankNumber, 2, "0", "left") +
+      fixLen(p.branchNumber, 3, "0", "left") +
+      "0000" +
+      fixLen(p.accountNumber, 9, "0", "left") +
+      "0" +
+      fixLen(p.internalId, 9, "0", "left") +
+      fixLen(p.supplierName, 30, " ", "right") +
+      fixLen(String(p.amount), 11, "0", "left") +   // ⬅⬅⬅ התיקון המרכזי
+      fixLen(p.internalId, 20, "0", "left") +
+      fixLen("0", 8, "0", "left") +
+      "000" +
+      "006" +
       fixLen("", 18) +
       fixLen("", 2);
+
 
     lines.push(line);
   });

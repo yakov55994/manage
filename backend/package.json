@@ -26,6 +26,7 @@
     "firebase": "^12.0.0",
     "firebase-admin": "^13.4.0",
     "fs": "^0.0.1-security",
+    "html-pdf-node": "^1.0.8",
     "js-cookie": "^3.0.5",
     "jsonwebtoken": "^9.0.2",
     "jspdf": "^3.0.4",

@@ -115,18 +115,31 @@ export default function MasavModal({ open, onClose, invoices }) {
     }
 
     const payments = withBankDetails.map((inv) => {
+      console.log(inv)
       const s = inv.supplierId;
       const bd = s.bankDetails;
 
       // ⬅ פה התיקון
       const rawAccount = String(bd.accountNumber || "").replace(/\D/g, ""); // מנקה תווים לא מספריים
       const account9 = rawAccount.slice(-9); // רק 9 ספרות אחרונות
+      let amount = inv.totalAmount;
 
+      // אם הסכום נראה כמו 540697 → כנראה אגורות → לא לכפול שוב
+      if (amount > 100000) {
+        // כבר אגורות
+        amount = Math.round(amount);
+      } else {
+        // שקלים → להמיר לאגורות
+        amount = Math.round(amount * 100);
+      }
       return {
-        bankNumber: String(bankCodeMap[bd.bankName] || "00").padStart(2, "0"),
+        bankNumber: String(bankCodeMap[bd.bankName] || "")
+          .replace(/\D/g, "")         // מסיר כל תו לא ספרתי
+          .slice(-2)                  // לוקח רק 2 ספרות אחרונות לתקן מס״ב
+          .padStart(2, "0"),
         branchNumber: String(bd.branchNumber).padStart(3, "0"),
         accountNumber: account9.padStart(9, "0"), // ⬅ זה המפתח
-        amount: Math.round(inv.totalAmount * 100),
+        amount,
         supplierName: s.name,
         internalId: String(s.business_tax || "0").padStart(9, "0"),
       };
@@ -273,12 +286,11 @@ export default function MasavModal({ open, onClose, invoices }) {
                   <label
                     key={inv._id}
                     className={`flex items-center justify-between gap-3 p-4 rounded-xl cursor-pointer transition-all
-                      ${
-                        isSelected
-                          ? hasNoBankDetails
-                            ? "bg-red-50 border-red-300"
-                            : "bg-orange-100 border-orange-300"
-                          : "bg-white border-orange-100 hover:bg-orange-50"
+                      ${isSelected
+                        ? hasNoBankDetails
+                          ? "bg-red-50 border-red-300"
+                          : "bg-orange-100 border-orange-300"
+                        : "bg-white border-orange-100 hover:bg-orange-50"
                       }
                       border-2
                     `}
@@ -296,13 +308,12 @@ export default function MasavModal({ open, onClose, invoices }) {
                             <span className="text-red-500">⚠️</span>
                           )}
                           <span
-                            className={`font-bold text-sm ${
-                              isSelected
-                                ? hasNoBankDetails
-                                  ? "text-red-900"
-                                  : "text-orange-900"
-                                : "text-slate-700"
-                            }`}
+                            className={`font-bold text-sm ${isSelected
+                              ? hasNoBankDetails
+                                ? "text-red-900"
+                                : "text-orange-900"
+                              : "text-slate-700"
+                              }`}
                           >
                             חשבונית #{inv.invoiceNumber}
                           </span>

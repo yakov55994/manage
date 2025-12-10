@@ -3,11 +3,13 @@ import mongoose from "mongoose";
 const projectSchema = new mongoose.Schema({
   name: { type: String, required: true },
 
-budget: { type: Number, required: false, default: 0 },
-remainingBudget: { type: Number, default: 0 },
+  budget: { type: Number, required: false, default: 0 },
+  remainingBudget: { type: Number, default: 0 },
 
   invitingName: { type: String, required: true },
   Contact_person: { type: String, required: true },
+
+  isMilga: { type: Boolean, default: false },
 
   // 🟩 חשוב! קשרי ישויות
   invoices: [{ type: mongoose.Schema.Types.ObjectId, ref: "Invoice" }],
@@ -50,7 +52,7 @@ projectSchema.pre('deleteOne', { document: true, query: false }, async function 
     next();
   } catch (err) {
     console.error('❌ שגיאה במחיקת פרויקט:', err);
-    next(err);
+    next(err); ``
   }
 });
 

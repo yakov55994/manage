@@ -80,6 +80,9 @@ import path from "path";
 import puppeteer from "puppeteer";
 
 export async function generateMasavPDF({ payments, companyInfo, executionDate }) {
+  console.log("🔥🔥 THIS IS THE REAL generateMasavPDF FILE 🔥🔥");
+  console.log("🔥 PAYMENTS IN FUNCTION:", payments);
+  console.log("🔥 FIRST PAYMENT:", payments?.[0]);
   console.log("📄 MASAV PDF STARTED");
 
   // ---------------------------
@@ -135,17 +138,20 @@ export async function generateMasavPDF({ payments, companyInfo, executionDate })
   const rowsHTML = payments
     .map((p, i) => {
       const amount = (p.amount / 100).toLocaleString("he-IL");
+      const bankCode = p.bankNumber?.toString().padStart(2, "0") || "";
+      const branchCode = p.branchNumber?.toString().padStart(3, "0") || "";
+
       return `
-        <tr>
-          <td>${i + 1}</td>
-          <td>${p.supplierName}</td>
-          <td>${p.internalId}</td>
-          <td>${p.bankName}</td>
-          <td>${p.branchNumber}</td>
-          <td>${p.accountNumber}</td>
-          <td>${amount} ₪</td>
-          <td>${p.invoiceNumbers || "-"}</td>
-        </tr>
+  <tr>
+    <td>${i + 1}</td>
+    <td>${p.supplierName}</td>
+    <td>${p.internalId}</td>
+    <td>${bankCode}</td>
+    <td>${branchCode}</td>
+    <td>${p.accountNumber}</td>
+    <td>${amount} ₪</td>
+    <td>${p.invoiceNumbers || "-"}</td>
+  </tr>
       `;
     })
     .join("");
