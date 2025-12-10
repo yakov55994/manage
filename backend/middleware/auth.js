@@ -96,42 +96,40 @@ export const checkAccess = (moduleName, action) => {
       // ==========================================
       // 0) רואת חשבון – גישת קריאה בלבד בכל המערכת
       // ==========================================
+      // ==========================================
+      // 0) רואת חשבון – הרשאות מיוחדות
+      // ==========================================
       if (user.role === "accountant") {
 
-        // ✔ 1) זיהוי פרויקט החשבונית/ההזמנה/הפרויקט
-        const id =
-          req.params.id ||
-          req.params.invoiceId ||
-          req.params.orderId ||
-          req.params.projectId;
-
-        let item = null;
-        let projectId = null;
-
+        // --- accountant יכול לראות כל החשבוניות ---
         if (moduleName === "invoices") {
-          item = await Invoice.findById(id).populate("projectId");
-          projectId = item?.projectId;
+
+          if (action === "view") return next(); // צפייה בלבד מותרת
+          return res.status(403).json({ message: "רואת חשבון לא יכולה לבצע שינוי בחשבוניות" });
         }
 
+        // --- accountant יכול לצפות רק בפרויקט מילגה ---
         if (moduleName === "projects") {
-          item = await Project.findById(id);
-          projectId = item;
+
+          const projectId = req.params.id || req.params.projectId;
+
+          const project = await Project.findById(projectId);
+          if (!project) {
+            return res.status(404).json({ message: "פרויקט לא נמצא" });
+          }
+
+          // ❌ אם זה לא פרויקט מילגה — אין גישה
+          if (!project.isMilga) {
+            return res.status(403).json({ message: "גישה מותרת רק לפרויקט מילגה" });
+          }
+
+          // ✔ רק צפייה מותרת
+          if (action === "view") return next();
+          return res.status(403).json({ message: "אין הרשאה לערוך פרויקט" });
         }
 
-        // ❌ אם אין פרויקט — אין כניסה
-        if (!projectId) {
-          return res.status(403).json({ message: "אין גישה לחשבונית זו" });
-        }
-
-        // ❌ אם זה לא פרויקט מילגה — חסימה
-        if (!projectId.isMilga) {
-          return res.status(403).json({ message: "גישה מותרת רק לפרויקט מילגה" });
-        }
-
-        // ✔ רואת חשבון יכולה רק לצפות
-        if (action === "view") return next();
-
-        return res.status(403).json({ message: "אין הרשאה לערוך" });
+        // --- accountant לא יכול להיכנס לשום מודול אחר ---
+        return res.status(403).json({ message: "אין הרשאה למודול זה" });
       }
 
 
