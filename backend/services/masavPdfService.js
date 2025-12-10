@@ -80,33 +80,58 @@ import path from "path";
 import puppeteer from "puppeteer";
 
 export async function generateMasavPDF({ payments, companyInfo, executionDate }) {
-  // -------------------------------
-  //  יצירת תיקיית tmp אם לא קיימת
-  // -------------------------------
+  console.log("📄 MASAV PDF STARTED");
+
+  // ---------------------------
+  // TMP FOLDER CHECK
+  // ---------------------------
   const tmpDir = path.join(process.cwd(), "tmp");
   if (!fs.existsSync(tmpDir)) {
+    console.log("📁 tmp folder missing → creating…");
     fs.mkdirSync(tmpDir, { recursive: true });
   }
 
-  // -------------------------------
-  //  טוען את קבצי התבנית
-  // -------------------------------
   const templatePath = path.join(process.cwd(), "templates", "masav-report.html");
   const cssPath = path.join(process.cwd(), "templates", "masav-report.css");
 
+  // ---------------------------
+  // LOAD HTML TEMPLATE
+  // ---------------------------
   if (!fs.existsSync(templatePath)) {
-    throw new Error("masav-report.html לא נמצא");
+    console.error("❌ ERROR: masav-report.html not found!", templatePath);
+    throw new Error("Missing masav-report.html");
   }
+  console.log("📄 HTML template loaded:", templatePath);
+
+  let html;
+  try {
+    html = fs.readFileSync(templatePath, "utf8");
+  } catch (err) {
+    console.error("❌ ERROR reading HTML:", err);
+    throw err;
+  }
+
+  // ---------------------------
+  // LOAD CSS
+  // ---------------------------
   if (!fs.existsSync(cssPath)) {
-    throw new Error("masav-report.css לא נמצא");
+    console.error("❌ ERROR: masav-report.css not found!", cssPath);
+    throw new Error("Missing masav-report.css");
+  }
+  console.log("🎨 CSS loaded:", cssPath);
+
+  let css;
+  try {
+    css = fs.readFileSync(cssPath, "utf8");
+  } catch (err) {
+    console.error("❌ ERROR reading CSS:", err);
+    throw err;
   }
 
-  let html = fs.readFileSync(templatePath, "utf8");
-  const cssContent = fs.readFileSync(cssPath, "utf8");
-
-  // -------------------------------
-  //  בניית שורות הטבלה
-  // -------------------------------
+  // ---------------------------
+  // BUILD ROWS
+  // ---------------------------
+  console.log(`📊 Building ${payments.length} table rows…`);
   const rowsHTML = payments
     .map((p, i) => {
       const amount = (p.amount / 100).toLocaleString("he-IL");
@@ -125,65 +150,93 @@ export async function generateMasavPDF({ payments, companyInfo, executionDate })
     })
     .join("");
 
+  console.log("📊 Rows built successfully.");
+
   const totalAmount = (
     payments.reduce((sum, p) => sum + p.amount, 0) / 100
   ).toLocaleString("he-IL");
 
-  const now = new Date().toLocaleString("he-IL");
-
-  // -------------------------------
-  //  החלפת כל ה־placeholders ב־HTML
-  // -------------------------------
-  html = html
-    .replace("{{css}}", `<style>${cssContent}</style>`)
-    .replace("{{companyName}}", companyInfo.companyName)
-    .replace("{{instituteId}}", companyInfo.instituteId)
-    .replace("{{senderId}}", companyInfo.senderId)
-    .replace("{{executionDate}}", executionDate)
-    .replace("{{generatedAt}}", now)
-    .replace("{{rows}}", rowsHTML)
-    .replace("{{total}}", totalAmount)
-    .replace("{{count}}", payments.length)
-    .replace("{{year}}", new Date().getFullYear());
-
-  // -------------------------------
-  //  שמירת ה־HTML הזמני
-  // -------------------------------
-  const tempHtmlPath = path.join(tmpDir, "masavReport.html");
-  fs.writeFileSync(tempHtmlPath, html);
-
-  // -------------------------------
-  //  הפקת PDF (תומך Render ולוקאל)
-  // -------------------------------
-  const browser = await puppeteer.launch({
-    headless: "new",
-    args: ["--no-sandbox", "--disable-setuid-sandbox"],
-  });
-
-  const page = await browser.newPage();
-  await page.goto("file://" + tempHtmlPath, {
-    waitUntil: "networkidle0",
-  });
-
-  const outputPath = path.join(tmpDir, `masav-report-${Date.now()}.pdf`);
-
-  await page.pdf({
-    path: outputPath,
-    format: "A4",
-    printBackground: true,
-  });
-
-  await browser.close();
-
-  // -------------------------------
-  //  ניקוי ה־HTML הזמני
-  // -------------------------------
+  // ---------------------------
+  // INJECT DATA INTO HTML
+  // ---------------------------
   try {
-    fs.unlinkSync(tempHtmlPath);
-    console.log("Temp HTML deleted:", tempHtmlPath);
+    html = html
+      .replace("{{css}}", `<style>${css}</style>`)
+      .replace("{{companyName}}", companyInfo.companyName)
+      .replace("{{instituteId}}", companyInfo.instituteId)
+      .replace("{{senderId}}", companyInfo.senderId)
+      .replace("{{executionDate}}", executionDate)
+      .replace("{{generatedAt}}", new Date().toLocaleString("he-IL"))
+      .replace("{{rows}}", rowsHTML)
+      .replace("{{total}}", totalAmount)
+      .replace("{{count}}", payments.length)
+      .replace("{{year}}", new Date().getFullYear());
   } catch (err) {
-    console.log("Failed to delete temp HTML:", err.message);
+    console.error("❌ ERROR injecting HTML placeholders:", err);
+    throw err;
   }
 
-  return outputPath;
+  // ---------------------------
+  // SAVE TEMP HTML
+  // ---------------------------
+  const htmlFile = path.join(tmpDir, "masavReport.html");
+  try {
+    fs.writeFileSync(htmlFile, html);
+  } catch (err) {
+    console.error("❌ ERROR saving temp HTML:", err);
+    throw err;
+  }
+  console.log("📄 Temporary HTML saved:", htmlFile);
+
+  // ---------------------------
+  // LAUNCH PUPPETEER
+  // ---------------------------
+  console.log("🧪 Launching Puppeteer…");
+  let browser;
+  try {
+    browser = await puppeteer.launch({
+      headless: "new",
+      args: ["--no-sandbox", "--disable-setuid-sandbox"],
+    });
+  } catch (err) {
+    console.error("❌ PUPPETEER LAUNCH ERROR:", err);
+    throw err;
+  }
+
+  console.log("🟢 Puppeteer launched successfully.");
+
+  // ---------------------------
+  // CREATE PDF
+  // ---------------------------
+  const pdfFile = path.join(tmpDir, `masav-${Date.now()}.pdf`);
+
+  try {
+    const page = await browser.newPage();
+    await page.goto("file://" + htmlFile, { waitUntil: "networkidle0" });
+
+    await page.pdf({
+      path: pdfFile,
+      format: "A4",
+      printBackground: true,
+    });
+  } catch (err) {
+    console.error("❌ ERROR DURING PDF GENERATION:", err);
+    throw err;
+  }
+
+  await browser.close();
+  console.log("📌 PDF created:", pdfFile);
+
+  // ---------------------------
+  // DELETE TEMP HTML
+  // ---------------------------
+  try {
+    fs.unlinkSync(htmlFile);
+    console.log("🗑 Deleted temp HTML:", htmlFile);
+  } catch (err) {
+    console.error("⚠ Could not delete temp HTML:", err.message);
+  }
+
+  console.log("✅ MASAV PDF DONE");
+  return pdfFile;
 }
