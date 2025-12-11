@@ -282,7 +282,7 @@ const InvoicesPage = () => {
           (invoice.projects || []).some((p) =>
             p.projectName?.toLowerCase().includes(searchTerm.toLowerCase())
           ) ||
-          (invoice.supplierId?.name || "")
+          (invoice.type === "salary" ? invoice.salaryEmployeeName : invoice.supplierId?.name || "-" || "")
             .toLowerCase()
             .includes(searchTerm.toLowerCase()) ||
           (invoice.invitingName || "")
@@ -1274,8 +1274,8 @@ const InvoicesPage = () => {
                 projectName:
                   invoice.projects?.map((p) => p.projectName).join(", ") ||
                   "ללא_פרויקט",
-                supplierName: invoice.supplierId?.name || "ללא_ספק",
-              });
+                supplierName: invoice.type === "salary" ? invoice.salaryEmployeeName : invoice.supplierId?.name || "-"} || "ללא_ספק",
+              );
             }
           });
         }
@@ -2145,9 +2145,7 @@ const InvoicesPage = () => {
 
                     {/* עמודה 3/2: שם הספק */}
                     <td className="px-2 py-4 text-xs font-bold text-center text-slate-900">
-                      {invoice.supplierId?.name || (
-                        <span className="text-red-500 italic">חסר</span>
-                      )}
+                      {invoice.type === "salary"  ? invoice.salaryEmployeeName : invoice.supplierId?.name || "-" } 
                     </td>
 
                     {/* עמודה 4/3: מספר חשבונית */}
@@ -2265,7 +2263,7 @@ const InvoicesPage = () => {
                           >
                             <Edit2 className="w-4 h-4" />
                           </button>
-                          {isAdmin && (
+                          {isAdmin && invoice.type != "salary" ? (
                             <>
                               <button
                                 onClick={(e) => {
@@ -2288,7 +2286,7 @@ const InvoicesPage = () => {
                                 <Trash2 className="w-4 h-4" />
                               </button>
                             </>
-                          )}
+                          ) : <></>}
                         </div>
                       </td>
                     )}

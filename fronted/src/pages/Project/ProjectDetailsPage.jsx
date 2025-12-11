@@ -139,10 +139,11 @@ const ProjectDetailsPage = () => {
         setLoadingInvoices(false);
       }
     };
-
+    
     fetchProjectDetails();
   }, [id, loading, user]);
-
+  const isSalaryProject = project?.type === "salary";
+  
   function formatHebrewDate(dateTime) {
     const date = new Date(dateTime);
     return date.toLocaleString("he-IL", {
@@ -361,10 +362,24 @@ const ProjectDetailsPage = () => {
                   </>
                 )}
                 {/* כפתור הוספת חשבונית - רק אם יש הרשאת edit */}
-                {canEditInvoices() && (
+                {/* אם זה משכורות – הוספת משכורת */}
+                {isSalaryProject && canEditInvoices() && (
+                  <button
+                    onClick={() =>
+                      navigate(`/create-salary?projectId=${project._id}`)
+                    }
+                    className="flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-orange-600 to-amber-600 text-white font-bold rounded-xl"
+                  >
+                    <Edit2 className="w-4 h-4" />
+                    <span>הוספת משכורת</span>
+                  </button>
+                )}
+
+                {/* אם זה לא משכורות – הוספת חשבונית */}
+                {!isSalaryProject && canEditInvoices() && (
                   <button
                     onClick={handleAddInvoiceForProject}
-                    className="flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-orange-600 to-amber-600 text-white font-bold rounded-xl hover:from-orange-700 hover:to-amber-700 transition-all shadow-xl shadow-orange-500/30"
+                    className="flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-orange-600 to-amber-600 text-white font-bold rounded-xl"
                   >
                     <Edit2 className="w-4 h-4" />
                     <span>הוספת חשבונית</span>
@@ -431,6 +446,8 @@ const ProjectDetailsPage = () => {
                   </div>
                 </div>
 
+{!isSalaryProject && (
+  <>
                 {/* Budget */}
                 <div className="group p-4 rounded-xl bg-gradient-to-br from-orange-50 to-amber-50 border-2 border-orange-200 hover:border-orange-400 transition-all">
                   <div className="flex items-start gap-3">
@@ -466,6 +483,8 @@ const ProjectDetailsPage = () => {
                     </div>
                   </div>
                 </div>
+  </>
+)}
 
                 <div className="group p-4 rounded-xl bg-gradient-to-br from-orange-50 to-amber-50 border-2 border-orange-200 hover:border-orange-400 transition-all">
                   <div className="flex items-start gap-3">
@@ -502,7 +521,8 @@ const ProjectDetailsPage = () => {
             </div>
           </div>
         </div>
-
+        {!isSalaryProject && (
+  <>
         {/* Orders Section */}
         <div className="relative mb-6">
           <div className="absolute -inset-2 bg-gradient-to-r from-blue-500 via-indigo-500 to-purple-500 rounded-3xl opacity-10 blur-xl"></div>
@@ -595,6 +615,9 @@ const ProjectDetailsPage = () => {
             </div>
           </div>
         </div>
+  </>
+        )}
+
 
         {/* Invoices Section */}
         <div className="relative">

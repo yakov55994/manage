@@ -7,6 +7,7 @@ import cors from 'cors';
 import authRoutes from './routes/Auth.js';
 import usersRoutes from './routes/UserRoutes.js';
 import projectRoutes from './routes/projectRoutes.js';
+import salaryRoutes from './routes/salaryRoutes.js';
 import invoiceRoutes from './routes/InvoiceRoutes.js';
 import orderRoutes from './routes/orderRoutes.js';
 import notesRoutes from './routes/NotesRoutes.js';
@@ -65,6 +66,9 @@ app.use('/api/auth', authRoutes);
 // Projects
 app.use('/api/projects', projectRoutes);
 
+// Salaries
+app.use("/api/salaries", salaryRoutes);
+
 // Invoices
 app.use('/api/invoices', invoiceRoutes);
 
@@ -85,6 +89,8 @@ app.use('/api/documents', documentsRoutes);
 
 
 app.use('/api/masav', masavRoutes);
+
+
 
 // Error handler
 app.use((err, req, res, next) => {

@@ -25,7 +25,13 @@ const projectSchema = new mongoose.Schema({
   createdByName: {
     type: String,
     required: false
-  }
+  },
+  type: {
+  type: String,
+  enum: ["regular", "milga", "salary"],
+  default: "regular"
+}
+
 });
 
 // Cascade delete invoices + orders when project is deleted

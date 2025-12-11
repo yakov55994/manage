@@ -9,7 +9,7 @@ const InvoiceProjectSchema = new mongoose.Schema({
     required: true,
   },
   projectName: { type: String, required: true },
-  sum: { type: Number, required: true }, // שינוי!!
+  sum: { type: Number, required: true },
 });
 
 const FileSchema = new mongoose.Schema({
@@ -25,14 +25,27 @@ const FileSchema = new mongoose.Schema({
 const invoiceSchema = new mongoose.Schema({
   invoiceNumber: { type: String, required: true },
 
-  // ❗ במקום projectId בודד → מערך פרויקטים
+  // ▶️ סוג חשבונית: רגילה או משכורות
+  type: {
+    type: String,
+    enum: ["invoice", "salary"],
+    default: "invoice",
+  },
+
+  // ❗ מערך פרויקטים רגילים או פרויקט משכורות
   projects: {
     type: [InvoiceProjectSchema],
     required: true,
   },
 
-  // סכום כולל (מחושב)
+  // סכום כולל
   totalAmount: { type: Number, required: true },
+
+  // ▶️ עבור משכורות בלבד
+  salaryEmployeeName: { type: String, default: null },
+  salaryBaseAmount: { type: Number, default: null },
+  salaryOverheadPercent: { type: Number, default: null }, // לדוגמה: 10, 12, 15
+  salaryFinalAmount: { type: Number, default: null },
 
   createdAt: { type: Date, required: false },
   status: { type: String, enum: ['הוגש', 'לא הוגש', 'בעיבוד'], required: false },
@@ -49,11 +62,15 @@ const invoiceSchema = new mongoose.Schema({
 
   files: [FileSchema],
 
-  supplierId: {
-    type: mongoose.Schema.Types.ObjectId,
-    ref: 'Supplier',
-    required: true
+supplierId: {
+  type: mongoose.Schema.Types.ObjectId,
+  ref: 'Supplier',
+  required: function () {
+    return this.type !== "salary";
   },
+  default: null
+},
+
 
   documentType: {
     type: String,
@@ -61,7 +78,8 @@ const invoiceSchema = new mongoose.Schema({
       'ח. עסקה',
       'ה. עבודה',
       'ד. תשלום',
-      'חשבונית מס / קבלה'
+      'חשבונית מס / קבלה',
+      'משכורות'  // 🆕 חובה כאן!
     ],
     required: true,
   },
@@ -75,7 +93,6 @@ const invoiceSchema = new mongoose.Schema({
     type: String,
     default: null
   },
-
   checkDate: {
     type: Date,
     default: null
@@ -92,15 +109,15 @@ const invoiceSchema = new mongoose.Schema({
     ref: "Project",
     default: null
   },
-
 });
 
-
+// --------------------------------
+// מחיקת קבצים בענן
+// --------------------------------
 invoiceSchema.pre('deleteOne', { document: true, query: false }, async function (next) {
   try {
     if (this.files?.length) {
       for (const file of this.files) {
-        // תמיד קודם ניקח את מה שיש בבסיס הנתונים
         let publicId = file.publicId || extractPublicIdFromUrl(file.url);
 
         if (publicId) {
@@ -123,8 +140,6 @@ function extractPublicIdFromUrl(url) {
   const matches = url.match(/upload\/(.+?)(\.[a-zA-Z0-9]+)?$/);
   return matches ? matches[1] : null;
 }
-
-
 
 const Invoice = mongoose.model("Invoice", invoiceSchema);
 export default Invoice;

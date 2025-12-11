@@ -27,6 +27,9 @@ const CreateInvoice = () => {
   const milgaProject = projects.find((p) => p.name === "מילגה");
   const MILGA_ID = milgaProject?._id;
 
+  const salaryProject = projects.find((p) => p.name === "משכורות");
+  const SALARY_ID = salaryProject?._id;
+
   // ✅ טען טיוטה שמורה אם יש
   const loadDraft = () => {
     const saved = localStorage.getItem("invoiceDraft");
@@ -80,6 +83,12 @@ const CreateInvoice = () => {
 
   const [loading, setLoading] = useState(false);
   const [showPaymentModal, setShowPaymentModal] = useState(false);
+  // ========== SALARY MODE ==========
+  const [isSalary, setIsSalary] = useState(false);
+
+  const [salaryEmployeeName, setSalaryEmployeeName] = useState("");
+  const [salaryBaseAmount, setSalaryBaseAmount] = useState("");
+  const [salaryOverheadPercent, setSalaryOverheadPercent] = useState("");
 
   const dateInputRef = useRef();
 
@@ -180,10 +189,12 @@ const CreateInvoice = () => {
 
   const handleSubmit = async () => {
     if (!form.invoiceNumber) return toast.error("מספר חשבונית חובה");
-    if (!form.supplierId) return toast.error("יש לבחור ספק");
-    if (!form.documentType) return toast.error("יש לבחור סוג מסמך");
+    if (!isSalary && !form.supplierId) return toast.error("יש לבחור ספק");
+    if (!isSalary && rows.length === 0)
+      return toast.error("בחר לפחות פרויקט אחד");
     // if (!form.createdAt) return toast.error("יש לבחור תאריך יצירה");
-    if (rows.length === 0) return toast.error("בחר לפחות פרויקט אחד");
+    if (!isSalary && rows.length === 0)
+      return toast.error("בחר לפחות פרויקט אחד");
 
     if (
       form.paid === "כן" &&
@@ -192,9 +203,16 @@ const CreateInvoice = () => {
     ) {
       return toast.error("יש למלא מספר צ'ק");
     }
-    for (const row of rows) {
-      if (!row.sum || Number(row.sum) <= 0) {
-        return toast.error(`סכום לא תקין לפרויקט ${row.projectName}`);
+    if (isSalary && !fundedFromProjectId) {
+      return toast.error("יש לבחור פרויקט ממנו יורד התקציב למשכורות");
+    }
+
+    if (!isSalary) {
+      if (rows.length === 0) return toast.error("בחר לפחות פרויקט אחד");
+      for (const row of rows) {
+        if (!row.sum || Number(row.sum) <= 0) {
+          return toast.error(`סכום לא תקין לפרויקט ${row.projectName}`);
+        }
       }
     }
 
@@ -229,16 +247,26 @@ const CreateInvoice = () => {
         }
       }
 
+      if (isSalary) {
+        setForm((prev) => ({
+          ...prev,
+          documentType: "משכורות",
+        }));
+      }
+
       // ============================
       // PAYLOAD
       // ============================
       const payload = {
         invoiceNumber: form.invoiceNumber,
         supplierId: form.supplierId,
-        documentType: form.documentType,
+        documentType: isSalary ? "משכורות" : form.documentType,
+        type: isSalary ? "salary" : "invoice",
+
         invitingName: form.invitingName,
         createdAt: form.createdAt,
         detail: form.detail,
+
         paid: form.paid,
         paymentDate: form.paid === "כן" ? form.paymentDate : "",
         paymentMethod: form.paid === "כן" ? form.paymentMethod : "",
@@ -254,16 +282,43 @@ const CreateInvoice = () => {
         files: uploadedFiles,
         status: "לא הוגש",
 
-        totalAmount: rows.reduce((acc, r) => acc + Number(r.sum || 0), 0),
+        fundedFromProjectId: fundedFromProjectId || null,
+      };
 
-        projects: rows.map((r) => ({
+      console.log("PAYLOAD SENT:", payload);
+
+      if (isSalary) {
+        const base = Number(salaryBaseAmount || 0);
+        const overhead = Number(salaryOverheadPercent || 0);
+        const final = base * (1 + overhead / 100);
+
+        payload.salaryEmployeeName = salaryEmployeeName;
+        payload.salaryBaseAmount = base;
+        payload.salaryOverheadPercent = overhead;
+        payload.salaryFinalAmount = final;
+
+        payload.totalAmount = final;
+
+        payload.projects = [
+          {
+            projectId: fundedFromProjectId,
+            projectName: projects.find((p) => p._id === fundedFromProjectId)
+              ?.name,
+            sum: final,
+          },
+        ];
+      } else {
+        payload.totalAmount = rows.reduce(
+          (acc, r) => acc + Number(r.sum || 0),
+          0
+        );
+
+        payload.projects = rows.map((r) => ({
           projectId: r.projectId,
           projectName: r.projectName,
           sum: Number(r.sum),
-        })),
-
-        fundedFromProjectId: fundedFromProjectId || null, // ← הוספה חשובה!!
-      };
+        }));
+      }
 
       // ============================
       // SEND
@@ -304,104 +359,216 @@ const CreateInvoice = () => {
         </div>
 
         {/* PROJECT SELECTOR */}
-        <div className="bg-white rounded-3xl shadow-xl p-6 mb-8">
-          <label className="text-lg font-bold flex items-center gap-2 mb-4">
-            <Building2 className="text-orange-600" />
-            בחר פרויקטים
-          </label>
+        {!isSalary && (
+          <>
+            <div className="bg-white rounded-3xl shadow-xl p-6 mb-8">
+              <label className="text-lg font-bold flex items-center gap-2 mb-4">
+                <Building2 className="text-orange-600" />
+                בחר פרויקטים
+              </label>
 
-          {/* Selected Tags */}
-          {selectedProjects.length > 0 && (
-            <div className="flex flex-wrap gap-2 mb-4">
-              {selectedProjects.map((p) => (
-                <div
-                  key={p._id}
-                  className="px-4 py-2 bg-orange-500 text-white rounded-xl flex items-center gap-2"
-                >
-                  {p.name}
-                  <button
-                    onClick={() =>
-                      setSelectedProjects((prev) =>
-                        prev.filter((x) => x._id !== p._id)
-                      )
-                    }
-                  >
-                    ✕
-                  </button>
+              {/* Selected Tags */}
+              {selectedProjects.length > 0 && (
+                <div className="flex flex-wrap gap-2 mb-4">
+                  {selectedProjects.map((p) => (
+                    <div
+                      key={p._id}
+                      className="px-4 py-2 bg-orange-500 text-white rounded-xl flex items-center gap-2"
+                    >
+                      {p.name}
+                      <button
+                        onClick={() =>
+                          setSelectedProjects((prev) =>
+                            prev.filter((x) => x._id !== p._id)
+                          )
+                        }
+                      >
+                        ✕
+                      </button>
+                    </div>
+                  ))}
                 </div>
-              ))}
+              )}
+
+              {/* Search */}
+              <input
+                className="w-full p-3 border rounded-xl mb-4"
+                placeholder="חפש פרויקט..."
+                value={projectSearch}
+                onChange={(e) => setProjectSearch(e.target.value)}
+              />
+
+              {/* List */}
+              <div className="max-h-72 overflow-y-auto border rounded-xl p-3 space-y-2">
+                {projects
+                  .filter((p) =>
+                    p.name.toLowerCase().includes(projectSearch.toLowerCase())
+                  )
+                  .map((p) => {
+                    const checked = selectedProjects.some(
+                      (x) => x._id === p._id
+                    );
+
+                    return (
+                      <label
+                        key={p._id}
+                        className={`flex items-center gap-3 p-2 rounded-xl cursor-pointer border ${
+                          checked
+                            ? "bg-orange-100 border-orange-300"
+                            : "bg-white hover:bg-orange-50"
+                        }`}
+                      >
+                        <input
+                          type="checkbox"
+                          checked={checked}
+                          onChange={() => {
+                            if (checked) {
+                              // הסרת פרויקט
+                              const updated = selectedProjects.filter(
+                                (x) => x._id !== p._id
+                              );
+                              setSelectedProjects(updated);
+
+                              // אם הורדנו משכורות - החזר למצב רגיל
+                              if (p.name === "משכורות") {
+                                setIsSalary(false);
+                                setForm((prev) => ({
+                                  ...prev,
+                                  documentType: "",
+                                }));
+                              }
+                            } else {
+                              // הוספת פרויקט
+                              const updated = [...selectedProjects, p];
+                              setSelectedProjects(updated);
+
+                              // אם הוספנו פרויקט משכורות → להדליק מצב משכורת אוטומטי
+                              if (p.name === "משכורות") {
+                                setIsSalary(true);
+                                setForm((prev) => ({
+                                  ...prev,
+                                  documentType: "משכורות",
+                                }));
+                              }
+                            }
+                          }}
+                        />
+                        <span>{p.name}</span>
+                      </label>
+                    );
+                  })}
+              </div>
+              {/* בחירת פרויקט מממן — רק אם נבחר פרויקט "מילגה" */}
+              {selectedProjects.some((p) => p._id === MILGA_ID) && (
+                <div className="mt-4">
+                  <label className="block font-semibold text-slate-700 mb-2">
+                    מאיזה פרויקט יורד התקציב?
+                  </label>
+
+                  <select
+                    className="w-full p-3 border-2 rounded-xl bg-white focus:border-orange-500 outline-none"
+                    value={fundedFromProjectId}
+                    onChange={(e) => setFundedFromProjectId(e.target.value)}
+                  >
+                    <option value="">בחר פרויקט מממן</option>
+
+                    {projects
+                      .filter((p) => p._id !== MILGA_ID) // לא להציג את מילגה
+                      .map((p) => (
+                        <option key={p._id} value={p._id}>
+                          {p.name}
+                        </option>
+                      ))}
+                  </select>
+                </div>
+              )}
             </div>
-          )}
+          </>
+        )}
+        {isSalary && (
+          <div className="bg-white rounded-3xl shadow-xl p-6 mb-8">
+            <label className="text-lg font-bold mb-4 block">
+              פרויקט ממנו יורד התקציב (משכורות)
+            </label>
 
-          {/* Search */}
-          <input
-            className="w-full p-3 border rounded-xl mb-4"
-            placeholder="חפש פרויקט..."
-            value={projectSearch}
-            onChange={(e) => setProjectSearch(e.target.value)}
-          />
-
-          {/* List */}
-          <div className="max-h-72 overflow-y-auto border rounded-xl p-3 space-y-2">
-            {projects
-              .filter((p) =>
-                p.name.toLowerCase().includes(projectSearch.toLowerCase())
-              )
-              .map((p) => {
-                const checked = selectedProjects.some((x) => x._id === p._id);
+            <div className="space-y-2 border rounded-xl p-3 max-h-72 overflow-y-auto">
+              {projects.map((p) => {
+                const checked = fundedFromProjectId === p._id;
 
                 return (
                   <label
                     key={p._id}
-                    className={`flex items-center gap-3 p-2 rounded-xl cursor-pointer border ${
-                      checked
-                        ? "bg-orange-100 border-orange-300"
-                        : "bg-white hover:bg-orange-50"
-                    }`}
+                    className={`flex items-center gap-3 p-2 rounded-xl cursor-pointer border
+          ${
+            checked
+              ? "bg-orange-100 border-orange-300"
+              : "bg-white hover:bg-orange-50"
+          }
+        `}
                   >
                     <input
                       type="checkbox"
                       checked={checked}
-                      onChange={() => {
-                        if (checked) {
-                          setSelectedProjects((prev) =>
-                            prev.filter((x) => x._id !== p._id)
-                          );
-                        } else {
-                          setSelectedProjects((prev) => [...prev, p]);
-                        }
-                      }}
+                      onChange={() => setFundedFromProjectId(p._id)}
+                      className="w-4 h-4"
                     />
                     <span>{p.name}</span>
                   </label>
                 );
               })}
-          </div>
-          {/* בחירת פרויקט מממן — רק אם נבחר פרויקט "מילגה" */}
-          {selectedProjects.some((p) => p._id === MILGA_ID) && (
+            </div>
+
+            {/* שדה שם עובד */}
             <div className="mt-4">
-              <label className="block font-semibold text-slate-700 mb-2">
-                מאיזה פרויקט יורד התקציב?
-              </label>
+              <label className="font-bold">שם מקבל השכר</label>
+              <input
+                className="w-full p-3 border rounded-xl"
+                value={salaryEmployeeName}
+                onChange={(e) => setSalaryEmployeeName(e.target.value)}
+                placeholder="לדוגמה: משה לוי"
+              />
+            </div>
 
+            {/* סכום בסיס */}
+            <div className="mt-4">
+              <label className="font-bold">סכום בסיס</label>
+              <input
+                className="w-full p-3 border rounded-xl"
+                type="number"
+                value={salaryBaseAmount}
+                onChange={(e) => setSalaryBaseAmount(e.target.value)}
+              />
+            </div>
+
+            {/* תקורה */}
+            <div className="mt-4">
+              <label className="font-bold">תקורה (אחוזים)</label>
               <select
-                className="w-full p-3 border-2 rounded-xl bg-white focus:border-orange-500 outline-none"
-                value={fundedFromProjectId}
-                onChange={(e) => setFundedFromProjectId(e.target.value)}
+                className="w-full p-3 border rounded-xl"
+                value={salaryOverheadPercent}
+                onChange={(e) => setSalaryOverheadPercent(e.target.value)}
               >
-                <option value="">בחר פרויקט מממן</option>
-
-                {projects
-                  .filter((p) => p._id !== MILGA_ID) // לא להציג את מילגה
-                  .map((p) => (
-                    <option key={p._id} value={p._id}>
-                      {p.name}
-                    </option>
-                  ))}
+                <option value="">ללא</option>
+                <option value="10">10%</option>
+                <option value="12">12%</option>
+                <option value="15">15%</option>
+                <option value="17">17%</option>
               </select>
             </div>
-          )}
-        </div>
+
+            {/* סכום סופי */}
+            <div className="mt-4 font-bold text-lg">
+              סכום סופי למשכורות:{" "}
+              {salaryBaseAmount
+                ? (
+                    Number(salaryBaseAmount) *
+                    (1 + Number(salaryOverheadPercent || 0) / 100)
+                  ).toLocaleString()
+                : "0"}{" "}
+              ₪
+            </div>
+          </div>
+        )}
 
         {/* GLOBAL FIELDS */}
         <div className="bg-white rounded-3xl shadow-xl p-6 mb-8 grid grid-cols-2 gap-6">
@@ -482,18 +649,29 @@ const CreateInvoice = () => {
             <select
               className="w-full p-3 border rounded-xl"
               value={form.documentType}
-              onChange={(e) =>
+              onChange={(e) => {
+                const value = e.target.value;
+
                 setForm((prev) => ({
                   ...prev,
-                  documentType: e.target.value,
-                }))
-              }
+                  documentType: value,
+                }));
+
+                if (value === "משכורות") {
+                  setIsSalary(true);
+                  setSelectedProjects([]);
+                  setRows([]);
+                } else {
+                  setIsSalary(false);
+                }
+              }}
             >
               <option value="">בחר…</option>
               <option value="ח. עסקה">ח. עסקה</option>
               <option value="ה. עבודה">ה. עבודה</option>
               <option value="ד. תשלום">ד. תשלום</option>
               <option value="חשבונית מס / קבלה">חשבונית מס / קבלה</option>
+              <option value="משכורות">משכורות</option>
             </select>
           </div>
 
@@ -644,30 +822,32 @@ const CreateInvoice = () => {
         </div>
 
         {/* sumS PER PROJECT */}
-        <div className="bg-white rounded-3xl shadow-xl p-6 mb-8">
-          <h2 className="text-xl font-bold mb-4">סכומים לפי פרויקט</h2>
+        {!isSalary && (
+          <div className="bg-white rounded-3xl shadow-xl p-6 mb-8">
+            <h2 className="text-xl font-bold mb-4">סכומים לפי פרויקט</h2>
 
-          {rows.map((row, index) => (
-            <div
-              key={row.projectId}
-              className="border rounded-xl p-4 mb-3 bg-white"
-            >
-              <div className="font-bold mb-2">{row.projectName}</div>
+            {rows.map((row, index) => (
+              <div
+                key={row.projectId}
+                className="border rounded-xl p-4 mb-3 bg-white"
+              >
+                <div className="font-bold mb-2">{row.projectName}</div>
 
-              <input
-                // type="number"
-                placeholder="סכום"
-                className="border p-2 rounded-xl w-40"
-                value={row.sum}
-                onChange={(e) => {
-                  const copy = [...rows];
-                  copy[index].sum = e.target.value;
-                  setRows(copy);
-                }}
-              />
-            </div>
-          ))}
-        </div>
+                <input
+                  // type="number"
+                  placeholder="סכום"
+                  className="border p-2 rounded-xl w-40"
+                  value={row.sum}
+                  onChange={(e) => {
+                    const copy = [...rows];
+                    copy[index].sum = e.target.value;
+                    setRows(copy);
+                  }}
+                />
+              </div>
+            ))}
+          </div>
+        )}
 
         {/* FILE UPLOAD */}
         <div className="bg-white rounded-3xl shadow-xl p-6 mb-8">
