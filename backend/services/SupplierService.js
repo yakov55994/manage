@@ -121,31 +121,46 @@ export default {
       });
   },
 
-  async getSupplierById(user, supplierId) {
-    const supplier = await Supplier.findById(supplierId)
-      .populate({
-        path: "invoices",
-        model: "Invoice",
-        populate: [
-          { path: "projectId", select: "name" },
-          { path: "files", select: "url publicId resourceType" }
-        ],
-      });
+async getSupplierById(user, supplierId) {
+  const supplier = await Supplier.findById(supplierId)
+.populate({
+  path: "invoices",
+  model: "Invoice",
+  populate: [
+    { 
+      path: "projects.projectId", 
+      select: "name" 
+    },
+    { 
+      path: "files", 
+      select: "url publicId resourceType" 
+    }
+  ],
+})
 
-    if (!supplier) return null;
 
-    if (user.role === "admin") return supplier;
+  if (!supplier) return null;
 
-    if (supplier.projects.length === 0) return supplier;
+  // אדמין → גישה מלאה
+  if (user.role === "admin") return supplier;
 
-    const hasAccess = supplier.projects.some(p =>
-      user.permissions.some(u => String(u.project) === String(p))
-    );
-
-    if (!hasAccess) throw new Error("אין גישה לספק");
-
+  // ספק שלא משויך לפרויקטים
+  if (!supplier.projects || supplier.projects.length === 0)
     return supplier;
-  },
+
+  // הרשאות נכונות
+  const supplierProjectIds = supplier.projects.map(p =>
+    String(p.projectId || p)
+  );
+
+  const hasAccess = user.permissions.some(u =>
+    supplierProjectIds.includes(String(u.project))
+  );
+
+  if (!hasAccess) throw new Error("אין גישה לספק");
+
+  return supplier;
+},
 
   async createSupplier(user, data) {
     if (!canEdit(user, data.projectId))

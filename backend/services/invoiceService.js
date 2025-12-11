@@ -114,10 +114,14 @@ async function getInvoiceById(user, invoiceId) {
 // CREATE INVOICE – חשבונית אחת + כמה פרויקטים
 // ===============================================
 async function createInvoice(user, data) {
-  const { projects, files, fundedFromProjectId, ...basic } = data;
+  const { projects, files, fundedFromProjectId, supplierId, ...basic } = data;
 
   if (!projects || !projects.length) {
     throw new Error("חובה לבחור לפחות פרויקט אחד");
+  }
+
+  if (!supplierId) {
+    throw new Error("חובה לבחור ספק");
   }
 
   // בדיקת הרשאות
@@ -136,24 +140,28 @@ async function createInvoice(user, data) {
   // יצירת החשבונית
   const invoice = await Invoice.create({
     ...basic,
+    supplierId,                     // 🔥🔥🔥 זה מה שהיה חסר
     projects,
     totalAmount,
     files,
-    fundedFromProjectId: fundedFromProjectId || null,   // ✔ כאן!
+    fundedFromProjectId: fundedFromProjectId || null,
     createdBy: user._id,
     createdByName: user.username || user.name,
   });
 
-  // הוספה לכל פרויקט + עדכון תקציב
+  // הוספה לפרויקטים
   for (const p of projects) {
     await Project.findByIdAndUpdate(p.projectId, {
       $push: { invoices: invoice._id }
     });
-
     await recalculateRemainingBudget(p.projectId);
   }
 
-  // ❗ אם החשבונית ממומנת מכספי פרויקט אחר — צריך לעדכן גם אותו
+  // הוספה לספק ← חובה!!!
+  await Supplier.findByIdAndUpdate(supplierId, {
+    $push: { invoices: invoice._id }
+  });
+
   if (invoice.fundedFromProjectId) {
     await recalculateRemainingBudget(invoice.fundedFromProjectId);
   }

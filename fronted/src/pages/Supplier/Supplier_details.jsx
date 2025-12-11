@@ -37,51 +37,49 @@ const SupplierDetailsPage = () => {
     Array.isArray(res?.data?.data)
       ? res.data.data
       : Array.isArray(res?.data)
-      ? res.data
-      : Array.isArray(res)
-      ? res
-      : [];
+        ? res.data
+        : Array.isArray(res)
+          ? res
+          : [];
 
   useEffect(() => {
-    const fetchSupplierDetails = async () => {
+    if (!id) return;
+
+    const load = async () => {
+      console.log("🔥 SUPPLIER PAGE START LOAD id =", id);
+
       try {
+        setLoading(true);
+        setInvoicesLoading(true); // ← להתחיל טעינת חשבוניות
+
         const res = await api.get(`/suppliers/${id}`);
-        setSupplier(res?.data?.data ?? res?.data ?? res);
-      } catch (error) {
-        console.error("Error fetching supplier details:", error);
-        toast.error("שגיאה בטעינת פרטי הספק", {
+        const supplier = res?.data?.data;
+
+        console.log("RAW RESPONSE:", res.data);
+        console.log("FINAL SUPPLIER:", supplier);
+
+        setSupplier(supplier);
+        setInvoices(supplier?.invoices ?? []);
+
+      } catch (err) {
+        console.log("❌ ERROR FETCHING SUPPLIER:", err);
+        toast.error("שגיאה בטעינת הספק", {
           className: "sonner-toast error rtl",
         });
       } finally {
+        console.log("✅ FINALLY RAN - STOP LOADING");
+
         setLoading(false);
+        setInvoicesLoading(false); // ← זה מה שהיה חסר!
       }
     };
 
-    fetchSupplierDetails();
+    load();
   }, [id]);
-  useEffect(() => {
-    if (!id) return;
-    (async () => {
-      setInvoicesLoading(true);
-      try {
-        const res = await api.get(`/suppliers/${id}`);
 
-        const supplier = res?.data?.data;
 
-        const arr = Array.isArray(supplier?.invoices) ? supplier.invoices : [];
 
-        setInvoices(arr);
-      } catch (e) {
-        console.error(e);
-        toast.error("שגיאה בטעינת חשבוניות הספק", {
-          className: "sonner-toast error rtl",
-        });
-        setInvoices([]);
-      } finally {
-        setInvoicesLoading(false);
-      }
-    })();
-  }, [id]);
+
 
   const INTERIM_TYPES = new Set(["ח. עסקה", "ה. עבודה", "ד. תשלום"]);
   const FINAL_TYPES = new Set([
@@ -354,12 +352,12 @@ const SupplierDetailsPage = () => {
                   </div>
                 </div>
 
-                    {/* createdAt */}
+                {/* createdAt */}
                 <div className="group p-4 rounded-xl bg-gradient-to-br from-orange-50 to-amber-50 border-2 border-orange-200 hover:border-orange-400 transition-all">
                   <div className="flex items-start gap-3">
                     <div className="p-2 rounded-lg bg-orange-100">
-                                 <Calendar className="w-5 h-5 text-orange-600" />
-                     
+                      <Calendar className="w-5 h-5 text-orange-600" />
+
                     </div>
                     <div className="flex-1">
                       <p className="text-xs font-bold text-orange-600 mb-1">
@@ -371,16 +369,16 @@ const SupplierDetailsPage = () => {
                     </div>
                   </div>
                 </div>
-                    {/* createdByName */}
+                {/* createdByName */}
                 <div className="group p-4 rounded-xl bg-gradient-to-br from-orange-50 to-amber-50 border-2 border-orange-200 hover:border-orange-400 transition-all">
                   <div className="flex items-start gap-3">
                     <div className="p-2 rounded-lg bg-orange-100">
-                                  <User className="w-5 h-5 text-orange-600" />
-                      
+                      <User className="w-5 h-5 text-orange-600" />
+
                     </div>
                     <div className="flex-1">
                       <p className="text-xs font-bold text-orange-600 mb-1">
-                        נוצר ע"י 
+                        נוצר ע"י
                       </p>
                       <p className="text-sm font-bold text-slate-900">
                         {supplier.createdByName || "לא הוזן"}
@@ -389,97 +387,101 @@ const SupplierDetailsPage = () => {
                   </div>
                 </div>
 
-        
-                </div>
+
+              </div>
             </div>
           </div>
         </div>
 
         {/* Bank Details Section */}
-        {supplier.bankDetails ? (
-          <div className="relative mb-6">
-            <div className="absolute -inset-2 bg-gradient-to-r from-emerald-500 via-teal-500 to-cyan-500 rounded-3xl opacity-10 blur-xl"></div>
+        {
 
-            <div className="relative bg-white/90 backdrop-blur-xl rounded-3xl shadow-xl shadow-emerald-500/10 border border-white/50 overflow-hidden">
-              <div className="bg-gradient-to-r from-emerald-500 via-teal-500 to-cyan-500 p-1">
-                <div className="bg-white/95 backdrop-blur-xl p-4">
-                  <div className="flex items-center gap-3">
-                    <div className="p-2 rounded-xl bg-gradient-to-br from-emerald-100 to-teal-100">
-                      <Landmark className="w-5 h-5 text-emerald-600" />
+
+
+          supplier.bankDetails ? (
+            <div className="relative mb-6">
+              <div className="absolute -inset-2 bg-gradient-to-r from-emerald-500 via-teal-500 to-cyan-500 rounded-3xl opacity-10 blur-xl"></div>
+
+              <div className="relative bg-white/90 backdrop-blur-xl rounded-3xl shadow-xl shadow-emerald-500/10 border border-white/50 overflow-hidden">
+                <div className="bg-gradient-to-r from-emerald-500 via-teal-500 to-cyan-500 p-1">
+                  <div className="bg-white/95 backdrop-blur-xl p-4">
+                    <div className="flex items-center gap-3">
+                      <div className="p-2 rounded-xl bg-gradient-to-br from-emerald-100 to-teal-100">
+                        <Landmark className="w-5 h-5 text-emerald-600" />
+                      </div>
+                      <h2 className="text-2xl font-bold text-slate-900">
+                        פרטי חשבון בנק
+                      </h2>
                     </div>
-                    <h2 className="text-2xl font-bold text-slate-900">
-                      פרטי חשבון בנק
-                    </h2>
                   </div>
                 </div>
-              </div>
 
-              <div className="p-6">
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                  <div className="group p-4 rounded-xl bg-gradient-to-br from-emerald-50 to-teal-50 border-2 border-emerald-200 hover:border-emerald-400 transition-all">
-                    <div className="flex items-start gap-3">
-                      <div className="p-2 rounded-lg bg-emerald-100">
-                        <Landmark className="w-4 h-4 text-emerald-600" />
-                      </div>
-                      <div className="flex-1">
-                        <p className="text-xs font-bold text-emerald-600 mb-1">
-                          שם הבנק
-                        </p>
-                        <p className="text-sm font-bold text-slate-900">
-                          {supplier.bankDetails.bankName || "לא זמין"}
-                        </p>
+                <div className="p-6">
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                    <div className="group p-4 rounded-xl bg-gradient-to-br from-emerald-50 to-teal-50 border-2 border-emerald-200 hover:border-emerald-400 transition-all">
+                      <div className="flex items-start gap-3">
+                        <div className="p-2 rounded-lg bg-emerald-100">
+                          <Landmark className="w-4 h-4 text-emerald-600" />
+                        </div>
+                        <div className="flex-1">
+                          <p className="text-xs font-bold text-emerald-600 mb-1">
+                            שם הבנק
+                          </p>
+                          <p className="text-sm font-bold text-slate-900">
+                            {supplier.bankDetails?.bankName ? supplier.bankDetails.bankName : "לא זמין"}
+                          </p>
+                        </div>
                       </div>
                     </div>
-                  </div>
 
-                  <div className="group p-4 rounded-xl bg-gradient-to-br from-emerald-50 to-teal-50 border-2 border-emerald-200 hover:border-emerald-400 transition-all">
-                    <div className="flex items-start gap-3">
-                      <div className="p-2 rounded-lg bg-emerald-100">
-                        <Building2 className="w-4 h-4 text-emerald-600" />
-                      </div>
-                      <div className="flex-1">
-                        <p className="text-xs font-bold text-emerald-600 mb-1">
-                          מספר סניף
-                        </p>
-                        <p className="text-sm font-bold text-slate-900">
-                          {supplier.bankDetails.branchNumber || "לא זמין"}
-                        </p>
+                    <div className="group p-4 rounded-xl bg-gradient-to-br from-emerald-50 to-teal-50 border-2 border-emerald-200 hover:border-emerald-400 transition-all">
+                      <div className="flex items-start gap-3">
+                        <div className="p-2 rounded-lg bg-emerald-100">
+                          <Building2 className="w-4 h-4 text-emerald-600" />
+                        </div>
+                        <div className="flex-1">
+                          <p className="text-xs font-bold text-emerald-600 mb-1">
+                            מספר סניף
+                          </p>
+                          <p className="text-sm font-bold text-slate-900">
+                            {supplier.bankDetails.branchNumber || "לא זמין"}
+                          </p>
+                        </div>
                       </div>
                     </div>
-                  </div>
 
-                  <div className="group p-4 rounded-xl bg-gradient-to-br from-emerald-50 to-teal-50 border-2 border-emerald-200 hover:border-emerald-400 transition-all">
-                    <div className="flex items-start gap-3">
-                      <div className="p-2 rounded-lg bg-emerald-100">
-                        <CreditCard className="w-4 h-4 text-emerald-600" />
-                      </div>
-                      <div className="flex-1">
-                        <p className="text-xs font-bold text-emerald-600 mb-1">
-                          מספר חשבון
-                        </p>
-                        <p className="text-sm font-bold text-slate-900">
-                          {supplier.bankDetails.accountNumber || "לא זמין"}
-                        </p>
+                    <div className="group p-4 rounded-xl bg-gradient-to-br from-emerald-50 to-teal-50 border-2 border-emerald-200 hover:border-emerald-400 transition-all">
+                      <div className="flex items-start gap-3">
+                        <div className="p-2 rounded-lg bg-emerald-100">
+                          <CreditCard className="w-4 h-4 text-emerald-600" />
+                        </div>
+                        <div className="flex-1">
+                          <p className="text-xs font-bold text-emerald-600 mb-1">
+                            מספר חשבון
+                          </p>
+                          <p className="text-sm font-bold text-slate-900">
+                            {supplier.bankDetails.accountNumber || "לא זמין"}
+                          </p>
+                        </div>
                       </div>
                     </div>
                   </div>
                 </div>
               </div>
             </div>
-          </div>
-        ) : (
-          <div className="relative mb-6">
-            <div className="bg-gradient-to-r from-yellow-100 to-amber-100 border-r-4 border-yellow-500 rounded-xl p-4 flex items-start gap-3">
-              <AlertCircle className="w-5 h-5 text-yellow-600 flex-shrink-0 mt-0.5" />
-              <div>
-                <p className="font-bold text-yellow-800">שים לב</p>
-                <p className="text-sm text-yellow-700 mt-1">
-                  לא נמצאו פרטי חשבון בנק עבור ספק זה.
-                </p>
+          ) : (
+            <div className="relative mb-6">
+              <div className="bg-gradient-to-r from-yellow-100 to-amber-100 border-r-4 border-yellow-500 rounded-xl p-4 flex items-start gap-3">
+                <AlertCircle className="w-5 h-5 text-yellow-600 flex-shrink-0 mt-0.5" />
+                <div>
+                  <p className="font-bold text-yellow-800">שים לב</p>
+                  <p className="text-sm text-yellow-700 mt-1">
+                    לא נמצאו פרטי חשבון בנק עבור ספק זה.
+                  </p>
+                </div>
               </div>
             </div>
-          </div>
-        )}
+          )}
 
         {/* Invoices Section */}
         <div className="relative">
@@ -513,7 +515,7 @@ const SupplierDetailsPage = () => {
               ) : (
                 <>
                   {/* Summary */}
-                  <div className="mb-4 flex flex-wrap gap-4 p-4 rounded-xl bg-gradient-to-r from-purple-50 to-indigo-50 border border-purple-200">
+                  {/* <div className="mb-4 flex flex-wrap gap-4 p-4 rounded-xl bg-gradient-to-r from-purple-50 to-indigo-50 border border-purple-200">
                     <div className="flex items-center gap-2">
                       <span className="font-bold text-purple-900">
                         סה״כ חשבוניות:
@@ -533,7 +535,7 @@ const SupplierDetailsPage = () => {
                         )}
                       </span>
                     </div>
-                  </div>
+                  </div> */}
 
                   {/* Table */}
                   <div className="overflow-x-auto rounded-xl border-2 border-purple-200">
@@ -584,9 +586,8 @@ const SupplierDetailsPage = () => {
                             key={inv._id || i}
                             role="button" // נגישות
                             tabIndex={0} // פוקוס עם מקלדת
-                            aria-label={`פרטי חשבונית ${
-                              inv.invoiceNumber || ""
-                            }`}
+                            aria-label={`פרטי חשבונית ${inv.invoiceNumber || ""
+                              }`}
                             className="group border-t border-purple-100 hover:bg-purple-50/50 transition-colors cursor-pointer"
                             onClick={() => navigate(`/invoices/${inv._id}`)}
                             onKeyDown={(e) => {
@@ -606,10 +607,9 @@ const SupplierDetailsPage = () => {
                                   onClick={(e) => {
                                     e.stopPropagation(); // חשוב כדי לא להפעיל את onClick של השורה
                                     navigate(
-                                      `/projects/${
-                                        typeof inv.projectId === "object"
-                                          ? inv.projectId._id
-                                          : inv.projectId
+                                      `/projects/${typeof inv.projectId === "object"
+                                        ? inv.projectId._id
+                                        : inv.projectId
                                       }`
                                     );
                                   }}
