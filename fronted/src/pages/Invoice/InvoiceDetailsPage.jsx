@@ -135,6 +135,8 @@ const InvoiceDetailsPage = () => {
     );
   }
 
+  const hasNonSalaryInvoices = invoice.type !== "salary";
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-orange-50 via-amber-50 to-yellow-50 p-6">
       {/* HEADER */}
@@ -193,11 +195,16 @@ const InvoiceDetailsPage = () => {
 
         {/* שדות כלליים */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
-          <DetailCard
-            label="שם ספק"
-            icon={<User />}
-            value={invoice.supplierId?.name || "לא זמין"}
-          />
+          {
+            hasNonSalaryInvoices && (
+
+              <DetailCard
+                label="שם ספק"
+                icon={<User />}
+                value={invoice.supplierId?.name || "לא הוזן"}
+              />
+
+            )}
 
           <DetailCard
             label="שם מזמין"
@@ -236,8 +243,8 @@ const InvoiceDetailsPage = () => {
               invoice.paymentMethod === "bank_transfer"
                 ? "העברה בנקאית"
                 : invoice.paymentMethod === "check"
-                ? "צ'ק"
-                : "—"
+                  ? "צ'ק"
+                  : "—"
             }
           />
 
@@ -270,6 +277,15 @@ const InvoiceDetailsPage = () => {
             icon={<User />}
             value={invoice.createdByName || "—"}
           />
+
+          {/* תווית מילגה - אם החשבונית יורדת מפרויקט מילגה */}
+          {invoice.fundedFromProjectId && (
+            <DetailCard
+              label="סוג חשבונית"
+              icon={<Sparkles />}
+              value="מילגה 🎓"
+            />
+          )}
         </div>
 
         {/* PROJECTS */}

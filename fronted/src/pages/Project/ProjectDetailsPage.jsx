@@ -115,16 +115,23 @@ const ProjectDetailsPage = () => {
           const allInvoices = Array.isArray(invoicesResponse.data?.data)
             ? invoicesResponse.data.data
             : [];
-          const projectInvoices = allInvoices.filter((invoice) =>
-            invoice.projects?.some((p) => {
+          const projectInvoices = allInvoices.filter((invoice) => {
+            // בדיקה 1: אם הפרויקט נמצא במערך projects
+            const inProjects = invoice.projects?.some((p) => {
               const pid =
                 typeof p.projectId === "string"
                   ? p.projectId
                   : p.projectId?._id;
 
               return String(pid) === String(id);
-            })
-          );
+            });
+
+            // בדיקה 2: אם זו חשבונית מילגה שיורדת מהפרויקט הזה (fundedFromProjectId)
+            const isFundedFrom = invoice.fundedFromProjectId &&
+              String(invoice.fundedFromProjectId) === String(id);
+
+            return inProjects || isFundedFrom;
+          });
 
           setInvoices(projectInvoices);
         }
@@ -139,11 +146,11 @@ const ProjectDetailsPage = () => {
         setLoadingInvoices(false);
       }
     };
-    
+
     fetchProjectDetails();
   }, [id, loading, user]);
   const isSalaryProject = project?.type === "salary";
-  
+
   function formatHebrewDate(dateTime) {
     const date = new Date(dateTime);
     return date.toLocaleString("he-IL", {
@@ -297,6 +304,8 @@ const ProjectDetailsPage = () => {
 
   // פרויקט ספציפי מתוך החשבונית
 
+  const hasNonSalaryInvoices = filteredInvoices.some(inv => inv.type !== "salary");
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-orange-50 via-amber-50 to-yellow-50 relative overflow-hidden py-12">
       {/* Animated Background */}
@@ -446,45 +455,45 @@ const ProjectDetailsPage = () => {
                   </div>
                 </div>
 
-{!isSalaryProject && (
-  <>
-                {/* Budget */}
-                <div className="group p-4 rounded-xl bg-gradient-to-br from-orange-50 to-amber-50 border-2 border-orange-200 hover:border-orange-400 transition-all">
-                  <div className="flex items-start gap-3">
-                    <div className="p-2 rounded-lg bg-orange-100">
-                      <DollarSign className="w-4 h-4 text-orange-600" />
-                    </div>
-                    <div className="flex-1">
-                      <p className="text-xs font-bold text-orange-600 mb-1">
-                        תקציב
-                      </p>
-                      <div className="text-sm font-bold text-slate-900">
-                        {project?.budget
-                          ? formatCurrencyWithAlert(project.budget)
-                          : "עדיין אין תקציב"}
+                {!isSalaryProject && (
+                  <>
+                    {/* Budget */}
+                    <div className="group p-4 rounded-xl bg-gradient-to-br from-orange-50 to-amber-50 border-2 border-orange-200 hover:border-orange-400 transition-all">
+                      <div className="flex items-start gap-3">
+                        <div className="p-2 rounded-lg bg-orange-100">
+                          <DollarSign className="w-4 h-4 text-orange-600" />
+                        </div>
+                        <div className="flex-1">
+                          <p className="text-xs font-bold text-orange-600 mb-1">
+                            תקציב
+                          </p>
+                          <div className="text-sm font-bold text-slate-900">
+                            {project?.budget
+                              ? formatCurrencyWithAlert(project.budget)
+                              : "עדיין אין תקציב"}
+                          </div>
+                        </div>
                       </div>
                     </div>
-                  </div>
-                </div>
 
-                {/* Remaining Budget */}
-                <div className="group p-4 rounded-xl bg-gradient-to-br from-orange-50 to-amber-50 border-2 border-orange-200 hover:border-orange-400 transition-all">
-                  <div className="flex items-start gap-3">
-                    <div className="p-2 rounded-lg bg-orange-100">
-                      <TrendingUp className="w-4 h-4 text-orange-600" />
-                    </div>
-                    <div className="flex-1">
-                      <p className="text-xs font-bold text-orange-600 mb-1">
-                        תקציב שנותר
-                      </p>
-                      <div className="font-bold">
-                        {formatCurrencyWithAlert(project?.remainingBudget)}
+                    {/* Remaining Budget */}
+                    <div className="group p-4 rounded-xl bg-gradient-to-br from-orange-50 to-amber-50 border-2 border-orange-200 hover:border-orange-400 transition-all">
+                      <div className="flex items-start gap-3">
+                        <div className="p-2 rounded-lg bg-orange-100">
+                          <TrendingUp className="w-4 h-4 text-orange-600" />
+                        </div>
+                        <div className="flex-1">
+                          <p className="text-xs font-bold text-orange-600 mb-1">
+                            תקציב שנותר
+                          </p>
+                          <div className="font-bold">
+                            {formatCurrencyWithAlert(project?.remainingBudget)}
+                          </div>
+                        </div>
                       </div>
                     </div>
-                  </div>
-                </div>
-  </>
-)}
+                  </>
+                )}
 
                 <div className="group p-4 rounded-xl bg-gradient-to-br from-orange-50 to-amber-50 border-2 border-orange-200 hover:border-orange-400 transition-all">
                   <div className="flex items-start gap-3">
@@ -522,100 +531,100 @@ const ProjectDetailsPage = () => {
           </div>
         </div>
         {!isSalaryProject && (
-  <>
-        {/* Orders Section */}
-        <div className="relative mb-6">
-          <div className="absolute -inset-2 bg-gradient-to-r from-blue-500 via-indigo-500 to-purple-500 rounded-3xl opacity-10 blur-xl"></div>
+          <>
+            {/* Orders Section */}
+            <div className="relative mb-6">
+              <div className="absolute -inset-2 bg-gradient-to-r from-blue-500 via-indigo-500 to-purple-500 rounded-3xl opacity-10 blur-xl"></div>
 
-          <div className="relative bg-white/90 backdrop-blur-xl rounded-3xl shadow-xl shadow-blue-500/10 border border-white/50 overflow-hidden">
-            <div className="bg-gradient-to-r from-blue-500 via-indigo-500 to-purple-500 p-1">
-              <div className="bg-white/95 backdrop-blur-xl p-4">
-                <div className="flex items-center gap-3">
-                  <div className="p-2 rounded-xl bg-gradient-to-br from-blue-100 to-indigo-100">
-                    <ShoppingCart className="w-5 h-5 text-blue-600" />
+              <div className="relative bg-white/90 backdrop-blur-xl rounded-3xl shadow-xl shadow-blue-500/10 border border-white/50 overflow-hidden">
+                <div className="bg-gradient-to-r from-blue-500 via-indigo-500 to-purple-500 p-1">
+                  <div className="bg-white/95 backdrop-blur-xl p-4">
+                    <div className="flex items-center gap-3">
+                      <div className="p-2 rounded-xl bg-gradient-to-br from-blue-100 to-indigo-100">
+                        <ShoppingCart className="w-5 h-5 text-blue-600" />
+                      </div>
+                      <h2 className="text-2xl font-bold text-slate-900">
+                        הזמנות של הפרויקט
+                      </h2>
+                      {canViewOrders() && (
+                        <span className="mr-auto px-3 py-1 rounded-full bg-blue-100 text-blue-700 text-sm font-bold">
+                          {filteredOrders?.length}
+                        </span>
+                      )}
+                    </div>
                   </div>
-                  <h2 className="text-2xl font-bold text-slate-900">
-                    הזמנות של הפרויקט
-                  </h2>
-                  {canViewOrders() && (
-                    <span className="mr-auto px-3 py-1 rounded-full bg-blue-100 text-blue-700 text-sm font-bold">
-                      {filteredOrders?.length}
-                    </span>
+                </div>
+
+                <div className="p-6">
+                  {!canViewOrders() ? (
+                    // ❌ אין הרשאה
+                    <div className="text-center py-12 text-slate-600">
+                      <AlertCircle className="w-16 h-16 mx-auto mb-4 text-red-400 opacity-50" />
+                      <p className="font-bold text-xl text-red-600">
+                        אין הרשאה לצפות בהזמנות
+                      </p>
+                      <p className="text-sm mt-2 text-slate-500">
+                        פנה למנהל המערכת לקבלת גישה
+                      </p>
+                    </div>
+                  ) : loadingOrders ? (
+                    <div className="flex items-center gap-3 text-slate-700 justify-center py-8">
+                      <ClipLoader size={26} color="#3b82f6" />
+                      <span>טוען הזמנות…</span>
+                    </div>
+                  ) : filteredOrders.length > 0 ? (
+                    <div className="overflow-x-auto rounded-xl border-2 border-blue-200">
+                      <table className="min-w-full text-right">
+                        <thead className="bg-gradient-to-r from-blue-100 to-indigo-100">
+                          <tr>
+                            <th className="px-4 py-3 text-xs font-bold text-blue-900">
+                              מספר הזמנה
+                            </th>
+                            <th className="px-4 py-3 text-xs font-bold text-blue-900">
+                              פרויקט
+                            </th>
+                            <th className="px-4 py-3 text-xs font-bold text-blue-900">
+                              סכום
+                            </th>
+                            <th className="px-4 py-3 text-xs font-bold text-blue-900">
+                              סטטוס
+                            </th>
+                          </tr>
+                        </thead>
+                        <tbody className="bg-white">
+                          {filteredOrders.map((order) => (
+                            <tr
+                              key={order._id}
+                              onClick={() => moveToOrderDetails(order)}
+                              className="cursor-pointer border-t border-blue-100 hover:bg-blue-50/50 transition-colors"
+                            >
+                              <td className="px-4 py-3 text-sm font-bold">
+                                {order.orderNumber}
+                              </td>
+                              <td className="px-4 py-3 text-sm font-bold">
+                                {order.projectName}
+                              </td>
+                              <td className="px-4 py-3">
+                                {formatCurrencyWithAlert(order.sum)}
+                              </td>
+                              <td className="px-4 py-3 text-sm font-bold">
+                                {order.status}
+                              </td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  ) : (
+                    <div className="text-center py-8 text-slate-600">
+                      <Package className="w-12 h-12 mx-auto mb-3 opacity-50" />
+                      <p className="font-bold text-lg">לא נמצאו הזמנות</p>
+                    </div>
                   )}
                 </div>
               </div>
             </div>
-
-            <div className="p-6">
-              {!canViewOrders() ? (
-                // ❌ אין הרשאה
-                <div className="text-center py-12 text-slate-600">
-                  <AlertCircle className="w-16 h-16 mx-auto mb-4 text-red-400 opacity-50" />
-                  <p className="font-bold text-xl text-red-600">
-                    אין הרשאה לצפות בהזמנות
-                  </p>
-                  <p className="text-sm mt-2 text-slate-500">
-                    פנה למנהל המערכת לקבלת גישה
-                  </p>
-                </div>
-              ) : loadingOrders ? (
-                <div className="flex items-center gap-3 text-slate-700 justify-center py-8">
-                  <ClipLoader size={26} color="#3b82f6" />
-                  <span>טוען הזמנות…</span>
-                </div>
-              ) : filteredOrders.length > 0 ? (
-                <div className="overflow-x-auto rounded-xl border-2 border-blue-200">
-                  <table className="min-w-full text-right">
-                    <thead className="bg-gradient-to-r from-blue-100 to-indigo-100">
-                      <tr>
-                        <th className="px-4 py-3 text-xs font-bold text-blue-900">
-                          מספר הזמנה
-                        </th>
-                        <th className="px-4 py-3 text-xs font-bold text-blue-900">
-                          פרויקט
-                        </th>
-                        <th className="px-4 py-3 text-xs font-bold text-blue-900">
-                          סכום
-                        </th>
-                        <th className="px-4 py-3 text-xs font-bold text-blue-900">
-                          סטטוס
-                        </th>
-                      </tr>
-                    </thead>
-                    <tbody className="bg-white">
-                      {filteredOrders.map((order) => (
-                        <tr
-                          key={order._id}
-                          onClick={() => moveToOrderDetails(order)}
-                          className="cursor-pointer border-t border-blue-100 hover:bg-blue-50/50 transition-colors"
-                        >
-                          <td className="px-4 py-3 text-sm font-bold">
-                            {order.orderNumber}
-                          </td>
-                          <td className="px-4 py-3 text-sm font-bold">
-                            {order.projectName}
-                          </td>
-                          <td className="px-4 py-3">
-                            {formatCurrencyWithAlert(order.sum)}
-                          </td>
-                          <td className="px-4 py-3 text-sm font-bold">
-                            {order.status}
-                          </td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
-              ) : (
-                <div className="text-center py-8 text-slate-600">
-                  <Package className="w-12 h-12 mx-auto mb-3 opacity-50" />
-                  <p className="font-bold text-lg">לא נמצאו הזמנות</p>
-                </div>
-              )}
-            </div>
-          </div>
-        </div>
-  </>
+          </>
         )}
 
 
@@ -642,6 +651,7 @@ const ProjectDetailsPage = () => {
               </div>
             </div>
 
+            {console.log("filteredInvoices ", filteredInvoices)}
             <div className="p-6">
               {!canViewInvoices() ? (
                 // ❌ אין הרשאה
@@ -676,9 +686,11 @@ const ProjectDetailsPage = () => {
                         <th className="px-12 py-3 text-xs font-bold text-emerald-900 text-center">
                           סטטוס
                         </th>
-                        <th className="px-12 py-3 text-xs font-bold text-emerald-900 text-center">
-                          שם הספק
-                        </th>
+                        {hasNonSalaryInvoices && (
+                          <th className="px-12 py-3 text-xs font-bold text-emerald-900 text-center">
+                            שם הספק
+                          </th>
+                        )}
                         <th className="px-12 py-3 text-xs font-bold text-emerald-900 text-center">
                           מצב תשלום
                         </th>
@@ -717,20 +729,26 @@ const ProjectDetailsPage = () => {
 
                             {/* ✅ סכום הפרויקט מתוך המערך */}
                             <td className="px-4 py-3 text-center">
-                              {proj?.sum !== undefined ? (
-                                formatCurrencyWithAlert(proj.sum)
+                              {invoice?.totalAmount
+                                !== undefined ? (
+                                formatCurrencyWithAlert(invoice.totalAmount
+                                )
                               ) : (
                                 <span className="text-slate-400">—</span>
                               )}{" "}
                             </td>
-
+                            {console.log("invoice: ",)}
                             <td className="px-4 py-3 text-sm font-bold text-center">
-                              {invoice.status}
+                              {invoice.status || "לא הוזן"}
                             </td>
 
-                            <td className="px-4 py-3 text-sm font-bold text-center">
-                              {invoice.supplierId?.name || "—"}
-                            </td>
+                            {hasNonSalaryInvoices && (
+                              <td className="px-4 py-3 text-sm font-bold text-center">
+                                {invoice.type !== "salary" ? (invoice.supplierId?.name || "—") : ""}
+                              </td>
+                            )}
+
+                            {console.log(invoice.type)}
 
                             <td className="px-4 py-3 text-sm font-bold text-center">
                               {invoice.paid === "כן" ? "שולם" : "לא שולם"}
