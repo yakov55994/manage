@@ -30,9 +30,6 @@ export const protect = async (req, res, next) => {
     const decoded = jwt.verify(token, JWT_SECRET);
 
     const user = await User.findById(decoded.id).select("-password");
-    if (user.role === "accountant") {
-      req.user.isAccountant = true;
-    }
 
     if (!user) return res.status(401).json({ message: "משתמש לא קיים" });
     if (!user.isActive) return res.status(403).json({ message: "משתמש לא פעיל" });
@@ -119,7 +116,8 @@ export const checkAccess = (moduleName, action) => {
           }
 
           // ❌ אם זה לא פרויקט מילגה — אין גישה
-          if (!project.isMilga) {
+          const isMilgaProject = project.isMilga === true || project.type === "milga";
+          if (!isMilgaProject) {
             return res.status(403).json({ message: "גישה מותרת רק לפרויקט מילגה" });
           }
 

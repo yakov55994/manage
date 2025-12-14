@@ -79,7 +79,11 @@ async function searchInvoices(query) {
 async function getInvoices(user) {
   let query = {};
 
-  if (user.role !== "admin") {
+  // אדמין ו-accountant רואים הכל
+  if (user.role === "admin" || user.role === "accountant") {
+    // אין סינון - רואה הכל
+  } else {
+    // משתמש רגיל - סנן לפי הרשאות
     const allowed = user.permissions.map(
       (p) => String(p.project?._id || p.project)
     );
@@ -91,7 +95,8 @@ async function getInvoices(user) {
 
   return Invoice.find(query)
     .populate("supplierId")
-    .populate("projects.projectId", "name invitingName");
+    .populate("projects.projectId", "name invitingName")
+    .populate("fundedFromProjectId", "name");
 }
 
 // ===============================================
@@ -100,22 +105,27 @@ async function getInvoices(user) {
 async function getInvoiceById(user, invoiceId) {
   const invoice = await Invoice.findById(invoiceId)
     .populate("supplierId")
-    .populate("projects.projectId", "name invitingName budget remainingBudget");
+    .populate("projects.projectId", "name invitingName budget remainingBudget")
+    .populate("fundedFromProjectId", "name");
 
   if (!invoice) return null;
 
-  if (user.role !== "admin") {
-    const allowed = user.permissions.map(
-      (p) => String(p.project?._id || p.project)
-    );
-
-    const projectIds = invoice.projects.map((p) =>
-      String(p.projectId._id || p.projectId)
-    );
-
-    const canView = projectIds.some((id) => allowed.includes(id));
-    if (!canView) throw new Error("אין לך הרשאה לצפות במסמך זה");
+  // אדמין ו-accountant רואים הכל
+  if (user.role === "admin" || user.role === "accountant") {
+    return invoice;
   }
+
+  // משתמש רגיל - בדוק הרשאות
+  const allowed = user.permissions.map(
+    (p) => String(p.project?._id || p.project)
+  );
+
+  const projectIds = invoice.projects.map((p) =>
+    String(p.projectId._id || p.projectId)
+  );
+
+  const canView = projectIds.some((id) => allowed.includes(id));
+  if (!canView) throw new Error("אין לך הרשאה לצפות במסמך זה");
 
   return invoice;
 }
@@ -355,14 +365,18 @@ async function moveInvoice(user, invoiceId, fromProjectId, toProjectId) {
   fromProjectId = String(fromProjectId);
   toProjectId = String(toProjectId);
 
-  const part = invoice.projects.find((p) => {
+  // מצא את החלק של הפרויקט המקורי
+  const partIndex = invoice.projects.findIndex((p) => {
     const pid = p?.projectId?._id || p?.projectId;
     return String(pid) === fromProjectId;
   });
 
-  if (!part)
+  if (partIndex === -1)
     throw new Error("החשבונית לא משויכת לפרויקט המקורי");
 
+  const part = invoice.projects[partIndex];
+
+  // בדיקת הרשאות
   if (user.role !== "admin") {
     const allowed = user.permissions.map(
       (p) => String(p.project?._id || p.project)
@@ -374,37 +388,43 @@ async function moveInvoice(user, invoiceId, fromProjectId, toProjectId) {
       throw new Error("אין הרשאה להעברה");
   }
 
-  const newProject = await Project.findById(toProjectId).select(
-    "name"
-  );
-
+  // בדוק שפרויקט היעד קיים
+  const newProject = await Project.findById(toProjectId).select("name");
   if (!newProject) throw new Error("פרויקט יעד לא נמצא");
 
-  const existingTarget = invoice.projects.find((p) => {
+  // בדוק אם החשבונית כבר משויכת לפרויקט היעד
+  const existingTargetIndex = invoice.projects.findIndex((p) => {
     const pid = p?.projectId?._id || p?.projectId;
     return String(pid) === toProjectId;
   });
 
-  if (existingTarget) {
-    existingTarget.sum =
-      Number(existingTarget.sum) + Number(part.sum);
+  if (existingTargetIndex !== -1) {
+    // אם החשבונית כבר קיימת בפרויקט היעד - צרף את הסכומים
+    invoice.projects[existingTargetIndex].sum =
+      Number(invoice.projects[existingTargetIndex].sum) + Number(part.sum);
 
-    invoice.projects = invoice.projects.filter((p) => {
-      const pid = p?.projectId?._id || p?.projectId;
-      return String(pid) !== fromProjectId;
-    });
+    // הסר את החלק המקורי
+    invoice.projects.splice(partIndex, 1);
   } else {
-    part.projectId = toProjectId;
-    part.projectName = newProject.name;
+    // אם החשבונית לא קיימת בפרויקט היעד - עדכן את ה-projectId
+    invoice.projects[partIndex] = {
+      projectId: toProjectId,
+      projectName: newProject.name,
+      sum: part.sum,
+      invitingName: part.invitingName || "",
+    };
   }
 
+  // חשב מחדש את הסכום הכולל
   invoice.totalAmount = invoice.projects.reduce(
     (sum, p) => sum + Number(p?.sum || 0),
     0
   );
 
+  // שמור את השינויים
   await invoice.save();
 
+  // עדכן את רשימת החשבוניות בפרויקטים
   await Project.findByIdAndUpdate(fromProjectId, {
     $pull: { invoices: invoiceId },
   });
@@ -412,17 +432,27 @@ async function moveInvoice(user, invoiceId, fromProjectId, toProjectId) {
     $addToSet: { invoices: invoiceId },
   });
 
+  // חשב מחדש תקציבים
   await recalculateRemainingBudget(fromProjectId);
   await recalculateRemainingBudget(toProjectId);
 
+  // טען מחדש את החשבונית עם populate
   const populated = await Invoice.findById(invoice._id)
-    .populate("projects.projectId", "name")
-    .populate("supplierId", "name phone email bankDetails");
+    .populate("projects.projectId", "name invitingName")
+    .populate("supplierId", "name phone email bankDetails")
+    .populate("fundedFromProjectId", "name");
 
-  populated.projects = populated.projects.map((p) => ({
-    ...p.toObject(),
-    projectName: p.projectId?.name || p.projectName || "",
-  }));
+  if (!populated) throw new Error("שגיאה בטעינת החשבונית לאחר ההעברה");
+
+  // וודא שכל הפרויקטים מכילים את שם הפרויקט
+  if (populated.projects) {
+    populated.projects = populated.projects.map((p) => ({
+      projectId: p.projectId?._id || p.projectId,
+      projectName: p.projectId?.name || p.projectName || "",
+      sum: p.sum,
+      invitingName: p.invitingName || p.projectId?.invitingName || "",
+    }));
+  }
 
   return populated;
 }

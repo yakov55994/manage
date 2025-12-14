@@ -51,6 +51,7 @@ const ProjectDetailsPage = () => {
 
   const canEditInvoices = () => {
     if (isAdmin) return true;
+    if (user?.role === "accountant") return false; // accountant cannot create/edit invoices
     if (!user?.permissions) return false;
 
     const perm = user.permissions.find((p) => String(p.project) === String(id));
@@ -223,6 +224,33 @@ const ProjectDetailsPage = () => {
         <h1 className="mt-8 font-bold text-3xl text-slate-900">
           טוען פרטי פרויקט...
         </h1>
+      </div>
+    );
+  }
+
+  // If project failed to load (403 or other error), show access denied
+  if (!project) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-red-50 via-rose-50 to-pink-50 flex flex-col justify-center items-center">
+        <div className="relative">
+          <div className="absolute inset-0 bg-gradient-to-r from-red-500 to-rose-500 blur-3xl opacity-20 animate-pulse"></div>
+          <div className="p-6 rounded-2xl bg-gradient-to-br from-red-500 to-rose-600 shadow-lg shadow-red-500/30">
+            <AlertCircle className="w-16 h-16 text-white" />
+          </div>
+        </div>
+        <h1 className="mt-8 font-bold text-3xl text-slate-900">
+          אין גישה לפרויקט זה
+        </h1>
+        <p className="mt-4 text-lg text-slate-600">
+          אין לך הרשאה לצפות בפרויקט זה
+        </p>
+        <button
+          onClick={() => navigate("/projects")}
+          className="mt-8 flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-slate-200 to-slate-300 text-slate-700 font-bold rounded-xl hover:from-slate-300 hover:to-slate-400 transition-all shadow-lg"
+        >
+          <ArrowRight className="w-4 h-4" />
+          <span>חזור לרשימת הפרויקטים</span>
+        </button>
       </div>
     );
   }

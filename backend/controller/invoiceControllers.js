@@ -3,6 +3,7 @@
 // ===============================================
 
 import Invoice from "../models/Invoice.js";
+import Project from "../models/Project.js";
 import invoiceService, {
   recalculateRemainingBudget
 } from "../services/invoiceService.js";
@@ -26,32 +27,14 @@ const invoiceControllers = {
   async getInvoices(req, res) {
     try {
       // ================================
-      //  Accountant → רואה רק חשבוניות מילגה
+      //  Accountant → רואה את כל החשבוניות (read-only)
       // ================================
       if (req.user.role === "accountant") {
-
-        // 1) מוצאים את פרויקט המילגה
-        const milgaProject = await Project.findOne({ isMilga: true });
-        if (!milgaProject) {
-          return res.json({ success: true, data: [] });
-        }
-
-        const milgaId = milgaProject._id.toString();
-
-        // 2) מביאים חשבוניות ששייכות למילגה:
-        //    בשתי הצורות:
-        //    • projectId ישיר
-        //    • במערך projects בתוך multi-project invoice
-
-        const invoices = await Invoice.find({
-          $or: [
-            { projectId: milgaId },              // חשבונית רגילה
-            { 'projects.projectId': milgaId }    // חשבונית רב־פרויקט
-          ]
-        })
-          .populate("projectId")       // לפרויקטים רגילים
-          .populate("projects.projectId") // לפרויקטים רב־פרויקט
-          .populate("supplierId");
+        // רואת חשבון רואה את כל החשבוניות במערכת
+        const invoices = await Invoice.find({})
+          .populate("supplierId")
+          .populate("fundedFromProjectId")
+          .sort({ createdAt: -1 });
 
         return res.json({ success: true, data: invoices });
       }

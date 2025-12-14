@@ -543,17 +543,33 @@ const CreateInvoice = () => {
             {/* תקורה */}
             <div className="mt-4">
               <label className="font-bold">תקורה (אחוזים)</label>
-              <select
-                className="w-full p-3 border rounded-xl"
-                value={salaryOverheadPercent}
-                onChange={(e) => setSalaryOverheadPercent(e.target.value)}
-              >
-                <option value="">ללא</option>
-                <option value="10">10%</option>
-                <option value="12">12%</option>
-                <option value="15">15%</option>
-                <option value="17">17%</option>
-              </select>
+              <div className="flex gap-2">
+                <select
+                  className="w-1/2 p-3 border rounded-xl"
+                  value={salaryOverheadPercent}
+                  onChange={(e) => setSalaryOverheadPercent(e.target.value)}
+                >
+                  <option value="">בחר מרשימה...</option>
+                  <option value="10">10%</option>
+                  <option value="12">12%</option>
+                  <option value="15">15%</option>
+                  <option value="17">17%</option>
+                  <option value="20">20%</option>
+                </select>
+                <input
+                  type="number"
+                  className="w-1/2 p-3 border rounded-xl"
+                  placeholder="או הזן אחוז מותאם אישית..."
+                  value={salaryOverheadPercent}
+                  onChange={(e) => setSalaryOverheadPercent(e.target.value)}
+                  min="0"
+                  max="100"
+                  step="0.01"
+                />
+              </div>
+              <p className="text-xs text-gray-600 mt-1">
+                ניתן לבחור מהרשימה או להזין אחוז מדויק בשדה
+              </p>
             </div>
 
             {/* סכום סופי */}

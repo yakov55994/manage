@@ -40,6 +40,7 @@ const InvoiceDetailsPage = () => {
   const canUserViewInvoice = (invoiceData) => {
     if (!user) return false;
     if (user.role === "admin") return true;
+    if (user.role === "accountant") return true; // accountant can view all invoices
 
     return invoiceData.projects.some((proj) =>
       user.permissions.some(
@@ -159,14 +160,18 @@ const InvoiceDetailsPage = () => {
               חזרה
             </button>
 
-            <button
-              onClick={() => navigate(`/update-invoice/${invoice._id}`)}
-              className="px-6 py-3 rounded-xl bg-orange-600 text-white font-bold shadow"
-            >
-              <Edit2 className="inline-block w-4 h-4 ml-1" />
-              עריכה
-            </button>
+            {/* כפתור עריכה - לא מוצג לרואת חשבון */}
+            {user?.role !== "accountant" && (
+              <button
+                onClick={() => navigate(`/update-invoice/${invoice._id}`)}
+                className="px-6 py-3 rounded-xl bg-orange-600 text-white font-bold shadow"
+              >
+                <Edit2 className="inline-block w-4 h-4 ml-1" />
+                עריכה
+              </button>
+            )}
 
+            {/* כפתור מחיקה - רק מנהל */}
             {isAdmin && (
               <button
                 onClick={() => setConfirmOpen(true)}

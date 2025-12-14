@@ -21,7 +21,17 @@ export default {
   async getAllProjects(user) {
   let query = {};
 
-  if (user.role !== "admin") {
+  // רואת חשבון - רק פרויקט מילגה
+  if (user.role === "accountant") {
+    query = {
+      $or: [
+        { isMilga: true },
+        { type: "milga" }
+      ]
+    };
+  }
+  // משתמש רגיל - לפי הרשאות
+  else if (user.role !== "admin") {
     const allowed = user.permissions.map(p =>
       p.project?._id?.toString() || p.project.toString()
     );
@@ -42,22 +52,9 @@ export default {
       populate: { path: "supplierId", select: "name" }
     });
 
-  // 🔍 דיבוג
-  
   return projects;
 },
   async getProjectById(user, projectId) {
-
-  // הרשאות
-  if (user.role !== "admin") {
-    const allowedProjectIds = user.permissions.map(
-      (p) => String(p.project?._id || p.project)
-    );
-
-    if (!allowedProjectIds.includes(String(projectId))) {
-      throw new Error("אין הרשאה לפרויקט זה");
-    }
-  }
 
   // טעינת פרויקט עם כל ה-populates
   const project = await Project.findById(projectId)
@@ -74,6 +71,33 @@ export default {
       select: "orderNumber sum status paid paymentDate supplierId",
       populate: { path: "supplierId", select: "name" }
     });
+
+  if (!project) {
+    throw new Error("פרויקט לא נמצא");
+  }
+
+  // בדיקת הרשאות
+  if (user.role === "admin") {
+    return project; // אדמין רואה הכל
+  }
+
+  // רואת חשבון - רק מילגה
+  if (user.role === "accountant") {
+    const isMilga = project.isMilga === true || project.type === "milga";
+    if (!isMilga) {
+      throw new Error("גישה מותרת רק לפרויקט מילגה");
+    }
+    return project;
+  }
+
+  // משתמש רגיל - בדוק הרשאות
+  const allowedProjectIds = user.permissions.map(
+    (p) => String(p.project?._id || p.project)
+  );
+
+  if (!allowedProjectIds.includes(String(projectId))) {
+    throw new Error("אין הרשאה לפרויקט זה");
+  }
 
   return project;
 }

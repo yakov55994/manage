@@ -88,6 +88,12 @@ const canAccessModule = (user, projectId, moduleName, required = "view") => {
 
   if (user.role === "admin") return true;
 
+  // רואת חשבון יכולה רק לצפות בחשבוניות, לא לערוך
+  if (user.role === "accountant") {
+    if (moduleName === "invoices" && required === "view") return true;
+    return false; // אין הרשאת עריכה או גישה למודולים אחרים
+  }
+
   // אם אין projectId – נבדוק האם יש פרויקט כלשהו עם הרשאה
   if (!projectId) {
     return user.permissions.some(

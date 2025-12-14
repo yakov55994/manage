@@ -20,7 +20,7 @@ const Sidebar = () => {
   const [query, setQuery] = useState("");
   const navigate = useNavigate();
 
-  const { isAdmin, canViewModule, canEditModule, canViewAnyProject } = useAuth();
+  const { isAdmin, canViewModule, canEditModule, canViewAnyProject, user } = useAuth();
 
   const handleSearch = () => {
     if (query.trim()) {
@@ -53,7 +53,7 @@ const Sidebar = () => {
       text: "יצירת חשבונית",
       path: "/create-invoice",
       desc: "חשבונית חדשה",
-      show: canEditModule(null, "invoices"),
+      show: canEditModule(null, "invoices") && user?.role !== "accountant",
     },
 
     {

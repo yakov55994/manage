@@ -107,6 +107,7 @@ const InvoicesPage = () => {
   // ✅ בדיקת הרשאה לצפות בחשבוניות
   const canViewInvoices = () => {
     if (isAdmin) return true;
+    if (user?.role === "accountant") return true; // רואת חשבון יכולה לצפות
     if (!user?.permissions) return false;
 
     // בדוק אם יש לו הרשאת view או edit לחשבוניות באיזשהו פרויקט
@@ -119,6 +120,7 @@ const InvoicesPage = () => {
   // ✅ קבל רשימת פרויקטים מורשים
   const getAllowedProjectIds = () => {
     if (isAdmin) return null; // אדמין רואה הכל
+    if (user?.role === "accountant") return null; // רואת חשבון רואה הכל
     if (!user?.permissions) return [];
 
     return user.permissions
@@ -1686,6 +1688,135 @@ const InvoicesPage = () => {
     setShowPrintModal(false);
   };
 
+  // ייצוא משכורות ל-Excel
+  const exportSalaries = () => {
+    // סינון רק חשבוניות משכורת
+    const salaryInvoices = allInvoices.filter(inv => inv.type === "salary");
+
+    if (salaryInvoices.length === 0) {
+      toast.error("לא נמצאו חשבוניות משכורת", {
+        className: "sonner-toast error rtl",
+      });
+      return;
+    }
+
+    // קיבוץ לפי פרויקט
+    const groupedByProject = {};
+
+    salaryInvoices.forEach((invoice) => {
+      // הפרויקט המקורי שממנו יורד התקציב
+      const sourceProject = invoice.fundedFromProjectId?.name ||
+                           invoice.projects?.find(p => p.projectName !== "משכורות")?.projectName ||
+                           "לא ידוע";
+
+      if (!groupedByProject[sourceProject]) {
+        groupedByProject[sourceProject] = [];
+      }
+
+      groupedByProject[sourceProject].push({
+        "פרויקט מקור": sourceProject,
+        "שם עובד": invoice.salaryEmployeeName || "-",
+        "סכום בסיס": invoice.salaryBaseAmount || 0,
+        "תקורה (%)": invoice.salaryOverheadPercent || 0,
+        "סכום סופי": invoice.salaryFinalAmount || invoice.totalAmount || 0,
+        "תאריך": formatDate(invoice.createdAt),
+        "מספר חשבונית": invoice.invoiceNumber || "-",
+      });
+    });
+
+    // יצירת גיליון אקסל
+    const allRows = [];
+
+    Object.keys(groupedByProject).sort().forEach(projectName => {
+      const projectSalaries = groupedByProject[projectName];
+
+      // הוסף שורת כותרת לפרויקט
+      allRows.push({
+        "פרויקט מקור": `=== ${projectName} ===`,
+        "שם עובד": "",
+        "סכום בסיס": "",
+        "תקורה (%)": "",
+        "סכום סופי": "",
+        "תאריך": "",
+        "מספר חשבונית": "",
+      });
+
+      // הוסף את כל המשכורות של הפרויקט
+      projectSalaries.forEach(salary => {
+        allRows.push(salary);
+      });
+
+      // הוסף שורת סיכום
+      const totalBase = projectSalaries.reduce((sum, s) => sum + Number(s["סכום בסיס"]), 0);
+      const totalFinal = projectSalaries.reduce((sum, s) => sum + Number(s["סכום סופי"]), 0);
+
+      allRows.push({
+        "פרויקט מקור": `סה"כ ${projectName}`,
+        "שם עובד": "",
+        "סכום בסיס": totalBase,
+        "תקורה (%)": "",
+        "סכום סופי": totalFinal,
+        "תאריך": "",
+        "מספר חשבונית": "",
+      });
+
+      // שורה ריקה להפרדה
+      allRows.push({
+        "פרויקט מקור": "",
+        "שם עובד": "",
+        "סכום בסיס": "",
+        "תקורה (%)": "",
+        "סכום סופי": "",
+        "תאריך": "",
+        "מספר חשבונית": "",
+      });
+    });
+
+    // סיכום כללי
+    const grandTotalBase = salaryInvoices.reduce((sum, inv) => sum + Number(inv.salaryBaseAmount || 0), 0);
+    const grandTotalFinal = salaryInvoices.reduce((sum, inv) => sum + Number(inv.salaryFinalAmount || inv.totalAmount || 0), 0);
+
+    allRows.push({
+      "פרויקט מקור": "=== סה\"כ כללי ===",
+      "שם עובד": "",
+      "סכום בסיס": grandTotalBase,
+      "תקורה (%)": "",
+      "סכום סופי": grandTotalFinal,
+      "תאריך": "",
+      "מספר חשבונית": `${salaryInvoices.length} משכורות`,
+    });
+
+    const worksheet = XLSX.utils.json_to_sheet(allRows);
+
+    // עיצוב עמודות
+    worksheet["!cols"] = [
+      { wpx: 150 }, // פרויקט מקור
+      { wpx: 150 }, // שם עובד
+      { wpx: 100 }, // סכום בסיס
+      { wpx: 80 },  // תקורה
+      { wpx: 100 }, // סכום סופי
+      { wpx: 100 }, // תאריך
+      { wpx: 120 }, // מספר חשבונית
+    ];
+
+    worksheet["!rtl"] = true;
+
+    const workbook = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(workbook, worksheet, "משכורות");
+
+    const fileName = `סיכום_משכורות_${new Date()
+      .toLocaleDateString("he-IL")
+      .replace(/\//g, "-")}.xlsx`;
+
+    const wbout = XLSX.write(workbook, { bookType: "xlsx", type: "array" });
+    saveAs(new Blob([wbout], { type: "application/octet-stream" }), fileName);
+
+    toast.success(`יוצא קובץ עם ${salaryInvoices.length} משכורות מקובצות לפי פרויקטים`, {
+      className: "sonner-toast success rtl",
+      duration: 4000,
+    });
+  };
+
   // ייצוא מפורט לפי חשבונית
   const exportPaymentDetailed = () => {
     let filtered = [...allInvoices];
@@ -1960,12 +2091,22 @@ const InvoicesPage = () => {
                 <span>ייצוא מהיר</span>
               </button>
               <button
-                onClick={() => navigate("/create-invoice")}
+                onClick={exportSalaries}
                 className="flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-orange-500 to-amber-500 text-white font-bold rounded-full hover:from-orange-600 hover:to-amber-600 transition-all shadow-lg whitespace-nowrap"
-              >
-                <Sparkles className="w-5 h-5" />
-                <span>יצירת חשבונית</span>
+                >
+                <FileSpreadsheet className="w-5 h-5" />
+                <span>ייצוא משכורות</span>
               </button>
+              {/* כפתור יצירת חשבונית - לא מוצג לרואת חשבון */}
+              {user?.role !== "accountant" && (
+                <button
+                  onClick={() => navigate("/create-invoice")}
+                  className="flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-orange-500 to-amber-500 text-white font-bold rounded-full hover:from-orange-600 hover:to-amber-600 transition-all shadow-lg whitespace-nowrap"
+                >
+                  <Sparkles className="w-5 h-5" />
+                  <span>יצירת חשבונית</span>
+                </button>
+              )}
             </div>
           </div>
           {/* Results Count */}
@@ -2150,9 +2291,19 @@ const InvoicesPage = () => {
 
                     {/* עמודה 4/3: מספר חשבונית */}
                     <td className="px-2 py-4 text-xs font-bold text-center text-slate-900">
-                      {invoice.invoiceNumber || (
-                        <span className="text-red-500 italic">חסר</span>
-                      )}
+                      <div className="flex items-center justify-center gap-2">
+                        <span>
+                          {invoice.invoiceNumber || (
+                            <span className="text-red-500 italic">חסר</span>
+                          )}
+                        </span>
+                        {/* תגית מילגה */}
+                        {invoice.projects?.some(p => p.projectName === "מילגה") && (
+                          <span className="inline-flex items-center px-2 py-1 rounded-full text-[10px] font-bold bg-gradient-to-r from-orange-400 to-pink-500 text-white shadow-md">
+                            מילגה
+                          </span>
+                        )}
+                      </div>
                     </td>
 
                     {/* עמודה 5/4: סכום */}

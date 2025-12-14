@@ -118,19 +118,13 @@ export default function MasavModal({ open, onClose, invoices }) {
       const s = inv.supplierId;
       const bd = s.bankDetails;
 
-      // ⬅ פה התיקון
+      // ⬅ המרת מספר חשבון - רק 9 ספרות אחרונות
       const rawAccount = String(bd.accountNumber || "").replace(/\D/g, ""); // מנקה תווים לא מספריים
       const account9 = rawAccount.slice(-9); // רק 9 ספרות אחרונות
-      let amount = inv.totalAmount;
 
-      // אם הסכום נראה כמו 540697 → כנראה אגורות → לא לכפול שוב
-      if (amount > 100000) {
-        // כבר אגורות
-        amount = Math.round(amount);
-      } else {
-        // שקלים → להמיר לאגורות
-        amount = Math.round(amount * 100);
-      }
+      // ⬅ המרת סכום לאגורות (תמיד כופל ב-100)
+      // inv.totalAmount הוא תמיד בשקלים, לכן צריך להמיר לאגורות
+      const amount = Math.round(Number(inv.totalAmount) * 100);
       return {
         bankNumber: String(bankCodeMap[bd.bankName] || "")
           .replace(/\D/g, "")         // מסיר כל תו לא ספרתי
