@@ -2058,7 +2058,7 @@ const InvoicesPage = () => {
             </div>
 
             {/* Export Buttons */}
-            <div className="flex flex-wrap gap-3 justify-center">
+            <div className="grid grid-cols-2 gap-3 justify-center">
               <button
                 onClick={() => setMasavModal(true)}
                 className="flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-orange-500 to-amber-500 text-white font-bold rounded-full hover:from-orange-600 hover:to-amber-600 transition-all shadow-lg whitespace-nowrap"
@@ -2301,6 +2301,12 @@ const InvoicesPage = () => {
                         {invoice.projects?.some(p => p.projectName === "מילגה") && (
                           <span className="inline-flex items-center px-2 py-1 rounded-full text-[10px] font-bold bg-gradient-to-r from-orange-400 to-pink-500 text-white shadow-md">
                             מילגה
+                          </span>
+                        )}
+                        {/* תגית משכורת */}
+                        {invoice.type === "salary" && (
+                          <span className="inline-flex items-center px-2 py-1 rounded-full text-[10px] font-bold bg-gradient-to-r from-blue-500 to-purple-600 text-white shadow-md">
+                            משכורת
                           </span>
                         )}
                       </div>

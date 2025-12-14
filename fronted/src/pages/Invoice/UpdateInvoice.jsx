@@ -10,6 +10,7 @@ import { toast } from "sonner";
 
 import FileUploader from "../../Components/FileUploader";
 import SupplierSelector from "../../Components/SupplierSelector.jsx";
+import ProjectSelector from "../../Components/ProjectSelector.jsx";
 import DateField from "../../Components/DateField.jsx";
 import { useAuth } from "../../context/AuthContext.jsx";
 
@@ -21,8 +22,6 @@ import { ClipboardList, Building2 } from "lucide-react";
 const InvoiceEditPage = () => {
   const [projects, setProjects] = useState([]);
   const [selectedProjects, setSelectedProjects] = useState([]);
-
-  const [projectSearch, setProjectSearch] = useState("");
 
   const [rows, setRows] = useState([]);
   const [loading, setLoading] = useState(false);
@@ -205,7 +204,7 @@ const InvoiceEditPage = () => {
   };
 
   // ===============================================================
-  // DELETE FILE
+  // DELETE FILE (מפרויקט ספציפי)
   // ===============================================================
   const deleteFile = async (rowIndex, fileIndex) => {
     const file = rows[rowIndex].files[fileIndex];
@@ -214,6 +213,33 @@ const InvoiceEditPage = () => {
     const clone = [...rows];
     clone[rowIndex].files.splice(fileIndex, 1);
     setRows(clone);
+
+    if (!file.publicId) return; // local only
+
+    try {
+      await api.delete("/upload/delete-cloudinary", {
+        data: {
+          publicId: file.publicId,
+          resourceType: file.resourceType || "raw",
+        },
+      });
+
+      toast.success("הקובץ נמחק");
+    } catch {
+      toast.error("שגיאה במחיקת קובץ");
+    }
+  };
+
+  // ===============================================================
+  // DELETE GLOBAL FILE (קובץ כללי של החשבונית)
+  // ===============================================================
+  const deleteGlobalFile = async (fileIndex) => {
+    const file = globalFields.files[fileIndex];
+
+    // remove from UI
+    const updatedFiles = [...globalFields.files];
+    updatedFiles.splice(fileIndex, 1);
+    setGlobalFields({ ...globalFields, files: updatedFiles });
 
     if (!file.publicId) return; // local only
 
@@ -256,6 +282,32 @@ const InvoiceEditPage = () => {
     setSaving(true);
 
     try {
+      // העלאת קבצים כלליים של החשבונית
+      const uploadedGlobalFiles = [];
+      for (const file of globalFields.files) {
+        if (file.isLocal && file.file) {
+          const form = new FormData();
+          form.append("file", file.file);
+          form.append("folder", "invoices");
+
+          const res = await api.post("/upload", form, {
+            headers: { "Content-Type": "multipart/form-data" },
+          });
+
+          uploadedGlobalFiles.push({
+            name: file.name,
+            url: res.data.file.url,
+            type: file.type,
+            size: file.size,
+            publicId: res.data.file.publicId,
+            resourceType: res.data.file.resourceType,
+          });
+        } else {
+          uploadedGlobalFiles.push(file);
+        }
+      }
+
+      // העלאת קבצים של פרויקטים
       const finalProjects = await Promise.all(
         rows.map(async (r) => {
           const uploadedFiles = [];
@@ -293,6 +345,7 @@ const InvoiceEditPage = () => {
 
       const payload = {
         ...globalFields,
+        files: uploadedGlobalFiles, // קבצים כלליים מועלים
         paymentMethod:
           globalFields.paid === "כן" ? globalFields.paymentMethod : "",
         paymentDate: globalFields.paid === "כן" ? globalFields.paymentDate : "",
@@ -333,56 +386,43 @@ const InvoiceEditPage = () => {
     );
 
   return (
-    <div className="min-h-screen bg-orange-50 py-10">
-      <div className="container max-w-5xl mx-auto">
-        {/* TITLE */}
-        <div className="flex justify-center items-center gap-3 mb-8">
-          <ClipboardList className="w-10 h-10 text-orange-600" />
-          <h1 className="text-4xl font-black">עריכת חשבונית</h1>
-        </div>
+    <div className="min-h-screen bg-gradient-to-br from-orange-50 via-amber-50 to-yellow-50 relative overflow-hidden py-12">
+      {/* Animated Background */}
+      <div className="absolute inset-0 overflow-hidden pointer-events-none">
+        <div className="absolute top-0 left-1/4 w-96 h-96 bg-gradient-to-br from-orange-400/20 to-amber-400/20 rounded-full blur-3xl animate-pulse"></div>
+        <div className="absolute bottom-0 right-1/4 w-96 h-96 bg-gradient-to-br from-yellow-400/20 to-orange-400/20 rounded-full blur-3xl animate-pulse delay-1000"></div>
+      </div>
+
+      <div className="relative z-10 container max-w-5xl mx-auto px-6">
+        {/* HEADER */}
+        <header className="mb-10">
+          <div className="relative">
+            <div className="absolute -inset-x-6 -inset-y-3 bg-gradient-to-r from-orange-500 via-amber-500 to-yellow-500 rounded-3xl opacity-5 blur-xl"></div>
+
+            <div className="relative bg-white/80 backdrop-blur-xl rounded-3xl shadow-2xl shadow-orange-500/10 p-8 border border-white/50">
+              <div className="flex items-center justify-center gap-4">
+                <div className="p-4 rounded-2xl bg-gradient-to-br from-orange-500 to-amber-600 shadow-lg shadow-orange-500/30">
+                  <ClipboardList className="w-10 h-10 text-white" />
+                </div>
+                <div className="text-center">
+                  <h1 className="text-4xl font-black text-slate-900">עריכת חשבונית</h1>
+                </div>
+              </div>
+            </div>
+          </div>
+        </header>
 
         {/* PROJECT SELECTION */}
         <div className="bg-white rounded-3xl shadow-xl p-6 mb-10">
-          <label className="font-bold text-lg flex items-center gap-2 mb-4">
-            <Building2 className="text-orange-600" />
-            שיוך חשבונית לפרויקטים
-          </label>
-
-          {/* SEARCH */}
-          <input
-            type="text"
-            value={projectSearch}
-            onChange={(e) => setProjectSearch(e.target.value)}
-            placeholder="חיפוש..."
-            className="w-full p-3 border rounded-xl mb-4"
+          <ProjectSelector
+            projects={projects}
+            selectedProjects={selectedProjects}
+            onProjectsChange={(updated) => setSelectedProjects(updated)}
+            multiSelect={true}
+            label="שיוך חשבונית לפרויקטים"
+            placeholder="חפש פרויקט..."
+            showSelectAll={true}
           />
-
-          {/* LIST */}
-          <div className="max-h-64 overflow-y-auto space-y-2">
-            {projects
-              .filter((p) =>
-                p.name.toLowerCase().includes(projectSearch.toLowerCase())
-              )
-              .map((p) => {
-                const isSelected = selectedProjects.some(
-                  (s) => s._id === p._id
-                );
-
-                return (
-                  <div
-                    key={p._id}
-                    className={`p-3 border rounded-xl cursor-pointer ${
-                      isSelected
-                        ? "bg-orange-100 border-orange-300"
-                        : "hover:bg-orange-50"
-                    }`}
-                    onClick={() => toggleProject(p)}
-                  >
-                    {p.name}
-                  </div>
-                );
-              })}
-          </div>
         </div>
 
         {/* GLOBAL FIELDS */}
@@ -546,11 +586,7 @@ const InvoiceEditPage = () => {
                   </a>
                   <button
                     className="text-red-600"
-                    onClick={() => {
-                      const copy = [...globalFields.files];
-                      copy.splice(index, 1);
-                      setGlobalFields((prev) => ({ ...prev, files: copy }));
-                    }}
+                    onClick={() => deleteGlobalFile(index)}
                   >
                     הסר
                   </button>

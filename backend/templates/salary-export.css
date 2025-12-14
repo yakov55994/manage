@@ -1,0 +1,126 @@
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+body {
+  font-family: 'Arial', 'Helvetica', sans-serif;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  padding: 40px;
+  direction: rtl;
+}
+
+.container {
+  max-width: 1000px;
+  margin: 0 auto;
+  background: white;
+  border-radius: 20px;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+  overflow: hidden;
+}
+
+/* ========== HEADER ========== */
+.header {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+  padding: 40px;
+  text-align: center;
+}
+
+.header h1 {
+  font-size: 42px;
+  font-weight: 900;
+  margin-bottom: 10px;
+  text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.3);
+}
+
+.header h2 {
+  font-size: 28px;
+  font-weight: 600;
+  margin-bottom: 20px;
+  opacity: 0.95;
+}
+
+.meta {
+  display: flex;
+  justify-content: center;
+  gap: 40px;
+  margin-top: 20px;
+  font-size: 14px;
+  opacity: 0.9;
+}
+
+.meta p {
+  background: rgba(255, 255, 255, 0.2);
+  padding: 8px 20px;
+  border-radius: 20px;
+  backdrop-filter: blur(10px);
+}
+
+/* ========== TABLE ========== */
+.salary-table {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 0;
+}
+
+.salary-table thead {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+}
+
+.salary-table thead th {
+  padding: 18px 12px;
+  text-align: center;
+  font-size: 14px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.salary-table tbody tr {
+  border-bottom: 1px solid #e0e0e0;
+  transition: background 0.3s;
+}
+
+.salary-table tbody tr:nth-child(even) {
+  background: #f9f9f9;
+}
+
+.salary-table tbody tr:hover {
+  background: #f0e6ff;
+}
+
+.salary-table tbody td {
+  padding: 16px 12px;
+  text-align: center;
+  font-size: 13px;
+  color: #333;
+}
+
+.salary-table tfoot {
+  background: linear-gradient(135deg, #ffd89b 0%, #19547b 100%);
+  color: white;
+  font-weight: 700;
+}
+
+.salary-table tfoot td {
+  padding: 20px 12px;
+  text-align: center;
+  font-size: 16px;
+}
+
+/* ========== FOOTER ========== */
+.footer {
+  background: #f5f5f5;
+  padding: 30px;
+  text-align: center;
+  font-size: 12px;
+  color: #888;
+  border-top: 2px solid #e0e0e0;
+}
+
+.footer p {
+  margin: 5px 0;
+}

@@ -2,6 +2,8 @@ import { BrowserRouter as Router, Route, Routes, useNavigate } from "react-route
 import Sidebar from "./pages/NavBar";
 import CreateProject from "./pages/Project/Create_Project";
 import CreateInvoice from "./pages/Invoice/Create_Invoice";
+import CreateSalary from "./pages/Salary/Create_Salary.jsx";
+import ViewSalaries from "./pages/Salary/View_Salaries.jsx";
 import CreateOrder from "./pages/Order/Create_Order.jsx";
 import Projects from "./pages/Project/View_Projects";
 import Invoices from "./pages/Invoice/View_Invoices";
@@ -79,6 +81,8 @@ const AppContent = () => {
             <Route path="/update-project/:id" element={<ProtectedRoute adminOnly><UpdateProject /></ProtectedRoute>} />
 
             <Route path="/create-invoice" element={<ProtectedRoute module="invoices" requireEdit={true}><CreateInvoice /></ProtectedRoute>} />
+            <Route path="/create-salary" element={<ProtectedRoute module="invoices" requireEdit={true}><CreateSalary /></ProtectedRoute>} />
+            <Route path="/salaries" element={<ProtectedRoute module="invoices"><ViewSalaries /></ProtectedRoute>} />
             <Route path="/invoices" element={<ProtectedRoute module="invoices"><Invoices /></ProtectedRoute>} />
             <Route path="/invoices/:id" element={<ProtectedRoute module="invoices"><InvoiceDetailsPage /></ProtectedRoute>} />
             <Route path="/update-invoice/:id" element={<ProtectedRoute module="invoices" requireEdit={true}><UpdateInvoice /></ProtectedRoute>} />

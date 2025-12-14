@@ -139,19 +139,30 @@ const InvoiceDetailsPage = () => {
   const hasNonSalaryInvoices = invoice.type !== "salary";
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-orange-50 via-amber-50 to-yellow-50 p-6">
-      {/* HEADER */}
-      <div className="max-w-5xl mx-auto mb-10 bg-white/80 shadow-xl rounded-3xl p-8 border border-orange-200">
-        <div className="flex flex-col items-center">
-          <div className="p-4 bg-gradient-to-br from-orange-500 to-amber-600 rounded-2xl shadow-lg">
-            <Receipt className="w-10 h-10 text-white" />
-          </div>
+    <div className="min-h-screen bg-gradient-to-br from-orange-50 via-amber-50 to-yellow-50 relative overflow-hidden py-12">
+      {/* Animated Background */}
+      <div className="absolute inset-0 overflow-hidden pointer-events-none">
+        <div className="absolute top-0 left-1/4 w-96 h-96 bg-gradient-to-br from-orange-400/20 to-amber-400/20 rounded-full blur-3xl animate-pulse"></div>
+        <div className="absolute bottom-0 right-1/4 w-96 h-96 bg-gradient-to-br from-yellow-400/20 to-orange-400/20 rounded-full blur-3xl animate-pulse delay-1000"></div>
+      </div>
 
-          <h1 className="text-4xl font-black mt-4">
-            חשבונית #{invoice.invoiceNumber}
-          </h1>
+      <div className="relative z-10 max-w-5xl mx-auto px-6">
+        {/* HEADER */}
+        <header className="mb-10">
+          <div className="relative">
+            <div className="absolute -inset-x-6 -inset-y-3 bg-gradient-to-r from-orange-500 via-amber-500 to-yellow-500 rounded-3xl opacity-5 blur-xl"></div>
 
-          <div className="flex gap-4 mt-6">
+            <div className="relative bg-white/80 backdrop-blur-xl rounded-3xl shadow-2xl shadow-orange-500/10 p-8 border border-white/50">
+              <div className="flex flex-col items-center">
+                <div className="p-4 rounded-2xl bg-gradient-to-br from-orange-500 to-amber-600 shadow-lg shadow-orange-500/30">
+                  <Receipt className="w-10 h-10 text-white" />
+                </div>
+
+                <h1 className="text-4xl font-black mt-4 text-slate-900">
+                  חשבונית #{invoice.invoiceNumber}
+                </h1>
+
+                <div className="flex gap-4 mt-6">
             <button
               onClick={() => navigate("/invoices")}
               className="px-6 py-3 rounded-xl bg-slate-200 text-slate-700 font-bold"
@@ -181,12 +192,14 @@ const InvoiceDetailsPage = () => {
                 מחיקה
               </button>
             )}
+                </div>
+              </div>
+            </div>
           </div>
-        </div>
-      </div>
+        </header>
 
-      {/* DETAILS */}
-      <div className="max-w-5xl mx-auto bg-white/90 shadow-lg rounded-3xl p-8 border border-orange-100">
+        {/* DETAILS */}
+        <div className="bg-white/90 shadow-lg rounded-3xl p-8 border border-orange-100">
         {/* סכום כולל */}
         <div className="mb-8">
           <h2 className="text-2xl font-bold flex items-center gap-2">
@@ -339,7 +352,7 @@ const InvoiceDetailsPage = () => {
 
       {/* DELETE MODAL */}
       {confirmOpen && (
-        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center">
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50">
           <div className="bg-white p-8 rounded-2xl shadow-xl max-w-md w-full">
             <h3 className="text-2xl font-bold text-center mb-4">
               למחוק חשבונית?
@@ -366,6 +379,7 @@ const InvoiceDetailsPage = () => {
           </div>
         </div>
       )}
+    </div>
     </div>
   );
 };

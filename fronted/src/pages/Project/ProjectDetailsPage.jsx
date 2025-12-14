@@ -17,6 +17,7 @@ import {
   TrendingUp,
   ArrowRight,
   Package,
+  Download,
 } from "lucide-react";
 import { toast } from "sonner";
 import { useAuth } from "../../context/AuthContext.jsx";
@@ -128,8 +129,11 @@ const ProjectDetailsPage = () => {
             });
 
             // בדיקה 2: אם זו חשבונית מילגה שיורדת מהפרויקט הזה (fundedFromProjectId)
-            const isFundedFrom = invoice.fundedFromProjectId &&
-              String(invoice.fundedFromProjectId) === String(id);
+            const fundedId = typeof invoice.fundedFromProjectId === "string"
+              ? invoice.fundedFromProjectId
+              : invoice.fundedFromProjectId?._id;
+
+            const isFundedFrom = fundedId && String(fundedId) === String(id);
 
             return inProjects || isFundedFrom;
           });
@@ -330,6 +334,25 @@ const ProjectDetailsPage = () => {
     navigate(`/create-invoice?projectId=${project._id}`);
   };
 
+  const handleExportSalaries = async () => {
+    try {
+      const response = await api.get(`/salaries/export?projectId=${project._id}`, {
+        responseType: 'blob'
+      });
+
+      const url = window.URL.createObjectURL(new Blob([response.data]));
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = `salary-export-${project.name}.pdf`;
+      link.click();
+      window.URL.revokeObjectURL(url);
+
+      toast.success('קובץ סיכום משכורות ירד בהצלחה!');
+    } catch (err) {
+      toast.error('שגיאה ביצירת סיכום משכורות: ' + err.message);
+    }
+  };
+
   // פרויקט ספציפי מתוך החשבונית
 
   const hasNonSalaryInvoices = filteredInvoices.some(inv => inv.type !== "salary");
@@ -401,22 +424,32 @@ const ProjectDetailsPage = () => {
                 {/* כפתור הוספת חשבונית - רק אם יש הרשאת edit */}
                 {/* אם זה משכורות – הוספת משכורת */}
                 {isSalaryProject && canEditInvoices() && (
-                  <button
-                    onClick={() =>
-                      navigate(`/create-salary?projectId=${project._id}`)
-                    }
-                    className="flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-orange-600 to-amber-600 text-white font-bold rounded-xl"
-                  >
-                    <Edit2 className="w-4 h-4" />
-                    <span>הוספת משכורת</span>
-                  </button>
+                  <>
+                    <button
+                      onClick={() =>
+                        navigate(`/create-salary?projectId=${project._id}`)
+                      }
+                      className="flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-orange-600 to-amber-600 text-white font-bold rounded-xl hover:from-orange-700 hover:to-amber-700 transition-all shadow-xl shadow-orange-500/30"
+                    >
+                      <Edit2 className="w-4 h-4" />
+                      <span>הוספת משכורת</span>
+                    </button>
+
+                    <button
+                      onClick={handleExportSalaries}
+                      className="flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-blue-600 to-purple-600 text-white font-bold rounded-xl hover:from-blue-700 hover:to-purple-700 transition-all shadow-xl shadow-blue-500/30"
+                    >
+                      <Download className="w-4 h-4" />
+                      <span>ייצוא סיכום משכורות</span>
+                    </button>
+                  </>
                 )}
 
                 {/* אם זה לא משכורות – הוספת חשבונית */}
                 {!isSalaryProject && canEditInvoices() && (
                   <button
                     onClick={handleAddInvoiceForProject}
-                    className="flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-orange-600 to-amber-600 text-white font-bold rounded-xl"
+                    className="flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-orange-600 to-amber-600 text-white font-bold rounded-xl hover:from-orange-700 hover:to-amber-700 transition-all shadow-xl shadow-orange-500/30"
                   >
                     <Edit2 className="w-4 h-4" />
                     <span>הוספת חשבונית</span>
@@ -706,6 +739,9 @@ const ProjectDetailsPage = () => {
                           מספר חשבונית
                         </th>
                         <th className="px-4 py-3 text-xs font-bold text-emerald-900 text-center">
+                          סוג
+                        </th>
+                        <th className="px-4 py-3 text-xs font-bold text-emerald-900 text-center">
                           פרויקט
                         </th>
                         <th className="px-4 py-3 text-xs font-bold text-emerald-900 text-center">
@@ -738,6 +774,12 @@ const ProjectDetailsPage = () => {
                           return String(pid) === String(id);
                         });
 
+                        // בדיקה אם זו חשבונית מילגה שיורדת מהפרויקט הזה
+                        const fundedId = typeof invoice.fundedFromProjectId === "string"
+                          ? invoice.fundedFromProjectId
+                          : invoice.fundedFromProjectId?._id;
+                        const isFundedFromThisProject = fundedId && String(fundedId) === String(id);
+
                         return (
                           <tr
                             key={invoice._id}
@@ -748,11 +790,33 @@ const ProjectDetailsPage = () => {
                               {invoice.invoiceNumber}
                             </td>
 
-                            {/* ✅ שם הפרויקט מתוך המערך */}
+                            {/* סוג חשבונית - משכורת או רגילה */}
+                            <td className="px-4 py-3 text-center">
+                              {invoice.type === "salary" ? (
+                                <span className="inline-flex items-center px-2 py-1 rounded-full text-[10px] font-bold bg-gradient-to-r from-blue-500 to-purple-600 text-white shadow-md">
+                                  משכורת
+                                </span>
+                              ) : (
+                                <span className="inline-flex items-center px-2 py-1 rounded-full text-[10px] font-bold bg-gradient-to-r from-emerald-500 to-teal-600 text-white shadow-md">
+                                  רגיל
+                                </span>
+                              )}
+                            </td>
+
+                            {/* ✅ שם הפרויקט מתוך המערך או "מילגה" אם זו חשבונית שיורדת מפרויקט זה */}
                             <td className="px-4 py-3 text-sm font-bold text-center">
-                              {proj?.projectName ||
+                              {isFundedFromThisProject ? (
+                                <span className="text-purple-600 font-bold">
+                                  {invoice.projects[0]?.projectName || invoice.projects[0]?.projectId?.name || "מילגה"}
+                                  <span className="text-xs text-slate-500 block">
+                                    (יורד מתקציב {project?.name})
+                                  </span>
+                                </span>
+                              ) : (
+                                proj?.projectName ||
                                 proj?.projectId?.name ||
-                                "—"}
+                                "—"
+                              )}
                             </td>
 
                             {/* ✅ סכום הפרויקט מתוך המערך */}

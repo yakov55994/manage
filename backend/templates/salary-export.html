@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html dir="rtl" lang="he">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>סיכום משכורות - {{projectName}}</title>
+  {{css}}
+</head>
+<body>
+  <div class="container">
+    <!-- Header -->
+    <header class="header">
+      <h1>סיכום משכורות</h1>
+      <h2>{{projectName}}</h2>
+      <div class="meta">
+        <p>תאריך הפקה: {{generatedAt}}</p>
+        <p>מספר עובדים: {{count}}</p>
+      </div>
+    </header>
+
+    <!-- Table -->
+    <table class="salary-table">
+      <thead>
+        <tr>
+          <th>#</th>
+          <th>שם עובד</th>
+          <th>מחלקה</th>
+          <th>שכר בסיס</th>
+          <th>אחוז תקורה</th>
+          <th>סכום סופי</th>
+          <th>תאריך</th>
+        </tr>
+      </thead>
+      <tbody>
+        {{rows}}
+      </tbody>
+      <tfoot>
+        <tr>
+          <td colspan="3"><strong>סה"כ:</strong></td>
+          <td><strong>₪{{totalBase}}</strong></td>
+          <td></td>
+          <td><strong>₪{{totalFinal}}</strong></td>
+          <td></td>
+        </tr>
+      </tfoot>
+    </table>
+
+    <!-- Footer -->
+    <footer class="footer">
+      <p>מסמך זה הופק באופן אוטומטי על ידי מערכת ניהול הפרויקטים</p>
+      <p>© {{year}} כל הזכויות שמורות</p>
+    </footer>
+  </div>
+</body>
+</html>

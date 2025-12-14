@@ -12,6 +12,7 @@ import {
   ArrowRight,
   TrendingUp,
 } from "lucide-react";
+import ProjectSelector from "../../Components/ProjectSelector.jsx";
 
 const CreateSalary = () => {
   const navigate = useNavigate();
@@ -29,6 +30,7 @@ const CreateSalary = () => {
     employeeName: "",
     baseAmount: "",
     overheadPercent: 0,
+    department: "", // מחלקה - לא חובה
   });
 
   // ============================
@@ -100,6 +102,7 @@ const CreateSalary = () => {
         baseAmount: parseFloat(form.baseAmount),
         overheadPercent: parseFloat(form.overheadPercent) || 0,
         finalAmount: finalAmount,
+        department: form.department || null, // מחלקה אופציונלית
       };
 
       await api.post("/salaries", payload);
@@ -190,26 +193,14 @@ const CreateSalary = () => {
 
             <form onSubmit={handleSubmit} className="p-8 space-y-6">
               {/* Project Selection */}
-              <div>
-                <label className="flex items-center gap-2 text-sm font-bold text-slate-700 mb-2">
-                  <Building2 className="w-4 h-4 text-orange-600" />
-                  פרויקט מקור (שממנו יורד התקציב) *
-                </label>
-                <select
-                  name="projectId"
-                  value={form.projectId}
-                  onChange={handleChange}
-                  required
-                  className="w-full px-4 py-3 rounded-xl border-2 border-orange-200 focus:border-orange-500 focus:ring-2 focus:ring-orange-200 transition-all bg-white text-right"
-                >
-                  <option value="">בחר פרויקט...</option>
-                  {projects.map((p) => (
-                    <option key={p._id} value={p._id}>
-                      {p.name}
-                    </option>
-                  ))}
-                </select>
-              </div>
+              <ProjectSelector
+                projects={projects}
+                selectedProjectId={form.projectId}
+                onProjectChange={(projectId) => setForm(prev => ({ ...prev, projectId }))}
+                multiSelect={false}
+                label="פרויקט מקור (שממנו יורד התקציב) *"
+                placeholder="חפש פרויקט..."
+              />
 
               {/* Employee Name */}
               <div>
@@ -224,6 +215,22 @@ const CreateSalary = () => {
                   onChange={handleChange}
                   required
                   placeholder="הזן שם..."
+                  className="w-full px-4 py-3 rounded-xl border-2 border-orange-200 focus:border-orange-500 focus:ring-2 focus:ring-orange-200 transition-all text-right"
+                />
+              </div>
+
+              {/* Department (optional) */}
+              <div>
+                <label className="flex items-center gap-2 text-sm font-bold text-slate-700 mb-2">
+                  <Building2 className="w-4 h-4 text-orange-600" />
+                  מחלקה (אופציונלי)
+                </label>
+                <input
+                  type="text"
+                  name="department"
+                  value={form.department}
+                  onChange={handleChange}
+                  placeholder="הזן שם מחלקה..."
                   className="w-full px-4 py-3 rounded-xl border-2 border-orange-200 focus:border-orange-500 focus:ring-2 focus:ring-orange-200 transition-all text-right"
                 />
               </div>

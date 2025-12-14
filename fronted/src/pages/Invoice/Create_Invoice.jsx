@@ -7,6 +7,7 @@ import { useNavigate } from "react-router-dom";
 import api from "../../api/api.js";
 import SupplierSelector from "../../Components/SupplierSelector.jsx";
 import FileUploader from "../../Components/FileUploader.jsx";
+import ProjectSelector from "../../Components/ProjectSelector.jsx";
 import { toast } from "sonner";
 
 import {
@@ -102,7 +103,10 @@ const CreateInvoice = () => {
     const load = async () => {
       try {
         const res = await api.get("/projects");
-        setProjects(res.data.data || []);
+        const allProjects = res.data.data || [];
+        // סנן רק פרויקטים שאינם מסוג "salary" - לא להציג פרויקט משכורות
+        const regularProjects = allProjects.filter(p => p.type !== "salary");
+        setProjects(regularProjects);
       } catch (err) {
         toast.error("שגיאה בטעינת פרויקטים");
       }
@@ -345,141 +349,86 @@ const CreateInvoice = () => {
   // ============================
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-orange-50 to-yellow-50 py-12">
-      <div className="container mx-auto max-w-5xl px-6">
+    <div className="min-h-screen bg-gradient-to-br from-orange-50 via-amber-50 to-yellow-50 relative overflow-hidden py-12">
+      {/* Animated Background */}
+      <div className="absolute inset-0 overflow-hidden pointer-events-none">
+        <div className="absolute top-0 left-1/4 w-96 h-96 bg-gradient-to-br from-orange-400/20 to-amber-400/20 rounded-full blur-3xl animate-pulse"></div>
+        <div className="absolute bottom-0 right-1/4 w-96 h-96 bg-gradient-to-br from-yellow-400/20 to-orange-400/20 rounded-full blur-3xl animate-pulse delay-1000"></div>
+      </div>
+
+      <div className="relative z-10 container mx-auto max-w-5xl px-6">
         {/* HEADER */}
-        <div className="bg-white/80 rounded-3xl shadow-xl p-8 mb-10">
-          <h1 className="text-4xl font-black text-slate-900 text-center mb-2">
-            יצירת חשבונית מרובת פרויקטים
-          </h1>
-          <div className="flex justify-center gap-2 text-slate-600">
-            <Sparkles className="w-4 h-4 text-orange-500" />
-            מערכת חשבוניות מתקדמת
+        <header className="mb-10">
+          <div className="relative">
+            <div className="absolute -inset-x-6 -inset-y-3 bg-gradient-to-r from-orange-500 via-amber-500 to-yellow-500 rounded-3xl opacity-5 blur-xl"></div>
+
+            <div className="relative bg-white/80 backdrop-blur-xl rounded-3xl shadow-2xl shadow-orange-500/10 p-8 border border-white/50">
+              <div className="flex items-center justify-center gap-4 mb-6">
+                <div className="p-4 rounded-2xl bg-gradient-to-br from-orange-500 to-amber-600 shadow-lg shadow-orange-500/30">
+                  <FileText className="w-10 h-10 text-white" />
+                </div>
+                <div className="text-center">
+                  <h1 className="text-4xl font-black text-slate-900">
+                    יצירת חשבונית מרובת פרויקטים
+                  </h1>
+                  <div className="flex items-center justify-center gap-2 mt-2">
+                    <Sparkles className="w-4 h-4 text-orange-500" />
+                    <span className="text-sm font-medium text-slate-600">
+                      מערכת חשבוניות מתקדמת
+                    </span>
+                  </div>
+                </div>
+              </div>
+            </div>
           </div>
-        </div>
+        </header>
 
         {/* PROJECT SELECTOR */}
         {!isSalary && (
           <>
             <div className="bg-white rounded-3xl shadow-xl p-6 mb-8">
-              <label className="text-lg font-bold flex items-center gap-2 mb-4">
-                <Building2 className="text-orange-600" />
-                בחר פרויקטים
-              </label>
+              <ProjectSelector
+                projects={projects}
+                selectedProjects={selectedProjects}
+                onProjectsChange={(updated) => {
+                  setSelectedProjects(updated);
 
-              {/* Selected Tags */}
-              {selectedProjects.length > 0 && (
-                <div className="flex flex-wrap gap-2 mb-4">
-                  {selectedProjects.map((p) => (
-                    <div
-                      key={p._id}
-                      className="px-4 py-2 bg-orange-500 text-white rounded-xl flex items-center gap-2"
-                    >
-                      {p.name}
-                      <button
-                        onClick={() =>
-                          setSelectedProjects((prev) =>
-                            prev.filter((x) => x._id !== p._id)
-                          )
-                        }
-                      >
-                        ✕
-                      </button>
-                    </div>
-                  ))}
-                </div>
-              )}
+                  // בדיקה אם נוסף או הוסר פרויקט משכורות
+                  const hadSalary = selectedProjects.some((p) => p.name === "משכורות");
+                  const hasSalary = updated.some((p) => p.name === "משכורות");
 
-              {/* Search */}
-              <input
-                className="w-full p-3 border rounded-xl mb-4"
+                  if (hasSalary && !hadSalary) {
+                    // הוספנו פרויקט משכורות
+                    setIsSalary(true);
+                    setForm((prev) => ({
+                      ...prev,
+                      documentType: "משכורות",
+                    }));
+                  } else if (!hasSalary && hadSalary) {
+                    // הסרנו פרויקט משכורות
+                    setIsSalary(false);
+                    setForm((prev) => ({
+                      ...prev,
+                      documentType: "",
+                    }));
+                  }
+                }}
+                multiSelect={true}
+                label="בחר פרויקטים"
                 placeholder="חפש פרויקט..."
-                value={projectSearch}
-                onChange={(e) => setProjectSearch(e.target.value)}
+                showSelectAll={true}
               />
-
-              {/* List */}
-              <div className="max-h-72 overflow-y-auto border rounded-xl p-3 space-y-2">
-                {projects
-                  .filter((p) =>
-                    p.name.toLowerCase().includes(projectSearch.toLowerCase())
-                  )
-                  .map((p) => {
-                    const checked = selectedProjects.some(
-                      (x) => x._id === p._id
-                    );
-
-                    return (
-                      <label
-                        key={p._id}
-                        className={`flex items-center gap-3 p-2 rounded-xl cursor-pointer border ${
-                          checked
-                            ? "bg-orange-100 border-orange-300"
-                            : "bg-white hover:bg-orange-50"
-                        }`}
-                      >
-                        <input
-                          type="checkbox"
-                          checked={checked}
-                          onChange={() => {
-                            if (checked) {
-                              // הסרת פרויקט
-                              const updated = selectedProjects.filter(
-                                (x) => x._id !== p._id
-                              );
-                              setSelectedProjects(updated);
-
-                              // אם הורדנו משכורות - החזר למצב רגיל
-                              if (p.name === "משכורות") {
-                                setIsSalary(false);
-                                setForm((prev) => ({
-                                  ...prev,
-                                  documentType: "",
-                                }));
-                              }
-                            } else {
-                              // הוספת פרויקט
-                              const updated = [...selectedProjects, p];
-                              setSelectedProjects(updated);
-
-                              // אם הוספנו פרויקט משכורות → להדליק מצב משכורת אוטומטי
-                              if (p.name === "משכורות") {
-                                setIsSalary(true);
-                                setForm((prev) => ({
-                                  ...prev,
-                                  documentType: "משכורות",
-                                }));
-                              }
-                            }
-                          }}
-                        />
-                        <span>{p.name}</span>
-                      </label>
-                    );
-                  })}
-              </div>
               {/* בחירת פרויקט מממן — רק אם נבחר פרויקט "מילגה" */}
               {selectedProjects.some((p) => p._id === MILGA_ID) && (
                 <div className="mt-4">
-                  <label className="block font-semibold text-slate-700 mb-2">
-                    מאיזה פרויקט יורד התקציב?
-                  </label>
-
-                  <select
-                    className="w-full p-3 border-2 rounded-xl bg-white focus:border-orange-500 outline-none"
-                    value={fundedFromProjectId}
-                    onChange={(e) => setFundedFromProjectId(e.target.value)}
-                  >
-                    <option value="">בחר פרויקט מממן</option>
-
-                    {projects
-                      .filter((p) => p._id !== MILGA_ID) // לא להציג את מילגה
-                      .map((p) => (
-                        <option key={p._id} value={p._id}>
-                          {p.name}
-                        </option>
-                      ))}
-                  </select>
+                  <ProjectSelector
+                    projects={projects.filter((p) => p._id !== MILGA_ID)}
+                    selectedProjectId={fundedFromProjectId}
+                    onProjectChange={(projectId) => setFundedFromProjectId(projectId)}
+                    multiSelect={false}
+                    label="מאיזה פרויקט יורד התקציב?"
+                    placeholder="חפש פרויקט מממן..."
+                  />
                 </div>
               )}
             </div>
@@ -487,36 +436,14 @@ const CreateInvoice = () => {
         )}
         {isSalary && (
           <div className="bg-white rounded-3xl shadow-xl p-6 mb-8">
-            <label className="text-lg font-bold mb-4 block">
-              פרויקט ממנו יורד התקציב (משכורות)
-            </label>
-
-            <div className="space-y-2 border rounded-xl p-3 max-h-72 overflow-y-auto">
-              {projects.map((p) => {
-                const checked = fundedFromProjectId === p._id;
-
-                return (
-                  <label
-                    key={p._id}
-                    className={`flex items-center gap-3 p-2 rounded-xl cursor-pointer border
-          ${
-            checked
-              ? "bg-orange-100 border-orange-300"
-              : "bg-white hover:bg-orange-50"
-          }
-        `}
-                  >
-                    <input
-                      type="checkbox"
-                      checked={checked}
-                      onChange={() => setFundedFromProjectId(p._id)}
-                      className="w-4 h-4"
-                    />
-                    <span>{p.name}</span>
-                  </label>
-                );
-              })}
-            </div>
+            <ProjectSelector
+              projects={projects}
+              selectedProjectId={fundedFromProjectId}
+              onProjectChange={(projectId) => setFundedFromProjectId(projectId)}
+              multiSelect={false}
+              label="פרויקט ממנו יורד התקציב (משכורות)"
+              placeholder="חפש פרויקט..."
+            />
 
             {/* שדה שם עובד */}
             <div className="mt-4">

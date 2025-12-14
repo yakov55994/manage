@@ -1655,7 +1655,14 @@ const ProjectsPage = ({ initialProjects = [] }) => {
                       className="cursor-pointer border-t border-orange-100 hover:bg-orange-50 transition-colors"
                     >
                       <td className="px-4 py-4 text-sm font-bold text-center text-slate-900">
-                        {project.name}
+                        <div className="flex items-center justify-center gap-2">
+                          <span>{project.name}</span>
+                          {project.type === "salary" && (
+                            <span className="inline-flex items-center px-2 py-1 rounded-full text-[10px] font-bold bg-gradient-to-r from-blue-500 to-purple-600 text-white shadow-md">
+                              משכורת
+                            </span>
+                          )}
+                        </div>
                       </td>
                       <td className="px-4 py-4 text-sm font-bold text-center text-slate-900">
                         {project.type !== "salary" ? (

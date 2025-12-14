@@ -46,6 +46,7 @@ const invoiceSchema = new mongoose.Schema({
   salaryBaseAmount: { type: Number, default: null },
   salaryOverheadPercent: { type: Number, default: null }, // לדוגמה: 10, 12, 15
   salaryFinalAmount: { type: Number, default: null },
+  salaryDepartment: { type: String, default: null }, // מחלקה - לא חובה
 
   createdAt: { type: Date, required: false },
   status: { type: String, enum: ['הוגש', 'לא הוגש', 'בעיבוד'], required: false },

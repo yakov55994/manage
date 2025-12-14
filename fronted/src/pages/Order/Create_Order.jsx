@@ -26,11 +26,11 @@ import DateField from "../../Components/DateField";
 import { useAuth } from "../../context/AuthContext";
 import Select from "react-select";
 import SupplierSelector from "../../Components/SupplierSelector.jsx";
+import ProjectSelector from "../../Components/ProjectSelector.jsx";
 
 const CreateOrder = () => {
   const [projects, setProjects] = useState([]);
   const [selectedProject, setSelectedProject] = useState(null);
-  const [projectSearch, setProjectSearch] = useState("");
   const [orders, setOrders] = useState([]);
   const [isLoading, setIsLoading] = useState(false);
   const [orderIndexToDelete, setOrderIndexToDelete] = useState(null);
@@ -499,140 +499,17 @@ const CreateOrder = () => {
 
               {/* Project Selector */}
               <div className="mt-6 max-w-2xl mx-auto">
-                <label className="text-base font-bold flex items-center gap-3 mb-4 text-slate-800">
-                  <div className="p-2 rounded-lg bg-gradient-to-br from-orange-100 to-amber-100">
-                    <Building2 className="w-5 h-5 text-orange-600" />
-                  </div>
-                  בחר פרויקט
-                </label>
-
-                <div className="relative bg-gradient-to-br from-white to-orange-50/30 border-2 border-orange-200 rounded-2xl shadow-lg overflow-hidden">
-                  {selectedProject && (
-                    <div className="p-4 bg-gradient-to-r from-orange-50 to-amber-50 border-b-2 border-orange-100">
-                      <div className="flex flex-wrap gap-2">
-                        <div className="group px-4 py-2 bg-gradient-to-r from-orange-500 to-amber-500 rounded-xl flex items-center gap-2 font-bold shadow-md hover:shadow-xl transition-all duration-200 hover:scale-105">
-                          <span className="text-m">{selectedProject.name}</span>
-                          <button
-                            onClick={() => setSelectedProject(null)}
-                            className="w-5 h-5 rounded-full bg-white/20 hover:bg-white/30 flex items-center justify-center transition-colors duration-200 group-hover:rotate-90"
-                          >
-                            <span className="text-m font-bold">✕</span>
-                          </button>
-                        </div>
-                      </div>
-                    </div>
-                  )}
-
-                  <div className="p-4 border-b-2 border-orange-100 bg-white/50">
-                    <div className="relative">
-                      <input
-                        type="text"
-                        value={projectSearch}
-                        onChange={(e) => setProjectSearch(e.target.value)}
-                        placeholder="חפש פרויקט..."
-                        className="w-full pl-10 pr-8 py-4 border-2 border-orange-200 rounded-xl focus:outline-none focus:border-orange-400 focus:ring-2 focus:ring-orange-200 transition-all font-bold"
-                      />
-                      <svg
-                        className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-orange-400"
-                        fill="none"
-                        stroke="currentColor"
-                        viewBox="0 0 24 24"
-                      >
-                        <path
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                          strokeWidth={2}
-                          d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
-                        />
-                      </svg>
-                      {projectSearch && (
-                        <button
-                          onClick={() => setProjectSearch("")}
-                          className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-orange-600 transition-colors"
-                        >
-                          ✕
-                        </button>
-                      )}
-                    </div>
-                  </div>
-
-                  <div className="p-5 max-h-64 overflow-y-auto">
-                    <div className="space-y-2">
-                      {projects
-                        .filter((p) =>
-                          p.name
-                            .toLowerCase()
-                            .includes(projectSearch.toLowerCase())
-                        )
-                        .map((p) => {
-                          const isSelected = selectedProject?._id === p._id;
-                          return (
-                            <label
-                              key={p._id}
-                              className={`
-                                flex items-center gap-3 p-3 rounded-xl cursor-pointer
-                                transition-all duration-200 hover:scale-[1.02]
-                                ${
-                                  isSelected
-                                    ? "bg-gradient-to-r from-orange-100 to-amber-100 border-2 border-orange-300 shadow-md"
-                                    : "bg-white hover:bg-orange-50 border-2 border-gray-200 hover:border-orange-200"
-                                }
-                              `}
-                            >
-                              <div className="relative">
-                                <input
-                                  type="radio"
-                                  checked={isSelected}
-                                  onChange={() => toggleProject(p)}
-                                  className="w-5 h-5 rounded-full border-2 border-orange-300 text-orange-600 focus:ring-2 focus:ring-orange-500 focus:ring-offset-1 cursor-pointer"
-                                />
-                              </div>
-                              <span
-                                className={`flex-1 font-medium transition-colors ${
-                                  isSelected
-                                    ? "text-orange-900"
-                                    : "text-slate-700"
-                                }`}
-                              >
-                                {p.name}
-                              </span>
-                              {isSelected && (
-                                <div className="w-2 h-2 rounded-full bg-gradient-to-r from-orange-500 to-amber-500 animate-pulse"></div>
-                              )}
-                            </label>
-                          );
-                        })}
-
-                      {projectSearch &&
-                        projects.filter((p) =>
-                          p.name
-                            .toLowerCase()
-                            .includes(projectSearch.toLowerCase())
-                        ).length === 0 && (
-                          <div className="text-center py-8 text-gray-400">
-                            <p className="text-m">
-                              לא נמצאו פרויקטים התואמים "{projectSearch}"
-                            </p>
-                          </div>
-                        )}
-                    </div>
-                  </div>
-
-                  {projects.length === 0 && (
-                    <div className="p-8 text-center text-gray-400">
-                      <Building2 className="w-12 h-12 mx-auto mb-2 opacity-50" />
-                      <p>אין פרויקטים זמינים</p>
-                    </div>
-                  )}
-                </div>
-
-                {selectedProject && (
-                  <div className="mt-3 text-center">
-                    <span className="inline-block px-4 py-1 bg-orange-100 text-orange-700 rounded-full text-m font-bold">
-                      נבחר: {selectedProject.name}
-                    </span>
-                  </div>
-                )}
+                <ProjectSelector
+                  projects={projects}
+                  selectedProjectId={selectedProject?._id || ""}
+                  onProjectChange={(projectId) => {
+                    const project = projects.find((p) => p._id === projectId);
+                    setSelectedProject(project || null);
+                  }}
+                  multiSelect={false}
+                  label="בחר פרויקט"
+                  placeholder="חפש פרויקט..."
+                />
               </div>
             </div>
           </div>

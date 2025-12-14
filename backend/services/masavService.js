@@ -139,7 +139,7 @@ export function generateMasavFile(companyInfo, payments, executionDate) {
   // =====================================================
   // END RECORD — חובה
   // =====================================================
-  lines.push("9".repeat(128));
+  // lines.push("9".repeat(128));
 
   return lines.join("\r\n");
 }

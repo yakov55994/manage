@@ -10,6 +10,7 @@ const salarySchema = new mongoose.Schema({
   },
 
   employeeName: { type: String, required: true },
+  department: { type: String, default: null }, // מחלקה - אופציונלי
 
   baseAmount: { type: Number, required: true },
   overheadPercent: { type: Number, default: 0 },

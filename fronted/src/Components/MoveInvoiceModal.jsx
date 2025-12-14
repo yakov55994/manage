@@ -157,7 +157,10 @@ export default function MoveInvoiceModal({
                       onChange={() => setSelectedProjectId(p._id)}
                     />
                     <span className="font-medium">{p.name}</span>
-                    {String(invoice?.projectId) === String(p._id) && (
+                    {invoice?.projects?.some(proj => {
+                      const pid = proj.projectId?._id || proj.projectId;
+                      return String(pid) === String(p._id);
+                    }) && (
                       <span className="text-xs mr-auto bg-slate-200 px-2 py-0.5 rounded">
                         נוכחי
                       </span>
