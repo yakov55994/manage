@@ -126,7 +126,7 @@ const CreateSalary = () => {
   // ============================
   // OVERHEAD QUICK BUTTONS
   // ============================
-  const quickOverheadButtons = [0, 10, 12, 15, 20, 25];
+  const quickOverheadButtons = [42, 45, 50];
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-orange-50 via-amber-50 to-yellow-50 relative overflow-hidden py-12">

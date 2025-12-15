@@ -615,6 +615,7 @@ const CreateInvoice = () => {
               <option value="ד. תשלום">ד. תשלום</option>
               <option value="חשבונית מס / קבלה">חשבונית מס / קבלה</option>
               <option value="משכורות">משכורות</option>
+              <option value="אין צורך">אין צורך</option>
             </select>
           </div>
 

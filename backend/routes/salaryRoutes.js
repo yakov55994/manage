@@ -4,10 +4,10 @@ import { protect } from "../middleware/auth.js";
 
 const router = express.Router();
 
-router.post("/", createSalary);
-router.get("/", getSalaries);
-router.get("/export", exportSalaries);
-router.get("/:id", getSalaryById);
-router.put("/:id", updateSalary);
-router.delete("/:id", deleteSalary);
+router.post("/", protect, createSalary);
+router.get("/", protect, getSalaries);
+router.get("/export", protect, exportSalaries);
+router.get("/:id", protect, getSalaryById);
+router.put("/:id", protect, updateSalary);
+router.delete("/:id", protect, deleteSalary);
 export default router;

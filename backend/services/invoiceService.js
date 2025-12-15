@@ -30,11 +30,11 @@ export const recalculateRemainingBudget = async (projectId) => {
     return;
   }
 
-  // 1️⃣ חשבוניות רגילות של הפרויקט
+  // 1️⃣ חשבוניות רגילות של הפרויקט (לא כולל משכורות ולא מילגה)
   const regularInvoices = await Invoice.find({
     "projects.projectId": projectId,
     type: { $ne: "salary" },
-    fundedFromProjectId: null,
+    fundedFromProjectId: { $exists: false }, // לא חשבוניות מילגה
   });
 
   // 2️⃣ חשבוניות מילגה שממומנות מהפרויקט הזה
@@ -48,6 +48,10 @@ export const recalculateRemainingBudget = async (projectId) => {
     "projects.projectId": projectId,
   });
 
+  // ✅ כעת כל חשבונית נספרת פעם אחת בלבד:
+  // - רגילות: נספרות רק אם אין fundedFromProjectId
+  // - מילגה: נספרות רק בפרויקט שממנו הן ממומנות
+  // - משכורות: נספרות בפרויקט שלהן
   const totalSpent =
     sumInvoices(regularInvoices) +
     sumInvoices(milgaInvoices) +
@@ -381,14 +385,32 @@ async function moveInvoice(user, invoiceId, fromProjectId, toProjectId) {
 
   // בדיקת הרשאות
   if (user.role !== "admin") {
+    // רואה חשבון יכול לראות הכל אבל לא לעדכן
+    if (user.role === "accountant") {
+      throw new Error("רואה חשבון לא יכול להעביר חשבוניות");
+    }
+
     const allowed = user.permissions.map(
       (p) => String(p.project?._id || p.project)
     );
     if (
       !allowed.includes(fromProjectId) ||
       !allowed.includes(toProjectId)
-    )
-      throw new Error("אין הרשאה להעברה");
+    ) {
+      throw new Error("אין הרשאה להעביר חשבונית בין הפרויקטים הללו");
+    }
+
+    // בדוק שיש הרשאת edit לשני הפרויקטים
+    const hasEditFrom = user.permissions.some(
+      (p) => String(p.project?._id || p.project) === fromProjectId && p.modules?.invoices === "edit"
+    );
+    const hasEditTo = user.permissions.some(
+      (p) => String(p.project?._id || p.project) === toProjectId && p.modules?.invoices === "edit"
+    );
+
+    if (!hasEditFrom || !hasEditTo) {
+      throw new Error("נדרשת הרשאת עריכה לשני הפרויקטים");
+    }
   }
 
   // בדוק שפרויקט היעד קיים

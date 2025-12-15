@@ -230,6 +230,25 @@ export default function EditSalary() {
                     <Percent className="w-4 h-4 text-purple-500" />
                     אחוז תקורה
                   </label>
+
+                  {/* Quick Buttons */}
+                  <div className="flex flex-wrap gap-2 mb-3">
+                    {[42, 45, 50].map((percent) => (
+                      <button
+                        key={percent}
+                        type="button"
+                        onClick={() => setForm(prev => ({ ...prev, overheadPercent: percent }))}
+                        className={`px-4 py-2 rounded-lg font-bold transition-all ${
+                          form.overheadPercent == percent
+                            ? "bg-orange-600 text-white shadow-lg"
+                            : "bg-orange-100 text-orange-700 hover:bg-orange-200"
+                        }`}
+                      >
+                        {percent}%
+                      </button>
+                    ))}
+                  </div>
+
                   <input
                     type="number"
                     name="overheadPercent"

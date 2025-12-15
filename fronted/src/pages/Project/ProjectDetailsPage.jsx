@@ -784,17 +784,28 @@ const ProjectDetailsPage = () => {
                           <tr
                             key={invoice._id}
                             onClick={() => moveToInvoiceDetails(invoice)}
-                            className="cursor-pointer border-t border-emerald-100 hover:bg-emerald-50/50 transition-colors"
+                            className={`cursor-pointer border-t transition-colors ${
+                              invoice.type === "salary"
+                                ? "bg-gradient-to-r from-orange-50 via-amber-50 to-yellow-50 border-orange-200 hover:from-orange-100 hover:via-amber-100 hover:to-yellow-100"
+                                : "border-emerald-100 hover:bg-emerald-50/50"
+                            }`}
                           >
                             <td className="px-4 py-3 text-sm font-bold text-center">
-                              {invoice.invoiceNumber}
+                              <div className="flex items-center justify-center gap-2">
+                                {invoice.invoiceNumber}
+                                {invoice.type === "salary" && (
+                                  <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[9px] font-bold bg-gradient-to-r from-orange-500 to-amber-600 text-white shadow-md animate-pulse">
+                                    משכורת
+                                  </span>
+                                )}
+                              </div>
                             </td>
 
                             {/* סוג חשבונית - משכורת או רגילה */}
                             <td className="px-4 py-3 text-center">
                               {invoice.type === "salary" ? (
-                                <span className="inline-flex items-center px-2 py-1 rounded-full text-[10px] font-bold bg-gradient-to-r from-blue-500 to-purple-600 text-white shadow-md">
-                                  משכורת
+                                <span className="inline-flex items-center px-3 py-1.5 rounded-full text-xs font-bold bg-gradient-to-r from-orange-600 via-amber-600 to-yellow-600 text-white shadow-lg">
+                                  💰 משכורת
                                 </span>
                               ) : (
                                 <span className="inline-flex items-center px-2 py-1 rounded-full text-[10px] font-bold bg-gradient-to-r from-emerald-500 to-teal-600 text-white shadow-md">

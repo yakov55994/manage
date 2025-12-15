@@ -461,6 +461,7 @@ const InvoiceEditPage = () => {
               <option value="ה. עבודה">ה. עבודה</option>
               <option value="ד. תשלום">ד. תשלום</option>
               <option value="חשבונית מס / קבלה">חשבונית מס / קבלה</option>
+              <option value="אין צורך">אין צורך</option>
             </select>
           </div>
 
@@ -562,6 +563,8 @@ const InvoiceEditPage = () => {
           <div className="bg-white shadow-xl p-6 mb-10">
             <FileUploader
               folder="invoices"
+              askForDocumentType={true}
+              isExistingInvoice={true}
               onUploadSuccess={(files) =>
                 setGlobalFields((prev) => ({
                   ...prev,
@@ -617,6 +620,8 @@ const InvoiceEditPage = () => {
 
               <FileUploader
                 folder="invoices"
+                askForDocumentType={true}
+                isExistingInvoice={true}
                 onUploadSuccess={(files) => {
                   const copy = [...rows];
                   copy[index].files.push(...files);

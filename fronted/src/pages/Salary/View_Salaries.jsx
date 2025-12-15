@@ -14,6 +14,7 @@ import {
   Eye,
   Edit2,
   Trash2,
+  Download,
 } from "lucide-react";
 import { toast } from "sonner";
 
@@ -24,9 +25,13 @@ export default function View_Salaries() {
   const [searchTerm, setSearchTerm] = useState("");
   const [sortBy, setSortBy] = useState("date"); // date, employeeName, finalAmount
   const [sortOrder, setSortOrder] = useState("desc"); // asc, desc
+  const [projects, setProjects] = useState([]);
+  const [selectedProjectId, setSelectedProjectId] = useState("");
+  const [exportLoading, setExportLoading] = useState(false);
 
   useEffect(() => {
     fetchSalaries();
+    fetchProjects();
   }, []);
 
   const fetchSalaries = async () => {
@@ -39,6 +44,48 @@ export default function View_Salaries() {
       toast.error("שגיאה בטעינת המשכורות");
     } finally {
       setLoading(false);
+    }
+  };
+
+  const fetchProjects = async () => {
+    try {
+      const response = await api.get("/projects");
+      const allProjects = response.data?.data || [];
+      setProjects(allProjects.filter(p => p.type !== "salary"));
+    } catch (err) {
+      console.error("Error fetching projects:", err);
+    }
+  };
+
+  const handleExportSalaries = async () => {
+    if (!selectedProjectId) {
+      toast.error("יש לבחור פרויקט", { className: "sonner-toast error rtl" });
+      return;
+    }
+
+    try {
+      setExportLoading(true);
+      const response = await api.get(`/salaries/export?projectId=${selectedProjectId}`, {
+        responseType: 'blob'
+      });
+
+      const url = window.URL.createObjectURL(new Blob([response.data]));
+      const link = document.createElement('a');
+      link.href = url;
+
+      const project = projects.find(p => p._id === selectedProjectId);
+      link.setAttribute('download', `salary-export-${project?.name || 'project'}.pdf`);
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+
+      toast.success("הקובץ הורד בהצלחה", { className: "sonner-toast success rtl" });
+    } catch (err) {
+      console.error("Export error:", err);
+      const errorMsg = err.response?.data?.error || "שגיאה בהורדת הסיכום";
+      toast.error(errorMsg, { className: "sonner-toast error rtl" });
+    } finally {
+      setExportLoading(false);
     }
   };
 
@@ -142,6 +189,43 @@ export default function View_Salaries() {
             </div>
           </div>
         </header>
+
+        {/* Export Section */}
+        <div className="relative mb-6">
+          <div className="absolute -inset-2 bg-gradient-to-r from-emerald-500 via-teal-500 to-cyan-500 rounded-3xl opacity-10 blur-xl"></div>
+
+          <div className="relative bg-white/90 backdrop-blur-xl rounded-3xl shadow-xl shadow-emerald-500/10 p-6 border border-white/50">
+            <div className="flex flex-col md:flex-row gap-4 items-end">
+              <div className="flex-1">
+                <label className="flex items-center gap-2 text-sm font-bold text-slate-700 mb-2">
+                  <Building2 className="w-4 h-4 text-emerald-600" />
+                  בחר פרויקט לייצוא סיכום משכורות
+                </label>
+                <select
+                  value={selectedProjectId}
+                  onChange={(e) => setSelectedProjectId(e.target.value)}
+                  className="w-full px-4 py-3 border-2 border-emerald-200 rounded-xl focus:border-emerald-400 focus:outline-none transition-colors font-medium"
+                >
+                  <option value="">-- בחר פרויקט --</option>
+                  {projects.map((project) => (
+                    <option key={project._id} value={project._id}>
+                      {project.name}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              <button
+                onClick={handleExportSalaries}
+                disabled={exportLoading || !selectedProjectId}
+                className="flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-emerald-600 to-teal-600 text-white font-bold rounded-xl hover:from-emerald-700 hover:to-teal-700 transition-all shadow-lg disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                <Download className="w-5 h-5" />
+                {exportLoading ? "מוריד..." : "הורד סיכום PDF"}
+              </button>
+            </div>
+          </div>
+        </div>
 
         {/* Search & Filters */}
         <div className="relative mb-6">
