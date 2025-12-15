@@ -11,6 +11,9 @@ import {
   Calendar,
   User,
   Briefcase,
+  Eye,
+  Edit2,
+  Trash2,
 } from "lucide-react";
 import { toast } from "sonner";
 
@@ -95,6 +98,18 @@ export default function View_Salaries() {
       </div>
     );
   }
+  const handleDelete = async (id) => {
+    if (!window.confirm("למחוק משכורת זו? פעולה זו אינה ניתנת לביטול.")) return;
+
+    try {
+      await api.delete(`/salaries/${id}`);
+      setSalaries(prev => prev.filter(s => s._id !== id));
+      toast.success("המשכורת נמחקה בהצלחה");
+    } catch (err) {
+      console.error("Delete error:", err);
+      toast.error("שגיאה במחיקת משכורת");
+    }
+  };
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-orange-50 via-amber-50 to-yellow-50 relative overflow-hidden py-12">
@@ -117,7 +132,7 @@ export default function View_Salaries() {
                 </div>
                 <div className="text-center">
                   <h1 className="text-4xl font-black text-slate-900">
-                    הצגת משכורות
+                    רשימת משכורות
                   </h1>
                   <p className="text-sm font-medium text-slate-600 mt-2">
                     סה"כ {filteredSalaries.length} משכורות
@@ -232,15 +247,19 @@ export default function View_Salaries() {
                       <th className="px-6 py-4 text-right text-xs font-bold text-white uppercase tracking-wider">
                         נוצר ע"י
                       </th>
+                      <th className="px-6 py-4 text-center text-xs font-bold text-white uppercase tracking-wider">
+                        פעולות
+                      </th>
                     </tr>
                   </thead>
                   <tbody className="bg-white divide-y divide-orange-100">
                     {filteredSalaries.map((salary, index) => (
                       <tr
                         key={salary._id}
-                        className={`hover:bg-orange-50/50 transition-colors ${
+                        className={`hover:bg-orange-50/50 transition-colors cursor-pointer ${
                           index % 2 === 0 ? "bg-white" : "bg-orange-50/30"
                         }`}
+                        onClick={() => navigate(`/salaries/${salary._id}`)}
                       >
                         <td className="px-6 py-4 whitespace-nowrap">
                           <div className="flex items-center gap-2">
@@ -286,6 +305,40 @@ export default function View_Salaries() {
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap text-sm text-slate-600">
                           {salary.createdByName || "—"}
+                        </td>
+                        <td className="px-6 py-4 text-center">
+                          <div className="flex justify-center gap-2">
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                navigate(`/salaries/${salary._id}`);
+                              }}
+                              className="p-2 hover:bg-blue-100 rounded-lg transition-colors group"
+                              title="צפייה"
+                            >
+                              <Eye className="w-4 h-4 text-blue-600 group-hover:text-blue-700" />
+                            </button>
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                navigate(`/update-salary/${salary._id}`);
+                              }}
+                              className="p-2 hover:bg-orange-100 rounded-lg transition-colors group"
+                              title="עריכה"
+                            >
+                              <Edit2 className="w-4 h-4 text-orange-600 group-hover:text-orange-700" />
+                            </button>
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleDelete(salary._id);
+                              }}
+                              className="p-2 hover:bg-red-100 rounded-lg transition-colors group"
+                              title="מחיקה"
+                            >
+                              <Trash2 className="w-4 h-4 text-red-600 group-hover:text-red-700" />
+                            </button>
+                          </div>
                         </td>
                       </tr>
                     ))}

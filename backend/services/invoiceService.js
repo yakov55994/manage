@@ -88,8 +88,12 @@ async function getInvoices(user) {
       (p) => String(p.project?._id || p.project)
     );
 
+    // סנן לפי פרויקטים במערך projects או לפי fundedFromProjectId
     query = {
-      "projects.projectId": { $in: allowed },
+      $or: [
+        { "projects.projectId": { $in: allowed } },
+        { fundedFromProjectId: { $in: allowed } }
+      ]
     };
   }
 
@@ -301,12 +305,11 @@ async function updateInvoice(user, invoiceId, data) {
     ...basic
   } = data;
 
+  // מיזוג קבצים - הוסף רק קבצים חדשים שאין להם URL זהה
   const mergedFiles = [
     ...invoice.files,
     ...newFiles.filter(
-      (f) =>
-        f.isLocal ||
-        !invoice.files.some((old) => old.url === f.url)
+      (f) => !invoice.files.some((old) => old.url === f.url)
     ),
   ];
 

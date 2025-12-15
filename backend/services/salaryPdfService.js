@@ -3,36 +3,49 @@ import path from "path";
 import pdf from "html-pdf-node";
 
 export async function generateSalaryExportPDF({ salaries, projectName }) {
-  const templatePath = path.join(process.cwd(), "templates", "salary-export.html");
-  const cssPath = path.join(process.cwd(), "templates", "salary-export.css");
+  const templatePath = path.join(
+    process.cwd(),
+    "templates",
+    "salary-export.html"
+  );
+  const cssPath = path.join(
+    process.cwd(),
+    "templates",
+    "salary-export.css"
+  );
 
   let html = fs.readFileSync(templatePath, "utf8");
   const css = fs.readFileSync(cssPath, "utf8");
 
-  // החלפת {{css}} בתוכן CSS
+  // Inject CSS
   html = html.replace("{{css}}", `<style>${css}</style>`);
 
-  // יצירת שורות טבלה
+  // Build rows
   const rowsHTML = salaries
     .map(
       (s, i) => `
-        <tr>
-          <td>${i + 1}</td>
-          <td>${s.employeeName}</td>
-          <td>${s.department || "-"}</td>
-          <td>₪${Number(s.baseAmount || 0).toLocaleString("he-IL")}</td>
-          <td>${s.overheadPercent || 0}%</td>
-          <td>₪${Number(s.finalAmount || 0).toLocaleString("he-IL")}</td>
-          <td>${new Date(s.date).toLocaleDateString("he-IL")}</td>
-        </tr>`
+      <tr>
+        <td>${i + 1}</td>
+        <td>${s.employeeName}</td>
+        <td>${s.department || "-"}</td>
+        <td>₪${Number(s.baseAmount || 0).toLocaleString("he-IL")}</td>
+        <td>${s.overheadPercent || 0}%</td>
+        <td>₪${Number(s.finalAmount || 0).toLocaleString("he-IL")}</td>
+        <td>${new Date(s.date).toLocaleDateString("he-IL")}</td>
+      </tr>
+    `
     )
     .join("");
 
-  // חישוב סכומים
-  const totalBase = salaries.reduce((a, s) => a + Number(s.baseAmount || 0), 0);
-  const totalFinal = salaries.reduce((a, s) => a + Number(s.finalAmount || 0), 0);
+  const totalBase = salaries.reduce(
+    (sum, s) => sum + Number(s.baseAmount || 0),
+    0
+  );
+  const totalFinal = salaries.reduce(
+    (sum, s) => sum + Number(s.finalAmount || 0),
+    0
+  );
 
-  // החלפת כל המשתנים
   html = html
     .replace("{{rows}}", rowsHTML)
     .replace("{{projectName}}", projectName)
@@ -49,7 +62,6 @@ export async function generateSalaryExportPDF({ salaries, projectName }) {
     printBackground: true,
   });
 
-  // שמירה
   const tmpDir = path.join(process.cwd(), "tmp");
   if (!fs.existsSync(tmpDir)) fs.mkdirSync(tmpDir);
 

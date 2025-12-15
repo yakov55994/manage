@@ -85,8 +85,9 @@ export default function MoveInvoiceModal({
       toast.success(`החשבונית הועברה אל "${targetProject?.name}"`);
       onClose();
     } catch (err) {
-      console.error(err);
-      toast.error("שגיאה בהעברת חשבונית");
+      console.error("Move invoice error:", err);
+      const errorMsg = err.response?.data?.error || err.message || "שגיאה בהעברת חשבונית";
+      toast.error(errorMsg);
     } finally {
       setLoading(false);
     }

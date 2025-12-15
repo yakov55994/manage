@@ -1,9 +1,16 @@
-import { BrowserRouter as Router, Route, Routes, useNavigate } from "react-router-dom";
+import {
+  BrowserRouter as Router,
+  Route,
+  Routes,
+  useNavigate,
+} from "react-router-dom";
 import Sidebar from "./pages/NavBar";
 import CreateProject from "./pages/Project/Create_Project";
 import CreateInvoice from "./pages/Invoice/Create_Invoice";
 import CreateSalary from "./pages/Salary/Create_Salary.jsx";
 import ViewSalaries from "./pages/Salary/View_Salaries.jsx";
+import SalaryDetailsPage from "./pages/Salary/Salery_DetailsPage.jsx";
+import UpdateSalary from "./pages/Salary/Update_Salery.jsx";
 import CreateOrder from "./pages/Order/Create_Order.jsx";
 import Projects from "./pages/Project/View_Projects";
 import Invoices from "./pages/Invoice/View_Invoices";
@@ -56,14 +63,37 @@ const AppContent = () => {
         <Sidebar />
         <div className="flex-1 p-6 mt-20 ml-10">
           <div className="mb-0 mr-auto max-w-60 top-1 z-50 flex items-center gap-4 text-white p-2">
-            <div className={`flex items-center gap-2 px-4 py-2 rounded-2xl font-semibold text-sm tracking-wide shadow-lg ${isAuthenticated ? "bg-green-600 text-white" : "bg-red-600 text-white"}`}>
-              <div className={`w-2 h-2 rounded-full shadow-lg ${isAuthenticated ? "bg-green-200" : "bg-red-200"}`}></div>
+            <div
+              className={`flex items-center gap-2 px-4 py-2 rounded-2xl font-semibold text-sm tracking-wide shadow-lg ${
+                isAuthenticated
+                  ? "bg-green-600 text-white"
+                  : "bg-red-600 text-white"
+              }`}
+            >
+              <div
+                className={`w-2 h-2 rounded-full shadow-lg ${
+                  isAuthenticated ? "bg-green-200" : "bg-red-200"
+                }`}
+              ></div>
               <b>{isAuthenticated ? "מחובר/ת" : "מנותק/ת"}</b>
               {user && <span className="mr-2">({user.username})</span>}
             </div>
 
-            <button className={`flex items-center gap-2 px-4 py-2 rounded-2xl font-semibold text-sm tracking-wide transition-all hover:scale-105 ${isAuthenticated ? "bg-red-600 text-white hover:bg-red-500 shadow-red-600/30" : "bg-green-600 text-white hover:bg-green-500 shadow-green-600/30"} shadow-lg`} onClick={isAuthenticated ? handleLogout : () => navigate("/login")}>
-              {isAuthenticated ? <ArrowRightCircle className="w-4 h-4" /> : <KeyRound className="w-4 h-4" />}
+            <button
+              className={`flex items-center gap-2 px-4 py-2 rounded-2xl font-semibold text-sm tracking-wide transition-all hover:scale-105 ${
+                isAuthenticated
+                  ? "bg-red-600 text-white hover:bg-red-500 shadow-red-600/30"
+                  : "bg-green-600 text-white hover:bg-green-500 shadow-green-600/30"
+              } shadow-lg`}
+              onClick={
+                isAuthenticated ? handleLogout : () => navigate("/login")
+              }
+            >
+              {isAuthenticated ? (
+                <ArrowRightCircle className="w-4 h-4" />
+              ) : (
+                <KeyRound className="w-4 h-4" />
+              )}
               <span>{isAuthenticated ? "התנתק" : "התחברות"}</span>
             </button>
           </div>
@@ -75,31 +105,203 @@ const AppContent = () => {
             <Route path="/no-access" element={<NoAccess />} />
             <Route path="/reset-password/:token" element={<ResetPassword />} />
 
-            <Route path="/create-project" element={<ProtectedRoute adminOnly><CreateProject /></ProtectedRoute>} />
-            <Route path="/projects" element={<ProtectedRoute><Projects /></ProtectedRoute>} />
-            <Route path="/projects/:id" element={<ProtectedRoute><ProjectDetailsPage /></ProtectedRoute>} />
-            <Route path="/update-project/:id" element={<ProtectedRoute adminOnly><UpdateProject /></ProtectedRoute>} />
+            <Route
+              path="/create-project"
+              element={
+                <ProtectedRoute adminOnly>
+                  <CreateProject />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/projects"
+              element={
+                <ProtectedRoute>
+                  <Projects />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/projects/:id"
+              element={
+                <ProtectedRoute>
+                  <ProjectDetailsPage />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/update-project/:id"
+              element={
+                <ProtectedRoute adminOnly>
+                  <UpdateProject />
+                </ProtectedRoute>
+              }
+            />
 
-            <Route path="/create-invoice" element={<ProtectedRoute module="invoices" requireEdit={true}><CreateInvoice /></ProtectedRoute>} />
-            <Route path="/create-salary" element={<ProtectedRoute module="invoices" requireEdit={true}><CreateSalary /></ProtectedRoute>} />
-            <Route path="/salaries" element={<ProtectedRoute module="invoices"><ViewSalaries /></ProtectedRoute>} />
-            <Route path="/invoices" element={<ProtectedRoute module="invoices"><Invoices /></ProtectedRoute>} />
-            <Route path="/invoices/:id" element={<ProtectedRoute module="invoices"><InvoiceDetailsPage /></ProtectedRoute>} />
-            <Route path="/update-invoice/:id" element={<ProtectedRoute module="invoices" requireEdit={true}><UpdateInvoice /></ProtectedRoute>} />
+            <Route
+              path="/create-invoice"
+              element={
+                <ProtectedRoute module="invoices" requireEdit={true}>
+                  <CreateInvoice />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/create-salary"
+              element={
+                <ProtectedRoute module="invoices" requireEdit={true}>
+                  <CreateSalary />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/salaries"
+              element={
+                <ProtectedRoute module="invoices">
+                  <ViewSalaries />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/salaries/:id"
+              element={
+                <ProtectedRoute module="invoices">
+                  <SalaryDetailsPage />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/salaries/:id/edit"
+              element={
+                <ProtectedRoute module="invoices" requireEdit={true}>
+                  <UpdateSalary />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/update-salary/:id"
+              element={
+                <ProtectedRoute module="invoices" requireEdit={true}>
+                  <UpdateSalary />
+                </ProtectedRoute>
+              }
+            />
 
-            <Route path="/create-order" element={<ProtectedRoute module="orders" requireEdit={true}><CreateOrder /></ProtectedRoute>} />
-            <Route path="/orders" element={<ProtectedRoute module="orders"><Orders /></ProtectedRoute>} />
-            <Route path="/orders/:id" element={<ProtectedRoute module="orders"><Order_Detail_Page /></ProtectedRoute>} />
-            <Route path="/update-order/:id" element={<ProtectedRoute module="orders" requireEdit={true}><UpdateOrder /></ProtectedRoute>} />
+            <Route
+              path="/invoices"
+              element={
+                <ProtectedRoute module="invoices">
+                  <Invoices />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/invoices/:id"
+              element={
+                <ProtectedRoute module="invoices">
+                  <InvoiceDetailsPage />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/update-invoice/:id"
+              element={
+                <ProtectedRoute module="invoices" requireEdit={true}>
+                  <UpdateInvoice />
+                </ProtectedRoute>
+              }
+            />
 
-            <Route path="/create-supplier" element={<ProtectedRoute module="suppliers" requireEdit={true}><CreateSupplier /></ProtectedRoute>} />
-            <Route path="/suppliers" element={<ProtectedRoute module="suppliers"><SuppliersPage /></ProtectedRoute>} />
-            <Route path="/suppliers/:id" element={<ProtectedRoute module="suppliers"><SupplierDetailsPage /></ProtectedRoute>} />
-            <Route path="/update-supplier/:id" element={<ProtectedRoute module="suppliers" requireEdit={true}><SupplierEditPage /></ProtectedRoute>} />
+            <Route
+              path="/create-order"
+              element={
+                <ProtectedRoute module="orders" requireEdit={true}>
+                  <CreateOrder />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/orders"
+              element={
+                <ProtectedRoute module="orders">
+                  <Orders />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/orders/:id"
+              element={
+                <ProtectedRoute module="orders">
+                  <Order_Detail_Page />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/update-order/:id"
+              element={
+                <ProtectedRoute module="orders" requireEdit={true}>
+                  <UpdateOrder />
+                </ProtectedRoute>
+              }
+            />
 
-            <Route path="/summary-page" element={<ProtectedRoute><SummaryPage /></ProtectedRoute>} />
-            <Route path="/Notes" element={<ProtectedRoute adminOnly><Notes /></ProtectedRoute>} />
-            <Route path="/admin" element={<ProtectedRoute adminOnly><UserManagement /></ProtectedRoute>} />
+            <Route
+              path="/create-supplier"
+              element={
+                <ProtectedRoute module="suppliers" requireEdit={true}>
+                  <CreateSupplier />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/suppliers"
+              element={
+                <ProtectedRoute module="suppliers">
+                  <SuppliersPage />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/suppliers/:id"
+              element={
+                <ProtectedRoute module="suppliers">
+                  <SupplierDetailsPage />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/update-supplier/:id"
+              element={
+                <ProtectedRoute module="suppliers" requireEdit={true}>
+                  <SupplierEditPage />
+                </ProtectedRoute>
+              }
+            />
+
+            <Route
+              path="/summary-page"
+              element={
+                <ProtectedRoute>
+                  <SummaryPage />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/Notes"
+              element={
+                <ProtectedRoute adminOnly>
+                  <Notes />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/admin"
+              element={
+                <ProtectedRoute adminOnly>
+                  <UserManagement />
+                </ProtectedRoute>
+              }
+            />
           </Routes>
         </div>
       </div>
@@ -107,7 +309,15 @@ const AppContent = () => {
       <footer className="border-gray-200 py-4">
         <p className="text-center font-bold text-white">
           © כל הזכויות שמורות ל
-          <a href="https://yc-dev.pages.dev" target="_blank" rel="noopener noreferrer" className=""> יעקב כהן</a>
+          <a
+            href="https://yc-dev.pages.dev"
+            target="_blank"
+            rel="noopener noreferrer"
+            className=""
+          >
+            {" "}
+            יעקב כהן
+          </a>
         </p>
       </footer>
 
