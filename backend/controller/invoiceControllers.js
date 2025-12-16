@@ -14,7 +14,8 @@ const invoiceControllers = {
   // ===============================================
   async searchInvoices(req, res) {
     try {
-      const results = await invoiceService.searchInvoices(req.query.q || "");
+      const query = req.query.query || req.query.q || "";
+      const results = await invoiceService.searchInvoices(query);
       res.json({ success: true, data: results });
     } catch (err) {
       res.status(500).json({ success: false, error: err.message });

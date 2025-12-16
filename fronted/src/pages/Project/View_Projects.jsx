@@ -868,16 +868,33 @@ const ProjectsPage = ({ initialProjects = [] }) => {
     let filtered = [...allProjects];
 
     if (searchTerm) {
-      filtered = filtered.filter(
-        (project) =>
-          project.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-          project.invitingName
-            ?.toLowerCase()
-            .includes(searchTerm.toLowerCase()) ||
-          project.Contact_person?.toLowerCase().includes(
-            searchTerm.toLowerCase()
-          )
-      );
+      const q = searchTerm.toLowerCase();
+
+      filtered = filtered.filter((project) => {
+        // חיפוש בשדות טקסט
+        const textFields = [
+          project.name,
+          project.invitingName,
+          project.Contact_person,
+          project.type,
+        ].filter(Boolean).map(field => field.toLowerCase());
+
+        // חיפוש בסכומים (המרה למחרוזת)
+        const numericFields = [
+          project.budget?.toString(),
+          project.remainingBudget?.toString(),
+        ].filter(Boolean);
+
+        // חיפוש בתאריך (פורמט קריא)
+        const dateFields = [
+          project.createdAt ? new Date(project.createdAt).toLocaleDateString('he-IL') : null
+        ].filter(Boolean);
+
+        // בדיקה אם החיפוש קיים באחד מהשדות
+        return textFields.some(field => field.includes(q)) ||
+               numericFields.some(field => field.includes(searchTerm)) ||
+               dateFields.some(field => field.includes(searchTerm));
+      });
     }
 
     if (showReportModal) {

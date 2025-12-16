@@ -92,13 +92,28 @@ export default function View_Salaries() {
 
   const filteredSalaries = salaries
     .filter((salary) => {
+      if (!searchTerm) return true;
+
       const q = searchTerm.toLowerCase();
-      return (
-        salary.employeeName?.toLowerCase().includes(q) ||
-        salary.department?.toLowerCase().includes(q) ||
-        salary.projectId?.name?.toLowerCase().includes(q) ||
-        salary.createdByName?.toLowerCase().includes(q)
-      );
+
+      // חיפוש בשדות טקסט
+      const textFields = [
+        salary.employeeName,
+        salary.department,
+        salary.projectId?.name,
+        salary.createdByName,
+      ].filter(Boolean).map(field => field.toLowerCase());
+
+      // חיפוש בסכומים (המרה למחרוזת)
+      const numericFields = [
+        salary.baseAmount?.toString(),
+        salary.finalAmount?.toString(),
+        salary.overheadPercent?.toString(),
+      ].filter(Boolean);
+
+      // בדיקה אם החיפוש קיים באחד מהשדות
+      return textFields.some(field => field.includes(q)) ||
+             numericFields.some(field => field.includes(q));
     })
     .sort((a, b) => {
       let comparison = 0;

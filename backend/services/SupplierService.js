@@ -19,15 +19,31 @@ export default {
   async searchSuppliers(query) {
     const regex = new RegExp(query, "i");
 
-    return Supplier.find({
+    // חיפוש מקיף בכל השדות הרלוונטיים
+    const suppliers = await Supplier.find({
       $or: [
         { name: regex },
         { address: regex },
         { email: regex },
         { phone: regex },
+        { supplierType: regex },
         { "bankDetails.bankName": regex },
+        { "bankDetails.branchNumber": regex },
+        { "bankDetails.accountNumber": regex },
       ],
-    }).limit(50);
+    }).limit(100);
+
+    // אם לא נמצאו תוצאות, חפש גם במספר עוסק
+    if (suppliers.length === 0) {
+      const allSuppliers = await Supplier.find({}).limit(100);
+
+      return allSuppliers.filter(supplier => {
+        const businessTax = supplier.business_tax?.toString() || "";
+        return businessTax.includes(query);
+      });
+    }
+
+    return suppliers;
   },
 
   async getAllSuppliers(type = null) {

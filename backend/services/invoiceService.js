@@ -77,14 +77,39 @@ export const recalculateRemainingBudget = async (projectId) => {
 async function searchInvoices(query) {
   const regex = new RegExp(query, "i");
 
-  return Invoice.find({
+  // חיפוש מקיף בכל השדות הרלוונטיים
+  const invoices = await Invoice.find({
     $or: [
       { invoiceNumber: regex },
       { detail: regex },
       { status: regex },
       { invitingName: regex },
+      { documentType: regex },
+      { "projects.projectName": regex },
+      { salaryEmployeeName: regex },
     ],
-  }).limit(50);
+  })
+    .populate("supplierId")
+    .populate("projects.projectId", "name")
+    .limit(100);
+
+  // אם לא נמצאו תוצאות, חפש גם בשם ספק ובסכום
+  if (invoices.length === 0) {
+    const allInvoices = await Invoice.find({})
+      .populate("supplierId")
+      .populate("projects.projectId", "name")
+      .limit(100);
+
+    return allInvoices.filter(invoice => {
+      const supplierName = invoice.supplierId?.name || "";
+      const totalAmount = invoice.totalAmount?.toString() || "";
+
+      return supplierName.toLowerCase().includes(query.toLowerCase()) ||
+             totalAmount.includes(query);
+    });
+  }
+
+  return invoices;
 }
 
 // ===============================================

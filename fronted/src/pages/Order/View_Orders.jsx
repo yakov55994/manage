@@ -203,11 +203,15 @@ const OrdersPage = () => {
     let filtered = [...allOrders];
 
     if (searchTerm) {
+      const q = searchTerm.toLowerCase();
       filtered = filtered.filter(
         (order) =>
           order.orderNumber?.toString().includes(searchTerm) ||
-          order.projectName?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-          order.invitingName?.toLowerCase().includes(searchTerm.toLowerCase())
+          order.projectName?.toLowerCase().includes(q) ||
+          order.invitingName?.toLowerCase().includes(q) ||
+          order.detail?.toLowerCase().includes(q) ||
+          order.sum?.toString().includes(searchTerm) ||
+          order.status?.toLowerCase().includes(q)
       );
     }
 

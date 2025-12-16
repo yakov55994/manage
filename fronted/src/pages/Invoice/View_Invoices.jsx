@@ -301,19 +301,44 @@ const InvoicesPage = () => {
     let filtered = [...allInvoices];
 
     if (searchTerm) {
-      filtered = filtered.filter(
-        (invoice) =>
-          (invoice.invoiceNumber?.toString() || "").includes(searchTerm) ||
-          (invoice.projects || []).some((p) =>
-            p.projectName?.toLowerCase().includes(searchTerm.toLowerCase())
-          ) ||
-          (invoice.type === "salary" ? invoice.salaryEmployeeName : invoice.supplierId?.name || "-" || "")
-            .toLowerCase()
-            .includes(searchTerm.toLowerCase()) ||
-          (invoice.invitingName || "")
-            .toLowerCase()
-            .includes(searchTerm.toLowerCase())
-      );
+      const q = searchTerm.toLowerCase();
+
+      filtered = filtered.filter((invoice) => {
+        // חיפוש במספר חשבונית
+        if (invoice.invoiceNumber?.toString().includes(searchTerm)) return true;
+
+        // חיפוש בשמות פרויקטים
+        if ((invoice.projects || []).some((p) => p.projectName?.toLowerCase().includes(q))) return true;
+
+        // חיפוש בשם ספק או עובד
+        const supplierOrEmployee = invoice.type === "salary"
+          ? invoice.salaryEmployeeName
+          : invoice.supplierId?.name || "";
+        if (supplierOrEmployee.toLowerCase().includes(q)) return true;
+
+        // חיפוש בשם מזמין
+        if ((invoice.invitingName || "").toLowerCase().includes(q)) return true;
+
+        // חיפוש בפירוט
+        if ((invoice.detail || "").toLowerCase().includes(q)) return true;
+
+        // חיפוש בסכום כולל
+        if (invoice.totalAmount?.toString().includes(searchTerm)) return true;
+
+        // חיפוש בסטטוס
+        if ((invoice.status || "").toLowerCase().includes(q)) return true;
+
+        // חיפוש בסוג מסמך
+        if ((invoice.documentType || "").toLowerCase().includes(q)) return true;
+
+        // חיפוש בתאריך (פורמט עברי)
+        if (invoice.createdAt) {
+          const dateStr = new Date(invoice.createdAt).toLocaleDateString('he-IL');
+          if (dateStr.includes(searchTerm)) return true;
+        }
+
+        return false;
+      });
     }
 
     if (paymentFilter !== "all") {

@@ -100,13 +100,32 @@ const SuppliersPage = () => {
 
     if (searchTerm) {
       const q = searchTerm.toLowerCase();
-      filtered = filtered.filter(
-        (supplier) =>
-          supplier?._id?.toString().includes(searchTerm) ||
-          supplier?.name?.toLowerCase().includes(q) ||
-          supplier?.email?.toLowerCase().includes(q) ||
-          supplier?.business_tax?.toString().includes(searchTerm)
-      );
+
+      filtered = filtered.filter((supplier) => {
+        // חיפוש בשדות טקסט
+        const textFields = [
+          supplier?._id?.toString(),
+          supplier?.name,
+          supplier?.email,
+          supplier?.address,
+          supplier?.phone,
+          supplier?.supplierType,
+          supplier?.bankDetails?.bankName,
+          supplier?.bankDetails?.branchNumber?.toString(),
+          supplier?.bankDetails?.accountNumber?.toString(),
+        ].filter(Boolean).map(field => field.toLowerCase());
+
+        // חיפוש במספר עוסק (חיפוש חלקי)
+        const businessTax = supplier?.business_tax?.toString() || '';
+
+        // חיפוש בתאריך (פורמט קריא)
+        const dateStr = formatSupplierDate(supplier) || '';
+
+        // בדיקה אם החיפוש קיים באחד מהשדות
+        return textFields.some(field => field.includes(q)) ||
+               businessTax.includes(searchTerm) ||
+               dateStr.includes(searchTerm);
+      });
     }
 
     if (advancedFilters.dateFrom) {

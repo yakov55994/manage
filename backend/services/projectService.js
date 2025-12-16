@@ -8,13 +8,29 @@ export default {
   async searchProjects (query) {
   const regex = new RegExp(query, "i");
 
-  return Project.find({
+  // חיפוש מקיף בכל השדות הרלוונטיים
+  const projects = await Project.find({
     $or: [
       { name: regex },
       { invitingName: regex },
       { Contact_person: regex },
+      { type: regex },
     ],
-  }).limit(50);
+  }).limit(100);
+
+  // אם לא נמצאו תוצאות, חפש גם בסכומים
+  if (projects.length === 0) {
+    const allProjects = await Project.find({}).limit(100);
+
+    return allProjects.filter(project => {
+      const budget = project.budget?.toString() || "";
+      const remainingBudget = project.remainingBudget?.toString() || "";
+
+      return budget.includes(query) || remainingBudget.includes(query);
+    });
+  }
+
+  return projects;
 },
 
 
