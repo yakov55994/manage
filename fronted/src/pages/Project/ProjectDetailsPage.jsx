@@ -76,10 +76,12 @@ const ProjectDetailsPage = () => {
   const [statusFilter, setStatusFilter] = useState("");
   const [orders, setOrders] = useState([]);
   const [invoices, setInvoices] = useState([]);
+  const [salaries, setSalaries] = useState([]);
   const [sortOrder, setSortOrder] = useState("desc");
   const [loadingProject, setLoadingProject] = useState(true);
   const [loadingOrders, setLoadingOrders] = useState(true);
   const [loadingInvoices, setLoadingInvoices] = useState(true);
+  const [loadingSalaries, setLoadingSalaries] = useState(true);
 
   useEffect(() => {
     if (loading) return;
@@ -90,6 +92,7 @@ const ProjectDetailsPage = () => {
         setLoadingProject(true);
         setLoadingOrders(true);
         setLoadingInvoices(true);
+        setLoadingSalaries(true);
 
         // 1️⃣ שלוף את הפרויקט
         const projectResponse = await api.get(`/projects/${id}`);
@@ -141,6 +144,20 @@ const ProjectDetailsPage = () => {
           setInvoices(projectInvoices);
         }
         setLoadingInvoices(false);
+
+        // 4️⃣ שלוף משכורות שקשורות לפרויקט - רק אם יש הרשאה
+        if (canViewInvoices()) {
+          const salariesResponse = await api.get("/salaries");
+          const allSalaries = Array.isArray(salariesResponse.data?.data)
+            ? salariesResponse.data.data
+            : [];
+          const projectSalaries = allSalaries.filter(
+            (salary) =>
+              String(salary.projectId?._id || salary.projectId) === String(id)
+          );
+          setSalaries(projectSalaries);
+        }
+        setLoadingSalaries(false);
       } catch (error) {
         console.error("Error fetching project details:", error);
         toast.error("שגיאה בשליפת פרטי הפרויקט", {
@@ -149,6 +166,7 @@ const ProjectDetailsPage = () => {
         setLoadingProject(false);
         setLoadingOrders(false);
         setLoadingInvoices(false);
+        setLoadingSalaries(false);
       }
     };
 
@@ -884,6 +902,115 @@ const ProjectDetailsPage = () => {
             </div>
           </div>
         </div>
+
+        {/* Salaries Section - רק אם יש משכורות */}
+        {salaries.length > 0 && (
+          <div className="relative mt-6">
+            <div className="absolute -inset-2 bg-gradient-to-r from-purple-500 via-pink-500 to-rose-500 rounded-3xl opacity-10 blur-xl"></div>
+
+            <div className="relative bg-white/90 backdrop-blur-xl rounded-3xl shadow-xl shadow-purple-500/10 border border-white/50 overflow-hidden">
+              <div className="bg-gradient-to-r from-purple-500 via-pink-500 to-rose-500 p-1">
+                <div className="bg-white/95 backdrop-blur-xl p-4">
+                  <div className="flex items-center gap-3">
+                    <div className="p-2 rounded-xl bg-gradient-to-br from-purple-100 to-pink-100">
+                      <DollarSign className="w-5 h-5 text-purple-600" />
+                    </div>
+                    <h2 className="text-2xl font-bold text-slate-900">
+                      משכורות של הפרויקט
+                    </h2>
+                    {canViewInvoices() && (
+                      <span className="mr-auto px-3 py-1 rounded-full bg-purple-100 text-purple-700 text-sm font-bold">
+                        {salaries.length}
+                      </span>
+                    )}
+                  </div>
+                </div>
+              </div>
+
+              <div className="p-6">
+                {loadingSalaries ? (
+                  <div className="flex items-center gap-3 text-slate-700 justify-center py-8">
+                    <ClipLoader size={26} color="#a855f7" />
+                    <span>טוען משכורות…</span>
+                  </div>
+                ) : salaries.length > 0 ? (
+                  <>
+                    <div className="overflow-x-auto rounded-xl border-2 border-purple-200">
+                      <table className="min-w-full text-right">
+                        <thead className="bg-gradient-to-r from-purple-100 to-pink-100">
+                          <tr>
+                            <th className="px-4 py-3 text-xs font-bold text-purple-900 text-center">
+                              שם עובד
+                            </th>
+                            <th className="px-4 py-3 text-xs font-bold text-purple-900 text-center">
+                              מחלקה
+                            </th>
+                            <th className="px-4 py-3 text-xs font-bold text-purple-900 text-center">
+                              סכום ברוטו
+                            </th>
+                            <th className="px-4 py-3 text-xs font-bold text-purple-900 text-center">
+                              תקורה (%)
+                            </th>
+                            <th className="px-4 py-3 text-xs font-bold text-purple-900 text-center">
+                              סכום סופי
+                            </th>
+                            <th className="px-4 py-3 text-xs font-bold text-purple-900 text-center">
+                              תאריך
+                            </th>
+                          </tr>
+                        </thead>
+                        <tbody className="bg-white">
+                          {salaries.map((salary) => (
+                            <tr
+                              key={salary._id}
+                              onClick={() => navigate(`/salaries/${salary._id}`)}
+                              className="cursor-pointer border-t border-purple-100 hover:bg-purple-50/50 transition-colors"
+                            >
+                              <td className="px-4 py-3 text-sm font-bold text-center">
+                                {salary.employeeName}
+                              </td>
+                              <td className="px-4 py-3 text-sm text-center">
+                                {salary.department || "—"}
+                              </td>
+                              <td className="px-4 py-3 text-center">
+                                {formatCurrencyWithAlert(salary.baseAmount)}
+                              </td>
+                              <td className="px-4 py-3 text-sm text-center">
+                                {salary.overheadPercent}%
+                              </td>
+                              <td className="px-4 py-3 text-center">
+                                {formatCurrencyWithAlert(salary.finalAmount)}
+                              </td>
+                              <td className="px-4 py-3 text-sm text-center">
+                                {formatDate(salary.createdAt)}
+                              </td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+
+                    {/* כפתור ייצוא משכורות */}
+                    <div className="mt-4 flex justify-end">
+                      <button
+                        onClick={handleExportSalaries}
+                        className="flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-blue-600 to-purple-600 text-white font-bold rounded-xl hover:from-blue-700 hover:to-purple-700 transition-all shadow-xl shadow-blue-500/30"
+                      >
+                        <Download className="w-4 h-4" />
+                        <span>ייצוא סיכום משכורות</span>
+                      </button>
+                    </div>
+                  </>
+                ) : (
+                  <div className="text-center py-8 text-slate-600">
+                    <DollarSign className="w-12 h-12 mx-auto mb-3 opacity-50" />
+                    <p className="font-bold text-lg">לא נמצאו משכורות</p>
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
+        )}
 
         {/* Delete Confirmation Modal */}
         {confirmOpen && (

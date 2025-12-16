@@ -239,7 +239,7 @@ const CreateSalary = () => {
               <div>
                 <label className="flex items-center gap-2 text-sm font-bold text-slate-700 mb-2">
                   <DollarSign className="w-4 h-4 text-orange-600" />
-                  סכום משכורת בסיס *
+                  סכום ברוטו *
                 </label>
                 <input
                   type="number"

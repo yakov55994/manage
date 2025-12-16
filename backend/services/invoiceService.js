@@ -6,6 +6,7 @@ import Invoice from "../models/Invoice.js";
 import Project from "../models/Project.js";
 import Order from "../models/Order.js";
 import Supplier from "../models/Supplier.js";
+import Salary from "../models/Salary.js";
 
 // ===================================================
 // עוזר לחישוב סכומים
@@ -48,14 +49,23 @@ export const recalculateRemainingBudget = async (projectId) => {
     "projects.projectId": projectId,
   });
 
+  // 4️⃣ משכורות מהמודל Salary
+  const salaries = await Salary.find({ projectId });
+  const totalSalaries = salaries.reduce(
+    (sum, s) => sum + Number(s.finalAmount || 0),
+    0
+  );
+
   // ✅ כעת כל חשבונית נספרת פעם אחת בלבד:
   // - רגילות: נספרות רק אם אין fundedFromProjectId
   // - מילגה: נספרות רק בפרויקט שממנו הן ממומנות
   // - משכורות: נספרות בפרויקט שלהן
+  // - משכורות מודל Salary: נספרות בפרויקט שלהן
   const totalSpent =
     sumInvoices(regularInvoices) +
     sumInvoices(milgaInvoices) +
-    sumInvoices(salaryInvoices);
+    sumInvoices(salaryInvoices) +
+    totalSalaries;
 
   project.remainingBudget = project.budget - totalSpent;
   await project.save();
