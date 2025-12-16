@@ -145,6 +145,28 @@ const InvoicesPage = () => {
     }
   }, [loading, user, navigate]);
 
+  // 🔄 Restore filter state from sessionStorage when returning from invoice details
+  useEffect(() => {
+    const savedFilters = sessionStorage.getItem('invoiceFilters');
+    if (savedFilters) {
+      try {
+        const filters = JSON.parse(savedFilters);
+        if (filters.searchTerm !== undefined) setSearchTerm(filters.searchTerm);
+        if (filters.paymentFilter !== undefined) setPaymentFilter(filters.paymentFilter);
+        if (filters.statusFilter !== undefined) setStatusFilter(filters.statusFilter);
+        if (filters.documentStatusFilter !== undefined) setDocumentStatusFilter(filters.documentStatusFilter);
+        if (filters.advancedFilters !== undefined) setAdvancedFilters(filters.advancedFilters);
+        if (filters.sortBy !== undefined) setSortBy(filters.sortBy);
+        if (filters.sortOrder !== undefined) setSortOrder(filters.sortOrder);
+
+        // Clear the saved state after restoring
+        sessionStorage.removeItem('invoiceFilters');
+      } catch (error) {
+        console.error('Error restoring invoice filters:', error);
+      }
+    }
+  }, []);
+
   // בדיקות הרשאות
   const canEditInvoices =
     isAdmin || canEditModule(selectedProjectId, "invoices");
@@ -213,6 +235,7 @@ const InvoicesPage = () => {
     "חשבונית מס / קבלה",
     "חשבונית מס-קבלה",
     "חשבונית מס קבלה",
+    "אין צורך",  // 🆕 אין צורך גם נחשב כהושלם
   ]);
 
   const normalizeType = (t) =>
@@ -1457,6 +1480,17 @@ const InvoicesPage = () => {
   };
 
   const handleView = (id) => {
+    // 💾 Save current filter state before navigating
+    const filterState = {
+      searchTerm,
+      paymentFilter,
+      statusFilter,
+      documentStatusFilter,
+      advancedFilters,
+      sortBy,
+      sortOrder,
+    };
+    sessionStorage.setItem('invoiceFilters', JSON.stringify(filterState));
     navigate(`/invoices/${id}`);
   };
 

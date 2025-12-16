@@ -92,6 +92,7 @@ function FileUploader({
             onUploadSuccess(updatedFiles);
             setPendingFiles([]);
             setCurrentFileIndex(0);
+            setModalOpen(false); // 🔥 סגור את המודל אחרי הקובץ האחרון
 
             toast.success(`${updatedFiles.length} קבצים נבחרו (יועלו בעת השמירה)`, {
                 className: "sonner-toast success rtl"

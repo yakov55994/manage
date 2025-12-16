@@ -46,10 +46,7 @@ export default function DocumentTypeModal({ open, onClose, onSelect, fileName })
           {documentTypes.map((type) => (
             <button
               key={type}
-              onClick={() => {
-                onSelect(type);
-                onClose();
-              }}
+              onClick={() => onSelect(type)}
               className="w-full text-right px-4 py-3 rounded-lg bg-slate-50 hover:bg-slate-100 transition-colors font-medium text-slate-700 hover:text-slate-900"
             >
               {type}

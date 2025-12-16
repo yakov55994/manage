@@ -436,7 +436,6 @@ async function moveInvoice(user, invoiceId, fromProjectId, toProjectId) {
       projectId: toProjectId,
       projectName: newProject.name,
       sum: part.sum,
-      invitingName: part.invitingName || "",
     };
   }
 

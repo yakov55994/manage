@@ -3,70 +3,88 @@ import path from "path";
 import pdf from "html-pdf-node";
 
 export async function generateSalaryExportPDF({ salaries, projectName }) {
-  const templatePath = path.join(
-    process.cwd(),
-    "templates",
-    "salary-export.html"
-  );
-  const cssPath = path.join(
-    process.cwd(),
-    "templates",
-    "salary-export.css"
-  );
+  try {
+    console.log("📄 Starting salary PDF generation...");
+    console.log(`Project: ${projectName}, Salaries count: ${salaries.length}`);
 
-  let html = fs.readFileSync(templatePath, "utf8");
-  const css = fs.readFileSync(cssPath, "utf8");
+    const templatePath = path.join(
+      process.cwd(),
+      "templates",
+      "salary-export.html"
+    );
+    const cssPath = path.join(
+      process.cwd(),
+      "templates",
+      "salary-export.css"
+    );
 
-  // Inject CSS
-  html = html.replace("{{css}}", `<style>${css}</style>`);
+    console.log("📁 Reading templates...");
+    let html = fs.readFileSync(templatePath, "utf8");
+    const css = fs.readFileSync(cssPath, "utf8");
 
-  // Build rows
-  const rowsHTML = salaries
-    .map(
-      (s, i) => `
-      <tr>
-        <td>${i + 1}</td>
-        <td>${s.employeeName}</td>
-        <td>${s.department || "-"}</td>
-        <td>₪${Number(s.baseAmount || 0).toLocaleString("he-IL")}</td>
-        <td>${s.overheadPercent || 0}%</td>
-        <td>₪${Number(s.finalAmount || 0).toLocaleString("he-IL")}</td>
-        <td>${new Date(s.date).toLocaleDateString("he-IL")}</td>
-      </tr>
-    `
-    )
-    .join("");
+    // Inject CSS
+    html = html.replace("{{css}}", `<style>${css}</style>`);
 
-  const totalBase = salaries.reduce(
-    (sum, s) => sum + Number(s.baseAmount || 0),
-    0
-  );
-  const totalFinal = salaries.reduce(
-    (sum, s) => sum + Number(s.finalAmount || 0),
-    0
-  );
+    // Build rows
+    const rowsHTML = salaries
+      .map(
+        (s, i) => `
+        <tr>
+          <td>${i + 1}</td>
+          <td>${s.employeeName}</td>
+          <td>${s.department || "-"}</td>
+          <td>₪${Number(s.baseAmount || 0).toLocaleString("he-IL")}</td>
+          <td>${s.overheadPercent || 0}%</td>
+          <td>₪${Number(s.finalAmount || 0).toLocaleString("he-IL")}</td>
+          <td>${new Date(s.date).toLocaleDateString("he-IL")}</td>
+        </tr>
+      `
+      )
+      .join("");
 
-  html = html
-    .replace("{{rows}}", rowsHTML)
-    .replace("{{projectName}}", projectName)
-    .replace("{{generatedAt}}", new Date().toLocaleString("he-IL"))
-    .replace("{{count}}", salaries.length)
-    .replace("{{totalBase}}", totalBase.toLocaleString("he-IL"))
-    .replace("{{totalFinal}}", totalFinal.toLocaleString("he-IL"))
-    .replace("{{year}}", new Date().getFullYear());
+    const totalBase = salaries.reduce(
+      (sum, s) => sum + Number(s.baseAmount || 0),
+      0
+    );
+    const totalFinal = salaries.reduce(
+      (sum, s) => sum + Number(s.finalAmount || 0),
+      0
+    );
 
-  const file = { content: html };
+    html = html
+      .replace(/\{\{rows\}\}/g, rowsHTML)
+      .replace(/\{\{projectName\}\}/g, projectName)
+      .replace(/\{\{generatedAt\}\}/g, new Date().toLocaleString("he-IL"))
+      .replace(/\{\{count\}\}/g, salaries.length)
+      .replace(/\{\{totalBase\}\}/g, totalBase.toLocaleString("he-IL"))
+      .replace(/\{\{totalFinal\}\}/g, totalFinal.toLocaleString("he-IL"))
+      .replace(/\{\{year\}\}/g, new Date().getFullYear())
+      .replace(/\{\{css\}\}/g, ''); // Remove any remaining {{css}} placeholders
 
-  const pdfBuffer = await pdf.generatePdf(file, {
-    format: "A4",
-    printBackground: true,
-  });
+    console.log("🔄 Generating PDF from HTML...");
 
-  const tmpDir = path.join(process.cwd(), "tmp");
-  if (!fs.existsSync(tmpDir)) fs.mkdirSync(tmpDir);
+    // html-pdf-node doesn't use handlebars - we already replaced the variables
+    // So we need to pass the HTML as-is without using handlebars
+    const file = { content: html };
+    const options = {
+      format: "A4",
+      printBackground: true,
+      args: ['--no-sandbox', '--disable-setuid-sandbox']
+    };
 
-  const pdfPath = path.join(tmpDir, `salary-export-${Date.now()}.pdf`);
-  fs.writeFileSync(pdfPath, pdfBuffer);
+    const pdfBuffer = await pdf.generatePdf(file, options);
 
-  return pdfPath;
+    console.log("💾 Saving PDF to disk...");
+    const tmpDir = path.join(process.cwd(), "tmp");
+    if (!fs.existsSync(tmpDir)) fs.mkdirSync(tmpDir);
+
+    const pdfPath = path.join(tmpDir, `salary-export-${Date.now()}.pdf`);
+    fs.writeFileSync(pdfPath, pdfBuffer);
+
+    console.log(`✅ Salary PDF created successfully: ${pdfPath}`);
+    return pdfPath;
+  } catch (error) {
+    console.error("❌ Error in generateSalaryExportPDF:", error);
+    throw error;
+  }
 }

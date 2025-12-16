@@ -180,6 +180,7 @@ const ProjectDetailsPage = () => {
     "חשבונית מס / קבלה",
     "חשבונית מס-קבלה",
     "חשבונית מס קבלה",
+    "אין צורך",  // 🆕 אין צורך גם נחשב כהושלם
   ]);
 
   const normalizeType = (t) => {
@@ -830,12 +831,10 @@ const ProjectDetailsPage = () => {
                               )}
                             </td>
 
-                            {/* ✅ סכום הפרויקט מתוך המערך */}
+                            {/* ✅ סכום הפרויקט מתוך המערך - רק סכום הפרויקט הנוכחי! */}
                             <td className="px-4 py-3 text-center">
-                              {invoice?.totalAmount
-                                !== undefined ? (
-                                formatCurrencyWithAlert(invoice.totalAmount
-                                )
+                              {proj?.sum !== undefined ? (
+                                formatCurrencyWithAlert(proj.sum)
                               ) : (
                                 <span className="text-slate-400">—</span>
                               )}{" "}

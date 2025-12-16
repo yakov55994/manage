@@ -17,6 +17,7 @@ import {
   Download,
 } from "lucide-react";
 import { toast } from "sonner";
+import ProjectSelector from "../../Components/ProjectSelector";
 
 export default function View_Salaries() {
   const navigate = useNavigate();
@@ -74,16 +75,15 @@ export default function View_Salaries() {
       link.href = url;
 
       const project = projects.find(p => p._id === selectedProjectId);
-      link.setAttribute('download', `salary-export-${project?.name || 'project'}.pdf`);
-      document.body.appendChild(link);
+      link.download = `salary-export-${project?.name || 'project'}.pdf`;
       link.click();
-      link.remove();
+      window.URL.revokeObjectURL(url);
 
-      toast.success("הקובץ הורד בהצלחה", { className: "sonner-toast success rtl" });
+      toast.success("קובץ סיכום משכורות הורד בהצלחה!", { className: "sonner-toast success rtl" });
     } catch (err) {
       console.error("Export error:", err);
-      const errorMsg = err.response?.data?.error || "שגיאה בהורדת הסיכום";
-      toast.error(errorMsg, { className: "sonner-toast error rtl" });
+      const errorMsg = err.response?.data?.error || err.message || "שגיאה בהורדת הסיכום";
+      toast.error(`שגיאה ביצירת סיכום משכורות: ${errorMsg}`, { className: "sonner-toast error rtl" });
     } finally {
       setExportLoading(false);
     }
@@ -197,22 +197,14 @@ export default function View_Salaries() {
           <div className="relative bg-white/90 backdrop-blur-xl rounded-3xl shadow-xl shadow-emerald-500/10 p-6 border border-white/50">
             <div className="flex flex-col md:flex-row gap-4 items-end">
               <div className="flex-1">
-                <label className="flex items-center gap-2 text-sm font-bold text-slate-700 mb-2">
-                  <Building2 className="w-4 h-4 text-emerald-600" />
-                  בחר פרויקט לייצוא סיכום משכורות
-                </label>
-                <select
-                  value={selectedProjectId}
-                  onChange={(e) => setSelectedProjectId(e.target.value)}
-                  className="w-full px-4 py-3 border-2 border-emerald-200 rounded-xl focus:border-emerald-400 focus:outline-none transition-colors font-medium"
-                >
-                  <option value="">-- בחר פרויקט --</option>
-                  {projects.map((project) => (
-                    <option key={project._id} value={project._id}>
-                      {project.name}
-                    </option>
-                  ))}
-                </select>
+                <ProjectSelector
+                  projects={projects}
+                  selectedProjectId={selectedProjectId}
+                  onProjectChange={(projectId) => setSelectedProjectId(projectId)}
+                  multiSelect={false}
+                  label="בחר פרויקט לייצוא סיכום משכורות"
+                  placeholder="חפש פרויקט..."
+                />
               </div>
 
               <button

@@ -163,7 +163,9 @@ export async function deleteSalary(req, res) {
 // =======================================================
 export async function exportSalaries(req, res) {
   try {
+    console.log("🚀 Export salaries endpoint called");
     const { projectId } = req.query;
+    console.log("📌 Project ID:", projectId);
 
     if (!projectId) {
       return res.status(400).json({
@@ -174,13 +176,16 @@ export async function exportSalaries(req, res) {
 
     const project = await Project.findById(projectId);
     if (!project) {
+      console.log("❌ Project not found");
       return res.status(404).json({
         success: false,
         error: "Project not found",
       });
     }
+    console.log("✅ Project found:", project.name);
 
     const salaries = await Salary.find({ projectId }).sort({ date: -1 });
+    console.log("📊 Salaries found:", salaries.length);
 
     if (salaries.length === 0) {
       return res.status(404).json({
@@ -189,17 +194,21 @@ export async function exportSalaries(req, res) {
       });
     }
 
+    console.log("🎨 Starting PDF generation...");
     const pdfPath = await generateSalaryExportPDF({
       salaries,
       projectName: project.name,
     });
+    console.log("✅ PDF generated at:", pdfPath);
 
     res.download(pdfPath, `salary-export-${project.name}.pdf`, (err) => {
       if (err) console.error("PDF DOWNLOAD ERROR:", err);
       fs.unlinkSync(pdfPath);
+      console.log("🗑️ Temp PDF file deleted");
     });
   } catch (err) {
-    console.error("EXPORT SALARIES ERROR:", err);
+    console.error("❌ EXPORT SALARIES ERROR:", err);
+    console.error("Error stack:", err.stack);
     res.status(500).json({ success: false, error: err.message });
   }
 }
