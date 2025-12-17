@@ -2,7 +2,7 @@ import fs from "fs";
 import path from "path";
 import pdf from "html-pdf-node";
 
-export async function generateSalaryExportPDF({ salaries, projectName }) {
+export async function generateSalaryExportPDF({ salaries, projectName, isMultipleProjects = false }) {
   try {
     console.log("📄 Starting salary PDF generation...");
     console.log(`Project: ${projectName}, Salaries count: ${salaries.length}`);
@@ -25,13 +25,14 @@ export async function generateSalaryExportPDF({ salaries, projectName }) {
     // Inject CSS
     html = html.replace("{{css}}", `<style>${css}</style>`);
 
-    // Build rows
+    // Build rows - אם יש מספר פרויקטים, הוסף עמודת פרויקט
     const rowsHTML = salaries
       .map(
         (s, i) => `
         <tr>
           <td>${i + 1}</td>
           <td>${s.employeeName}</td>
+          ${isMultipleProjects ? `<td>${s.projectId?.name || "-"}</td>` : ''}
           <td>${s.department || "-"}</td>
           <td>₪${Number(s.baseAmount || 0).toLocaleString("he-IL")}</td>
           <td>${s.overheadPercent || 0}%</td>
@@ -50,6 +51,18 @@ export async function generateSalaryExportPDF({ salaries, projectName }) {
       (sum, s) => sum + Number(s.finalAmount || 0),
       0
     );
+
+    // עדכון כותרות הטבלה אם יש מספר פרויקטים
+    if (isMultipleProjects) {
+      html = html.replace(
+        '<th>מחלקה</th>',
+        '<th>פרויקט</th><th>מחלקה</th>'
+      );
+      html = html.replace(
+        'colspan="3"',
+        'colspan="4"'
+      );
+    }
 
     html = html
       .replace(/\{\{rows\}\}/g, rowsHTML)

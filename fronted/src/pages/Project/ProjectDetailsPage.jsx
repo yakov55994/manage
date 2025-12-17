@@ -355,7 +355,8 @@ const ProjectDetailsPage = () => {
 
   const handleExportSalaries = async () => {
     try {
-      const response = await api.get(`/salaries/export?projectId=${project._id}`, {
+      // ✅ השרת מצפה ל-projectIds (רבים) ולא projectId (יחיד)
+      const response = await api.get(`/salaries/export?projectIds=${project._id}`, {
         responseType: 'blob'
       });
 
@@ -368,7 +369,9 @@ const ProjectDetailsPage = () => {
 
       toast.success('קובץ סיכום משכורות ירד בהצלחה!');
     } catch (err) {
-      toast.error('שגיאה ביצירת סיכום משכורות: ' + err.message);
+      console.error('Export salaries error:', err);
+      const errorMsg = err.response?.data?.error || err.message || 'שגיאה לא ידועה';
+      toast.error('שגיאה ביצירת סיכום משכורות: ' + errorMsg);
     }
   };
 

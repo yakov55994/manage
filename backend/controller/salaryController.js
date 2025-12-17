@@ -164,44 +164,63 @@ export async function deleteSalary(req, res) {
 export async function exportSalaries(req, res) {
   try {
     console.log("🚀 Export salaries endpoint called");
-    const { projectId } = req.query;
-    console.log("📌 Project ID:", projectId);
+    const { projectIds } = req.query;
+    console.log("📌 Project IDs:", projectIds);
 
-    if (!projectId) {
+    if (!projectIds) {
       return res.status(400).json({
         success: false,
-        error: "projectId is required",
+        error: "projectIds is required",
       });
     }
 
-    const project = await Project.findById(projectId);
-    if (!project) {
-      console.log("❌ Project not found");
+    // המרת מחרוזת למערך
+    const idsArray = projectIds.split(',').map(id => id.trim());
+    console.log("📌 Project IDs array:", idsArray);
+
+    // מציאת כל הפרויקטים
+    const projects = await Project.find({ _id: { $in: idsArray } });
+    if (projects.length === 0) {
+      console.log("❌ No projects found");
       return res.status(404).json({
         success: false,
-        error: "Project not found",
+        error: "No projects found",
       });
     }
-    console.log("✅ Project found:", project.name);
+    console.log("✅ Projects found:", projects.length);
 
-    const salaries = await Salary.find({ projectId }).sort({ date: -1 });
-    console.log("📊 Salaries found:", salaries.length);
+    // מציאת כל המשכורות מהפרויקטים שנבחרו
+    const salaries = await Salary.find({ projectId: { $in: idsArray } })
+      .populate("projectId", "name")
+      .sort({ date: -1 });
+    console.log("📊 Total salaries found:", salaries.length);
 
-    if (salaries.length === 0) {
+    // סינון פרויקטים שיש להם משכורות בלבד
+    const projectsWithSalaries = projects.filter(project =>
+      salaries.some(salary => salary.projectId._id.toString() === project._id.toString())
+    );
+
+    if (salaries.length === 0 || projectsWithSalaries.length === 0) {
       return res.status(404).json({
         success: false,
-        error: "No salaries found for this project",
+        error: "No salaries found for the selected projects",
       });
     }
 
     console.log("🎨 Starting PDF generation...");
+    const projectNames = projectsWithSalaries.map(p => p.name).join(', ');
     const pdfPath = await generateSalaryExportPDF({
       salaries,
-      projectName: project.name,
+      projectName: projectNames,
+      isMultipleProjects: projectsWithSalaries.length > 1,
     });
     console.log("✅ PDF generated at:", pdfPath);
 
-    res.download(pdfPath, `salary-export-${project.name}.pdf`, (err) => {
+    const fileName = projectsWithSalaries.length === 1
+      ? `salary-export-${projectsWithSalaries[0].name}.pdf`
+      : `salary-export-multiple-projects.pdf`;
+
+    res.download(pdfPath, fileName, (err) => {
       if (err) console.error("PDF DOWNLOAD ERROR:", err);
       fs.unlinkSync(pdfPath);
       console.log("🗑️ Temp PDF file deleted");

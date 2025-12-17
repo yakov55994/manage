@@ -121,18 +121,11 @@ const InvoiceEditPage = () => {
       setSelectedProjects(selected);
 
       // -------- ROWS ----------
-      const builtRows = await Promise.all(
-        invoice.projects.map(async (p) => {
-          const hydratedFiles = await ensureFilesHydrated(p.files || []);
-
-          return {
-            projectId: p.projectId._id || p.projectId,
-            projectName: p.projectId.name,
-            sum: p.sum,
-            files: hydratedFiles,
-          };
-        })
-      );
+      const builtRows = invoice.projects.map((p) => ({
+        projectId: p.projectId._id || p.projectId,
+        projectName: p.projectName || p.projectId.name,
+        sum: p.sum,
+      }));
 
       setRows(builtRows);
     } catch (err) {
@@ -186,7 +179,6 @@ const InvoiceEditPage = () => {
           projectId: p._id,
           projectName: p.name,
           sum: "",
-          files: [],
         });
       } else {
         updated = updated.filter((r) => r.projectId !== p._id);
@@ -203,32 +195,6 @@ const InvoiceEditPage = () => {
     setGlobalFields({ ...globalFields, [field]: value });
   };
 
-  // ===============================================================
-  // DELETE FILE (מפרויקט ספציפי)
-  // ===============================================================
-  const deleteFile = async (rowIndex, fileIndex) => {
-    const file = rows[rowIndex].files[fileIndex];
-
-    // remove from UI
-    const clone = [...rows];
-    clone[rowIndex].files.splice(fileIndex, 1);
-    setRows(clone);
-
-    if (!file.publicId) return; // local only
-
-    try {
-      await api.delete("/upload/delete-cloudinary", {
-        data: {
-          publicId: file.publicId,
-          resourceType: file.resourceType || "raw",
-        },
-      });
-
-      toast.success("הקובץ נמחק");
-    } catch {
-      toast.error("שגיאה במחיקת קובץ");
-    }
-  };
 
   // ===============================================================
   // DELETE GLOBAL FILE (קובץ כללי של החשבונית)
@@ -236,25 +202,28 @@ const InvoiceEditPage = () => {
   const deleteGlobalFile = async (fileIndex) => {
     const file = globalFields.files[fileIndex];
 
-    // remove from UI
+    // אם הקובץ כבר מועלה ל-Cloudinary - מחק אותו משם
+    if (file.publicId) {
+      try {
+        await api.delete("/upload/delete-cloudinary", {
+          data: {
+            publicId: file.publicId,
+            resourceType: file.resourceType || "raw",
+          },
+        });
+      } catch (err) {
+        console.error("שגיאה במחיקת קובץ מ-Cloudinary:", err);
+        toast.error("שגיאה במחיקת קובץ מ-Cloudinary");
+        return; // אם נכשל - אל תמשיך
+      }
+    }
+
+    // הסר מהממשק והמצב
     const updatedFiles = [...globalFields.files];
     updatedFiles.splice(fileIndex, 1);
     setGlobalFields({ ...globalFields, files: updatedFiles });
 
-    if (!file.publicId) return; // local only
-
-    try {
-      await api.delete("/upload/delete-cloudinary", {
-        data: {
-          publicId: file.publicId,
-          resourceType: file.resourceType || "raw",
-        },
-      });
-
-      toast.success("הקובץ נמחק");
-    } catch {
-      toast.error("שגיאה במחיקת קובץ");
-    }
+    toast.success("הקובץ נמחק");
   };
 
   // ===============================================================
@@ -283,6 +252,7 @@ const InvoiceEditPage = () => {
 
     try {
       // העלאת קבצים כלליים של החשבונית
+      // רק קבצים שנשארו ב-globalFields.files יישלחו (אחרי מחיקות)
       const uploadedGlobalFiles = [];
       for (const file of globalFields.files) {
         if (file.isLocal && file.file) {
@@ -303,45 +273,24 @@ const InvoiceEditPage = () => {
             resourceType: res.data.file.resourceType,
           });
         } else {
-          uploadedGlobalFiles.push(file);
+          // קובץ קיים - שמור אותו כמו שהוא
+          uploadedGlobalFiles.push({
+            name: file.name,
+            url: file.url,
+            type: file.type,
+            size: file.size,
+            publicId: file.publicId,
+            resourceType: file.resourceType,
+          });
         }
       }
 
-      // העלאת קבצים של פרויקטים
-      const finalProjects = await Promise.all(
-        rows.map(async (r) => {
-          const uploadedFiles = [];
-
-          for (const file of r.files) {
-            if (file.isLocal && file.file) {
-              const form = new FormData();
-              form.append("file", file.file);
-              form.append("folder", "invoices");
-
-              const res = await api.post("/upload", form, {
-                headers: { "Content-Type": "multipart/form-data" },
-              });
-
-              uploadedFiles.push({
-                name: file.name,
-                url: res.data.file.url,
-                type: file.type,
-                size: file.size,
-                publicId: res.data.file.publicId,
-                resourceType: res.data.file.resourceType,
-              });
-            } else {
-              uploadedFiles.push(file);
-            }
-          }
-
-          return {
-            projectId: r.projectId,
-            sum: Number(r.sum),
-            files: uploadedFiles,
-          };
-        })
-      );
+      // בניית מערך פרויקטים ללא קבצים (כל הקבצים בשדה הכללי)
+      const finalProjects = rows.map((r) => ({
+        projectId: r.projectId,
+        projectName: r.projectName,
+        sum: Number(r.sum),
+      }));
 
       const payload = {
         ...globalFields,
@@ -450,17 +399,18 @@ const InvoiceEditPage = () => {
           />
 
           <div>
-            <label className="font-bold mb-1 block">סוג מסמך</label>
+            <label>סוג מסמך</label>
             <select
+              className="w-full p-3 border rounded-xl"
               value={globalFields.documentType}
               onChange={(e) => updateGlobal("documentType", e.target.value)}
-              className="w-full p-3 border rounded-xl"
             >
-              <option value="">בחר...</option>
+              <option value="">בחר…</option>
               <option value="ח. עסקה">ח. עסקה</option>
               <option value="ה. עבודה">ה. עבודה</option>
               <option value="ד. תשלום">ד. תשלום</option>
               <option value="חשבונית מס / קבלה">חשבונית מס / קבלה</option>
+              <option value="משכורות">משכורות</option>
               <option value="אין צורך">אין צורך</option>
             </select>
           </div>
@@ -565,12 +515,14 @@ const InvoiceEditPage = () => {
               folder="invoices"
               askForDocumentType={true}
               isExistingInvoice={true}
-              onUploadSuccess={(files) =>
+              onUploadSuccess={(files) => {
                 setGlobalFields((prev) => ({
                   ...prev,
                   files: [...prev.files, ...files],
-                }))
-              }
+                  // עדכן את סוג המסמך הראשי אם נבחר סוג מסמך בקובץ
+                  documentType: files[0]?.documentType || prev.documentType,
+                }));
+              }}
             />
 
             {globalFields.files?.length > 0 &&
@@ -617,32 +569,6 @@ const InvoiceEditPage = () => {
                 }}
                 className="w-full p-3 border rounded-xl mb-4"
               />
-
-              <FileUploader
-                folder="invoices"
-                askForDocumentType={true}
-                isExistingInvoice={true}
-                onUploadSuccess={(files) => {
-                  const copy = [...rows];
-                  copy[index].files.push(...files);
-                  setRows(copy);
-                }}
-              />
-
-              {row.files.map((file, i2) => (
-                <div
-                  key={i2}
-                  className="flex justify-between items-center mt-2 p-2 bg-white border rounded-xl"
-                >
-                  <span className="truncate">{file.name}</span>
-                  <button
-                    onClick={() => deleteFile(index, i2)}
-                    className="text-red-600"
-                  >
-                    הסר
-                  </button>
-                </div>
-              ))}
             </div>
           ))}
         </div>

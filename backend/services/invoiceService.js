@@ -136,10 +136,12 @@ async function getInvoices(user) {
     };
   }
 
-  return Invoice.find(query)
+  const invoices = await Invoice.find(query)
     .populate("supplierId")
-    .populate("projects.projectId", "name invitingName")
+    .populate("projects.projectId", "name")
     .populate("fundedFromProjectId", "name");
+
+  return invoices;
 }
 
 // ===============================================
@@ -344,30 +346,38 @@ async function updateInvoice(user, invoiceId, data) {
     ...basic
   } = data;
 
-  // מיזוג קבצים - הוסף רק קבצים חדשים שאין להם URL זהה
-  const mergedFiles = [
-    ...invoice.files,
-    ...newFiles.filter(
-      (f) => !invoice.files.some((old) => old.url === f.url)
-    ),
-  ];
+  // ✅ השתמש ברשימת הקבצים שהתקבלה במקום למזג
+  // אם הלקוח שלח רשימת קבצים, זו הרשימה המעודכנת (אחרי מחיקות)
+  const finalFiles = newFiles;
+
+  // וודא שכל פרויקט יש לו projectName מעודכן
+  const projectsWithNames = await Promise.all(
+    newProjects.map(async (p) => {
+      const project = await Project.findById(p.projectId).select("name");
+      return {
+        projectId: p.projectId,
+        projectName: project?.name || p.projectName,
+        sum: p.sum,
+      };
+    })
+  );
 
   const updated = await Invoice.findByIdAndUpdate(
     invoiceId,
     {
       ...basic,
-      projects: newProjects,
-      totalAmount: newProjects.reduce(
+      projects: projectsWithNames,
+      totalAmount: projectsWithNames.reduce(
         (sum, p) => sum + Number(p.sum),
         0
       ),
-      files: mergedFiles,
+      files: finalFiles,
       fundedFromProjectId: fundedFromProjectId || null,
     },
     { new: true }
   );
 
-  const newProjectIds = newProjects.map((p) =>
+  const newProjectIds = projectsWithNames.map((p) =>
     p.projectId.toString()
   );
 
@@ -380,7 +390,7 @@ async function updateInvoice(user, invoiceId, data) {
     }
   }
 
-  for (const p of newProjects) {
+  for (const p of projectsWithNames) {
     await Project.findByIdAndUpdate(p.projectId, {
       $addToSet: { invoices: invoiceId },
     });
@@ -398,8 +408,12 @@ async function updateInvoice(user, invoiceId, data) {
 // MOVE INVOICE
 // ===============================================
 async function moveInvoice(user, invoiceId, fromProjectId, toProjectId) {
+  console.log("🔄 Move Invoice Request:", { invoiceId, fromProjectId, toProjectId });
+
   const invoice = await Invoice.findById(invoiceId);
   if (!invoice) throw new Error("חשבונית לא נמצאה");
+
+  console.log("📄 Invoice projects:", invoice.projects);
 
   if (invoice.type === "salary")
     throw new Error("אי אפשר להעביר חשבונית משכורות");
@@ -407,16 +421,31 @@ async function moveInvoice(user, invoiceId, fromProjectId, toProjectId) {
   fromProjectId = String(fromProjectId);
   toProjectId = String(toProjectId);
 
+  if (fromProjectId === toProjectId) {
+    throw new Error("הפרויקט המקור והיעד זהים");
+  }
+
   // מצא את החלק של הפרויקט המקורי
   const partIndex = invoice.projects.findIndex((p) => {
     const pid = p?.projectId?._id || p?.projectId;
+    console.log(`Comparing: ${String(pid)} === ${fromProjectId} ?`, String(pid) === fromProjectId);
     return String(pid) === fromProjectId;
   });
 
-  if (partIndex === -1)
-    throw new Error("החשבונית לא משויכת לפרויקט המקורי");
+  console.log("📍 Part index found:", partIndex);
+
+  if (partIndex === -1) {
+    console.error("❌ Project not found in invoice. Available projects:",
+      invoice.projects.map(p => ({
+        id: String(p?.projectId?._id || p?.projectId),
+        name: p.projectName
+      }))
+    );
+    throw new Error(`החשבונית לא משויכת לפרויקט המקור`);
+  }
 
   const part = invoice.projects[partIndex];
+  console.log("✅ Found part to move:", part);
 
   // בדיקת הרשאות
   if (user.role !== "admin") {

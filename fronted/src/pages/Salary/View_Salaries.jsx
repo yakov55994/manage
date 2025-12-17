@@ -27,7 +27,7 @@ export default function View_Salaries() {
   const [sortBy, setSortBy] = useState("date"); // date, employeeName, finalAmount
   const [sortOrder, setSortOrder] = useState("desc"); // asc, desc
   const [projects, setProjects] = useState([]);
-  const [selectedProjectId, setSelectedProjectId] = useState("");
+  const [selectedProjectIds, setSelectedProjectIds] = useState([]);
   const [exportLoading, setExportLoading] = useState(false);
   const [deleteModal, setDeleteModal] = useState({ open: false, salaryId: null, salaryName: "" });
 
@@ -60,14 +60,15 @@ export default function View_Salaries() {
   };
 
   const handleExportSalaries = async () => {
-    if (!selectedProjectId) {
-      toast.error("יש לבחור פרויקט", { className: "sonner-toast error rtl" });
+    if (!selectedProjectIds || selectedProjectIds.length === 0) {
+      toast.error("יש לבחור לפחות פרויקט אחד", { className: "sonner-toast error rtl" });
       return;
     }
 
     try {
       setExportLoading(true);
-      const response = await api.get(`/salaries/export?projectId=${selectedProjectId}`, {
+      const projectIdsParam = selectedProjectIds.join(',');
+      const response = await api.get(`/salaries/export?projectIds=${projectIdsParam}`, {
         responseType: 'blob'
       });
 
@@ -75,8 +76,11 @@ export default function View_Salaries() {
       const link = document.createElement('a');
       link.href = url;
 
-      const project = projects.find(p => p._id === selectedProjectId);
-      link.download = `salary-export-${project?.name || 'project'}.pdf`;
+      const fileName = selectedProjectIds.length === 1
+        ? `salary-export-${projects.find(p => p._id === selectedProjectIds[0])?.name || 'project'}.pdf`
+        : `salary-export-multiple-projects.pdf`;
+
+      link.download = fileName;
       link.click();
       window.URL.revokeObjectURL(url);
 
@@ -226,22 +230,26 @@ export default function View_Salaries() {
               <div>
                 <ProjectSelector
                   projects={projects}
-                  selectedProjectId={selectedProjectId}
-                  onProjectChange={(projectId) => setSelectedProjectId(projectId)}
-                  multiSelect={false}
-                  label="בחר פרויקט לייצוא סיכום משכורות"
-                  placeholder="חפש פרויקט..."
+                  selectedProjects={selectedProjectIds.map(id => projects.find(p => p._id === id)).filter(Boolean)}
+                  onProjectsChange={(selectedProjects) => {
+                    const ids = selectedProjects.map(p => p._id);
+                    setSelectedProjectIds(ids);
+                  }}
+                  multiSelect={true}
+                  label="בחר פרויקטים לייצוא סיכום משכורות"
+                  placeholder="חפש פרויקטים..."
+                  showSelectAll={true}
                 />
               </div>
 
               <div className="flex justify-center">
                 <button
                   onClick={handleExportSalaries}
-                  disabled={exportLoading || !selectedProjectId}
+                  disabled={exportLoading || selectedProjectIds.length === 0}
                   className="flex items-center gap-2 px-8 py-3 bg-gradient-to-r from-emerald-600 to-teal-600 text-white font-bold rounded-xl hover:from-emerald-700 hover:to-teal-700 transition-all shadow-lg disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   <Download className="w-5 h-5" />
-                  {exportLoading ? "מוריד..." : "הורד סיכום PDF"}
+                  {exportLoading ? "מוריד..." : `הורד סיכום PDF${selectedProjectIds.length > 0 ? ` (${selectedProjectIds.length} פרויקטים)` : ''}`}
                 </button>
               </div>
             </div>

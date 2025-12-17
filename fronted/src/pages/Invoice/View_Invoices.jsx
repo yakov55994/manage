@@ -148,19 +148,24 @@ const InvoicesPage = () => {
   // 🔄 Restore filter state from sessionStorage when returning from invoice details
   useEffect(() => {
     const savedFilters = sessionStorage.getItem('invoiceFilters');
+    console.log('🔍 Checking for saved filters:', savedFilters);
     if (savedFilters) {
       try {
         const filters = JSON.parse(savedFilters);
-        if (filters.searchTerm !== undefined) setSearchTerm(filters.searchTerm);
-        if (filters.paymentFilter !== undefined) setPaymentFilter(filters.paymentFilter);
-        if (filters.statusFilter !== undefined) setStatusFilter(filters.statusFilter);
-        if (filters.documentStatusFilter !== undefined) setDocumentStatusFilter(filters.documentStatusFilter);
-        if (filters.advancedFilters !== undefined) setAdvancedFilters(filters.advancedFilters);
-        if (filters.sortBy !== undefined) setSortBy(filters.sortBy);
-        if (filters.sortOrder !== undefined) setSortOrder(filters.sortOrder);
+        // רק אם באנו מרשימת החשבוניות (יש לנו את הסימן)
+        if (filters._fromInvoiceList) {
+          console.log('✅ Restoring filters from invoice list:', filters);
+          if (filters.searchTerm !== undefined) setSearchTerm(filters.searchTerm);
+          if (filters.paymentFilter !== undefined) setPaymentFilter(filters.paymentFilter);
+          if (filters.statusFilter !== undefined) setStatusFilter(filters.statusFilter);
+          if (filters.documentStatusFilter !== undefined) setDocumentStatusFilter(filters.documentStatusFilter);
+          if (filters.advancedFilters !== undefined) setAdvancedFilters(filters.advancedFilters);
+          if (filters.sortBy !== undefined) setSortBy(filters.sortBy);
+          if (filters.sortOrder !== undefined) setSortOrder(filters.sortOrder);
 
-        // Clear the saved state after restoring
-        sessionStorage.removeItem('invoiceFilters');
+          // מחק את הסינון השמור אחרי השחזור - ככה אם מרעננים את הדף זה לא יישמר
+          sessionStorage.removeItem('invoiceFilters');
+        }
       } catch (error) {
         console.error('Error restoring invoice filters:', error);
       }
@@ -533,6 +538,8 @@ const InvoicesPage = () => {
     setSearchTerm("");
     setInvoices(allInvoices);
     setDocumentStatusFilter("all");
+    // מחק את הסינון השמור
+    sessionStorage.removeItem('invoiceFilters');
   };
 
   const clearAdvancedFilters = () => {
@@ -552,6 +559,8 @@ const InvoicesPage = () => {
       submissionStatus: "all",
       documentStatus: "all",
     });
+    // מחק את הסינון השמור
+    sessionStorage.removeItem('invoiceFilters');
   };
 
   useEffect(() => {
@@ -567,11 +576,7 @@ const InvoicesPage = () => {
     return () => window.removeEventListener("keydown", onKeyDown);
   }, [showReportModal]);
 
-  const sortedInvoices = [
-    ...(searchTerm || documentStatusFilter !== "all"
-      ? filteredInvoices
-      : invoices),
-  ].sort((a, b) => {
+  const sortedInvoices = [...filteredInvoices].sort((a, b) => {
     if (sortBy === "totalAmount") {
       return sortOrder === "asc"
         ? a.totalAmount - b.totalAmount
@@ -1390,7 +1395,7 @@ const InvoicesPage = () => {
         }
 
         setAllInvoices(filteredData);
-        setInvoices(filteredData);
+        // לא מגדירים setInvoices כאן - getFilteredInvoices() יסנן אוטומטית
       } catch (error) {
         console.error("Error fetching invoices:", error);
         toast.error("שגיאה בטעינת הנתונים. נסה שנית מאוחר יותר.", {
@@ -1514,7 +1519,9 @@ const InvoicesPage = () => {
       advancedFilters,
       sortBy,
       sortOrder,
+      _fromInvoiceList: true, // 🔥 סימן שבאנו מרשימת החשבוניות
     };
+    console.log('💾 Saving filter state before navigation:', filterState);
     sessionStorage.setItem('invoiceFilters', JSON.stringify(filterState));
     navigate(`/invoices/${id}`);
   };
@@ -1630,11 +1637,14 @@ const InvoicesPage = () => {
     let filtered = [...allInvoices];
 
     if (selectedProjectForPrint) {
-      filtered = filtered.filter(
-        (inv) =>
-          inv.projectId === selectedProjectForPrint ||
-          inv.project?._id === selectedProjectForPrint
-      );
+      filtered = filtered.filter((inv) => {
+        // בדוק אם הפרויקט קיים במערך הפרויקטים של החשבונית
+        return inv.projects?.some(
+          (p) =>
+            p.projectId === selectedProjectForPrint ||
+            p.projectId?._id === selectedProjectForPrint
+        );
+      });
     }
 
     if (selectedSupplierForPrint) {
@@ -1659,11 +1669,11 @@ const InvoicesPage = () => {
       });
     }
 
-    // רק חשבוניות לא משולמות
-    const unpaidInvoices = filtered.filter((inv) => inv.paid !== "כן");
+    // 🔥 השתמש בכל החשבוניות (לא רק שלא שולמו)
+    const invoicesToExport = filtered;
 
-    if (unpaidInvoices.length === 0) {
-      toast.error("לא נמצאו חשבוניות שטרם שולמו", {
+    if (invoicesToExport.length === 0) {
+      toast.error("לא נמצאו חשבוניות לייצוא", {
         className: "sonner-toast error rtl",
       });
       return;
@@ -1672,7 +1682,7 @@ const InvoicesPage = () => {
     // קיבוץ לפי ספק
     const groupedBySupplier = {};
 
-    unpaidInvoices.forEach((invoice) => {
+    invoicesToExport.forEach((invoice) => {
       const supplier =
         invoice.supplierId && typeof invoice.supplierId === "object"
           ? invoice.supplierId
@@ -1739,7 +1749,7 @@ const InvoicesPage = () => {
     const wbout = XLSX.write(workbook, { bookType: "xlsx", type: "array" });
     saveAs(new Blob([wbout], { type: "application/octet-stream" }), fileName);
 
-    toast.success(`יוצא קובץ עם ${excelData.length} ספקים לתשלום`, {
+    toast.success(`יוצא קובץ עם ${excelData.length} ספקים`, {
       className: "sonner-toast success rtl",
     });
 
@@ -1881,11 +1891,14 @@ const InvoicesPage = () => {
     let filtered = [...allInvoices];
 
     if (selectedProjectForPrint) {
-      filtered = filtered.filter(
-        (inv) =>
-          inv.projectId === selectedProjectForPrint ||
-          inv.project?._id === selectedProjectForPrint
-      );
+      filtered = filtered.filter((inv) => {
+        // בדוק אם הפרויקט קיים במערך הפרויקטים של החשבונית
+        return inv.projects?.some(
+          (p) =>
+            p.projectId === selectedProjectForPrint ||
+            p.projectId?._id === selectedProjectForPrint
+        );
+      });
     }
 
     if (selectedSupplierForPrint) {
@@ -1910,16 +1923,17 @@ const InvoicesPage = () => {
       });
     }
 
-    const unpaidInvoices = filtered.filter((inv) => inv.paid !== "כן");
+    // 🔥 השתמש בכל החשבוניות (לא רק שלא שולמו)
+    const invoicesToExport = filtered;
 
-    if (unpaidInvoices.length === 0) {
-      toast.error("לא נמצאו חשבוניות שטרם שולמו", {
+    if (invoicesToExport.length === 0) {
+      toast.error("לא נמצאו חשבוניות לייצוא", {
         className: "sonner-toast error rtl",
       });
       return;
     }
 
-    const excelData = unpaidInvoices.map((invoice) => {
+    const excelData = invoicesToExport.map((invoice) => {
       const supplier =
         invoice.supplierId && typeof invoice.supplierId === "object"
           ? invoice.supplierId
@@ -1966,7 +1980,7 @@ const InvoicesPage = () => {
     const wbout = XLSX.write(workbook, { bookType: "xlsx", type: "array" });
     saveAs(new Blob([wbout], { type: "application/octet-stream" }), fileName);
 
-    toast.success(`יוצא קובץ עם ${excelData.length} חשבוניות לתשלום`, {
+    toast.success(`יוצא קובץ עם ${excelData.length} חשבוניות`, {
       className: "sonner-toast success rtl",
     });
 
