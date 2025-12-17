@@ -87,8 +87,36 @@ export default function View_Salaries() {
       toast.success("קובץ סיכום משכורות הורד בהצלחה!", { className: "sonner-toast success rtl" });
     } catch (err) {
       console.error("Export error:", err);
-      const errorMsg = err.response?.data?.error || err.message || "שגיאה בהורדת הסיכום";
-      toast.error(`שגיאה ביצירת סיכום משכורות: ${errorMsg}`, { className: "sonner-toast error rtl" });
+
+      // טיפול מיוחד ב-404 - אין משכורות לפרויקט
+      if (err.response?.status === 404) {
+        // ניסיון לקרוא את הודעת השגיאה מה-blob
+        let errorMessage = "לא נמצאו משכורות לפרויקט/ים שנבחרו";
+
+        if (err.response?.data instanceof Blob) {
+          try {
+            const text = await err.response.data.text();
+            const errorData = JSON.parse(text);
+            if (errorData.error) {
+              errorMessage = errorData.error === "No salaries found for the selected projects"
+                ? "לא נמצאו משכורות לפרויקט/ים שנבחרו"
+                : errorData.error;
+            }
+          } catch (e) {
+            // אם לא הצלחנו לקרוא, נשאר עם ההודעה ברירת המחדל
+          }
+        }
+
+        toast.error(errorMessage, {
+          className: "sonner-toast error rtl"
+        });
+      } else {
+        // שגיאות אחרות
+        const errorMsg = err.response?.data?.error || err.message || "שגיאה בהורדת הסיכום";
+        toast.error(`שגיאה ביצירת סיכום משכורות: ${errorMsg}`, {
+          className: "sonner-toast error rtl"
+        });
+      }
     } finally {
       setExportLoading(false);
     }
@@ -246,7 +274,7 @@ export default function View_Salaries() {
                 <button
                   onClick={handleExportSalaries}
                   disabled={exportLoading || selectedProjectIds.length === 0}
-                  className="flex items-center gap-2 px-8 py-3 bg-gradient-to-r from-emerald-600 to-teal-600 text-white font-bold rounded-xl hover:from-emerald-700 hover:to-teal-700 transition-all shadow-lg disabled:opacity-50 disabled:cursor-not-allowed"
+                className="flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-orange-500 to-amber-500 text-white font-bold rounded-full hover:from-orange-600 hover:to-amber-600 transition-all shadow-lg whitespace-nowrap"
                 >
                   <Download className="w-5 h-5" />
                   {exportLoading ? "מוריד..." : `הורד סיכום PDF${selectedProjectIds.length > 0 ? ` (${selectedProjectIds.length} פרויקטים)` : ''}`}

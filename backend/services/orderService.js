@@ -1,5 +1,6 @@
 import Order from "../models/Order.js";
 import Project from "../models/Project.js";
+import { recalculateRemainingBudget } from "./invoiceService.js";
 
 
 // ======================================================
@@ -13,6 +14,9 @@ async function recalcProjectBudget(projectId) {
   await Project.findByIdAndUpdate(projectId, {
     budget: total
   });
+
+  // 🔥 חשב מחדש את התקציב הנותר (budget - חשבוניות)
+  await recalculateRemainingBudget(projectId);
 
   return total;
 }
@@ -106,9 +110,6 @@ export default {
     const sum = Number(data.sum);
     if (isNaN(sum)) throw new Error("סכום ההזמנה אינו תקין");
 
-    project.budget = sum;
-    await project.save();
-
     const orderData = {
       ...data,
       createdBy: user._id,
@@ -122,6 +123,9 @@ export default {
       { $push: { orders: order._id } }
     );
 
+    // 🔥 חשב מחדש את התקציב מכל ההזמנות
+    await recalcProjectBudget(data.projectId);
+
     return order;
   },
 
@@ -131,6 +135,7 @@ export default {
   // ======================================================
   async createBulkOrders(user, orders) {
     const created = [];
+    const projectsToRecalc = new Set();
 
     for (const data of orders) {
       const project = await Project.findById(data.projectId);
@@ -140,9 +145,6 @@ export default {
       if (isNaN(sum) || sum <= 0) {
         throw new Error("סכום ההזמנה אינו תקין");
       }
-
-      project.budget = sum;
-      await project.save();
 
       const order = await Order.create({
         ...data,
@@ -155,7 +157,13 @@ export default {
         { $push: { orders: order._id } }
       );
 
+      projectsToRecalc.add(String(data.projectId));
       created.push(order);
+    }
+
+    // 🔥 חשב מחדש תקציב לכל הפרויקטים שנגעו בהם
+    for (const projectId of projectsToRecalc) {
+      await recalcProjectBudget(projectId);
     }
 
     return created;

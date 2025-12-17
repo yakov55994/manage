@@ -35,37 +35,45 @@ export const recalculateRemainingBudget = async (projectId) => {
   const regularInvoices = await Invoice.find({
     "projects.projectId": projectId,
     type: { $ne: "salary" },
-    fundedFromProjectId: { $exists: false }, // לא חשבוניות מילגה
+    $or: [
+      { fundedFromProjectId: { $exists: false } },
+      { fundedFromProjectId: null }
+    ]
   });
 
-  // 2️⃣ חשבוניות מילגה שממומנות מהפרויקט הזה
+  // חשב את הסכום שהפרויקט משלם בחשבוניות רגילות (לפי sum בכל פרויקט)
+  let regularTotal = 0;
+  for (const inv of regularInvoices) {
+    const projectPart = inv.projects.find(
+      (p) => String(p.projectId) === String(projectId)
+    );
+    if (projectPart) {
+      regularTotal += Number(projectPart.sum || 0);
+    }
+  }
+
+  // 2️⃣ חשבוניות מילגה שממומנות מהפרויקט הזה (כאן לוקחים totalAmount כי זה הסכום המלא)
   const milgaInvoices = await Invoice.find({
     fundedFromProjectId: projectId,
   });
+  const milgaTotal = sumInvoices(milgaInvoices);
 
-  // 3️⃣ חשבוניות משכורות (type = salary)
+  // 3️⃣ חשבוניות משכורות (type = salary) שממומנות מהפרויקט הזה
   const salaryInvoices = await Invoice.find({
     type: "salary",
-    "projects.projectId": projectId,
+    fundedFromProjectId: projectId,
   });
+  const salaryInvoicesTotal = sumInvoices(salaryInvoices);
 
-  // 4️⃣ משכורות מהמודל Salary
+  // 4️⃣ משכורות מהמודל Salary הישן
   const salaries = await Salary.find({ projectId });
   const totalSalaries = salaries.reduce(
     (sum, s) => sum + Number(s.finalAmount || 0),
     0
   );
 
-  // ✅ כעת כל חשבונית נספרת פעם אחת בלבד:
-  // - רגילות: נספרות רק אם אין fundedFromProjectId
-  // - מילגה: נספרות רק בפרויקט שממנו הן ממומנות
-  // - משכורות: נספרות בפרויקט שלהן
-  // - משכורות מודל Salary: נספרות בפרויקט שלהן
-  const totalSpent =
-    sumInvoices(regularInvoices) +
-    sumInvoices(milgaInvoices) +
-    sumInvoices(salaryInvoices) +
-    totalSalaries;
+  // ✅ סכום כולל: רק מה שהפרויקט באמת משלם
+  const totalSpent = regularTotal + milgaTotal + salaryInvoicesTotal + totalSalaries;
 
   project.remainingBudget = project.budget - totalSpent;
   await project.save();

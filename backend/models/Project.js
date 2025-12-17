@@ -34,18 +34,30 @@ const projectSchema = new mongoose.Schema({
 
 });
 
-// Cascade delete invoices + orders when project is deleted
+// Cascade delete invoices + orders + salaries when project is deleted
 projectSchema.pre('deleteOne', { document: true, query: false }, async function (next) {
   try {
     const { default: Invoice } = await import("./Invoice.js");
     const { default: Order } = await import("./Order.js");
+    const { default: Salary } = await import("./Salary.js");
 
-
-    // ✅ מחק חשבוניות אחת אחת כדי להפעיל middleware
-    const invoices = await Invoice.find({ projectId: this._id });
+    // ✅ מחק חשבוניות רגילות שמשויכות לפרויקט
+    const invoices = await Invoice.find({
+      'projects.projectId': this._id
+    });
 
     for (const invoice of invoices) {
       await invoice.deleteOne(); // ✅ זה יפעיל את ה-middleware!
+    }
+
+    // ✅ מחק חשבוניות משכורות שממומנות מהפרויקט
+    const salaryInvoices = await Invoice.find({
+      type: 'salary',
+      fundedFromProjectId: this._id
+    });
+
+    for (const invoice of salaryInvoices) {
+      await invoice.deleteOne();
     }
 
     // ✅ מחק הזמנות אחת אחת כדי להפעיל middleware
@@ -55,10 +67,17 @@ projectSchema.pre('deleteOne', { document: true, query: false }, async function 
       await order.deleteOne(); // ✅ זה יפעיל את ה-middleware!
     }
 
+    // ✅ מחק משכורות מהמודל הישן
+    const salaries = await Salary.find({ projectId: this._id });
+
+    for (const salary of salaries) {
+      await salary.deleteOne();
+    }
+
     next();
   } catch (err) {
     console.error('❌ שגיאה במחיקת פרויקט:', err);
-    next(err); ``
+    next(err);
   }
 });
 
