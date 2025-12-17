@@ -83,9 +83,7 @@ async function deleteFilesFromCloudinary(filesArray) {
 }
 
 const run = async () => {
-  console.log(cyan("\n📡 מתחבר ל-MongoDB..."));
   await mongoose.connect(process.env.MONGO_URL);
-  console.log(green("✔ מחובר\n"));
 
   // ############################################################
   //                     חשבוניות

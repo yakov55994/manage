@@ -6,7 +6,8 @@
       "Bash(node scripts/fixInvoiceProjectNames.js:*)",
       "Bash(node -e \"\nimport(''mongoose'').then(async (mongoose) => {\n  await mongoose.default.connect(''mongodb+srv://yakov1020:Yakov7470893@management-app.qrrmy.mongodb.net/?retryWrites=true&w=majority&appName=Management-App'');\n  const Invoice = (await import(''./models/Invoice.js'')).default;\n  const invoice = await Invoice.findOne({ invoiceNumber: ''128'' }).select(''invoiceNumber projects'');\n  console.log(JSON.stringify(invoice, null, 2));\n  process.exit(0);\n});\n\")",
       "Bash(node -e \"\nimport(''mongoose'').then(async (mongoose) => {\n  await mongoose.default.connect(''mongodb+srv://yakov1020:Yakov7470893@management-app.qrrmy.mongodb.net/?retryWrites=true&w=majority&appName=Management-App'');\n  const Invoice = (await import(''./models/Invoice.js'')).default;\n  const invoice = await Invoice.findOne({}).select(''invoiceNumber projects'').limit(1);\n  console.log(''Invoice:'', JSON.stringify(invoice, null, 2));\n  process.exit(0);\n});\n\")",
-      "Bash(grep:*)"
+      "Bash(grep:*)",
+      "Bash(npm run:*)"
     ]
   }
 }

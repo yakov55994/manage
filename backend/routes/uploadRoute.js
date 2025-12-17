@@ -193,6 +193,12 @@ router.post("/download-zip", async (req, res) => {
       return res.status(400).json({ error: "לא התקבלו קבצים ליצירת ZIP" });
     }
 
+    // 🔍 לוג לבדיקה - האם הקבצים מגיעים ממוינים?
+    console.log("📦 ZIP Request - Supplier order:");
+    files.forEach((f, i) => {
+      console.log(`  ${i + 1}. ${f.supplierName} (חשבונית ${f.invoiceNumber})`);
+    });
+
     const zip = new JSZip();
 
     for (const file of files) {

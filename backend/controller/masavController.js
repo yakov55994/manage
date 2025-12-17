@@ -6,6 +6,32 @@ import path from "path";
 import { generateMasavPDF } from "../services/masavPdfService.js";
 import { generateMasavFile, validatePayments } from "../services/masavService.js";
 import fs from "fs";
+
+// ===============================================
+// פונקציית עזר לסידור עברי (א'-ב')
+// ===============================================
+function hebrewSort(strA, strB) {
+  const a = (strA || "").trim();
+  const b = (strB || "").trim();
+
+  const minLen = Math.min(a.length, b.length);
+  for (let i = 0; i < minLen; i++) {
+    const codeA = a.charCodeAt(i);
+    const codeB = b.charCodeAt(i);
+
+    const isHebrewA = codeA >= 0x05D0 && codeA <= 0x05EA;
+    const isHebrewB = codeB >= 0x05D0 && codeB <= 0x05EA;
+
+    if (isHebrewA && isHebrewB) {
+      if (codeA !== codeB) return codeA - codeB;
+    } else if (isHebrewA) return -1;
+    else if (isHebrewB) return 1;
+    else if (codeA !== codeB) return codeA - codeB;
+  }
+
+  return a.length - b.length;
+}
+
 export default {
 async generateMasav(req, res) {
   let pdfPath = null;
@@ -14,10 +40,15 @@ async generateMasav(req, res) {
   try {
     const { payments, companyInfo, executionDate } = req.body;
 
-    const txt = generateMasavFile(companyInfo, payments, executionDate);
+    // ✅ סידור התשלומים לפי שם ספק בסדר א'-ב'
+    const sortedPayments = [...payments].sort((a, b) =>
+      hebrewSort(a.supplierName || "", b.supplierName || "")
+    );
+
+    const txt = generateMasavFile(companyInfo, sortedPayments, executionDate);
 
     pdfPath = await generateMasavPDF({
-      payments,
+      payments: sortedPayments,
       companyInfo,
       executionDate
     });

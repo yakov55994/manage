@@ -838,7 +838,10 @@ const ProjectsPage = ({ initialProjects = [] }) => {
 
   const formatNumber = (num) => num?.toLocaleString("he-IL");
   const formatDate = (dateTime) => {
-    return new Date(dateTime).toLocaleDateString("he-IL", {
+    if (!dateTime) return "";
+    const date = new Date(dateTime);
+    if (isNaN(date.getTime())) return "";
+    return date.toLocaleDateString("he-IL", {
       year: "numeric",
       month: "2-digit",
       day: "2-digit",
