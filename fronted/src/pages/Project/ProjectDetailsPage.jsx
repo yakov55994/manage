@@ -617,20 +617,20 @@ const ProjectDetailsPage = () => {
           <>
             {/* Orders Section */}
             <div className="relative mb-6">
-              <div className="absolute -inset-2 bg-gradient-to-r from-blue-500 via-indigo-500 to-purple-500 rounded-3xl opacity-10 blur-xl"></div>
+              <div className="absolute -inset-2 bg-gradient-to-r from-orange-500 via-amber-500 to-yellow-500 rounded-3xl opacity-10 blur-xl"></div>
 
-              <div className="relative bg-white/90 backdrop-blur-xl rounded-3xl shadow-xl shadow-blue-500/10 border border-white/50 overflow-hidden">
-                <div className="bg-gradient-to-r from-blue-500 via-indigo-500 to-purple-500 p-1">
+              <div className="relative bg-white/90 backdrop-blur-xl rounded-3xl shadow-xl shadow-orange-500/10 border border-white/50 overflow-hidden">
+                <div className="bg-gradient-to-r from-orange-500 via-amber-500 to-yellow-500 p-1">
                   <div className="bg-white/95 backdrop-blur-xl p-4">
                     <div className="flex items-center gap-3">
-                      <div className="p-2 rounded-xl bg-gradient-to-br from-blue-100 to-indigo-100">
-                        <ShoppingCart className="w-5 h-5 text-blue-600" />
+                      <div className="p-2 rounded-xl bg-gradient-to-br from-orange-100 to-amber-100">
+                        <ShoppingCart className="w-5 h-5 text-orange-600" />
                       </div>
                       <h2 className="text-2xl font-bold text-slate-900">
                         הזמנות של הפרויקט
                       </h2>
                       {canViewOrders() && (
-                        <span className="mr-auto px-3 py-1 rounded-full bg-blue-100 text-blue-700 text-sm font-bold">
+                        <span className="mr-auto px-3 py-1 rounded-full bg-orange-100 text-orange-700 text-sm font-bold">
                           {filteredOrders?.length}
                         </span>
                       )}
@@ -656,20 +656,20 @@ const ProjectDetailsPage = () => {
                       <span>טוען הזמנות…</span>
                     </div>
                   ) : filteredOrders.length > 0 ? (
-                    <div className="overflow-x-auto rounded-xl border-2 border-blue-200">
+                    <div className="overflow-x-auto rounded-xl border-2 border-orange-200">
                       <table className="min-w-full text-right">
-                        <thead className="bg-gradient-to-r from-blue-100 to-indigo-100">
+                        <thead className="bg-gradient-to-r from-orange-100 to-amber-100">
                           <tr>
-                            <th className="px-4 py-3 text-xs font-bold text-blue-900">
+                            <th className="px-4 py-3 text-xs font-bold text-orange-900">
                               מספר הזמנה
                             </th>
-                            <th className="px-4 py-3 text-xs font-bold text-blue-900">
+                            <th className="px-4 py-3 text-xs font-bold text-orange-900">
                               פרויקט
                             </th>
-                            <th className="px-4 py-3 text-xs font-bold text-blue-900">
+                            <th className="px-4 py-3 text-xs font-bold text-orange-900">
                               סכום
                             </th>
-                            <th className="px-4 py-3 text-xs font-bold text-blue-900">
+                            <th className="px-4 py-3 text-xs font-bold text-orange-900">
                               סטטוס
                             </th>
                           </tr>
@@ -679,7 +679,7 @@ const ProjectDetailsPage = () => {
                             <tr
                               key={order._id}
                               onClick={() => moveToOrderDetails(order)}
-                              className="cursor-pointer border-t border-blue-100 hover:bg-blue-50/50 transition-colors"
+                              className="cursor-pointer border-t border-orange-100 hover:bg-orange-50/50 transition-colors"
                             >
                               <td className="px-4 py-3 text-sm font-bold">
                                 {order.orderNumber}
@@ -713,20 +713,20 @@ const ProjectDetailsPage = () => {
 
         {/* Invoices Section */}
         <div className="relative">
-          <div className="absolute -inset-2 bg-gradient-to-r from-emerald-500 via-teal-500 to-cyan-500 rounded-3xl opacity-10 blur-xl"></div>
+          <div className="absolute -inset-2 bg-gradient-to-r from-orange-500 via-amber-500 to-yellow-500 rounded-3xl opacity-10 blur-xl"></div>
 
-          <div className="relative bg-white/90 backdrop-blur-xl rounded-3xl shadow-xl shadow-emerald-500/10 border border-white/50 overflow-hidden">
-            <div className="bg-gradient-to-r from-emerald-500 via-teal-500 to-cyan-500 p-1">
+          <div className="relative bg-white/90 backdrop-blur-xl rounded-3xl shadow-xl shadow-orange-500/10 border border-white/50 overflow-hidden">
+            <div className="bg-gradient-to-r from-orange-500 via-amber-500 to-yellow-500 p-1">
               <div className="bg-white/95 backdrop-blur-xl p-4">
                 <div className="flex items-center gap-3">
-                  <div className="p-2 rounded-xl bg-gradient-to-br from-emerald-100 to-teal-100">
-                    <Receipt className="w-5 h-5 text-emerald-600" />
+                  <div className="p-2 rounded-xl bg-gradient-to-br from-orange-100 to-amber-100">
+                    <Receipt className="w-5 h-5 text-orange-600" />
                   </div>
                   <h2 className="text-2xl font-bold text-slate-900">
                     חשבוניות של הפרויקט
                   </h2>
                   {canViewInvoices() && (
-                    <span className="mr-auto px-3 py-1 rounded-full bg-emerald-100 text-emerald-700 text-sm font-bold">
+                    <span className="mr-auto px-3 py-1 rounded-full bg-orange-100 text-orange-700 text-sm font-bold">
                       {filteredInvoices.length}
                     </span>
                   )}
@@ -752,35 +752,36 @@ const ProjectDetailsPage = () => {
                   <ClipLoader size={26} color="#10b981" />
                   <span>טוען חשבוניות…</span>
                 </div>
-              ) : filteredInvoices.length > 0 ? (
-                <div className="overflow-x-auto rounded-xl border-2 border-emerald-200">
+
+) : filteredInvoices.length > 0 ? (
+                <div className="overflow-x-auto rounded-xl border-2 border-orange-200">
                   <table className="min-w-full text-right">
-                    <thead className="bg-gradient-to-r from-emerald-100 to-teal-100">
+                    <thead className="bg-gradient-to-r from-orange-100 to-amber-100">
                       <tr>
-                        <th className="px-4 py-3 text-xs font-bold text-emerald-900 text-center">
+                        <th className="px-4 py-3 text-xs font-bold text-orange-900 text-center">
                           מספר חשבונית
                         </th>
-                        <th className="px-4 py-3 text-xs font-bold text-emerald-900 text-center">
+                        <th className="px-4 py-3 text-xs font-bold text-orange-900 text-center">
                           סוג
                         </th>
-                        <th className="px-4 py-3 text-xs font-bold text-emerald-900 text-center">
+                        <th className="px-4 py-3 text-xs font-bold text-orange-900 text-center">
                           פרויקט
                         </th>
-                        <th className="px-4 py-3 text-xs font-bold text-emerald-900 text-center">
+                        <th className="px-4 py-3 text-xs font-bold text-orange-900 text-center">
                           סכום
                         </th>
-                        <th className="px-12 py-3 text-xs font-bold text-emerald-900 text-center">
+                        <th className="px-12 py-3 text-xs font-bold text-orange-900 text-center">
                           סטטוס
                         </th>
                         {hasNonSalaryInvoices && (
-                          <th className="px-12 py-3 text-xs font-bold text-emerald-900 text-center">
+                          <th className="px-12 py-3 text-xs font-bold text-orange-900 text-center">
                             שם הספק
                           </th>
                         )}
-                        <th className="px-12 py-3 text-xs font-bold text-emerald-900 text-center">
+                        <th className="px-12 py-3 text-xs font-bold text-orange-900 text-center">
                           מצב תשלום
                         </th>
-                        <th className="px-12 py-3 text-xs font-bold text-emerald-900 text-center">
+                        <th className="px-12 py-3 text-xs font-bold text-orange-900 text-center">
                           חוסר מסמך
                         </th>
                       </tr>
@@ -910,20 +911,20 @@ const ProjectDetailsPage = () => {
         {/* Salaries Section - רק אם יש משכורות */}
         {salaries.length > 0 && (
           <div className="relative mt-6">
-            <div className="absolute -inset-2 bg-gradient-to-r from-purple-500 via-pink-500 to-rose-500 rounded-3xl opacity-10 blur-xl"></div>
+            <div className="absolute -inset-2 bg-gradient-to-r from-orange-500 via-amber-500 to-yellow-500 rounded-3xl opacity-10 blur-xl"></div>
 
-            <div className="relative bg-white/90 backdrop-blur-xl rounded-3xl shadow-xl shadow-purple-500/10 border border-white/50 overflow-hidden">
-              <div className="bg-gradient-to-r from-purple-500 via-pink-500 to-rose-500 p-1">
+            <div className="relative bg-white/90 backdrop-blur-xl rounded-3xl shadow-xl shadow-orange-500/10 border border-white/50 overflow-hidden">
+              <div className="bg-gradient-to-r from-orange-500 via-amber-500 to-yellow-500 p-1">
                 <div className="bg-white/95 backdrop-blur-xl p-4">
                   <div className="flex items-center gap-3">
-                    <div className="p-2 rounded-xl bg-gradient-to-br from-purple-100 to-pink-100">
-                      <DollarSign className="w-5 h-5 text-purple-600" />
+                    <div className="p-2 rounded-xl bg-gradient-to-br from-orange-100 to-amber-100">
+                      <DollarSign className="w-5 h-5 text-orange-600" />
                     </div>
                     <h2 className="text-2xl font-bold text-slate-900">
                       משכורות של הפרויקט
                     </h2>
                     {canViewInvoices() && (
-                      <span className="mr-auto px-3 py-1 rounded-full bg-purple-100 text-purple-700 text-sm font-bold">
+                      <span className="mr-auto px-3 py-1 rounded-full bg-orange-100 text-orange-700 text-sm font-bold">
                         {salaries.length}
                       </span>
                     )}
@@ -934,31 +935,31 @@ const ProjectDetailsPage = () => {
               <div className="p-6">
                 {loadingSalaries ? (
                   <div className="flex items-center gap-3 text-slate-700 justify-center py-8">
-                    <ClipLoader size={26} color="#a855f7" />
+                    <ClipLoader size={26} color="#f97316" />
                     <span>טוען משכורות…</span>
                   </div>
                 ) : salaries.length > 0 ? (
                   <>
-                    <div className="overflow-x-auto rounded-xl border-2 border-purple-200">
+                    <div className="overflow-x-auto rounded-xl border-2 border-orange-200">
                       <table className="min-w-full text-right">
-                        <thead className="bg-gradient-to-r from-purple-100 to-pink-100">
+                        <thead className="bg-gradient-to-r from-orange-100 to-amber-100">
                           <tr>
-                            <th className="px-4 py-3 text-xs font-bold text-purple-900 text-center">
+                            <th className="px-4 py-3 text-xs font-bold text-orange-900 text-center">
                               שם עובד
                             </th>
-                            <th className="px-4 py-3 text-xs font-bold text-purple-900 text-center">
+                            <th className="px-4 py-3 text-xs font-bold text-orange-900 text-center">
                               מחלקה
                             </th>
-                            <th className="px-4 py-3 text-xs font-bold text-purple-900 text-center">
+                            <th className="px-4 py-3 text-xs font-bold text-orange-900 text-center">
                               סכום ברוטו
                             </th>
-                            <th className="px-4 py-3 text-xs font-bold text-purple-900 text-center">
+                            <th className="px-4 py-3 text-xs font-bold text-orange-900 text-center">
                               תקורה (%)
                             </th>
-                            <th className="px-4 py-3 text-xs font-bold text-purple-900 text-center">
+                            <th className="px-4 py-3 text-xs font-bold text-orange-900 text-center">
                               סכום סופי
                             </th>
-                            <th className="px-4 py-3 text-xs font-bold text-purple-900 text-center">
+                            <th className="px-4 py-3 text-xs font-bold text-orange-900 text-center">
                               תאריך
                             </th>
                           </tr>
@@ -968,7 +969,7 @@ const ProjectDetailsPage = () => {
                             <tr
                               key={salary._id}
                               onClick={() => navigate(`/salaries/${salary._id}`)}
-                              className="cursor-pointer border-t border-purple-100 hover:bg-purple-50/50 transition-colors"
+                              className="cursor-pointer border-t border-orange-100 hover:bg-orange-50/50 transition-colors"
                             >
                               <td className="px-4 py-3 text-sm font-bold text-center">
                                 {salary.employeeName}
@@ -986,7 +987,7 @@ const ProjectDetailsPage = () => {
                                 {formatCurrencyWithAlert(salary.finalAmount)}
                               </td>
                               <td className="px-4 py-3 text-sm text-center">
-                                {formatDate(salary.createdAt)}
+                                {formatDate(salary.date)}
                               </td>
                             </tr>
                           ))}
@@ -998,7 +999,7 @@ const ProjectDetailsPage = () => {
                     <div className="mt-4 flex justify-end">
                       <button
                         onClick={handleExportSalaries}
-                        className="flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-blue-600 to-purple-600 text-white font-bold rounded-xl hover:from-blue-700 hover:to-purple-700 transition-all shadow-xl shadow-blue-500/30"
+                className="flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-orange-500 to-amber-500 text-white font-bold rounded-full hover:from-orange-600 hover:to-amber-600 transition-all shadow-lg whitespace-nowrap"
                       >
                         <Download className="w-4 h-4" />
                         <span>ייצוא סיכום משכורות</span>
