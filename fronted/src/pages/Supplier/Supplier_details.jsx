@@ -87,6 +87,7 @@ const SupplierDetailsPage = () => {
     "חשבונית מס / קבלה", // עם רווחים – נתמוך גם בזה
     "חשבונית מס-קבלה",
     "חשבונית מס קבלה",
+    "אין צורך",  // 🆕 אין צורך גם נחשב כהושלם
   ]);
 
   const normalizeType = (t) =>
@@ -101,7 +102,10 @@ const SupplierDetailsPage = () => {
     const okI = INTERIM_TYPES.has(t);
 
     const status = okF ? "הושלם" : "חסר";
-    const label = okF ? "חשבונית מס/קבלה" : okI ? t : "";
+    // ✅ אם זה "אין צורך" - תציג "אין צורך", אחרת "חשבונית מס/קבלה"
+    const label = okF
+      ? (t === "אין צורך" ? "אין צורך" : "חשבונית מס/קבלה")
+      : okI ? t : "";
     const color = okF
       ? "bg-emerald-100 text-emerald-700 border-emerald-200"
       : "bg-amber-100 text-amber-700 border-amber-200";

@@ -40,8 +40,40 @@ async generateMasav(req, res) {
   try {
     const { payments, companyInfo, executionDate } = req.body;
 
+    // ✅ איחוד ספקים - כל ספק עם כמה חשבוניות יופיע פעם אחת
+    const supplierMap = new Map();
+
+    payments.forEach((payment) => {
+      const key = payment.internalId; // מזהה ייחודי לספק
+
+      if (supplierMap.has(key)) {
+        const existing = supplierMap.get(key);
+        // צבירת סכומים
+        existing.amount += payment.amount;
+        // איחוד מספרי חשבוניות
+        if (payment.invoiceNumbers) {
+          existing.invoiceNumbers = existing.invoiceNumbers
+            ? `${existing.invoiceNumbers}, ${payment.invoiceNumbers}`
+            : payment.invoiceNumbers;
+        }
+        // איחוד שמות פרויקטים
+        if (payment.projectNames) {
+          const existingProjects = new Set(existing.projectNames?.split(", ") || []);
+          const newProjects = payment.projectNames.split(", ");
+          newProjects.forEach(p => existingProjects.add(p));
+          existing.projectNames = Array.from(existingProjects).join(", ");
+        }
+      } else {
+        // ספק חדש - העתק את כל הפרטים
+        supplierMap.set(key, { ...payment });
+      }
+    });
+
+    // המרה למערך
+    const consolidatedPayments = Array.from(supplierMap.values());
+
     // ✅ סידור התשלומים לפי שם ספק בסדר א'-ב'
-    const sortedPayments = [...payments].sort((a, b) =>
+    const sortedPayments = consolidatedPayments.sort((a, b) =>
       hebrewSort(a.supplierName || "", b.supplierName || "")
     );
 

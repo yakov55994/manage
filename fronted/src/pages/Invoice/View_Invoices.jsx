@@ -308,7 +308,10 @@ const InvoicesPage = () => {
     const okI = INTERIM_TYPES.has(t);
 
     const status = okF ? "הושלם" : "חסר";
-    const label = okF ? "חשבונית מס/קבלה" : okI ? t : "—";
+    // ✅ אם זה "אין צורך" - תציג "אין צורך", אחרת "חשבונית מס/קבלה"
+    const label = okF
+      ? (t === "אין צורך" ? "אין צורך" : "חשבונית מס/קבלה")
+      : okI ? t : "—";
     const color = okF
       ? "bg-emerald-100 text-emerald-700 border-emerald-200"
       : "bg-amber-100 text-amber-700 border-amber-200";
@@ -1374,17 +1377,18 @@ const InvoicesPage = () => {
 
   const downloadAttachedFiles = async () => {
     try {
-      let filtered = invoices;
+      // ✅ התחל מכל החשבוניות, לא מהמסוננות
+      let filtered = allInvoices;
 
       if (selectedProjectForPrint) {
-        filtered = filtered.filter(
-          (inv) => inv.project?._id === selectedProjectForPrint
+        filtered = filtered.filter((inv) =>
+          inv.projects?.some((p) => String(p.projectId) === String(selectedProjectForPrint))
         );
       }
 
       if (selectedSupplierForPrint) {
         filtered = filtered.filter(
-          (inv) => inv.supplierId?._id === selectedSupplierForPrint
+          (inv) => String(inv.supplierId?._id) === String(selectedSupplierForPrint)
         );
       }
 
@@ -1404,14 +1408,18 @@ const InvoicesPage = () => {
       if (fromPaymentDatePrint) {
         filtered = filtered.filter((inv) => {
           if (!inv.paymentDate) return false;
-          return new Date(inv.paymentDate) >= new Date(fromPaymentDatePrint);
+          const paymentDate = new Date(inv.paymentDate);
+          const fromDate = new Date(fromPaymentDatePrint);
+          return paymentDate >= fromDate;
         });
       }
 
       if (toPaymentDatePrint) {
         filtered = filtered.filter((inv) => {
           if (!inv.paymentDate) return false;
-          return new Date(inv.paymentDate) <= new Date(toPaymentDatePrint);
+          const paymentDate = new Date(inv.paymentDate);
+          const toDate = new Date(toPaymentDatePrint);
+          return paymentDate <= toDate;
         });
       }
 

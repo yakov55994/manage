@@ -125,6 +125,10 @@ export default function MasavModal({ open, onClose, invoices }) {
       // ⬅ המרת סכום לאגורות (תמיד כופל ב-100)
       // inv.totalAmount הוא תמיד בשקלים, לכן צריך להמיר לאגורות
       const amount = Math.round(Number(inv.totalAmount) * 100);
+
+      // ✅ שמות הפרויקטים מהחשבונית
+      const projectNames = inv.projects?.map(p => p.projectName).join(", ") || "";
+
       return {
         bankNumber: String(bankCodeMap[bd.bankName] || "")
           .replace(/\D/g, "")         // מסיר כל תו לא ספרתי
@@ -135,6 +139,8 @@ export default function MasavModal({ open, onClose, invoices }) {
         amount,
         supplierName: s.name,
         internalId: String(s.business_tax || "0").padStart(9, "0"),
+        invoiceNumbers: inv.invoiceNumber || "",  // ✅ מספר חשבונית
+        projectNames,  // ✅ שמות פרויקטים
       };
     });
 

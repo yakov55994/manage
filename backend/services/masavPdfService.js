@@ -281,6 +281,7 @@ export async function generateMasavPDF({ payments, companyInfo, executionDate })
           <td>${p.accountNumber}</td>
           <td>${(p.amount / 100).toLocaleString("he-IL")}</td>
           <td>${p.invoiceNumbers || "-"}</td>
+          <td>${p.projectNames || "-"}</td>
         </tr>`
     )
     .join("");

@@ -415,8 +415,8 @@ async function updateInvoice(user, invoiceId, data) {
 // ===============================================
 // MOVE INVOICE
 // ===============================================
-async function moveInvoice(user, invoiceId, fromProjectId, toProjectId) {
-  console.log("🔄 Move Invoice Request:", { invoiceId, fromProjectId, toProjectId });
+async function moveInvoice(user, invoiceId, fromProjectId, toProjectId, fundedFromProjectId) {
+  console.log("🔄 Move Invoice Request:", { invoiceId, fromProjectId, toProjectId, fundedFromProjectId });
 
   const invoice = await Invoice.findById(invoiceId);
   if (!invoice) throw new Error("חשבונית לא נמצאה");
@@ -431,6 +431,20 @@ async function moveInvoice(user, invoiceId, fromProjectId, toProjectId) {
 
   if (fromProjectId === toProjectId) {
     throw new Error("הפרויקט המקור והיעד זהים");
+  }
+
+  // בדוק אם הפרויקט היעד הוא מילגה והאם סופק fundedFromProjectId
+  const targetProject = await Project.findById(toProjectId);
+  if (targetProject?.isMilga && !fundedFromProjectId) {
+    throw new Error("פרויקט מילגה דורש בחירת פרויקט ממומן");
+  }
+
+  // אם סופק fundedFromProjectId, עדכן את החשבונית
+  if (fundedFromProjectId) {
+    invoice.fundedFromProjectId = fundedFromProjectId;
+  } else if (!targetProject?.isMilga) {
+    // אם מעבירים לפרויקט רגיל (לא מילגה), נקה את fundedFromProjectId
+    invoice.fundedFromProjectId = null;
   }
 
   // מצא את החלק של הפרויקט המקורי

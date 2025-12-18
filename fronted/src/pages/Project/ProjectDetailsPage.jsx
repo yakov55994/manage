@@ -226,8 +226,10 @@ const ProjectDetailsPage = () => {
 
     const status = hasFinal ? "הושלם" : "חסר";
 
+    // ✅ אם יש "אין צורך" בין הסוגים - תציג "אין צורך", אחרת "חשבונית מס/קבלה"
+    const hasNoNeed = types.includes("אין צורך");
     const label = hasFinal
-      ? "חשבונית מס/קבלה"
+      ? (hasNoNeed ? "אין צורך" : "חשבונית מס/קבלה")
       : types.find((t) => INTERIM_ALIASES.has(t)) || "";
 
     const color = hasFinal
