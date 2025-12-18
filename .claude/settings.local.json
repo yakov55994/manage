@@ -10,7 +10,8 @@
       "Bash(npm run:*)",
       "Bash(node scripts/recalculateAllBudgets.js:*)",
       "Bash(node -e:*)",
-      "Bash(node scripts/debugBudget.js:*)"
+      "Bash(node scripts/debugBudget.js:*)",
+      "Bash(npm start)"
     ]
   }
 }

@@ -67,10 +67,11 @@ export default function View_Salaries() {
 
     try {
       setExportLoading(true);
-      const projectIdsParam = selectedProjectIds.join(',');
-      const response = await api.get(`/salaries/export?projectIds=${projectIdsParam}`, {
-        responseType: 'blob'
-      });
+      // ✅ שימוש ב-POST במקום GET כדי למנוע חסימה של antivirus
+      const response = await api.post('/salaries/export',
+        { projectIds: selectedProjectIds },
+        { responseType: 'blob' }
+      );
 
       const url = window.URL.createObjectURL(new Blob([response.data]));
       const link = document.createElement('a');

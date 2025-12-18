@@ -164,8 +164,10 @@ export async function deleteSalary(req, res) {
 export async function exportSalaries(req, res) {
   try {
     console.log("🚀 Export salaries endpoint called");
-    const { projectIds } = req.query;
-    console.log("📌 Project IDs:", projectIds);
+
+    // ✅ תמיכה גם ב-GET וגם ב-POST
+    let projectIds = req.body.projectIds || req.query.projectIds;
+    console.log("📌 Project IDs (raw):", projectIds);
 
     if (!projectIds) {
       return res.status(400).json({
@@ -174,8 +176,10 @@ export async function exportSalaries(req, res) {
       });
     }
 
-    // המרת מחרוזת למערך
-    const idsArray = projectIds.split(',').map(id => id.trim());
+    // המרת מחרוזת למערך (אם מגיע כמחרוזת מ-GET) או שימוש ישיר (אם מגיע כמערך מ-POST)
+    const idsArray = Array.isArray(projectIds)
+      ? projectIds
+      : projectIds.split(',').map(id => id.trim());
     console.log("📌 Project IDs array:", idsArray);
 
     // מציאת כל הפרויקטים
