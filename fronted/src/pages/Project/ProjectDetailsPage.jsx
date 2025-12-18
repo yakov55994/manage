@@ -854,8 +854,9 @@ const ProjectDetailsPage = () => {
 
                             {/* ✅ סכום הפרויקט מתוך המערך - רק סכום הפרויקט הנוכחי! */}
                             <td className="px-4 py-3 text-center">
-                              {proj?.sum !== undefined ? (
-                                formatCurrencyWithAlert(proj.sum)
+                              {console.log(proj)}
+                              {invoice?.totalAmount !== undefined ? (
+                                formatCurrencyWithAlert(invoice.totalAmount)
                               ) : (
                                 <span className="text-slate-400">—</span>
                               )}{" "}
