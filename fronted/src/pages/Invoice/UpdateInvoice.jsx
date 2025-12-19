@@ -12,6 +12,7 @@ import FileUploader from "../../Components/FileUploader";
 import SupplierSelector from "../../Components/SupplierSelector.jsx";
 import ProjectSelector from "../../Components/ProjectSelector.jsx";
 import DateField from "../../Components/DateField.jsx";
+import FundingProjectModal from "../../Components/FundingProjectModal.jsx";
 import { useAuth } from "../../context/AuthContext.jsx";
 
 import { ClipboardList, Building2 } from "lucide-react";
@@ -26,6 +27,11 @@ const InvoiceEditPage = () => {
   const [rows, setRows] = useState([]);
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
+
+  // ✅ מצב עבור מודל בחירת פרויקט ממומן
+  const [showFundingModal, setShowFundingModal] = useState(false);
+  const [pendingMilgaProject, setPendingMilgaProject] = useState(null);
+  const [fundingProjectsMap, setFundingProjectsMap] = useState({}); // { milgaProjectId: fundingProjectId }
 
   const [globalFields, setGlobalFields] = useState({
     invoiceNumber: "",
@@ -154,38 +160,77 @@ const InvoiceEditPage = () => {
   };
 
   // ===============================================================
-  // SELECT / UNSELECT PROJECTS
+  // SELECT / UNSELECT PROJECTS (עם תמיכה במילגה)
   // ===============================================================
-  const toggleProject = (p) => {
-    const exists = selectedProjects.some((x) => x._id === p._id);
+  const handleProjectsChange = (updatedProjects) => {
+    // מצא פרויקטים חדשים שנוספו
+    const newProjects = updatedProjects.filter(
+      (p) => !selectedProjects.some((x) => x._id === p._id)
+    );
 
-    let next;
+    // בדוק אם יש פרויקט מילגה חדש שנבחר
+    const newMilgaProject = newProjects.find(
+      (p) => p.isMilga || p.type === "milga"
+    );
 
-    if (exists) {
-      next = selectedProjects.filter((x) => x._id !== p._id);
-    } else {
-      next = [...selectedProjects, p];
+    if (newMilgaProject && !fundingProjectsMap[newMilgaProject._id]) {
+      // פרויקט מילגה חדש - הצג מודל לבחירת פרויקט ממומן
+      setPendingMilgaProject(newMilgaProject);
+      setShowFundingModal(true);
+      return; // אל תעדכן את הבחירה עדיין
     }
 
-    setSelectedProjects(next);
+    // עדכן את הפרויקטים הנבחרים
+    setSelectedProjects(updatedProjects);
 
-    // UPDATE rows accordingly
+    // עדכן את השורות
     setRows((prev) => {
-      let updated = [...prev];
+      // הסר שורות של פרויקטים שבוטלו
+      let updated = prev.filter((r) =>
+        updatedProjects.some((p) => (p._id || p) === r.projectId)
+      );
 
-      // add missing row
-      if (!exists) {
-        updated.push({
-          projectId: p._id,
-          projectName: p.name,
-          sum: "",
-        });
-      } else {
-        updated = updated.filter((r) => r.projectId !== p._id);
-      }
+      // הוסף שורות חדשות לפרויקטים שנוספו
+      updatedProjects.forEach((p) => {
+        if (!updated.find((r) => r.projectId === (p._id || p))) {
+          updated.push({
+            projectId: p._id || p,
+            projectName: p.name,
+            sum: "",
+          });
+        }
+      });
 
       return updated;
     });
+  };
+
+  // טיפול בבחירת פרויקט ממומן
+  const handleFundingProjectSelect = (fundingProject) => {
+    if (!pendingMilgaProject) return;
+
+    // שמור את המיפוי בין פרויקט מילגה לפרויקט ממומן
+    setFundingProjectsMap((prev) => ({
+      ...prev,
+      [pendingMilgaProject._id]: fundingProject._id,
+    }));
+
+    // עכשיו הוסף את פרויקט המילגה לבחירה
+    const updatedProjects = [...selectedProjects, pendingMilgaProject];
+    setSelectedProjects(updatedProjects);
+
+    // הוסף שורה
+    setRows((prev) => [
+      ...prev,
+      {
+        projectId: pendingMilgaProject._id,
+        projectName: pendingMilgaProject.name,
+        sum: "",
+      },
+    ]);
+
+    // נקה את המצב הזמני
+    setPendingMilgaProject(null);
   };
 
   // ===============================================================
@@ -307,6 +352,7 @@ const InvoiceEditPage = () => {
             ? globalFields.checkDate
             : null, // ✅ הוסף
         projects: finalProjects,
+        fundingProjectsMap, // ✅ מיפוי פרויקטי מילגה לפרויקטים ממומנים
       };
 
       await api.put(`/invoices/${id}`, payload);
@@ -366,13 +412,25 @@ const InvoiceEditPage = () => {
           <ProjectSelector
             projects={projects}
             selectedProjects={selectedProjects}
-            onProjectsChange={(updated) => setSelectedProjects(updated)}
+            onProjectsChange={handleProjectsChange}
             multiSelect={true}
             label="שיוך חשבונית לפרויקטים"
             placeholder="חפש פרויקט..."
             showSelectAll={true}
           />
         </div>
+
+        {/* FUNDING PROJECT MODAL */}
+        <FundingProjectModal
+          open={showFundingModal}
+          onClose={() => {
+            setShowFundingModal(false);
+            setPendingMilgaProject(null);
+          }}
+          projects={projects}
+          onSelect={handleFundingProjectSelect}
+          milgaProjectName={pendingMilgaProject?.name || ""}
+        />
 
         {/* GLOBAL FIELDS */}
         <div className="bg-white rounded-3xl shadow-xl p-6 mb-10 grid grid-cols-1 md:grid-cols-2 gap-6">

@@ -22,9 +22,11 @@ export default function MoveInvoiceModal({
       try {
         // הביא רק שדות הכרחיים (שמור כמו שה־API שלך תומך)
         const { data } = await api.get("/projects");
-        setProjects(
-          Array.isArray(data.data) ? data.data : data?.projects || []
-        );
+        const projectsList = Array.isArray(data.data) ? data.data : data?.projects || [];
+        console.log("📌 Projects loaded:", projectsList.length);
+        console.log("📌 Projects with isMilga:", projectsList.filter(p => p.isMilga).map(p => p.name));
+        console.log("📌 Projects WITHOUT isMilga:", projectsList.filter(p => !p.isMilga).length);
+        setProjects(projectsList);
       } catch (err) {
         console.error(err);
         toast.error("שגיאה בטעינת פרויקטים", {
@@ -35,8 +37,12 @@ export default function MoveInvoiceModal({
   }, [open]);
 
   useEffect(() => {
-    // איפוס בחירה בעת פתיחה חדשה
-    if (open) setSelectedProjectId("");
+    // איפוס בחירה בעת פתיחה חדשה (אבל לא כשסוגרים ופותחים שוב)
+    if (open) {
+      setSelectedProjectId("");
+      setFundingProjectId("");
+      setShowFundingSelection(false);
+    }
   }, [open]);
 
   const filtered = useMemo(() => {
@@ -56,13 +62,15 @@ export default function MoveInvoiceModal({
       (p) => String(p._id) === String(selectedProjectId)
     );
 
-    if (targetProject?.isMilga && !showFundingSelection) {
+    const isMilgaProject = targetProject?.isMilga || targetProject?.type === "milga";
+
+    if (isMilgaProject && !showFundingSelection) {
       // אם זה פרויקט מילגה ועוד לא בחרנו פרויקט ממומן
       setShowFundingSelection(true);
       return;
     }
 
-    if (targetProject?.isMilga && !fundingProjectId) {
+    if (isMilgaProject && !fundingProjectId) {
       toast.error("יש לבחור פרויקט ממומן (מאיזה תקציב להוריד)");
       return;
     }
@@ -88,7 +96,7 @@ export default function MoveInvoiceModal({
       };
 
       // אם זה פרויקט מילגה, הוסף את fundedFromProjectId
-      if (targetProject?.isMilga) {
+      if (isMilgaProject) {
         payload.fundedFromProjectId = fundingProjectId;
       }
 
@@ -187,7 +195,7 @@ export default function MoveInvoiceModal({
                           onChange={() => setSelectedProjectId(p._id)}
                         />
                         <span className="font-medium text-sm flex-1">{p.name}</span>
-                        {p.isMilga && (
+                        {(p.isMilga || p.type === "milga") && (
                           <span className="text-xs bg-blue-100 text-blue-700 px-1.5 py-0.5 rounded font-medium">
                             מילגה
                           </span>
@@ -216,13 +224,13 @@ export default function MoveInvoiceModal({
               </div>
 
               <div className="max-h-56 overflow-y-auto border border-slate-200 rounded-lg">
-                {projects.filter(p => !p.isMilga).length === 0 ? (
+                {projects.filter(p => !p.isMilga && p.type !== "milga").length === 0 ? (
                   <div className="p-4 text-center text-slate-500 text-sm">
                     לא נמצאו פרויקטים רגילים
                   </div>
                 ) : (
                   <ul className="divide-y divide-slate-100">
-                    {projects.filter(p => !p.isMilga).map((p) => (
+                    {projects.filter(p => !p.isMilga && p.type !== "milga").map((p) => (
                       <li key={p._id}>
                         <label className="flex items-center gap-2 p-2.5 cursor-pointer hover:bg-orange-50 transition-colors">
                           <input

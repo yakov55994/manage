@@ -351,6 +351,7 @@ async function updateInvoice(user, invoiceId, data) {
     projects: newProjects,
     files: newFiles = [],
     fundedFromProjectId,
+    fundingProjectsMap = {}, // ✅ מיפוי פרויקטי מילגה לפרויקטים ממומנים
     ...basic
   } = data;
 
@@ -359,13 +360,22 @@ async function updateInvoice(user, invoiceId, data) {
   const finalFiles = newFiles;
 
   // וודא שכל פרויקט יש לו projectName מעודכן
+  // ✅ הוסף גם fundedFromProjectId לכל פרויקט מילגה
   const projectsWithNames = await Promise.all(
     newProjects.map(async (p) => {
-      const project = await Project.findById(p.projectId).select("name");
+      const project = await Project.findById(p.projectId).select("name isMilga type");
+
+      // בדוק אם זה פרויקט מילגה
+      const isMilgaProject = project?.isMilga || project?.type === "milga";
+
+      // קבל את ה-fundedFromProjectId מהמיפוי אם קיים
+      const fundingProjectId = fundingProjectsMap[p.projectId] || null;
+
       return {
         projectId: p.projectId,
         projectName: project?.name || p.projectName,
         sum: p.sum,
+        fundedFromProjectId: isMilgaProject ? fundingProjectId : null, // ✅ הוסף לכל פרויקט
       };
     })
   );
@@ -403,8 +413,14 @@ async function updateInvoice(user, invoiceId, data) {
       $addToSet: { invoices: invoiceId },
     });
     await recalculateRemainingBudget(p.projectId);
+
+    // ✅ חשב מחדש גם את תקציב הפרויקט הממומן (אם קיים)
+    if (p.fundedFromProjectId) {
+      await recalculateRemainingBudget(p.fundedFromProjectId);
+    }
   }
 
+  // תמיכה לאחור - אם יש fundedFromProjectId כללי
   if (updated.fundedFromProjectId) {
     await recalculateRemainingBudget(updated.fundedFromProjectId);
   }

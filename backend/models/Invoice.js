@@ -10,6 +10,12 @@ const InvoiceProjectSchema = new mongoose.Schema({
   },
   projectName: { type: String, required: true },
   sum: { type: Number, required: true },
+  // ✅ עבור פרויקטי מילגה - מאיזה פרויקט להוריד את התקציב
+  fundedFromProjectId: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: "Project",
+    default: null,
+  },
 });
 
 const FileSchema = new mongoose.Schema({

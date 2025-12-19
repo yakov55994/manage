@@ -71,20 +71,20 @@ export function generateMasavFile(companyInfo, payments, executionDate) {
   // HEADER — K
   // =====================================================
   const header =
-    "K" +
-    fixLen(instituteId, 8, "0", "left") +  // 8
-    "00" +                                 // 2
-    execDate +                             // 6
-    "0" +                                  // 1
-    "001" +                                // 3
-    "0" +                                  // 1
-    execDate +                             // 6
-    fixLen(senderId, 5, "0", "left") +     // 5
-    fixLen("", 6, "0") +                   // 6
-    fixCompanyNameRTL(companyName) +              // 30 ← שם מוסד כאן!
-    fixLen("", 56) +                       // 56
-    "KOT";                                 // 3
-
+    "K" +                                  // 1  - סוג רשומה
+    fixLen(instituteId, 8, "0", "left") +  // 8  - מספר מוסד
+    "00" +                                 // 2  - פילר
+    execDate +                             // 6  - תאריך יצירה
+    "0" +                                  // 1  - פילר
+    "001" +                                // 3  - מספר קובץ
+    "0" +                                  // 1  - פילר
+    execDate +                             // 6  - תאריך ערך
+    fixLen(senderId, 5, "0", "left") +     // 5  - מזהה שולח
+    fixLen("", 6, "0") +                   // 6  - פילר
+    fixCompanyNameRTL(companyName) +       // 30 - שם מוסד
+    fixLen("", 56) +                       // 56 - פילר
+    "KOT";                                 // 3  - זיהוי סוף רשומה
+                                           // סה"כ: 128 תווים
   lines.push(header);
 
   // =====================================================
@@ -96,25 +96,25 @@ export function generateMasavFile(companyInfo, payments, executionDate) {
     totalAmount += Number(p.amount);
 
     const line =
-      "1" +
-      fixLen(instituteId, 8, "0", "left") +
-      "00" +
-      "000000" +
-      fixLen(p.bankNumber, 2, "0", "left") +
-      fixLen(p.branchNumber, 3, "0", "left") +
-      "0000" +
-      fixLen(p.accountNumber, 9, "0", "left") +
-      "0" +
-      fixLen(p.internalId, 9, "0", "left") +
-      fixLen(p.supplierName, 30, " ", "right") +
-      fixLen(String(p.amount), 11, "0", "left") +   // ⬅⬅⬅ התיקון המרכזי
-      fixLen(p.internalId, 20, "0", "left") +
-      fixLen("0", 8, "0", "left") +
-      "000" +
-      "006" +
-      fixLen("", 18) +
-      fixLen("", 2);
-
+      "1" +                                         // 1   (1-1)   - סוג רשומה
+      fixLen(instituteId, 8, "0", "left") +         // 8   (2-9)   - מספר בנק שולח
+      "00" +                                        // 2   (10-11) - FILLER
+      "000000000" +                                 // 9   (12-20) - מספר חשבון שולח
+      fixLen(p.bankNumber, 2, "0", "left") +        // 2   (21-22) - קוד בנק נהנה
+      fixLen(p.branchNumber, 3, "0", "left") +      // 3   (23-25) - קוד סניף נהנה
+      "0000" +                                      // 4   (26-29) - FILLER
+      fixLen(p.accountNumber, 9, "0", "left") +     // 9   (30-38) - מספר חשבון נהנה
+      "0" +                                         // 1   (39-39) - FILLER
+      fixLen(p.internalId, 9, "0", "left") +        // 9   (40-48) - ח.פ/ע.מ נהנה
+      fixLen(p.supplierName, 16, " ", "right") +    // 16  (49-64) - שם נהנה
+      fixLen(String(p.amount), 11, "0", "left") +   // 11  (65-75) - סכום העברה באגורות
+      execDate +                                    // 6   (76-81) - תאריך ערך YYMMDD
+      "00" +                                        // 2   (82-83) - FILLER
+      fixLen(companyName, 16, " ", "right") +       // 16  (84-99) - שם לקוח השולח
+      "006" +                                       // 3   (100-102) - קוד פעולה (006 = זיכוי)
+      fixLen("", 11, " ") +                         // 11  (103-113) - FILLER
+      fixLen("", 15, "0", "left");                  // 15  (114-128) - אינדקס הרשומה
+                                                    // סה"כ: 128 תווים
 
     lines.push(line);
   });
@@ -123,17 +123,17 @@ export function generateMasavFile(companyInfo, payments, executionDate) {
   // TRAILER — TYPE 5
   // =====================================================
   const trailer =
-    "5" +
-    fixLen(instituteId, 8, "0", "left") +
-    "00" +
-    execDate +
-    "0" +
-    "001" +
-    fixLen(String(totalAmount), 15, "0") +   // סכום כללי
-    fixLen("", 15, "0") +                    // filler
-    fixLen(String(payments.length), 7, "0") +// מספר רשומות
-    fixLen("", 63);
-
+    "5" +                                            // 1  - סוג רשומה
+    fixLen(instituteId, 8, "0", "left") +            // 8  - מספר מוסד
+    "00" +                                           // 2  - פילר
+    execDate +                                       // 6  - תאריך יצירה
+    "0" +                                            // 1  - פילר
+    "001" +                                          // 3  - מספר קובץ
+    fixLen(String(totalAmount), 15, "0", "left") +   // 15 - סכום כולל באגורות
+    fixLen("", 15, "0") +                            // 15 - פילר
+    fixLen(String(payments.length), 7, "0", "left") +// 7  - מספר רשומות
+    fixLen("", 63);                                  // 63 - פילר
+                                                     // סה"כ: 128 תווים
   lines.push(trailer);
 
   // =====================================================
