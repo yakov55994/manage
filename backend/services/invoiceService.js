@@ -343,6 +343,9 @@ async function updateInvoice(user, invoiceId, data) {
     throw new Error("לא ניתן לערוך חשבונית משכורות כרגע");
   }
 
+  // שמור את fundedFromProjectId הישן לפני שמשנים אותו
+  const oldFundedFromProjectId = invoice.fundedFromProjectId ? String(invoice.fundedFromProjectId) : null;
+
   const oldProjects = invoice.projects.map((p) =>
     p.projectId.toString()
   );
@@ -425,6 +428,12 @@ async function updateInvoice(user, invoiceId, data) {
     await recalculateRemainingBudget(updated.fundedFromProjectId);
   }
 
+  // חשב מחדש תקציב עבור הפרויקט הישן שממומן (אם היה ושונה)
+  if (oldFundedFromProjectId && oldFundedFromProjectId !== String(fundedFromProjectId)) {
+    console.log(`🔄 Recalculating budget for OLD fundedFromProjectId after update: ${oldFundedFromProjectId}`);
+    await recalculateRemainingBudget(oldFundedFromProjectId);
+  }
+
   return updated;
 }
 
@@ -448,6 +457,9 @@ async function moveInvoice(user, invoiceId, fromProjectId, toProjectId, fundedFr
   if (fromProjectId === toProjectId) {
     throw new Error("הפרויקט המקור והיעד זהים");
   }
+
+  // שמור את fundedFromProjectId הישן לפני שמשנים אותו
+  const oldFundedFromProjectId = invoice.fundedFromProjectId ? String(invoice.fundedFromProjectId) : null;
 
   // בדוק אם הפרויקט היעד הוא מילגה והאם סופק fundedFromProjectId
   const targetProject = await Project.findById(toProjectId);
@@ -561,6 +573,18 @@ async function moveInvoice(user, invoiceId, fromProjectId, toProjectId, fundedFr
   // חשב מחדש תקציבים
   await recalculateRemainingBudget(fromProjectId);
   await recalculateRemainingBudget(toProjectId);
+
+  // חשב מחדש תקציב עבור הפרויקט החדש שממומן (אם יש)
+  if (fundedFromProjectId) {
+    console.log(`🔄 Recalculating budget for NEW fundedFromProjectId: ${fundedFromProjectId}`);
+    await recalculateRemainingBudget(fundedFromProjectId);
+  }
+
+  // חשב מחדש תקציב עבור הפרויקט הישן שממומן (אם היה ושונה)
+  if (oldFundedFromProjectId && oldFundedFromProjectId !== String(fundedFromProjectId)) {
+    console.log(`🔄 Recalculating budget for OLD fundedFromProjectId: ${oldFundedFromProjectId}`);
+    await recalculateRemainingBudget(oldFundedFromProjectId);
+  }
 
   // טען מחדש את החשבונית עם populate
   const populated = await Invoice.findById(invoice._id)
