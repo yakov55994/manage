@@ -783,7 +783,6 @@ const ProjectDetailsPage = () => {
               </div>
             </div>
 
-            {console.log("filteredInvoices ", filteredInvoices)}
             <div className="p-6">
               {!canViewInvoices() ? (
                 // ❌ אין הרשאה
@@ -904,14 +903,22 @@ const ProjectDetailsPage = () => {
 
                             {/* ✅ סכום הפרויקט מתוך המערך - רק סכום הפרויקט הנוכחי! */}
                             <td className="px-4 py-3 text-center">
-                              {console.log(proj)}
-                              {invoice?.totalAmount !== undefined ? (
-                                formatCurrencyWithAlert(invoice.totalAmount)
+                              {isFundedFromThisProject ? (
+                                // אם זו חשבונית מילגה שיורדת מהפרויקט הזה - מציגים את הסכום הכולל
+                                invoice?.totalAmount !== undefined ? (
+                                  formatCurrencyWithAlert(invoice.totalAmount)
+                                ) : (
+                                  <span className="text-slate-400">—</span>
+                                )
                               ) : (
-                                <span className="text-slate-400">—</span>
-                              )}{" "}
+                                // אם זו חשבונית רגילה - מציגים רק את הסכום של הפרויקט הזה
+                                proj?.sum !== undefined ? (
+                                  formatCurrencyWithAlert(proj.sum)
+                                ) : (
+                                  <span className="text-slate-400">—</span>
+                                )
+                              )}
                             </td>
-                            {console.log("invoice: ",)}
                             <td className="px-4 py-3 text-sm font-bold text-center">
                               {invoice.status || "לא הוזן"}
                             </td>
@@ -921,8 +928,6 @@ const ProjectDetailsPage = () => {
                                 {invoice.type !== "salary" ? (invoice.supplierId?.name || "—") : ""}
                               </td>
                             )}
-
-                            {console.log(invoice.type)}
 
                             <td className="px-4 py-3 text-sm font-bold text-center">
                               {invoice.paid === "כן" ? "שולם" : "לא שולם"}

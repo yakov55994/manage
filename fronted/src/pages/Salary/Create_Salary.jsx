@@ -242,7 +242,7 @@ const CreateSalary = () => {
                   סכום ברוטו *
                 </label>
                 <input
-                  type="number"
+                  // type="number"
                   name="baseAmount"
                   value={form.baseAmount}
                   onChange={handleChange}

@@ -429,6 +429,26 @@ const OrderDetailsPage = () => {
                     </div>
                   </div>
                 </div>
+                {order.status == "הוגש חלקי" ? (
+                  <>
+                     <div className="group p-4 rounded-xl bg-gradient-to-br from-orange-50 to-amber-50 border-2 border-orange-200 hover:border-orange-400 transition-all">
+                  <div className="flex items-start gap-3">
+                    <div className="p-2 rounded-lg bg-orange-100">
+                      <AlertCircle className="w-4 h-4 text-orange-600" />
+                    </div>
+                    <div className="flex-1">
+                      <p className="text-xs font-bold text-orange-600 mb-1">
+                       סכום חלקי ששולם
+                      </p>
+                      <p className="text-sm font-bold text-slate-900">
+                        {order.submittedAmount}
+                      </p>
+                    </div>
+                  </div>
+                </div>
+                  </>
+                ) : <></>
+              }
 
                 {/* איש קשר */}
                 <div className="group p-4 rounded-xl bg-gradient-to-br from-orange-50 to-amber-50 border-2 border-orange-200 hover:border-orange-400 transition-all">
