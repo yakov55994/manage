@@ -124,18 +124,19 @@ async getInvoiceById(req, res) {
   },
 
   // ===============================================
-  // העברת חשבונית בין פרויקטים (מותאם למבנה החדש!)
+  // העברת חשבונית בין פרויקטים (תמיכה במספר פרויקטים!)
   // ===============================================
   async moveInvoice(req, res) {
     try {
-      const { fromProjectId, toProjectId, fundedFromProjectId } = req.body;
+      const { fromProjectId, toProjectId, fundedFromProjectId, targetProjects } = req.body;
 
       const updated = await invoiceService.moveInvoice(
         req.user,
         req.params.id,
         fromProjectId,
         toProjectId,
-        fundedFromProjectId
+        fundedFromProjectId,
+        targetProjects
       );
 
       res.json({ success: true, data: updated });

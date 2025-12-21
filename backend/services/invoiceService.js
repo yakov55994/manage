@@ -438,10 +438,107 @@ async function updateInvoice(user, invoiceId, data) {
 }
 
 // ===============================================
-// MOVE INVOICE
+// MOVE INVOICE TO MULTIPLE PROJECTS - פונקציה חדשה
 // ===============================================
-async function moveInvoice(user, invoiceId, fromProjectId, toProjectId, fundedFromProjectId) {
-  console.log("🔄 Move Invoice Request:", { invoiceId, fromProjectId, toProjectId, fundedFromProjectId });
+async function moveInvoiceToMultipleProjects(user, invoice, targetProjects) {
+  console.log("🔄 Moving invoice to multiple projects:", { invoiceId: invoice._id, targetProjects });
+
+  // תוקף הסכום הכולל
+  const totalAllocated = targetProjects.reduce((sum, p) => sum + Number(p.sum), 0);
+  if (Math.abs(totalAllocated - invoice.totalAmount) > 0.01) {
+    throw new Error(`סכום הפרויקטים (${totalAllocated}) חייב להיות שווה לסכום החשבונית (${invoice.totalAmount})`);
+  }
+
+  // בדיקת הרשאות
+  if (user.role !== "admin") {
+    if (user.role === "accountant") {
+      throw new Error("רואה חשבון לא יכול להעביר חשבוניות");
+    }
+
+    const allowed = user.permissions.map(p => String(p.project?._id || p.project));
+
+    // ודא שיש הרשאות לכל הפרויקטים החדשים
+    for (const tp of targetProjects) {
+      const projectId = String(tp.projectId);
+      if (!allowed.includes(projectId)) {
+        throw new Error(`אין הרשאה לפרויקט ${projectId}`);
+      }
+
+      // בדוק הרשאת edit
+      const hasEdit = user.permissions.some(
+        p => String(p.project?._id || p.project) === projectId && p.modules?.invoices === "edit"
+      );
+      if (!hasEdit) {
+        throw new Error("נדרשת הרשאת עריכה לכל הפרויקטים");
+      }
+    }
+  }
+
+  // שמור את הפרויקטים הישנים לצורך עדכון התקציבים
+  const oldProjectIds = invoice.projects.map(p => String(p.projectId?._id || p.projectId));
+
+  // בנה את מערך הפרויקטים החדש
+  const newProjects = [];
+  for (const tp of targetProjects) {
+    const project = await Project.findById(tp.projectId).select("name invitingName");
+    if (!project) throw new Error(`פרויקט ${tp.projectId} לא נמצא`);
+
+    newProjects.push({
+      projectId: tp.projectId,
+      projectName: project.name,
+      sum: Number(tp.sum),
+    });
+  }
+
+  // עדכן את החשבונית
+  invoice.projects = newProjects;
+  invoice.totalAmount = totalAllocated;
+
+  // שמור
+  await invoice.save();
+
+  // עדכן את רשימת החשבוניות בפרויקטים הישנים (הסר)
+  for (const oldId of oldProjectIds) {
+    await Project.findByIdAndUpdate(oldId, {
+      $pull: { invoices: invoice._id }
+    });
+    await recalculateRemainingBudget(oldId);
+  }
+
+  // עדכן את רשימת החשבוניות בפרויקטים החדשים (הוסף)
+  const newProjectIds = targetProjects.map(p => String(p.projectId));
+  for (const newId of newProjectIds) {
+    await Project.findByIdAndUpdate(newId, {
+      $addToSet: { invoices: invoice._id }
+    });
+    await recalculateRemainingBudget(newId);
+  }
+
+  // טען מחדש עם populate
+  const populated = await Invoice.findById(invoice._id)
+    .populate("projects.projectId", "name invitingName")
+    .populate("supplierId", "name phone email bankDetails")
+    .populate("fundedFromProjectId", "name");
+
+  if (!populated) throw new Error("שגיאה בטעינת החשבונית לאחר ההעברה");
+
+  // וודא שכל הפרויקטים מכילים את שם הפרויקט
+  if (populated.projects) {
+    populated.projects = populated.projects.map((p) => ({
+      projectId: p.projectId?._id || p.projectId,
+      projectName: p.projectId?.name || p.projectName || "",
+      sum: p.sum,
+    }));
+  }
+
+  return populated;
+}
+
+// ===============================================
+// MOVE INVOICE - תמיכה במספר פרויקטים
+// ===============================================
+async function moveInvoice(user, invoiceId, fromProjectId, toProjectId, fundedFromProjectId, targetProjects) {
+  console.log("🔄 Move Invoice Request:", { invoiceId, fromProjectId, toProjectId, fundedFromProjectId, targetProjects });
 
   const invoice = await Invoice.findById(invoiceId);
   if (!invoice) throw new Error("חשבונית לא נמצאה");
@@ -451,6 +548,13 @@ async function moveInvoice(user, invoiceId, fromProjectId, toProjectId, fundedFr
   if (invoice.type === "salary")
     throw new Error("אי אפשר להעביר חשבונית משכורות");
 
+  // תמיכה ב-API חדש ו-API ישן
+  if (targetProjects && Array.isArray(targetProjects)) {
+    // API חדש - העברה למספר פרויקטים
+    return await moveInvoiceToMultipleProjects(user, invoice, targetProjects);
+  }
+
+  // API ישן - תמיכה לאחור
   fromProjectId = String(fromProjectId);
   toProjectId = String(toProjectId);
 
