@@ -82,6 +82,7 @@ const ProjectDetailsPage = () => {
   const [loadingOrders, setLoadingOrders] = useState(true);
   const [loadingInvoices, setLoadingInvoices] = useState(true);
   const [loadingSalaries, setLoadingSalaries] = useState(true);
+  const [exportLoading, setExportLoading] = useState(false);
 
   useEffect(() => {
     if (loading) return;
@@ -355,12 +356,17 @@ const ProjectDetailsPage = () => {
     navigate(`/create-invoice?projectId=${project._id}`);
   };
 
-  const handleExportSalaries = async () => {
+  const handleExportSalaries = async (retryCount = 0) => {
+    const MAX_RETRIES = 2;
+
     try {
-      // ✅ השרת מצפה ל-projectIds (רבים) ולא projectId (יחיד)
-      const response = await api.get(`/salaries/export?projectIds=${project._id}`, {
-        responseType: 'blob'
-      });
+      setExportLoading(true);
+
+      // ✅ שימוש ב-POST במקום GET כדי למנוע חסימה של antivirus/firewall
+      const response = await api.post('/salaries/export',
+        { projectIds: [project._id] },
+        { responseType: 'blob' }
+      );
 
       const url = window.URL.createObjectURL(new Blob([response.data]));
       const link = document.createElement('a');
@@ -369,11 +375,51 @@ const ProjectDetailsPage = () => {
       link.click();
       window.URL.revokeObjectURL(url);
 
-      toast.success('קובץ סיכום משכורות ירד בהצלחה!');
+      toast.success('קובץ סיכום משכורות הורד בהצלחה!');
     } catch (err) {
       console.error('Export salaries error:', err);
-      const errorMsg = err.response?.data?.error || err.message || 'שגיאה לא ידועה';
-      toast.error('שגיאה ביצירת סיכום משכורות: ' + errorMsg);
+
+      // במקרה של 418, ננסה שוב אוטומטית
+      if (err.response?.status === 418 && retryCount < MAX_RETRIES) {
+        console.log(`Retrying export (attempt ${retryCount + 1}/${MAX_RETRIES})...`);
+        await new Promise(resolve => setTimeout(resolve, 1000)); // המתנה של שנייה
+        return handleExportSalaries(retryCount + 1);
+      }
+
+      // טיפול מיוחד ב-404 - אין משכורות לפרויקט
+      if (err.response?.status === 404) {
+        let errorMessage = "לא נמצאו משכורות לפרויקט זה";
+
+        if (err.response?.data instanceof Blob) {
+          try {
+            const text = await err.response.data.text();
+            const errorData = JSON.parse(text);
+            if (errorData.error) {
+              errorMessage = errorData.error === "No salaries found for the selected projects"
+                ? "לא נמצאו משכורות לפרויקט זה"
+                : errorData.error;
+            }
+          } catch (e) {
+            // נשאר עם ההודעה ברירת המחדל
+          }
+        }
+
+        toast.error(errorMessage);
+      }
+      // טיפול מיוחד ב-418 - חסימת Antivirus/Firewall
+      else if (err.response?.status === 418) {
+        toast.error(
+          'הבקשה נחסמה על ידי אנטי-וירוס או חומת אש. אנא נסה שנית או פנה למנהל מערכת.',
+          { duration: 6000 }
+        );
+      }
+      // שגיאות אחרות
+      else {
+        const errorMsg = err.response?.data?.error || err.message || 'שגיאה לא ידועה';
+        toast.error(`שגיאה ביצירת סיכום משכורות: ${errorMsg}`);
+      }
+    } finally {
+      setExportLoading(false);
     }
   };
 
@@ -461,10 +507,11 @@ const ProjectDetailsPage = () => {
 
                     <button
                       onClick={handleExportSalaries}
-                      className="flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-blue-600 to-purple-600 text-white font-bold rounded-xl hover:from-blue-700 hover:to-purple-700 transition-all shadow-xl shadow-blue-500/30"
+                      disabled={exportLoading}
+                      className="flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-blue-600 to-purple-600 text-white font-bold rounded-xl hover:from-blue-700 hover:to-purple-700 transition-all shadow-xl shadow-blue-500/30 disabled:opacity-60 disabled:cursor-not-allowed"
                     >
                       <Download className="w-4 h-4" />
-                      <span>ייצוא סיכום משכורות</span>
+                      <span>{exportLoading ? 'מוריד...' : 'ייצוא סיכום משכורות'}</span>
                     </button>
                   </>
                 )}
@@ -736,7 +783,6 @@ const ProjectDetailsPage = () => {
               </div>
             </div>
 
-            {console.log("filteredInvoices ", filteredInvoices)}
             <div className="p-6">
               {!canViewInvoices() ? (
                 // ❌ אין הרשאה
@@ -857,14 +903,22 @@ const ProjectDetailsPage = () => {
 
                             {/* ✅ סכום הפרויקט מתוך המערך - רק סכום הפרויקט הנוכחי! */}
                             <td className="px-4 py-3 text-center">
-                              {console.log(proj)}
-                              {invoice?.totalAmount !== undefined ? (
-                                formatCurrencyWithAlert(invoice.totalAmount)
+                              {isFundedFromThisProject ? (
+                                // אם זו חשבונית מילגה שיורדת מהפרויקט הזה - מציגים את הסכום הכולל
+                                invoice?.totalAmount !== undefined ? (
+                                  formatCurrencyWithAlert(invoice.totalAmount)
+                                ) : (
+                                  <span className="text-slate-400">—</span>
+                                )
                               ) : (
-                                <span className="text-slate-400">—</span>
-                              )}{" "}
+                                // אם זו חשבונית רגילה - מציגים רק את הסכום של הפרויקט הזה
+                                proj?.sum !== undefined ? (
+                                  formatCurrencyWithAlert(proj.sum)
+                                ) : (
+                                  <span className="text-slate-400">—</span>
+                                )
+                              )}
                             </td>
-                            {console.log("invoice: ",)}
                             <td className="px-4 py-3 text-sm font-bold text-center">
                               {invoice.status || "לא הוזן"}
                             </td>
@@ -874,8 +928,6 @@ const ProjectDetailsPage = () => {
                                 {invoice.type !== "salary" ? (invoice.supplierId?.name || "—") : ""}
                               </td>
                             )}
-
-                            {console.log(invoice.type)}
 
                             <td className="px-4 py-3 text-sm font-bold text-center">
                               {invoice.paid === "כן" ? "שולם" : "לא שולם"}
@@ -1001,10 +1053,11 @@ const ProjectDetailsPage = () => {
                     <div className="mt-4 flex justify-end">
                       <button
                         onClick={handleExportSalaries}
-                className="flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-orange-500 to-amber-500 text-white font-bold rounded-full hover:from-orange-600 hover:to-amber-600 transition-all shadow-lg whitespace-nowrap"
+                        disabled={exportLoading}
+                className="flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-orange-500 to-amber-500 text-white font-bold rounded-full hover:from-orange-600 hover:to-amber-600 transition-all shadow-lg whitespace-nowrap disabled:opacity-60 disabled:cursor-not-allowed"
                       >
                         <Download className="w-4 h-4" />
-                        <span>ייצוא סיכום משכורות</span>
+                        <span>{exportLoading ? 'מוריד...' : 'ייצוא סיכום משכורות'}</span>
                       </button>
                     </div>
                   </>

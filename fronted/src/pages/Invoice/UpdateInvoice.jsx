@@ -59,89 +59,6 @@ const InvoiceEditPage = () => {
     if (!canViewInvoices) navigate("/no-access");
   }, [canViewInvoices]);
 
-  // -----------------------------------------------
-  // LOAD ALL PROJECTS
-  // -----------------------------------------------
-  useEffect(() => {
-    const loadProjects = async () => {
-      try {
-        const res = await api.get("/projects");
-        setProjects(res.data?.data || []);
-      } catch {
-        toast.error("שגיאה בטעינת פרויקטים");
-      }
-    };
-    loadProjects();
-  }, []);
-
-  // -----------------------------------------------
-  // LOAD INVOICE
-  // -----------------------------------------------
-  useEffect(() => {
-    if (!projects.length) return;
-    fetchInvoice();
-  }, [projects]);
-
-  const fetchInvoice = async () => {
-    setLoading(true);
-
-    try {
-      const { data } = await api.get(`/invoices/${id}`);
-      const invoice = data.data;
-      // -------- MAIN INVOICE FILES ----------
-      const invoiceFiles = await ensureFilesHydrated(invoice.files || []);
-      setGlobalFields((prev) => ({
-        ...prev,
-        files: invoiceFiles,
-      }));
-
-      if (!invoice) return;
-
-      // -------- GLOBAL FIELDS ----------
-      setGlobalFields((prev) => ({
-        ...prev,
-        invoiceNumber: invoice.invoiceNumber || "",
-        invitingName: invoice.invitingName || "",
-        supplierId: invoice.supplierId?._id || invoice.supplierId || "",
-        documentType: invoice.documentType || "",
-        createdAt: invoice.createdAt
-          ? invoice.createdAt.split("T")[0]
-          : new Date().toISOString().split("T")[0],
-        detail: invoice.detail || "",
-        paid: invoice.paid || "לא",
-        paymentDate: invoice.paymentDate
-          ? invoice.paymentDate.split("T")[0]
-          : "",
-        paymentMethod: invoice.paymentMethod || "",
-        checkNumber: invoice.checkNumber || "", // ✅ הוסף
-        checkDate: invoice.checkDate // ✅ הוסף
-          ? invoice.checkDate.split("T")[0]
-          : "",
-      }));
-
-      // -------- SELECTED PROJECTS ----------
-      const selected = invoice.projects.map((p) => ({
-        _id: p.projectId._id || p.projectId,
-        name: p.projectId.name,
-      }));
-      setSelectedProjects(selected);
-
-      // -------- ROWS ----------
-      const builtRows = invoice.projects.map((p) => ({
-        projectId: p.projectId._id || p.projectId,
-        projectName: p.projectName || p.projectId.name,
-        sum: p.sum,
-      }));
-
-      setRows(builtRows);
-    } catch (err) {
-      console.error(err);
-      toast.error("שגיאה בטעינת החשבונית");
-    } finally {
-      setLoading(false);
-    }
-  };
-
   // ===============================================================
   // CLEAN FILES FROM CLOUDINARY OR LOCAL OBJECTS
   // ===============================================================
@@ -158,6 +75,77 @@ const InvoiceEditPage = () => {
 
     return out;
   };
+
+  // -----------------------------------------------
+  // LOAD ALL PROJECTS AND INVOICE TOGETHER
+  // -----------------------------------------------
+  useEffect(() => {
+    const loadData = async () => {
+      setLoading(true);
+      try {
+        // טען פרויקטים תחילה
+        const res = await api.get("/projects");
+        const loadedProjects = res.data?.data || [];
+        setProjects(loadedProjects);
+
+        // אחרי שהפרויקטים נטענו, טען את החשבונית
+        if (loadedProjects.length > 0) {
+          const { data } = await api.get(`/invoices/${id}`);
+          const invoice = data.data;
+
+          if (invoice) {
+            // -------- MAIN INVOICE FILES ----------
+            const invoiceFiles = await ensureFilesHydrated(invoice.files || []);
+
+            // -------- GLOBAL FIELDS ----------
+            setGlobalFields((prev) => ({
+              ...prev,
+              files: invoiceFiles,
+              invoiceNumber: invoice.invoiceNumber || "",
+              invitingName: invoice.invitingName || "",
+              supplierId: invoice.supplierId?._id || invoice.supplierId || "",
+              documentType: invoice.documentType || "",
+              createdAt: invoice.createdAt
+                ? invoice.createdAt.split("T")[0]
+                : new Date().toISOString().split("T")[0],
+              detail: invoice.detail || "",
+              paid: invoice.paid || "לא",
+              paymentDate: invoice.paymentDate
+                ? invoice.paymentDate.split("T")[0]
+                : "",
+              paymentMethod: invoice.paymentMethod || "",
+              checkNumber: invoice.checkNumber || "",
+              checkDate: invoice.checkDate
+                ? invoice.checkDate.split("T")[0]
+                : "",
+            }));
+
+            // -------- SELECTED PROJECTS ----------
+            const selected = invoice.projects.map((p) => ({
+              _id: p.projectId._id || p.projectId,
+              name: p.projectId.name,
+            }));
+            setSelectedProjects(selected);
+
+            // -------- ROWS ----------
+            const builtRows = invoice.projects.map((p) => ({
+              projectId: p.projectId._id || p.projectId,
+              projectName: p.projectName || p.projectId.name,
+              sum: p.sum,
+            }));
+
+            setRows(builtRows);
+          }
+        }
+      } catch (error) {
+        toast.error("שגיאה בטעינת הנתונים");
+        console.error(error);
+      } finally {
+        setLoading(false);
+      }
+    };
+    loadData();
+  }, [id]);
 
   // ===============================================================
   // SELECT / UNSELECT PROJECTS (עם תמיכה במילגה)
