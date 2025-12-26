@@ -3,7 +3,7 @@ import { toast } from "sonner";
 import api from "../api/api";
 import { bankCodeMap } from "../utils/bankMap";
 
-export default function MasavModal({ open, onClose, invoices }) {
+export default function MasavModal({ open, onClose, invoices, onInvoicesUpdated }) {
   const [selected, setSelected] = useState([]);
   const [executionDate, setExecutionDate] = useState(
     new Date().toISOString().slice(0, 10)
@@ -183,7 +183,25 @@ export default function MasavModal({ open, onClose, invoices }) {
       link.download = "masav_bundle.zip";
       link.click();
 
-      toast.success('קובץ מס"ב + סיכום PDF ירד בהצלחה!');
+      // ✅ עדכון סטטוס החשבוניות שיצאו למס"ב ל"יצא לתשלום"
+      try {
+        const invoiceIdsToUpdate = withBankDetails.map(inv => inv._id);
+
+        await api.put("/invoices/bulk/update-status", {
+          invoiceIds: invoiceIdsToUpdate,
+          status: "יצא לתשלום"
+        });
+
+        // עדכון המצב המקומי בעמוד החשבוניות
+        if (onInvoicesUpdated) {
+          onInvoicesUpdated(invoiceIdsToUpdate);
+        }
+
+        toast.success(`קובץ מס"ב + סיכום PDF ירד בהצלחה! ${invoiceIdsToUpdate.length} חשבוניות עודכנו ל"יצא לתשלום"`);
+      } catch (updateErr) {
+        console.error("שגיאה בעדכון סטטוס:", updateErr);
+        toast.success('קובץ מס"ב + סיכום PDF ירד בהצלחה! (אך לא עודכן הסטטוס)');
+      }
 
       onClose();
     } catch (err) {

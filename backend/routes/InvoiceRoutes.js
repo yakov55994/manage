@@ -63,6 +63,9 @@ router.put("/:id/move", protect, checkAccess("invoices", "edit"), invoiceControl
 // 📌 עדכון סטטוס תשלום — משתמש ב־:id (מתוקן!)
 router.put("/:id/status", protect, checkAccess("invoices", "edit"), invoiceController.updatePaymentStatus);
 
+// 📌 עדכון סטטוס מרובה (bulk update)
+router.put("/bulk/update-status", protect, checkAccess("invoices", "edit"), invoiceController.bulkUpdatePaymentStatus);
+
 // 📌 מחיקה — משתמש ב־:id (מתוקן!)
 router.delete("/:id", protect, requireAdmin, checkAccess("invoices", "edit"), invoiceController.deleteInvoice);
 

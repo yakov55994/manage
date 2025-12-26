@@ -108,10 +108,11 @@ export function generateMasavFile(companyInfo, payments, executionDate) {
       fixLen(p.internalId, 9, "0", "left") +        // 9   (40-48) - ח.פ/ע.מ נהנה
       fixLen(p.supplierName, 16, " ", "right") +    // 16  (49-64) - שם נהנה
       fixLen(String(p.amount), 11, "0", "left") +   // 11  (65-75) - סכום העברה באגורות
-      execDate +                                    // 6   (76-81) - תאריך ערך YYMMDD
+      "01" +                                        // 2   (76-77) - קוד מסלול (01 = העברה רגילה)
+      execDate.slice(0,4) +                         // 4   (78-81) - תאריך ערך MMDD
       "00" +                                        // 2   (82-83) - FILLER
       fixLen(companyName, 16, " ", "right") +       // 16  (84-99) - שם לקוח השולח
-      "006" +                                       // 3   (100-102) - קוד פעולה (006 = זיכוי)
+      "   " +                                       // 3   (100-102) - FILLER
       fixLen("", 11, " ") +                         // 11  (103-113) - FILLER
       fixLen("", 15, "0", "left");                  // 15  (114-128) - אינדקס הרשומה
                                                     // סה"כ: 128 תווים

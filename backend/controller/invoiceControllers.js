@@ -165,5 +165,42 @@ async getInvoiceById(req, res) {
       sendError(res, e);
     }
   },
+
+  // ===============================================
+  // עדכון סטטוס תשלום מרובה (bulk)
+  // ===============================================
+  async bulkUpdatePaymentStatus(req, res) {
+    try {
+      const { invoiceIds, status } = req.body;
+
+      if (!invoiceIds || !Array.isArray(invoiceIds) || invoiceIds.length === 0) {
+        return res.status(400).json({
+          success: false,
+          error: "חייב לספק מערך של מזהי חשבוניות"
+        });
+      }
+
+      if (!["כן", "לא", "יצא לתשלום"].includes(status)) {
+        return res.status(400).json({
+          success: false,
+          error: "סטטוס לא תקין"
+        });
+      }
+
+      const updated = await Invoice.updateMany(
+        { _id: { $in: invoiceIds } },
+        { $set: { paid: status } }
+      );
+
+      res.json({
+        success: true,
+        updated: updated.modifiedCount,
+        message: `עודכנו ${updated.modifiedCount} חשבוניות`
+      });
+    } catch (err) {
+      console.error("❌ BULK UPDATE ERROR:", err);
+      res.status(400).json({ success: false, error: err.message });
+    }
+  },
 }
 export default invoiceControllers;

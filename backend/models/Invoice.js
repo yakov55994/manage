@@ -61,7 +61,7 @@ const invoiceSchema = new mongoose.Schema({
 
   paid: {
     type: String,
-    enum: ["כן", "לא"],
+    enum: ["כן", "לא", "יצא לתשלום"],
     default: "לא",
     required: false
   },

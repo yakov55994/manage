@@ -403,12 +403,12 @@ const InvoicesPage = () => {
     }
 
     if (paymentFilter !== "all") {
-      const isPaid = paymentFilter === "paid";
-      filtered = filtered.filter(
-        (invoice) =>
-          (isPaid && invoice.paid === "כן") ||
-          (!isPaid && invoice.paid !== "כן")
-      );
+      filtered = filtered.filter((invoice) => {
+        if (paymentFilter === "paid") return invoice.paid === "כן";
+        if (paymentFilter === "sent_to_payment") return invoice.paid === "יצא לתשלום";
+        if (paymentFilter === "unpaid") return invoice.paid === "לא";
+        return true;
+      });
     }
 
     if (statusFilter !== "all") {
@@ -561,12 +561,12 @@ const InvoicesPage = () => {
     let filteredResults = [...allInvoices];
 
     if (paymentFilter !== "all") {
-      const isPaid = paymentFilter === "paid";
-      filteredResults = filteredResults.filter(
-        (invoice) =>
-          (isPaid && invoice.paid === "כן") ||
-          (!isPaid && invoice.paid !== "כן")
-      );
+      filteredResults = filteredResults.filter((invoice) => {
+        if (paymentFilter === "paid") return invoice.paid === "כן";
+        if (paymentFilter === "sent_to_payment") return invoice.paid === "יצא לתשלום";
+        if (paymentFilter === "unpaid") return invoice.paid === "לא";
+        return true;
+      });
     }
 
     if (statusFilter !== "all") {
@@ -1598,7 +1598,8 @@ const InvoicesPage = () => {
             let matchesPaymentFilter =
               paymentFilter === "all" ||
               (paymentFilter === "paid" && invoice.paid === "כן") ||
-              (paymentFilter === "unpaid" && invoice.paid !== "כן");
+              (paymentFilter === "sent_to_payment" && invoice.paid === "יצא לתשלום") ||
+              (paymentFilter === "unpaid" && invoice.paid === "לא");
 
             let matchesStatusFilter =
               statusFilter === "all" ||
@@ -1758,7 +1759,7 @@ const InvoicesPage = () => {
   }
 
   // ייצוא מרוכז לפי ספק
-  const exportPaymentBySupplier = () => {
+  const exportPaymentBySupplier = async () => {
     let filtered = [...allInvoices];
 
     if (selectedProjectForPrint) {
@@ -1794,34 +1795,18 @@ const InvoicesPage = () => {
       });
     }
 
-    // סינון לפי תאריך תשלום
-    if (fromPaymentDatePrint) {
-      const fromPaymentDate = new Date(fromPaymentDatePrint);
-      filtered = filtered.filter((inv) => {
-        if (!inv.paymentDate) return false;
-        const paymentDate = normalizeDate(inv.paymentDate);
-        return paymentDate && paymentDate >= fromPaymentDate;
-      });
-    }
-
-    if (toPaymentDatePrint) {
-      const toPaymentDate = new Date(toPaymentDatePrint);
-      filtered = filtered.filter((inv) => {
-        if (!inv.paymentDate) return false;
-        const paymentDate = normalizeDate(inv.paymentDate);
-        return paymentDate && paymentDate <= toPaymentDate;
-      });
-    }
-
-    // 🔥 השתמש בכל החשבוניות (לא רק שלא שולמו)
-    const invoicesToExport = filtered;
+    // 🔥 סינון רק חשבוניות שלא שולמו (לא מסננים לפי תאריך תשלום כי הן עוד לא שולמו!)
+    const invoicesToExport = filtered.filter(inv => inv.paid === "לא");
 
     if (invoicesToExport.length === 0) {
-      toast.error("לא נמצאו חשבוניות לייצוא", {
+      toast.error("לא נמצאו חשבוניות שלא שולמו לייצוא", {
         className: "sonner-toast error rtl",
       });
       return;
     }
+
+    // ✅ שמירת מזהי החשבוניות לעדכון הסטטוס
+    const invoiceIdsToUpdate = invoicesToExport.map(inv => inv._id);
 
     // קיבוץ לפי ספק
     const groupedBySupplier = {};
@@ -1893,9 +1878,38 @@ const InvoicesPage = () => {
     const wbout = XLSX.write(workbook, { bookType: "xlsx", type: "array" });
     saveAs(new Blob([wbout], { type: "application/octet-stream" }), fileName);
 
-    toast.success(`יוצא קובץ עם ${excelData.length} ספקים`, {
-      className: "sonner-toast success rtl",
-    });
+    // ✅ עדכון סטטוס החשבוניות ל"יצא לתשלום"
+    try {
+      await api.put("/invoices/bulk/update-status", {
+        invoiceIds: invoiceIdsToUpdate,
+        status: "יצא לתשלום"
+      });
+
+      // עדכון המצב המקומי
+      setInvoices(prev =>
+        prev.map(inv =>
+          invoiceIdsToUpdate.includes(inv._id)
+            ? { ...inv, paid: "יצא לתשלום" }
+            : inv
+        )
+      );
+      setAllInvoices(prev =>
+        prev.map(inv =>
+          invoiceIdsToUpdate.includes(inv._id)
+            ? { ...inv, paid: "יצא לתשלום" }
+            : inv
+        )
+      );
+
+      toast.success(`יוצא קובץ עם ${excelData.length} ספקים וסטטוס עודכן ל"יצא לתשלום"`, {
+        className: "sonner-toast success rtl",
+      });
+    } catch (error) {
+      console.error("שגיאה בעדכון סטטוס:", error);
+      toast.error("הקובץ יוצא אך הייתה שגיאה בעדכון הסטטוס", {
+        className: "sonner-toast error rtl",
+      });
+    }
 
     setShowPaymentExportModal(false);
     setShowPrintModal(false);
@@ -2031,7 +2045,7 @@ const InvoicesPage = () => {
   };
 
   // ייצוא מפורט לפי חשבונית
-  const exportPaymentDetailed = () => {
+  const exportPaymentDetailed = async () => {
     let filtered = [...allInvoices];
 
     if (selectedProjectForPrint) {
@@ -2067,34 +2081,18 @@ const InvoicesPage = () => {
       });
     }
 
-    // סינון לפי תאריך תשלום
-    if (fromPaymentDatePrint) {
-      const fromPaymentDate = new Date(fromPaymentDatePrint);
-      filtered = filtered.filter((inv) => {
-        if (!inv.paymentDate) return false;
-        const paymentDate = normalizeDate(inv.paymentDate);
-        return paymentDate && paymentDate >= fromPaymentDate;
-      });
-    }
-
-    if (toPaymentDatePrint) {
-      const toPaymentDate = new Date(toPaymentDatePrint);
-      filtered = filtered.filter((inv) => {
-        if (!inv.paymentDate) return false;
-        const paymentDate = normalizeDate(inv.paymentDate);
-        return paymentDate && paymentDate <= toPaymentDate;
-      });
-    }
-
-    // 🔥 השתמש בכל החשבוניות (לא רק שלא שולמו)
-    const invoicesToExport = filtered;
+    // 🔥 סינון רק חשבוניות שלא שולמו (לא מסננים לפי תאריך תשלום כי הן עוד לא שולמו!)
+    const invoicesToExport = filtered.filter(inv => inv.paid === "לא");
 
     if (invoicesToExport.length === 0) {
-      toast.error("לא נמצאו חשבוניות לייצוא", {
+      toast.error("לא נמצאו חשבוניות שלא שולמו לייצוא", {
         className: "sonner-toast error rtl",
       });
       return;
     }
+
+    // ✅ שמירת מזהי החשבוניות לעדכון הסטטוס
+    const invoiceIdsToUpdate = invoicesToExport.map(inv => inv._id);
 
     const excelData = invoicesToExport.map((invoice) => {
       const supplier =
@@ -2146,9 +2144,38 @@ const InvoicesPage = () => {
     const wbout = XLSX.write(workbook, { bookType: "xlsx", type: "array" });
     saveAs(new Blob([wbout], { type: "application/octet-stream" }), fileName);
 
-    toast.success(`יוצא קובץ עם ${excelData.length} חשבוניות`, {
-      className: "sonner-toast success rtl",
-    });
+    // ✅ עדכון סטטוס החשבוניות ל"יצא לתשלום"
+    try {
+      await api.put("/invoices/bulk/update-status", {
+        invoiceIds: invoiceIdsToUpdate,
+        status: "יצא לתשלום"
+      });
+
+      // עדכון המצב המקומי
+      setInvoices(prev =>
+        prev.map(inv =>
+          invoiceIdsToUpdate.includes(inv._id)
+            ? { ...inv, paid: "יצא לתשלום" }
+            : inv
+        )
+      );
+      setAllInvoices(prev =>
+        prev.map(inv =>
+          invoiceIdsToUpdate.includes(inv._id)
+            ? { ...inv, paid: "יצא לתשלום" }
+            : inv
+        )
+      );
+
+      toast.success(`יוצא קובץ עם ${excelData.length} חשבוניות וסטטוס עודכן ל"יצא לתשלום"`, {
+        className: "sonner-toast success rtl",
+      });
+    } catch (error) {
+      console.error("שגיאה בעדכון סטטוס:", error);
+      toast.error("הקובץ יוצא אך הייתה שגיאה בעדכון הסטטוס", {
+        className: "sonner-toast error rtl",
+      });
+    }
 
     setShowPaymentExportModal(false);
     setShowPrintModal(false);
@@ -2259,6 +2286,7 @@ const InvoicesPage = () => {
                 >
                   <option value="all">כל התשלומים</option>
                   <option value="paid">שולמו</option>
+                  <option value="sent_to_payment">יצא לתשלום</option>
                   <option value="unpaid">לא שולמו</option>
                 </select>
                 <select
@@ -2592,9 +2620,13 @@ const InvoicesPage = () => {
                         <span className="bg-emerald-100 text-emerald-700 px-2 py-1 rounded-full text-xs font-bold border border-emerald-200 whitespace-nowrap">
                           שולם
                         </span>
+                      ) : invoice.paid === "יצא לתשלום" ? (
+                        <span className="bg-blue-100 text-blue-700 px-2 py-1 rounded-full text-xs font-bold border border-blue-200 whitespace-nowrap">
+                          יצא לתשלום
+                        </span>
                       ) : (
                         <span className="bg-red-100 text-red-700 px-2 py-1 rounded-full text-xs font-bold border border-red-200 whitespace-nowrap">
-                          ממתין
+                          לא שולם
                         </span>
                       )}
                     </td>
@@ -2966,6 +2998,7 @@ const InvoicesPage = () => {
                         >
                           <option value="all">הכל</option>
                           <option value="paid">שולם</option>
+                          <option value="sent_to_payment">יצא לתשלום</option>
                           <option value="unpaid">לא שולם</option>
                         </select>
                       </div>
@@ -3346,7 +3379,24 @@ const InvoicesPage = () => {
       <MasavModal
         open={masavModal}
         onClose={() => setMasavModal(false)}
-        invoices={sortedInvoices}
+        invoices={sortedInvoices.filter(inv => inv.paid === "לא")}
+        onInvoicesUpdated={(invoiceIds) => {
+          // עדכון המצב המקומי
+          setInvoices(prev =>
+            prev.map(inv =>
+              invoiceIds.includes(inv._id)
+                ? { ...inv, paid: "יצא לתשלום" }
+                : inv
+            )
+          );
+          setAllInvoices(prev =>
+            prev.map(inv =>
+              invoiceIds.includes(inv._id)
+                ? { ...inv, paid: "יצא לתשלום" }
+                : inv
+            )
+          );
+        }}
       />
 
       {/* Delete Modal */}

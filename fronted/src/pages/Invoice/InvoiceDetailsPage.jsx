@@ -245,7 +245,13 @@ const InvoiceDetailsPage = () => {
           <DetailCard
             label="סטטוס תשלום"
             icon={<CheckCircle2 />}
-            value={invoice.paid === "כן" ? "שולם" : "לא שולם"}
+            value={
+              invoice.paid === "כן"
+                ? "שולם"
+                : invoice.paid === "יצא לתשלום"
+                ? "יצא לתשלום"
+                : "לא שולם"
+            }
           />
 
           <DetailCard
