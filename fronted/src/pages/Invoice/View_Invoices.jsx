@@ -1744,7 +1744,7 @@ const InvoicesPage = () => {
 
   // ייצוא מרוכז לפי ספק
   const exportPaymentBySupplier = async () => {
-    let filtered = [...allInvoices];
+    let filtered = [...sortedInvoices];
 
     if (selectedProjectForPrint) {
       filtered = filtered.filter((inv) => {
@@ -1902,7 +1902,7 @@ const InvoicesPage = () => {
   // ייצוא משכורות ל-Excel
   const exportSalaries = () => {
     // סינון רק חשבוניות משכורת
-    const salaryInvoices = allInvoices.filter(inv => inv.type === "salary");
+    const salaryInvoices = sortedInvoices.filter(inv => inv.type === "salary");
 
     if (salaryInvoices.length === 0) {
       toast.error("לא נמצאו חשבוניות משכורת", {
@@ -2030,7 +2030,7 @@ const InvoicesPage = () => {
 
   // ייצוא מפורט לפי חשבונית
   const exportPaymentDetailed = async () => {
-    let filtered = [...allInvoices];
+    let filtered = [...sortedInvoices];
 
     if (selectedProjectForPrint) {
       filtered = filtered.filter((inv) => {
