@@ -693,27 +693,11 @@ const InvoicesPage = () => {
       });
     }
 
-    // סינון לפי תאריך תשלום
-    if (fromPaymentDatePrint) {
-      const fromPaymentDate = new Date(fromPaymentDatePrint);
-      filteredForPrint = filteredForPrint.filter((inv) => {
-        if (!inv.paymentDate) return false;
-        const paymentDate = normalizeDate(inv.paymentDate);
-        return paymentDate && paymentDate >= fromPaymentDate;
-      });
-    }
-
-    if (toPaymentDatePrint) {
-      const toPaymentDate = new Date(toPaymentDatePrint);
-      filteredForPrint = filteredForPrint.filter((inv) => {
-        if (!inv.paymentDate) return false;
-        const paymentDate = normalizeDate(inv.paymentDate);
-        return paymentDate && paymentDate <= toPaymentDate;
-      });
-    }
+    // 🔥 סינון רק חשבוניות שלא שולמו (לא מסננים לפי תאריך תשלום כי הן עוד לא שולמו!)
+    filteredForPrint = filteredForPrint.filter(inv => inv.paid === "לא");
 
     if (filteredForPrint.length === 0) {
-      toast.error("לא נמצאו חשבוניות מתאימות לפילטרים שנבחרו", {
+      toast.error("לא נמצאו חשבוניות שלא שולמו מתאימות לפילטרים שנבחרו", {
         className: "sonner-toast error rtl",
       });
       return;
