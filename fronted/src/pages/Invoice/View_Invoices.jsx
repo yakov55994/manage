@@ -87,8 +87,8 @@ const InvoicesPage = () => {
   const [paymentFilter, setPaymentFilter] = useState("all");
   const [statusFilter, setStatusFilter] = useState("all");
 
-  const [selectedProjectForPrint, setSelectedProjectForPrint] = useState("");
-  const [selectedSupplierForPrint, setSelectedSupplierForPrint] = useState("");
+  const [selectedProjectForPrint, setSelectedProjectForPrint] = useState([]);
+  const [selectedSupplierForPrint, setSelectedSupplierForPrint] = useState([]);
   const [fromDatePrint, setFromDatePrint] = useState("");
   const [toDatePrint, setToDatePrint] = useState("");
   const [fromPaymentDatePrint, setFromPaymentDatePrint] = useState("");
@@ -664,15 +664,15 @@ const InvoicesPage = () => {
   const generateInvoicesPrint = () => {
     let filteredForPrint = [...allInvoices];
 
-    if (selectedProjectForPrint) {
+    if (selectedProjectForPrint.length > 0) {
       filteredForPrint = filteredForPrint.filter((inv) =>
-        inv.projects?.some((p) => String(p.projectId) === String(selectedProjectForPrint))
+        inv.projects?.some((p) => selectedProjectForPrint.includes(String(p.projectId)))
       );
     }
 
-    if (selectedSupplierForPrint) {
+    if (selectedSupplierForPrint.length > 0) {
       filteredForPrint = filteredForPrint.filter(
-        (inv) => String(inv.supplierId?._id) === String(selectedSupplierForPrint)
+        (inv) => selectedSupplierForPrint.includes(String(inv.supplierId?._id))
       );
     }
 
@@ -734,14 +734,16 @@ const InvoicesPage = () => {
       .reduce((totalAmount, inv) => totalAmount + (inv.totalAmount || 0), 0);
     const unpaidSum = totalSum - paidSum;
 
-    const selectedProjectName = selectedProjectForPrint
-      ? projectsForPrint.find((p) => p._id === selectedProjectForPrint)?.name ||
-        ""
-      : "";
-    const selectedSupplierName = selectedSupplierForPrint
-      ? suppliersForPrint.find((s) => s._id === selectedSupplierForPrint)
-          ?.name || ""
-      : "";
+    const selectedProjectNames = selectedProjectForPrint.length > 0
+      ? selectedProjectForPrint.map(id =>
+          projectsForPrint.find((p) => p._id === id)?.name
+        ).filter(Boolean).join(", ")
+      : "כל הפרויקטים";
+    const selectedSupplierNames = selectedSupplierForPrint.length > 0
+      ? selectedSupplierForPrint.map(id =>
+          suppliersForPrint.find((s) => s._id === id)?.name
+        ).filter(Boolean).join(", ")
+      : "כל הספקים";
 
     const printWindow = window.open("", "_blank");
 
@@ -990,21 +992,21 @@ const InvoicesPage = () => {
           </div>
 
           ${
-            selectedProjectName ||
-            selectedSupplierName ||
+            selectedProjectForPrint.length > 0 ||
+            selectedSupplierForPrint.length > 0 ||
             fromDatePrint ||
             toDatePrint
               ? `
           <div class="filters">
             <h3>🔍 פילטרים</h3>
             ${
-              selectedProjectName
-                ? `<p><strong>פרויקט:</strong> ${selectedProjectName}</p>`
+              selectedProjectForPrint.length > 0
+                ? `<p><strong>פרויקטים:</strong> ${selectedProjectNames}</p>`
                 : ""
             }
             ${
-              selectedSupplierName
-                ? `<p><strong>ספק:</strong> ${selectedSupplierName}</p>`
+              selectedSupplierForPrint.length > 0
+                ? `<p><strong>ספקים:</strong> ${selectedSupplierNames}</p>`
                 : ""
             }
             ${
@@ -1112,8 +1114,8 @@ const InvoicesPage = () => {
     });
 
     setShowPrintModal(false);
-    setSelectedProjectForPrint("");
-    setSelectedSupplierForPrint("");
+    setSelectedProjectForPrint([]);
+    setSelectedSupplierForPrint([]);
     setFromDatePrint("");
     setToDatePrint("");
   };
@@ -3120,7 +3122,15 @@ const InvoicesPage = () => {
           {/* רקע כהה */}
           <div
             className="absolute inset-0 bg-black/60 backdrop-blur-sm"
-            onClick={() => setShowPrintModal(false)}
+            onClick={() => {
+              setShowPrintModal(false);
+              setSelectedProjectForPrint([]);
+              setSelectedSupplierForPrint([]);
+              setFromDatePrint("");
+              setToDatePrint("");
+              setFromPaymentDatePrint("");
+              setToPaymentDatePrint("");
+            }}
           />
 
           {/* עיטוף מרכזי */}
@@ -3142,7 +3152,15 @@ const InvoicesPage = () => {
                   </div>
 
                   <button
-                    onClick={() => setShowPrintModal(false)}
+                    onClick={() => {
+                      setShowPrintModal(false);
+                      setSelectedProjectForPrint([]);
+                      setSelectedSupplierForPrint([]);
+                      setFromDatePrint("");
+                      setToDatePrint("");
+                      setFromPaymentDatePrint("");
+                      setToPaymentDatePrint("");
+                    }}
                     className="text-white hover:bg-white/20 rounded-lg p-2 transition"
                   >
                     <X className="w-6 h-6" />
@@ -3151,41 +3169,57 @@ const InvoicesPage = () => {
 
                 {/* תוכן גולל */}
                 <div className="max-h-[calc(85vh-8rem)] overflow-y-auto p-6">
-                  {/* בחירת פרויקט */}
-                  <label className="block font-semibold text-slate-700 mb-2">
-                    בחירת פרויקט
-                  </label>
-                  <select
-                    className="w-full p-3 border-2 border-orange-200 rounded-xl mb-6 font-medium focus:border-orange-500 focus:outline-none focus:ring-4 focus:ring-orange-500/20 transition-all"
-                    value={selectedProjectForPrint}
-                    onChange={(e) => setSelectedProjectForPrint(e.target.value)}
-                  >
-                    <option value="">כל הפרויקטים</option>
-                    {projectsForPrint.map((p) => (
-                      <option key={p._id} value={p._id}>
-                        {p.name}
-                      </option>
-                    ))}
-                  </select>
+                  {/* בחירת פרויקטים */}
+                  <div className="mb-6">
+                    <label className="block font-semibold text-slate-700 mb-3">
+                      בחירת פרויקטים
+                    </label>
+                    <div className="max-h-48 overflow-y-auto border-2 border-orange-200 rounded-xl p-3 space-y-2">
+                      {projectsForPrint.map((p) => (
+                        <label key={p._id} className="flex items-center gap-2 cursor-pointer hover:bg-orange-50 p-2 rounded-lg transition">
+                          <input
+                            type="checkbox"
+                            checked={selectedProjectForPrint.includes(p._id)}
+                            onChange={(e) => {
+                              if (e.target.checked) {
+                                setSelectedProjectForPrint([...selectedProjectForPrint, p._id]);
+                              } else {
+                                setSelectedProjectForPrint(selectedProjectForPrint.filter(id => id !== p._id));
+                              }
+                            }}
+                            className="w-4 h-4 accent-orange-500"
+                          />
+                          <span className="text-sm font-medium">{p.name}</span>
+                        </label>
+                      ))}
+                    </div>
+                  </div>
 
-                  {/* בחירת ספק */}
-                  <label className="block font-semibold text-slate-700 mb-2">
-                    בחירת ספק
-                  </label>
-                  <select
-                    className="w-full p-3 border-2 border-orange-200 rounded-xl mb-6 font-medium focus:border-orange-500 focus:outline-none focus:ring-4 focus:ring-orange-500/20 transition-all"
-                    value={selectedSupplierForPrint}
-                    onChange={(e) =>
-                      setSelectedSupplierForPrint(e.target.value)
-                    }
-                  >
-                    <option value="">כל הספקים</option>
-                    {suppliersForPrint.map((s) => (
-                      <option key={s._id} value={s._id}>
-                        {s.name}
-                      </option>
-                    ))}
-                  </select>
+                  {/* בחירת ספקים */}
+                  <div className="mb-6">
+                    <label className="block font-semibold text-slate-700 mb-3">
+                      בחירת ספקים
+                    </label>
+                    <div className="max-h-48 overflow-y-auto border-2 border-orange-200 rounded-xl p-3 space-y-2">
+                      {suppliersForPrint.map((s) => (
+                        <label key={s._id} className="flex items-center gap-2 cursor-pointer hover:bg-orange-50 p-2 rounded-lg transition">
+                          <input
+                            type="checkbox"
+                            checked={selectedSupplierForPrint.includes(s._id)}
+                            onChange={(e) => {
+                              if (e.target.checked) {
+                                setSelectedSupplierForPrint([...selectedSupplierForPrint, s._id]);
+                              } else {
+                                setSelectedSupplierForPrint(selectedSupplierForPrint.filter(id => id !== s._id));
+                              }
+                            }}
+                            className="w-4 h-4 accent-orange-500"
+                          />
+                          <span className="text-sm font-medium">{s.name}</span>
+                        </label>
+                      ))}
+                    </div>
+                  </div>
 
                   {/* טווח תאריכי יצירה */}
                   <label className="block font-semibold text-slate-700 mb-2">
@@ -3194,17 +3228,19 @@ const InvoicesPage = () => {
                   <div className="flex gap-3 mb-6">
                     <input
                       type="date"
-                      className="w-1/2 border-2 border-orange-200 p-3 rounded-xl focus:border-orange-500 focus:outline-none focus:ring-4 focus:ring-orange-500/20 transition-all"
+                      className="w-1/2 border-2 border-orange-200 p-3 rounded-xl focus:border-orange-500 focus:outline-none focus:ring-4 focus:ring-orange-500/20 transition-all cursor-pointer"
                       placeholder="מתאריך"
                       value={fromDatePrint}
                       onChange={(e) => setFromDatePrint(e.target.value)}
+                      onClick={(e) => e.target.showPicker && e.target.showPicker()}
                     />
                     <input
                       type="date"
-                      className="w-1/2 border-2 border-orange-200 p-3 rounded-xl focus:border-orange-500 focus:outline-none focus:ring-4 focus:ring-orange-500/20 transition-all"
+                      className="w-1/2 border-2 border-orange-200 p-3 rounded-xl focus:border-orange-500 focus:outline-none focus:ring-4 focus:ring-orange-500/20 transition-all cursor-pointer"
                       placeholder="עד תאריך"
                       value={toDatePrint}
                       onChange={(e) => setToDatePrint(e.target.value)}
+                      onClick={(e) => e.target.showPicker && e.target.showPicker()}
                     />
                   </div>
 
@@ -3215,17 +3251,19 @@ const InvoicesPage = () => {
                   <div className="flex gap-3 mb-10">
                     <input
                       type="date"
-                      className="w-1/2 border-2 border-orange-200 p-3 rounded-xl focus:border-orange-500 focus:outline-none focus:ring-4 focus:ring-orange-500/20 transition-all"
+                      className="w-1/2 border-2 border-orange-200 p-3 rounded-xl focus:border-orange-500 focus:outline-none focus:ring-4 focus:ring-orange-500/20 transition-all cursor-pointer"
                       placeholder="מתאריך תשלום"
                       value={fromPaymentDatePrint}
                       onChange={(e) => setFromPaymentDatePrint(e.target.value)}
+                      onClick={(e) => e.target.showPicker && e.target.showPicker()}
                     />
                     <input
                       type="date"
-                      className="w-1/2 border-2 border-orange-200 p-3 rounded-xl focus:border-orange-500 focus:outline-none focus:ring-4 focus:ring-orange-500/20 transition-all"
+                      className="w-1/2 border-2 border-orange-200 p-3 rounded-xl focus:border-orange-500 focus:outline-none focus:ring-4 focus:ring-orange-500/20 transition-all cursor-pointer"
                       placeholder="עד תאריך תשלום"
                       value={toPaymentDatePrint}
                       onChange={(e) => setToPaymentDatePrint(e.target.value)}
+                      onClick={(e) => e.target.showPicker && e.target.showPicker()}
                     />
                   </div>
 

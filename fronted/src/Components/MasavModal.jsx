@@ -9,7 +9,7 @@ export default function MasavModal({ open, onClose, invoices, onInvoicesUpdated 
     new Date().toISOString().slice(0, 10)
   );
   const [searchTerm, setSearchTerm] = useState("");
-  const [paymentStatusFilter, setPaymentStatusFilter] = useState("unpaid"); // לא שולם, שולם, יצא לתשלום, הכל
+  const [paymentStatusFilter, setPaymentStatusFilter] = useState(["unpaid"]); // מערך של סטטוסים
 
   // ============================
   // פונקציית בדיקת פרטי בנק
@@ -214,11 +214,18 @@ export default function MasavModal({ open, onClose, invoices, onInvoicesUpdated 
   // FILTER SEARCH + PAYMENT STATUS
   // ============================
   const filteredInvoices = invoices.filter((inv) => {
-    // סינון לפי סטטוס תשלום
-    if (paymentStatusFilter === "unpaid" && inv.paid !== "לא") return false;
-    if (paymentStatusFilter === "paid" && inv.paid !== "כן") return false;
-    if (paymentStatusFilter === "sent_to_payment" && inv.paid !== "יצא לתשלום") return false;
-    // אם "all" - לא מסננים
+    // סינון לפי סטטוס תשלום - אם נבחרו סטטוסים, בדוק שהחשבונית תואמת
+    if (paymentStatusFilter.length > 0) {
+      const statusMap = {
+        "unpaid": "לא",
+        "paid": "כן",
+        "sent_to_payment": "יצא לתשלום"
+      };
+      const matchesStatus = paymentStatusFilter.some(status => {
+        return inv.paid === statusMap[status];
+      });
+      if (!matchesStatus) return false;
+    }
 
     // סינון לפי חיפוש
     const q = searchTerm.toLowerCase();
@@ -275,16 +282,29 @@ export default function MasavModal({ open, onClose, invoices, onInvoicesUpdated 
               <label className="block text-sm font-bold text-slate-700 mb-2">
                 סטטוס תשלום:
               </label>
-              <select
-                value={paymentStatusFilter}
-                onChange={(e) => setPaymentStatusFilter(e.target.value)}
-                className="w-full px-4 py-2.5 border-2 border-orange-200 rounded-xl focus:border-orange-400 focus:outline-none focus:ring-2 focus:ring-orange-300 font-medium"
-              >
-                <option value="unpaid">לא שולם</option>
-                <option value="sent_to_payment">יצא לתשלום</option>
-                <option value="paid">שולם</option>
-                <option value="all">הכל</option>
-              </select>
+              <div className="space-y-2">
+                {[
+                  { value: "unpaid", label: "לא שולם" },
+                  { value: "sent_to_payment", label: "יצא לתשלום" },
+                  { value: "paid", label: "שולם" }
+                ].map((status) => (
+                  <label key={status.value} className="flex items-center gap-2 cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={paymentStatusFilter.includes(status.value)}
+                      onChange={(e) => {
+                        if (e.target.checked) {
+                          setPaymentStatusFilter([...paymentStatusFilter, status.value]);
+                        } else {
+                          setPaymentStatusFilter(paymentStatusFilter.filter(s => s !== status.value));
+                        }
+                      }}
+                      className="w-4 h-4 accent-orange-500"
+                    />
+                    <span className="text-sm font-medium text-slate-700">{status.label}</span>
+                  </label>
+                ))}
+              </div>
             </div>
           </div>
 
