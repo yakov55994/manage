@@ -204,6 +204,13 @@ router.post("/download-zip", async (req, res) => {
     for (const file of files) {
       try {
         let url = file.url;
+
+        // בדיקה שה-URL תקף
+        if (!url || (!url.startsWith('http://') && !url.startsWith('https://'))) {
+          console.log("❌ URL לא תקף:", url, "עבור חשבונית:", file.invoiceNumber);
+          continue;
+        }
+
         let response = await fetch(url);
 
         // 🔥 fallback לבעיית /raw/upload ב־Cloudinary (מאוד נפוץ)

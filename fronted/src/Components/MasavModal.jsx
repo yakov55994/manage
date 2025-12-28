@@ -9,6 +9,7 @@ export default function MasavModal({ open, onClose, invoices, onInvoicesUpdated 
     new Date().toISOString().slice(0, 10)
   );
   const [searchTerm, setSearchTerm] = useState("");
+  const [paymentStatusFilter, setPaymentStatusFilter] = useState("unpaid"); // לא שולם, שולם, יצא לתשלום, הכל
 
   // ============================
   // פונקציית בדיקת פרטי בנק
@@ -210,9 +211,16 @@ export default function MasavModal({ open, onClose, invoices, onInvoicesUpdated 
   };
 
   // ============================
-  // FILTER SEARCH
+  // FILTER SEARCH + PAYMENT STATUS
   // ============================
   const filteredInvoices = invoices.filter((inv) => {
+    // סינון לפי סטטוס תשלום
+    if (paymentStatusFilter === "unpaid" && inv.paid !== "לא") return false;
+    if (paymentStatusFilter === "paid" && inv.paid !== "כן") return false;
+    if (paymentStatusFilter === "sent_to_payment" && inv.paid !== "יצא לתשלום") return false;
+    // אם "all" - לא מסננים
+
+    // סינון לפי חיפוש
     const q = searchTerm.toLowerCase();
     return (
       inv.invoiceNumber?.toString().includes(q) ||
@@ -248,17 +256,36 @@ export default function MasavModal({ open, onClose, invoices, onInvoicesUpdated 
 
         {/* CONTENT */}
         <div className="flex-1 overflow-y-auto p-6">
-          {/* EXECUTION DATE */}
-          <div className="mb-6 max-w-md">
-            <label className="block text-sm font-bold text-slate-700 mb-2">
-              תאריך ביצוע:
-            </label>
-            <input
-              type="date"
-              value={executionDate}
-              onChange={(e) => setExecutionDate(e.target.value)}
-              className="w-full px-4 py-2.5 border-2 border-orange-200 rounded-xl focus:border-orange-400"
-            />
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+            {/* EXECUTION DATE */}
+            <div>
+              <label className="block text-sm font-bold text-slate-700 mb-2">
+                תאריך ביצוע:
+              </label>
+              <input
+                type="date"
+                value={executionDate}
+                onChange={(e) => setExecutionDate(e.target.value)}
+                className="w-full px-4 py-2.5 border-2 border-orange-200 rounded-xl focus:border-orange-400 focus:outline-none focus:ring-2 focus:ring-orange-300"
+              />
+            </div>
+
+            {/* PAYMENT STATUS FILTER */}
+            <div>
+              <label className="block text-sm font-bold text-slate-700 mb-2">
+                סטטוס תשלום:
+              </label>
+              <select
+                value={paymentStatusFilter}
+                onChange={(e) => setPaymentStatusFilter(e.target.value)}
+                className="w-full px-4 py-2.5 border-2 border-orange-200 rounded-xl focus:border-orange-400 focus:outline-none focus:ring-2 focus:ring-orange-300 font-medium"
+              >
+                <option value="unpaid">לא שולם</option>
+                <option value="sent_to_payment">יצא לתשלום</option>
+                <option value="paid">שולם</option>
+                <option value="all">הכל</option>
+              </select>
+            </div>
           </div>
 
           {/* INVOICE LIST */}

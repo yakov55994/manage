@@ -15,6 +15,7 @@ export default function MoveInvoiceModal({
   const [selectedProjectIds, setSelectedProjectIds] = useState([]); // שינוי ל-array
   const [step, setStep] = useState(1); // שלב 1: בחירת פרויקטים, שלב 2: קביעת סכומים
   const [projectAmounts, setProjectAmounts] = useState({}); // {projectId: amount}
+  const [fundedFromProjectId, setFundedFromProjectId] = useState(null); // פרויקט ממומן למילגות
 
   useEffect(() => {
     if (!open) return;
@@ -38,18 +39,33 @@ export default function MoveInvoiceModal({
 
   useEffect(() => {
     // איפוס בחירה בעת פתיחה חדשה
-    if (open) {
-      setSelectedProjectIds([]);
+    if (open && invoice) {
+      // כלול את כל הפרויקטים הנוכחיים כברירת מחדל
+      const currentProjectIds = invoice.projects?.map(p => {
+        const pid = p.projectId?._id || p.projectId;
+        return String(pid);
+      }) || [];
+
+      setSelectedProjectIds(currentProjectIds);
       setProjectAmounts({});
+      setFundedFromProjectId(invoice.fundedFromProjectId?._id || invoice.fundedFromProjectId || null);
       setStep(1);
     }
-  }, [open]);
+  }, [open, invoice]);
 
   const filtered = useMemo(() => {
     if (!search) return projects;
     const s = search.toLowerCase();
     return projects.filter((p) => p.name?.toLowerCase().includes(s));
   }, [projects, search]);
+
+  // בדוק אם יש פרויקט מילגה ברשימה הנבחרת
+  const hasMilgaProject = useMemo(() => {
+    return selectedProjectIds.some(id => {
+      const project = projects.find(p => String(p._id) === String(id));
+      return project?.isMilga || project?.type === "milga";
+    });
+  }, [selectedProjectIds, projects]);
 
   const handleNextStep = () => {
     if (selectedProjectIds.length === 0) {
@@ -91,6 +107,12 @@ export default function MoveInvoiceModal({
       }
     }
 
+    // בדוק אם יש פרויקט מילגה ולא נבחר פרויקט ממומן
+    if (hasMilgaProject && !fundedFromProjectId) {
+      toast.error("יש לבחור פרויקט ממומן עבור פרויקט המילגה");
+      return;
+    }
+
     try {
       setLoading(true);
 
@@ -102,6 +124,7 @@ export default function MoveInvoiceModal({
 
       const payload = {
         targetProjects, // מערך של {projectId, sum}
+        fundedFromProjectId: hasMilgaProject ? fundedFromProjectId : null,
       };
 
       const { data } = await api.put(`/invoices/${invoice._id}/move`, payload);
@@ -126,12 +149,20 @@ export default function MoveInvoiceModal({
     }
   };
 
+  const handleBackdropClick = () => {
+    // אם בשלב 2 ויש בחירות - בקש אישור
+    if (step === 2 && selectedProjectIds.length > 0) {
+      const confirmClose = window.confirm("האם לבטל? כל השינויים שביצעת יאבדו");
+      if (!confirmClose) return;
+    }
+    onClose();
+  };
+
   if (!open) return null;
 
   return (
     <div
       className="fixed inset-0 z-50 bg-black/50 flex items-center justify-center p-4"
-      onClick={onClose}
     >
       <div
         className="bg-white rounded-2xl shadow-2xl w-full max-w-md max-h-[85vh] flex flex-col mt-20"
@@ -196,7 +227,7 @@ export default function MoveInvoiceModal({
 
                       return (
                         <li key={p._id}>
-                          <label className={`flex items-center gap-2 p-2.5 cursor-pointer hover:bg-orange-50 transition-colors ${isCurrentProject ? 'opacity-50' : ''}`}>
+                          <label className={`flex items-center gap-2 p-2.5 cursor-pointer hover:bg-orange-50 transition-colors ${isCurrentProject ? 'bg-orange-50' : ''}`}>
                             <input
                               type="checkbox"
                               className="w-4 h-4 accent-orange-500"
@@ -208,7 +239,6 @@ export default function MoveInvoiceModal({
                                   setSelectedProjectIds(selectedProjectIds.filter(id => id !== p._id));
                                 }
                               }}
-                              disabled={isCurrentProject}
                             />
                             <span className="font-medium text-sm flex-1">{p.name}</span>
                             {(p.isMilga || p.type === "milga") && (
@@ -217,7 +247,7 @@ export default function MoveInvoiceModal({
                               </span>
                             )}
                             {isCurrentProject && (
-                              <span className="text-xs bg-slate-200 text-slate-700 px-1.5 py-0.5 rounded">
+                              <span className="text-xs bg-green-100 text-green-700 px-1.5 py-0.5 rounded font-medium">
                                 נוכחי
                               </span>
                             )}
@@ -272,6 +302,33 @@ export default function MoveInvoiceModal({
                   </div>
                 );
               })}
+
+              {/* בחירת פרויקט ממומן - רק אם יש פרויקט מילגה */}
+              {hasMilgaProject && (
+                <div className="border border-blue-200 bg-blue-50 rounded-lg p-3">
+                  <div className="text-sm font-medium text-blue-900 mb-2">
+                    פרויקט ממומן (עבור פרויקטי מילגה):
+                  </div>
+                  <select
+                    value={fundedFromProjectId || ""}
+                    onChange={(e) => setFundedFromProjectId(e.target.value || null)}
+                    className="w-full border border-blue-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  >
+                    <option value="">בחר פרויקט ממומן</option>
+                    {projects
+                      .filter(p => !p.isMilga && p.type !== "milga")
+                      .map(p => (
+                        <option key={p._id} value={p._id}>
+                          {p.name}
+                        </option>
+                      ))
+                    }
+                  </select>
+                  <div className="text-xs text-blue-700 mt-1">
+                    הפרויקט שממנו יורד התקציב עבור המילגה
+                  </div>
+                </div>
+              )}
 
               {/* סיכום */}
               <div className="border-t-2 border-slate-300 pt-3">
