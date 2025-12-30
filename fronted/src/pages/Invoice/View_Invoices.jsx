@@ -27,9 +27,9 @@ import { useAuth } from "../../context/AuthContext.jsx";
 import { FileText, Paperclip } from "lucide-react";
 import MasavModal from "../../Components/MasavModal.jsx";
 
-// ===============================================
+
 // פונקציית עזר לסידור עברי נכון (א'-ב')
-// ===============================================
+
 const hebrewSort = (strA, strB) => {
   const a = (strA || "").trim();
   const b = (strB || "").trim();
@@ -62,9 +62,9 @@ const hebrewSort = (strA, strB) => {
   return a.length - b.length;
 };
 
-// ===============================================
+
 // פונקציית עזר להצגת שמות פרויקטים ללא מילגה
-// ===============================================
+  
 const getProjectNamesWithoutMilga = (projects) => {
   return projects
     .filter((p) => p.projectName !== "מילגה")
@@ -92,12 +92,13 @@ const InvoicesPage = () => {
   const [showPrintModal, setShowPrintModal] = useState(false);
 
   const [showPaymentExportModal, setShowPaymentExportModal] = useState(false);
+  const [exportPaymentStatusFilter, setExportPaymentStatusFilter] = useState("unpaid"); // לא שולם, שולם, יצא לתשלום, הכל
 
   const [paymentFilter, setPaymentFilter] = useState("all");
   const [statusFilter, setStatusFilter] = useState("all");
 
-  const [selectedProjectForPrint, setSelectedProjectForPrint] = useState("");
-  const [selectedSupplierForPrint, setSelectedSupplierForPrint] = useState("");
+  const [selectedProjectForPrint, setSelectedProjectForPrint] = useState([]);
+  const [selectedSupplierForPrint, setSelectedSupplierForPrint] = useState([]);
   const [fromDatePrint, setFromDatePrint] = useState("");
   const [toDatePrint, setToDatePrint] = useState("");
   const [fromPaymentDatePrint, setFromPaymentDatePrint] = useState("");
@@ -707,17 +708,15 @@ const InvoicesPage = () => {
   const generateInvoicesPrint = () => {
     let filteredForPrint = [...allInvoices];
 
-    if (selectedProjectForPrint) {
-      filteredForPrint = filteredForPrint.filter(
-        (inv) =>
-          inv.projectId === selectedProjectForPrint ||
-          inv.project?._id === selectedProjectForPrint
+    if (selectedProjectForPrint.length > 0) {
+      filteredForPrint = filteredForPrint.filter((inv) =>
+        inv.projects?.some((p) => selectedProjectForPrint.includes(String(p.projectId)))
       );
     }
 
-    if (selectedSupplierForPrint) {
+    if (selectedSupplierForPrint.length > 0) {
       filteredForPrint = filteredForPrint.filter(
-        (inv) => inv.supplierId?._id === selectedSupplierForPrint
+        (inv) => selectedSupplierForPrint.includes(String(inv.supplierId?._id))
       );
     }
 
@@ -737,11 +736,27 @@ const InvoicesPage = () => {
       });
     }
 
-    // 🔥 סינון רק חשבוניות שלא שולמו (לא מסננים לפי תאריך תשלום כי הן עוד לא שולמו!)
-    filteredForPrint = filteredForPrint.filter(inv => inv.paid === "לא");
+    // סינון לפי תאריך תשלום
+    if (fromPaymentDatePrint) {
+      const fromDate = new Date(fromPaymentDatePrint);
+      filteredForPrint = filteredForPrint.filter((inv) => {
+        if (!inv.paymentDate) return false;
+        const paymentDate = new Date(inv.paymentDate);
+        return paymentDate >= fromDate;
+      });
+    }
+
+    if (toPaymentDatePrint) {
+      const toDate = new Date(toPaymentDatePrint);
+      filteredForPrint = filteredForPrint.filter((inv) => {
+        if (!inv.paymentDate) return false;
+        const paymentDate = new Date(inv.paymentDate);
+        return paymentDate <= toDate;
+      });
+    }
 
     if (filteredForPrint.length === 0) {
-      toast.error("לא נמצאו חשבוניות שלא שולמו מתאימות לפילטרים שנבחרו", {
+      toast.error("לא נמצאו חשבוניות מתאימות לפילטרים שנבחרו", {
         className: "sonner-toast error rtl",
       });
       return;
@@ -763,14 +778,16 @@ const InvoicesPage = () => {
       .reduce((totalAmount, inv) => totalAmount + (inv.totalAmount || 0), 0);
     const unpaidSum = totalSum - paidSum;
 
-    const selectedProjectName = selectedProjectForPrint
-      ? projectsForPrint.find((p) => p._id === selectedProjectForPrint)?.name ||
-        ""
-      : "";
-    const selectedSupplierName = selectedSupplierForPrint
-      ? suppliersForPrint.find((s) => s._id === selectedSupplierForPrint)
-          ?.name || ""
-      : "";
+    const selectedProjectNames = selectedProjectForPrint.length > 0
+      ? selectedProjectForPrint.map(id =>
+          projectsForPrint.find((p) => p._id === id)?.name
+        ).filter(Boolean).join(", ")
+      : "כל הפרויקטים";
+    const selectedSupplierNames = selectedSupplierForPrint.length > 0
+      ? selectedSupplierForPrint.map(id =>
+          suppliersForPrint.find((s) => s._id === id)?.name
+        ).filter(Boolean).join(", ")
+      : "כל הספקים";
 
     const printWindow = window.open("", "_blank");
 
@@ -1019,21 +1036,21 @@ const InvoicesPage = () => {
           </div>
 
           ${
-            selectedProjectName ||
-            selectedSupplierName ||
+            selectedProjectForPrint.length > 0 ||
+            selectedSupplierForPrint.length > 0 ||
             fromDatePrint ||
             toDatePrint
               ? `
           <div class="filters">
             <h3>🔍 פילטרים</h3>
             ${
-              selectedProjectName
-                ? `<p><strong>פרויקט:</strong> ${selectedProjectName}</p>`
+              selectedProjectForPrint.length > 0
+                ? `<p><strong>פרויקטים:</strong> ${selectedProjectNames}</p>`
                 : ""
             }
             ${
-              selectedSupplierName
-                ? `<p><strong>ספק:</strong> ${selectedSupplierName}</p>`
+              selectedSupplierForPrint.length > 0
+                ? `<p><strong>ספקים:</strong> ${selectedSupplierNames}</p>`
                 : ""
             }
             ${
@@ -1141,8 +1158,8 @@ const InvoicesPage = () => {
     });
 
     setShowPrintModal(false);
-    setSelectedProjectForPrint("");
-    setSelectedSupplierForPrint("");
+    setSelectedProjectForPrint([]);
+    setSelectedSupplierForPrint([]);
     setFromDatePrint("");
     setToDatePrint("");
   };
@@ -1405,51 +1422,8 @@ const InvoicesPage = () => {
 
   const downloadAttachedFiles = async () => {
     try {
-      // ✅ התחל מכל החשבוניות, לא מהמסוננות
-      let filtered = allInvoices;
-
-      if (selectedProjectForPrint) {
-        filtered = filtered.filter((inv) =>
-          inv.projects?.some((p) => String(p.projectId) === String(selectedProjectForPrint))
-        );
-      }
-
-      if (selectedSupplierForPrint) {
-        filtered = filtered.filter(
-          (inv) => String(inv.supplierId?._id) === String(selectedSupplierForPrint)
-        );
-      }
-
-      if (fromDatePrint) {
-        filtered = filtered.filter(
-          (inv) => new Date(inv.createdAt) >= new Date(fromDatePrint)
-        );
-      }
-
-      if (toDatePrint) {
-        filtered = filtered.filter(
-          (inv) => new Date(inv.createdAt) <= new Date(toDatePrint)
-        );
-      }
-
-      // סינון לפי תאריך תשלום
-      if (fromPaymentDatePrint) {
-        filtered = filtered.filter((inv) => {
-          if (!inv.paymentDate) return false;
-          const paymentDate = new Date(inv.paymentDate);
-          const fromDate = new Date(fromPaymentDatePrint);
-          return paymentDate >= fromDate;
-        });
-      }
-
-      if (toPaymentDatePrint) {
-        filtered = filtered.filter((inv) => {
-          if (!inv.paymentDate) return false;
-          const paymentDate = new Date(inv.paymentDate);
-          const toDate = new Date(toPaymentDatePrint);
-          return paymentDate <= toDate;
-        });
-      }
+      // ✅ השתמש בחשבוניות המסוננות הנוכחיות במסך
+      let filtered = [...filteredInvoices];
 
       // ✅ סידור החשבוניות לפי שם ספק בסדר א'-ב' לפני הורדת הקבצים
       filtered.sort((a, b) => {
@@ -1670,32 +1644,8 @@ const InvoicesPage = () => {
 
   const togglePaymentStatus = async (invoice) => {
     try {
-      // ✅ אם הסטטוס הוא "יצא לתשלום" - החזר ל"לא שולם"
-      if (invoice.paid === "יצא לתשלום") {
-        const response = await api.put(`/invoices/${invoice._id}/status`, {
-          status: "לא",
-          paymentDate: null,
-          paymentMethod: null,
-        });
-
-        const updatedInvoice = response.data.data || response.data;
-
-        setInvoices((prev) =>
-          prev.map((inv) => (inv._id === invoice._id ? updatedInvoice : inv))
-        );
-
-        setAllInvoices((prev) =>
-          prev.map((inv) => (inv._id === invoice._id ? updatedInvoice : inv))
-        );
-
-        toast.success("סטטוס התשלום עודכן ל - לא שולם", {
-          className: "sonner-toast success rtl",
-        });
-        return;
-      }
-
-      // אם לא שולם - פתח מודל לסימון כ"שולם"
-      if (invoice.paid !== "כן") {
+      // אם לא שולם - פתח חלון להזנת פרטי תשלום
+      if (invoice.paid === "לא") {
         setPaymentCapture({
           open: true,
           invoice,
@@ -1705,7 +1655,7 @@ const InvoicesPage = () => {
         return;
       }
 
-      // ביטול תשלום (כן -> לא)
+      // אם שולם או יצא לתשלום - החזר ללא שולם
       const response = await api.put(`/invoices/${invoice._id}/status`, {
         status: "לא",
         paymentDate: null,
@@ -1723,7 +1673,8 @@ const InvoicesPage = () => {
         prev.map((inv) => (inv._id === invoice._id ? updatedInvoice : inv))
       );
 
-      toast.success("סטטוס התשלום עודכן ל - לא שולם", {
+      const previousStatus = invoice.paid === "כן" ? "שולם" : "יצא לתשלום";
+      toast.success(`סטטוס התשלום עודכן מ-${previousStatus} ל-לא שולם`, {
         className: "sonner-toast success rtl",
       });
     } catch (err) {
@@ -1801,7 +1752,7 @@ const InvoicesPage = () => {
 
   // ייצוא מרוכז לפי ספק
   const exportPaymentBySupplier = async () => {
-    let filtered = [...allInvoices];
+    let filtered = [...sortedInvoices];
 
     if (selectedProjectForPrint) {
       filtered = filtered.filter((inv) => {
@@ -1836,11 +1787,25 @@ const InvoicesPage = () => {
       });
     }
 
-    // 🔥 סינון רק חשבוניות שלא שולמו (לא מסננים לפי תאריך תשלום כי הן עוד לא שולמו!)
-    const invoicesToExport = filtered.filter(inv => inv.paid === "לא");
+    // 🔥 סינון לפי סטטוס תשלום
+    let invoicesToExport = filtered;
+
+    if (exportPaymentStatusFilter === "unpaid") {
+      invoicesToExport = invoicesToExport.filter(inv => inv.paid === "לא");
+    } else if (exportPaymentStatusFilter === "paid") {
+      invoicesToExport = invoicesToExport.filter(inv => inv.paid === "כן");
+    } else if (exportPaymentStatusFilter === "sent_to_payment") {
+      invoicesToExport = invoicesToExport.filter(inv => inv.paid === "יצא לתשלום");
+    }
+    // אם "all" - מייצאים הכל ללא סינון
 
     if (invoicesToExport.length === 0) {
-      toast.error("לא נמצאו חשבוניות שלא שולמו לייצוא", {
+      const statusText =
+        exportPaymentStatusFilter === "unpaid" ? "שלא שולמו" :
+        exportPaymentStatusFilter === "paid" ? "ששולמו" :
+        exportPaymentStatusFilter === "sent_to_payment" ? "שיצאו לתשלום" :
+        "";
+      toast.error(`לא נמצאו חשבוניות ${statusText} לייצוא`, {
         className: "sonner-toast error rtl",
       });
       return;
@@ -1959,7 +1924,7 @@ const InvoicesPage = () => {
   // ייצוא משכורות ל-Excel
   const exportSalaries = () => {
     // סינון רק חשבוניות משכורת
-    const salaryInvoices = allInvoices.filter(inv => inv.type === "salary");
+    const salaryInvoices = sortedInvoices.filter(inv => inv.type === "salary");
 
     if (salaryInvoices.length === 0) {
       toast.error("לא נמצאו חשבוניות משכורת", {
@@ -2087,7 +2052,7 @@ const InvoicesPage = () => {
 
   // ייצוא מפורט לפי חשבונית
   const exportPaymentDetailed = async () => {
-    let filtered = [...allInvoices];
+    let filtered = [...sortedInvoices];
 
     if (selectedProjectForPrint) {
       filtered = filtered.filter((inv) => {
@@ -2122,11 +2087,25 @@ const InvoicesPage = () => {
       });
     }
 
-    // 🔥 סינון רק חשבוניות שלא שולמו (לא מסננים לפי תאריך תשלום כי הן עוד לא שולמו!)
-    const invoicesToExport = filtered.filter(inv => inv.paid === "לא");
+    // 🔥 סינון לפי סטטוס תשלום
+    let invoicesToExport = filtered;
+
+    if (exportPaymentStatusFilter === "unpaid") {
+      invoicesToExport = invoicesToExport.filter(inv => inv.paid === "לא");
+    } else if (exportPaymentStatusFilter === "paid") {
+      invoicesToExport = invoicesToExport.filter(inv => inv.paid === "כן");
+    } else if (exportPaymentStatusFilter === "sent_to_payment") {
+      invoicesToExport = invoicesToExport.filter(inv => inv.paid === "יצא לתשלום");
+    }
+    // אם "all" - מייצאים הכל ללא סינון
 
     if (invoicesToExport.length === 0) {
-      toast.error("לא נמצאו חשבוניות שלא שולמו לייצוא", {
+      const statusText =
+        exportPaymentStatusFilter === "unpaid" ? "שלא שולמו" :
+        exportPaymentStatusFilter === "paid" ? "ששולמו" :
+        exportPaymentStatusFilter === "sent_to_payment" ? "שיצאו לתשלום" :
+        "";
+      toast.error(`לא נמצאו חשבוניות ${statusText} לייצוא`, {
         className: "sonner-toast error rtl",
       });
       return;
@@ -2685,7 +2664,11 @@ const InvoicesPage = () => {
                     {/* עמודה 11: סימון תשלום - רק לאדמין */}
                     {canEditInvoices && isAdmin && (
                       <td className="px-2 py-4 text-center">
-                        <label className="relative inline-block cursor-pointer">
+                        <label className="relative inline-block cursor-pointer" title={
+                          invoice.paid === "כן" ? "לחץ להחזרה ללא שולם" :
+                          invoice.paid === "יצא לתשלום" ? "לחץ להחזרה ללא שולם" :
+                          "לחץ לסימון כשולם"
+                        }>
                           <input
                             type="checkbox"
                             checked={invoice.paid === "כן"}
@@ -2721,11 +2704,11 @@ const InvoicesPage = () => {
                               <svg
                                 viewBox="0 0 24 24"
                                 className="w-4 h-4"
-                                fill="white"
                                 stroke="white"
-                                strokeWidth="1"
+                                fill="white"
+                                strokeWidth="2"
                               >
-                                <path d="M12 2l2.4 7.4h7.6l-6 4.6 2.3 7-6.3-4.6-6.3 4.6 2.3-7-6-4.6h7.6z" />
+                                <path d="M12 2L15 8L22 9L17 14L18 21L12 18L6 21L7 14L2 9L9 8Z" />
                               </svg>
                             )}
                           </span>
@@ -3171,7 +3154,15 @@ const InvoicesPage = () => {
           {/* רקע כהה */}
           <div
             className="absolute inset-0 bg-black/60 backdrop-blur-sm"
-            onClick={() => setShowPrintModal(false)}
+            onClick={() => {
+              setShowPrintModal(false);
+              setSelectedProjectForPrint([]);
+              setSelectedSupplierForPrint([]);
+              setFromDatePrint("");
+              setToDatePrint("");
+              setFromPaymentDatePrint("");
+              setToPaymentDatePrint("");
+            }}
           />
 
           {/* עיטוף מרכזי */}
@@ -3193,7 +3184,15 @@ const InvoicesPage = () => {
                   </div>
 
                   <button
-                    onClick={() => setShowPrintModal(false)}
+                    onClick={() => {
+                      setShowPrintModal(false);
+                      setSelectedProjectForPrint([]);
+                      setSelectedSupplierForPrint([]);
+                      setFromDatePrint("");
+                      setToDatePrint("");
+                      setFromPaymentDatePrint("");
+                      setToPaymentDatePrint("");
+                    }}
                     className="text-white hover:bg-white/20 rounded-lg p-2 transition"
                   >
                     <X className="w-6 h-6" />
@@ -3202,41 +3201,57 @@ const InvoicesPage = () => {
 
                 {/* תוכן גולל */}
                 <div className="max-h-[calc(85vh-8rem)] overflow-y-auto p-6">
-                  {/* בחירת פרויקט */}
-                  <label className="block font-semibold text-slate-700 mb-2">
-                    בחירת פרויקט
-                  </label>
-                  <select
-                    className="w-full p-3 border-2 border-orange-200 rounded-xl mb-6 font-medium focus:border-orange-500 focus:outline-none focus:ring-4 focus:ring-orange-500/20 transition-all"
-                    value={selectedProjectForPrint}
-                    onChange={(e) => setSelectedProjectForPrint(e.target.value)}
-                  >
-                    <option value="">כל הפרויקטים</option>
-                    {projectsForPrint.map((p) => (
-                      <option key={p._id} value={p._id}>
-                        {p.name}
-                      </option>
-                    ))}
-                  </select>
+                  {/* בחירת פרויקטים */}
+                  <div className="mb-6">
+                    <label className="block font-semibold text-slate-700 mb-3">
+                      בחירת פרויקטים
+                    </label>
+                    <div className="max-h-48 overflow-y-auto border-2 border-orange-200 rounded-xl p-3 space-y-2">
+                      {projectsForPrint.map((p) => (
+                        <label key={p._id} className="flex items-center gap-2 cursor-pointer hover:bg-orange-50 p-2 rounded-lg transition">
+                          <input
+                            type="checkbox"
+                            checked={selectedProjectForPrint.includes(p._id)}
+                            onChange={(e) => {
+                              if (e.target.checked) {
+                                setSelectedProjectForPrint([...selectedProjectForPrint, p._id]);
+                              } else {
+                                setSelectedProjectForPrint(selectedProjectForPrint.filter(id => id !== p._id));
+                              }
+                            }}
+                            className="w-4 h-4 accent-orange-500"
+                          />
+                          <span className="text-sm font-medium">{p.name}</span>
+                        </label>
+                      ))}
+                    </div>
+                  </div>
 
-                  {/* בחירת ספק */}
-                  <label className="block font-semibold text-slate-700 mb-2">
-                    בחירת ספק
-                  </label>
-                  <select
-                    className="w-full p-3 border-2 border-orange-200 rounded-xl mb-6 font-medium focus:border-orange-500 focus:outline-none focus:ring-4 focus:ring-orange-500/20 transition-all"
-                    value={selectedSupplierForPrint}
-                    onChange={(e) =>
-                      setSelectedSupplierForPrint(e.target.value)
-                    }
-                  >
-                    <option value="">כל הספקים</option>
-                    {suppliersForPrint.map((s) => (
-                      <option key={s._id} value={s._id}>
-                        {s.name}
-                      </option>
-                    ))}
-                  </select>
+                  {/* בחירת ספקים */}
+                  <div className="mb-6">
+                    <label className="block font-semibold text-slate-700 mb-3">
+                      בחירת ספקים
+                    </label>
+                    <div className="max-h-48 overflow-y-auto border-2 border-orange-200 rounded-xl p-3 space-y-2">
+                      {suppliersForPrint.map((s) => (
+                        <label key={s._id} className="flex items-center gap-2 cursor-pointer hover:bg-orange-50 p-2 rounded-lg transition">
+                          <input
+                            type="checkbox"
+                            checked={selectedSupplierForPrint.includes(s._id)}
+                            onChange={(e) => {
+                              if (e.target.checked) {
+                                setSelectedSupplierForPrint([...selectedSupplierForPrint, s._id]);
+                              } else {
+                                setSelectedSupplierForPrint(selectedSupplierForPrint.filter(id => id !== s._id));
+                              }
+                            }}
+                            className="w-4 h-4 accent-orange-500"
+                          />
+                          <span className="text-sm font-medium">{s.name}</span>
+                        </label>
+                      ))}
+                    </div>
+                  </div>
 
                   {/* טווח תאריכי יצירה */}
                   <label className="block font-semibold text-slate-700 mb-2">
@@ -3245,17 +3260,19 @@ const InvoicesPage = () => {
                   <div className="flex gap-3 mb-6">
                     <input
                       type="date"
-                      className="w-1/2 border-2 border-orange-200 p-3 rounded-xl focus:border-orange-500 focus:outline-none focus:ring-4 focus:ring-orange-500/20 transition-all"
+                      className="w-1/2 border-2 border-orange-200 p-3 rounded-xl focus:border-orange-500 focus:outline-none focus:ring-4 focus:ring-orange-500/20 transition-all cursor-pointer"
                       placeholder="מתאריך"
                       value={fromDatePrint}
                       onChange={(e) => setFromDatePrint(e.target.value)}
+                      onClick={(e) => e.target.showPicker && e.target.showPicker()}
                     />
                     <input
                       type="date"
-                      className="w-1/2 border-2 border-orange-200 p-3 rounded-xl focus:border-orange-500 focus:outline-none focus:ring-4 focus:ring-orange-500/20 transition-all"
+                      className="w-1/2 border-2 border-orange-200 p-3 rounded-xl focus:border-orange-500 focus:outline-none focus:ring-4 focus:ring-orange-500/20 transition-all cursor-pointer"
                       placeholder="עד תאריך"
                       value={toDatePrint}
                       onChange={(e) => setToDatePrint(e.target.value)}
+                      onClick={(e) => e.target.showPicker && e.target.showPicker()}
                     />
                   </div>
 
@@ -3266,17 +3283,19 @@ const InvoicesPage = () => {
                   <div className="flex gap-3 mb-10">
                     <input
                       type="date"
-                      className="w-1/2 border-2 border-orange-200 p-3 rounded-xl focus:border-orange-500 focus:outline-none focus:ring-4 focus:ring-orange-500/20 transition-all"
+                      className="w-1/2 border-2 border-orange-200 p-3 rounded-xl focus:border-orange-500 focus:outline-none focus:ring-4 focus:ring-orange-500/20 transition-all cursor-pointer"
                       placeholder="מתאריך תשלום"
                       value={fromPaymentDatePrint}
                       onChange={(e) => setFromPaymentDatePrint(e.target.value)}
+                      onClick={(e) => e.target.showPicker && e.target.showPicker()}
                     />
                     <input
                       type="date"
-                      className="w-1/2 border-2 border-orange-200 p-3 rounded-xl focus:border-orange-500 focus:outline-none focus:ring-4 focus:ring-orange-500/20 transition-all"
+                      className="w-1/2 border-2 border-orange-200 p-3 rounded-xl focus:border-orange-500 focus:outline-none focus:ring-4 focus:ring-orange-500/20 transition-all cursor-pointer"
                       placeholder="עד תאריך תשלום"
                       value={toPaymentDatePrint}
                       onChange={(e) => setToPaymentDatePrint(e.target.value)}
+                      onClick={(e) => e.target.showPicker && e.target.showPicker()}
                     />
                   </div>
 
@@ -3344,6 +3363,26 @@ const InvoicesPage = () => {
                 </h3>
                 <p className="text-slate-600 text-sm">
                   כיצד תרצה לארגן את הנתונים?
+                </p>
+              </div>
+
+              {/* סינון סטטוס תשלום */}
+              <div className="mb-6 p-4 bg-slate-50 rounded-xl">
+                <label className="block text-sm font-bold text-slate-700 mb-2">
+                  סטטוס תשלום:
+                </label>
+                <select
+                  value={exportPaymentStatusFilter}
+                  onChange={(e) => setExportPaymentStatusFilter(e.target.value)}
+                  className="w-full px-4 py-3 border-2 border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent text-sm font-medium"
+                >
+                  <option value="unpaid">לא שולם</option>
+                  <option value="sent_to_payment">יצא לתשלום</option>
+                  <option value="paid">שולם</option>
+                  <option value="all">הכל</option>
+                </select>
+                <p className="mt-2 text-xs text-slate-500">
+                  בחר איזה חשבוניות לייצא לפי סטטוס התשלום
                 </p>
               </div>
 
@@ -3433,7 +3472,7 @@ const InvoicesPage = () => {
       <MasavModal
         open={masavModal}
         onClose={() => setMasavModal(false)}
-        invoices={sortedInvoices.filter(inv => inv.paid === "לא")}
+        invoices={sortedInvoices}
         onInvoicesUpdated={(invoiceIds) => {
           // עדכון המצב המקומי
           setInvoices(prev =>

@@ -31,22 +31,20 @@ export const recalculateRemainingBudget = async (projectId) => {
     return;
   }
 
-  // 1️⃣ חשבוניות רגילות של הפרויקט (לא כולל משכורות ולא מילגה)
+  // 1️⃣ חשבוניות רגילות של הפרויקט (לא כולל משכורות)
+  // כולל גם חשבוניות מילגה שהפרויקט הזה הוא חלק מה-projects array
   const regularInvoices = await Invoice.find({
     "projects.projectId": projectId,
-    type: { $ne: "salary" },
-    $or: [
-      { fundedFromProjectId: { $exists: false } },
-      { fundedFromProjectId: null }
-    ]
+    type: { $ne: "salary" }
   });
 
-  // חשב את הסכום שהפרויקט משלם בחשבוניות רגילות (לפי sum בכל פרויקט)
+  // חשב את הסכום שהפרויקט משלם בחשבוניות (לפי sum בכל פרויקט)
   let regularTotal = 0;
   for (const inv of regularInvoices) {
     const projectPart = inv.projects.find(
       (p) => String(p.projectId) === String(projectId)
     );
+
     if (projectPart) {
       regularTotal += Number(projectPart.sum || 0);
     }
@@ -440,8 +438,8 @@ async function updateInvoice(user, invoiceId, data) {
 // ===============================================
 // MOVE INVOICE TO MULTIPLE PROJECTS - פונקציה חדשה
 // ===============================================
-async function moveInvoiceToMultipleProjects(user, invoice, targetProjects) {
-  console.log("🔄 Moving invoice to multiple projects:", { invoiceId: invoice._id, targetProjects });
+async function moveInvoiceToMultipleProjects(user, invoice, targetProjects, fundedFromProjectId = null) {
+  console.log("🔄 Moving invoice to multiple projects:", { invoiceId: invoice._id, targetProjects, fundedFromProjectId });
 
   // תוקף הסכום הכולל
   const totalAllocated = targetProjects.reduce((sum, p) => sum + Number(p.sum), 0);
@@ -476,6 +474,20 @@ async function moveInvoiceToMultipleProjects(user, invoice, targetProjects) {
 
   // שמור את הפרויקטים הישנים לצורך עדכון התקציבים
   const oldProjectIds = invoice.projects.map(p => String(p.projectId?._id || p.projectId));
+  const oldFundedFromProjectId = invoice.fundedFromProjectId ? String(invoice.fundedFromProjectId) : null;
+
+  // בדוק אם יש פרויקט מילגה ברשימה
+  const hasMilgaProject = await Promise.all(
+    targetProjects.map(async tp => {
+      const project = await Project.findById(tp.projectId).select("isMilga type");
+      return project?.isMilga || project?.type === "milga";
+    })
+  ).then(results => results.some(Boolean));
+
+  // אם יש פרויקט מילגה ולא סופק fundedFromProjectId - זרוק שגיאה
+  if (hasMilgaProject && !fundedFromProjectId) {
+    throw new Error("פרויקט מילגה דורש בחירת פרויקט ממומן");
+  }
 
   // בנה את מערך הפרויקטים החדש
   const newProjects = [];
@@ -493,6 +505,14 @@ async function moveInvoiceToMultipleProjects(user, invoice, targetProjects) {
   // עדכן את החשבונית
   invoice.projects = newProjects;
   invoice.totalAmount = totalAllocated;
+
+  // עדכן את fundedFromProjectId
+  if (fundedFromProjectId) {
+    invoice.fundedFromProjectId = fundedFromProjectId;
+  } else if (!hasMilgaProject) {
+    // אם אין פרויקט מילגה, נקה את fundedFromProjectId
+    invoice.fundedFromProjectId = null;
+  }
 
   // שמור
   await invoice.save();
@@ -512,6 +532,18 @@ async function moveInvoiceToMultipleProjects(user, invoice, targetProjects) {
       $addToSet: { invoices: invoice._id }
     });
     await recalculateRemainingBudget(newId);
+  }
+
+  // חשב מחדש תקציב עבור הפרויקט החדש שממומן (אם יש)
+  if (fundedFromProjectId) {
+    console.log(`🔄 Recalculating budget for NEW fundedFromProjectId: ${fundedFromProjectId}`);
+    await recalculateRemainingBudget(fundedFromProjectId);
+  }
+
+  // חשב מחדש תקציב עבור הפרויקט הישן שממומן (אם היה ושונה)
+  if (oldFundedFromProjectId && oldFundedFromProjectId !== String(fundedFromProjectId)) {
+    console.log(`🔄 Recalculating budget for OLD fundedFromProjectId: ${oldFundedFromProjectId}`);
+    await recalculateRemainingBudget(oldFundedFromProjectId);
   }
 
   // טען מחדש עם populate
@@ -551,7 +583,7 @@ async function moveInvoice(user, invoiceId, fromProjectId, toProjectId, fundedFr
   // תמיכה ב-API חדש ו-API ישן
   if (targetProjects && Array.isArray(targetProjects)) {
     // API חדש - העברה למספר פרויקטים
-    return await moveInvoiceToMultipleProjects(user, invoice, targetProjects);
+    return await moveInvoiceToMultipleProjects(user, invoice, targetProjects, fundedFromProjectId);
   }
 
   // API ישן - תמיכה לאחור
