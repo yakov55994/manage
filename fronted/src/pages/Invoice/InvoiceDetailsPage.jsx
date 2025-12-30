@@ -158,8 +158,13 @@ const InvoiceDetailsPage = () => {
                   <Receipt className="w-10 h-10 text-white" />
                 </div>
 
-                <h1 className="text-4xl font-black mt-4 text-slate-900">
-                  חשבונית #{invoice.invoiceNumber}
+                <h1 className="text-4xl font-black mt-4 text-slate-900 flex items-center gap-3">
+                  <span>חשבונית #{invoice.invoiceNumber}</span>
+                  {invoice.fundedFromProjectId && (
+                    <span className="inline-flex items-center px-3 py-1.5 rounded-full text-base font-bold bg-gradient-to-r from-orange-400 to-pink-500 text-white shadow-lg">
+                      מילגה 🎓
+                    </span>
+                  )}
                 </h1>
 
                 <div className="flex gap-4 mt-6">
@@ -304,11 +309,24 @@ const InvoiceDetailsPage = () => {
 
           {/* תווית מילגה - אם החשבונית יורדת מפרויקט מילגה */}
           {invoice.fundedFromProjectId && (
-            <DetailCard
-              label="סוג חשבונית"
-              icon={<Sparkles />}
-              value="מילגה 🎓"
-            />
+            <>
+              <DetailCard
+                label="סוג חשבונית"
+                icon={<Sparkles />}
+                value="מילגה 🎓"
+              />
+              <DetailCard
+                label="ממומן מפרויקט"
+                icon={<Building2 />}
+                value={
+                  typeof invoice.fundedFromProjectId === "object"
+                    ? invoice.fundedFromProjectId?.name || "—"
+                    : invoice.projects?.find(
+                        (p) => p.projectName !== "מילגה"
+                      )?.projectName || "—"
+                }
+              />
+            </>
           )}
         </div>
 

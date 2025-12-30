@@ -122,7 +122,7 @@ const ProjectDetailsPage = () => {
             ? invoicesResponse.data.data
             : [];
           const projectInvoices = allInvoices.filter((invoice) => {
-            // בדיקה 1: אם הפרויקט נמצא במערך projects
+            // בדיקה 1: אם הפרויקט נמצא במערך projects (כולל מילגה)
             const inProjects = invoice.projects?.some((p) => {
               const pid =
                 typeof p.projectId === "string"
@@ -132,14 +132,15 @@ const ProjectDetailsPage = () => {
               return String(pid) === String(id);
             });
 
-            // בדיקה 2: אם זו חשבונית מילגה שיורדת מהפרויקט הזה (fundedFromProjectId ברמת החשבונית)
+            // בדיקה 2: אם זו חשבונית שיורדת מהפרויקט הזה (fundedFromProjectId)
+            // זה מתאים למקרה שבו הפרויקט הנוכחי מממן חשבונית (מילגה/משכורת)
             const fundedId = typeof invoice.fundedFromProjectId === "string"
               ? invoice.fundedFromProjectId
               : invoice.fundedFromProjectId?._id;
 
             const isFundedFrom = fundedId && String(fundedId) === String(id);
 
-            // בדיקה 3: בדוק אם אחד מהפרויקטים בחשבונית ממומן מהפרויקט הזה (fundedFromProjectId ברמת הפרויקט)
+            // בדיקה 3: בדוק אם אחד מהפרויקטים בחשבונית ממומן מהפרויקט הזה
             const hasProjectFundedFrom = invoice.projects?.some((p) => {
               const projectFundedId = typeof p.fundedFromProjectId === "string"
                 ? p.fundedFromProjectId
@@ -881,11 +882,15 @@ const ProjectDetailsPage = () => {
                               </div>
                             </td>
 
-                            {/* סוג חשבונית - משכורת או רגילה */}
+                            {/* סוג חשבונית - משכורת, מילגה או רגילה */}
                             <td className="px-4 py-3 text-center">
                               {invoice.type === "salary" ? (
                                 <span className="inline-flex items-center px-3 py-1.5 rounded-full text-xs font-bold bg-gradient-to-r from-orange-600 via-amber-600 to-yellow-600 text-white shadow-lg">
                                   💰 משכורת
+                                </span>
+                              ) : invoice.fundedFromProjectId ? (
+                                <span className="inline-flex items-center px-3 py-1.5 rounded-full text-xs font-bold bg-gradient-to-r from-orange-400 to-pink-500 text-white shadow-lg">
+                                  🎓 מילגה
                                 </span>
                               ) : (
                                 <span className="inline-flex items-center px-2 py-1 rounded-full text-[10px] font-bold bg-gradient-to-r from-emerald-500 to-teal-600 text-white shadow-md">

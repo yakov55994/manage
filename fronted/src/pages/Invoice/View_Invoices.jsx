@@ -2587,7 +2587,7 @@ const InvoicesPage = () => {
                           )}
                         </span>
                         {/* תגית מילגה */}
-                        {invoice.projects?.some(p => p.projectName === "מילגה") && (
+                        {(invoice.fundedFromProjectId || invoice.projects?.some(p => p.projectName === "מילגה")) && (
                           <span className="inline-flex items-center px-2 py-1 rounded-full text-[10px] font-bold bg-gradient-to-r from-orange-400 to-pink-500 text-white shadow-md">
                             מילגה
                           </span>

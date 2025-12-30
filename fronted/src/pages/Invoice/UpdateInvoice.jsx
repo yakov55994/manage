@@ -360,6 +360,19 @@ const InvoiceEditPage = () => {
         sum: Number(r.sum),
       }));
 
+      // ✅ אם יש מילגה בפרויקטים הנבחרים, הוסף אותה ל-projects (עם סכום 0)
+      // כדי שנוכל למצוא את החשבונית בדף פרויקט מילגה
+      if (selectedProjects.some((p) => p._id === MILGA_ID || p.name === "מילגה")) {
+        const milgaProject = projects.find((p) => p._id === MILGA_ID || p.name === "מילגה");
+        if (milgaProject && !finalProjects.find(fp => fp.projectId === milgaProject._id)) {
+          finalProjects.push({
+            projectId: milgaProject._id,
+            projectName: milgaProject.name,
+            sum: 0, // מילגה לא צורכת תקציב
+          });
+        }
+      }
+
       const payload = {
         ...globalFields,
         files: uploadedGlobalFiles, // קבצים כלליים מועלים

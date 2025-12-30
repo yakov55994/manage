@@ -152,7 +152,7 @@ const CreateInvoice = () => {
   // ============================
 
   useEffect(() => {
-    const newRows = selectedProjects
+    let newRows = selectedProjects
       // ✅ סנן את פרויקט מילגה - הוא לא צריך row כי אין לו תקציב
       .filter((p) => p._id !== MILGA_ID)
       .map((p) => {
@@ -166,8 +166,37 @@ const CreateInvoice = () => {
         };
       });
 
-    setRows(newRows);
-  }, [selectedProjects]); // ✅ הסר את rows מהתלויות!
+    // ✅ אם בחרו רק מילגה (ללא פרויקטים אחרים) ויש fundedFromProjectId - הוסף row עבורו
+    if (
+      selectedProjects.some((p) => p._id === MILGA_ID) &&
+      fundedFromProjectId &&
+      !newRows.find((r) => r.projectId === fundedFromProjectId)
+    ) {
+      const fundedProject = projects.find((p) => p._id === fundedFromProjectId);
+      if (fundedProject) {
+        const existingRow = rows.find((r) => r.projectId === fundedFromProjectId);
+        newRows.push({
+          projectId: fundedProject._id,
+          projectName: fundedProject.name,
+          sum: existingRow?.sum || "",
+        });
+      }
+    }
+
+    // ✅ רק עדכן אם באמת יש שינוי (למנוע לולאה אינסופית)
+    const hasChanged =
+      newRows.length !== rows.length ||
+      newRows.some(
+        (nr, idx) =>
+          !rows[idx] ||
+          nr.projectId !== rows[idx].projectId ||
+          nr.projectName !== rows[idx].projectName
+      );
+
+    if (hasChanged) {
+      setRows(newRows);
+    }
+  }, [selectedProjects, fundedFromProjectId, projects, rows]); // ✅ הוסף גם rows כי אנחנו קוראים אותו
 
   // ============================
   // FILE UPLOAD HANDLER
@@ -325,6 +354,19 @@ const CreateInvoice = () => {
           projectName: r.projectName,
           sum: Number(r.sum),
         }));
+
+        // ✅ אם יש מילגה בפרויקטים הנבחרים, הוסף אותה ל-projects (עם סכום 0)
+        // כדי שנוכל למצוא את החשבונית בדף פרויקט מילגה
+        if (selectedProjects.some((p) => p._id === MILGA_ID)) {
+          const milgaProject = projects.find((p) => p._id === MILGA_ID);
+          if (milgaProject) {
+            payload.projects.push({
+              projectId: milgaProject._id,
+              projectName: milgaProject.name,
+              sum: 0, // מילגה לא צורכת תקציב
+            });
+          }
+        }
       }
 
       // ============================
