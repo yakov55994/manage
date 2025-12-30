@@ -320,20 +320,25 @@ const InvoiceDetailsPage = () => {
           </h2>
 
           <div className="space-y-4">
-            {invoice.projects.map((proj, i) => (
-              <div
-                key={i}
-                className="p-4 rounded-xl border-2 border-orange-200 bg-orange-50 flex justify-between items-center"
-              >
-                <div>
-                  <p className="font-bold text-lg">{proj.projectName}</p>
-                </div>
+            {invoice.projects
+              .filter((proj) => {
+                // ✅ סנן פרויקט מילגה מהתצוגה - הוא לא צריך להופיע כי אין לו תקציב משלו
+                return proj.projectName !== "מילגה";
+              })
+              .map((proj, i) => (
+                <div
+                  key={i}
+                  className="p-4 rounded-xl border-2 border-orange-200 bg-orange-50 flex justify-between items-center"
+                >
+                  <div>
+                    <p className="font-bold text-lg">{proj.projectName}</p>
+                  </div>
 
-                <div className="text-right font-bold text-green-700">
-                  {proj.sum.toLocaleString()} ₪
+                  <div className="text-right font-bold text-green-700">
+                    {(proj.sum || 0).toLocaleString()} ₪
+                  </div>
                 </div>
-              </div>
-            ))}
+              ))}
           </div>
         </div>
 

@@ -24,6 +24,10 @@ const InvoiceEditPage = () => {
   const [projects, setProjects] = useState([]);
   const [selectedProjects, setSelectedProjects] = useState([]);
 
+  // ✅ זהה את פרויקט המילגה
+  const milgaProject = projects.find((p) => p.name === "מילגה");
+  const MILGA_ID = milgaProject?._id;
+
   const [rows, setRows] = useState([]);
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
@@ -128,11 +132,20 @@ const InvoiceEditPage = () => {
             setSelectedProjects(selected);
 
             // -------- ROWS ----------
-            const builtRows = invoice.projects.map((p) => ({
-              projectId: p.projectId._id || p.projectId,
-              projectName: p.projectName || p.projectId.name,
-              sum: p.sum,
-            }));
+            // ✅ סנן פרויקט מילגה מהשורות - אין לו תקציב משלו
+            const milgaProj = loadedProjects.find((p) => p.name === "מילגה");
+            const builtRows = invoice.projects
+              .filter((p) => {
+                const pid = p.projectId._id || p.projectId;
+                const pname = p.projectName || p.projectId?.name;
+                // סנן לפי ID או לפי שם
+                return pid !== milgaProj?._id && pname !== "מילגה";
+              })
+              .map((p) => ({
+                projectId: p.projectId._id || p.projectId,
+                projectName: p.projectName || p.projectId.name,
+                sum: p.sum,
+              }));
 
             setRows(builtRows);
           }
@@ -158,7 +171,7 @@ const InvoiceEditPage = () => {
 
     // בדוק אם יש פרויקט מילגה חדש שנבחר
     const newMilgaProject = newProjects.find(
-      (p) => p.isMilga || p.type === "milga"
+      (p) => p.isMilga || p.type === "milga" || p.name === "מילגה"
     );
 
     if (newMilgaProject && !fundingProjectsMap[newMilgaProject._id]) {
@@ -178,11 +191,15 @@ const InvoiceEditPage = () => {
         updatedProjects.some((p) => (p._id || p) === r.projectId)
       );
 
-      // הוסף שורות חדשות לפרויקטים שנוספו
+      // הוסף שורות חדשות לפרויקטים שנוספו (מלבד מילגה)
       updatedProjects.forEach((p) => {
-        if (!updated.find((r) => r.projectId === (p._id || p))) {
+        const projectId = p._id || p;
+        // ✅ דלג על פרויקט מילגה - אין לו תקציב משלו
+        if (projectId === MILGA_ID) return;
+
+        if (!updated.find((r) => r.projectId === projectId)) {
           updated.push({
-            projectId: p._id || p,
+            projectId: projectId,
             projectName: p.name,
             sum: "",
           });

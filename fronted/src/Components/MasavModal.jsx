@@ -180,7 +180,15 @@ export default function MasavModal({ open, onClose, invoices, onInvoicesUpdated 
       const url = window.URL.createObjectURL(new Blob([res.data]));
       const link = document.createElement("a");
       link.href = url;
-      link.download = "masav_bundle.zip";
+
+      // 📅 שם קובץ עם תאריך (dd-mm-yyyy)
+      const today = new Date();
+      const day = String(today.getDate()).padStart(2, '0');
+      const month = String(today.getMonth() + 1).padStart(2, '0');
+      const year = today.getFullYear();
+      const dateStr = `${day}-${month}-${year}`;
+
+      link.download = `masav_${dateStr}.zip`;
       link.click();
 
       // ✅ עדכון סטטוס החשבוניות שיצאו למס"ב ל"יצא לתשלום"

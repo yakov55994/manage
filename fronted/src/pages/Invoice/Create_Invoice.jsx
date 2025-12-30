@@ -152,16 +152,19 @@ const CreateInvoice = () => {
   // ============================
 
   useEffect(() => {
-    const newRows = selectedProjects.map((p) => {
-      // ✅ חפש אם יש כבר row עם הסכום שלו
-      const existingRow = rows.find((r) => r.projectId === p._id);
+    const newRows = selectedProjects
+      // ✅ סנן את פרויקט מילגה - הוא לא צריך row כי אין לו תקציב
+      .filter((p) => p._id !== MILGA_ID)
+      .map((p) => {
+        // ✅ חפש אם יש כבר row עם הסכום שלו
+        const existingRow = rows.find((r) => r.projectId === p._id);
 
-      return {
-        projectId: p._id,
-        projectName: p.name,
-        sum: existingRow?.sum || "", // ✅ שמור את הסכום הקיים אם יש
-      };
-    });
+        return {
+          projectId: p._id,
+          projectName: p.name,
+          sum: existingRow?.sum || "", // ✅ שמור את הסכום הקיים אם יש
+        };
+      });
 
     setRows(newRows);
   }, [selectedProjects]); // ✅ הסר את rows מהתלויות!

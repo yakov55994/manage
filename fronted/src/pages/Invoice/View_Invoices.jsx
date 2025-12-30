@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import { ClipLoader } from "react-spinners";
 import api from "../../api/api.js";
 import * as XLSX from "xlsx";
@@ -62,6 +62,16 @@ const hebrewSort = (strA, strB) => {
   return a.length - b.length;
 };
 
+// ===============================================
+// פונקציית עזר להצגת שמות פרויקטים ללא מילגה
+// ===============================================
+const getProjectNamesWithoutMilga = (projects) => {
+  return projects
+    .filter((p) => p.projectName !== "מילגה")
+    .map((p) => p.projectName)
+    .join(", ");
+};
+
 const InvoicesPage = () => {
   const [invoices, setInvoices] = useState([]);
   const [allInvoices, setAllInvoices] = useState([]);
@@ -111,6 +121,9 @@ const InvoicesPage = () => {
     submissionStatus: "all",
     documentStatus: "all",
   });
+
+  // ✅ Ref למניעת שמירה בפעם הראשונה
+  const isFirstRender = useRef(true);
 
   const [exportColumns, setExportColumns] = useState({
     invoiceNumber: true,
@@ -184,9 +197,9 @@ const InvoicesPage = () => {
     }
   }, [loading, user, navigate]);
 
-  // 🔄 Restore filter state from sessionStorage when returning from invoice details
+  // 🔄 Restore filter state from localStorage when returning from invoice details
   useEffect(() => {
-    const savedFilters = sessionStorage.getItem('invoiceFilters');
+    const savedFilters = localStorage.getItem('invoiceFilters');
     console.log('🔍 Checking for saved filters:', savedFilters);
     if (savedFilters) {
       try {
@@ -202,14 +215,36 @@ const InvoicesPage = () => {
           if (filters.sortBy !== undefined) setSortBy(filters.sortBy);
           if (filters.sortOrder !== undefined) setSortOrder(filters.sortOrder);
 
-          // מחק את הסינון השמור אחרי השחזור - ככה אם מרעננים את הדף זה לא יישמר
-          sessionStorage.removeItem('invoiceFilters');
+          // 🔥 לא מוחקים את הסינון - ככה הוא נשמר גם אחרי יצירת חשבונית
+          // localStorage.removeItem('invoiceFilters');
         }
       } catch (error) {
         console.error('Error restoring invoice filters:', error);
       }
     }
   }, []);
+
+  // 💾 שמור סינונים אוטומטית כל פעם שהם משתנים
+  useEffect(() => {
+    // ✅ דלג על שמירה בפעם הראשונה (כדי לא לדרוס את הסינונים השמורים)
+    if (isFirstRender.current) {
+      isFirstRender.current = false;
+      return;
+    }
+
+    const filterState = {
+      searchTerm,
+      paymentFilter,
+      statusFilter,
+      documentStatusFilter,
+      advancedFilters,
+      sortBy,
+      sortOrder,
+      _fromInvoiceList: true,
+    };
+    console.log('💾 Saving filters to localStorage:', filterState);
+    localStorage.setItem('invoiceFilters', JSON.stringify(filterState));
+  }, [searchTerm, paymentFilter, statusFilter, documentStatusFilter, advancedFilters, sortBy, sortOrder]);
 
   // בדיקות הרשאות
   const canEditInvoices =
@@ -303,6 +338,15 @@ const InvoicesPage = () => {
       .trim();
 
   const getActionState = (invoice) => {
+    // ✅ בדיקה ראשונה - אם החשבונית יצאה לתשלום
+    if (invoice.paid === "יצא לתשלום") {
+      return {
+        status: "יצא",
+        label: "לתשלום",
+        color: "bg-blue-100 text-blue-700 border-blue-300"
+      };
+    }
+
     const t = normalizeType(invoice?.documentType);
     const okF = FINAL_TYPES.has(t);
     const okI = INTERIM_TYPES.has(t);
@@ -595,7 +639,7 @@ const InvoicesPage = () => {
     setInvoices(allInvoices);
     setDocumentStatusFilter("all");
     // מחק את הסינון השמור
-    sessionStorage.removeItem('invoiceFilters');
+    localStorage.removeItem('invoiceFilters');
   };
 
   const clearAdvancedFilters = () => {
@@ -616,7 +660,7 @@ const InvoicesPage = () => {
       documentStatus: "all",
     });
     // מחק את הסינון השמור
-    sessionStorage.removeItem('invoiceFilters');
+    localStorage.removeItem('invoiceFilters');
   };
 
   useEffect(() => {
@@ -1034,7 +1078,7 @@ const InvoicesPage = () => {
                   <td>${invoice.supplierId?.name || invoice.invitingName || "לא צוין"}</td>
                   <td>${
                     invoice.projects?.length
-                      ? invoice.projects.map((p) => p.projectName).join(", ")
+                      ? getProjectNamesWithoutMilga(invoice.projects)
                       : "-"
                   }</td>
                   <td><strong>${formatNumber(
@@ -1166,7 +1210,7 @@ const InvoicesPage = () => {
             break;
           case "projectName":
             row[columnMapping.projectName] =
-              invoice.projects?.map((p) => p.projectName).join(", ") || "";
+              getProjectNamesWithoutMilga(invoice.projects || []);
             break;
           case "invitingName":
             row[columnMapping.invitingName] = invoice.invitingName || "";
@@ -1293,7 +1337,7 @@ const InvoicesPage = () => {
 
       // ✅ שמות פרויקטים ממערך projects (לחשבונית מרובת פרויקטים)
       const projectNames = invoice.projects?.length
-        ? invoice.projects.map((p) => p.projectName).join(", ")
+        ? getProjectNamesWithoutMilga(invoice.projects)
         : invoice.projectName || "לא זמין";
 
       const baseData = {
@@ -1429,7 +1473,7 @@ const InvoicesPage = () => {
                 name: file.name || "file",
                 invoiceNumber: invoice.invoiceNumber || "ללא",
                 projectName:
-                  invoice.projects?.map((p) => p.projectName).join(", ") ||
+                  getProjectNamesWithoutMilga(invoice.projects || []) ||
                   "ללא_פרויקט",
                 supplierName: supplierName,
               });
@@ -1620,24 +1664,37 @@ const InvoicesPage = () => {
   };
 
   const handleView = (id) => {
-    // 💾 Save current filter state before navigating
-    const filterState = {
-      searchTerm,
-      paymentFilter,
-      statusFilter,
-      documentStatusFilter,
-      advancedFilters,
-      sortBy,
-      sortOrder,
-      _fromInvoiceList: true, // 🔥 סימן שבאנו מרשימת החשבוניות
-    };
-    console.log('💾 Saving filter state before navigation:', filterState);
-    sessionStorage.setItem('invoiceFilters', JSON.stringify(filterState));
+    // הסינונים כבר נשמרים אוטומטית ב-useEffect, לא צריך לשמור שוב
     navigate(`/invoices/${id}`);
   };
 
   const togglePaymentStatus = async (invoice) => {
     try {
+      // ✅ אם הסטטוס הוא "יצא לתשלום" - החזר ל"לא שולם"
+      if (invoice.paid === "יצא לתשלום") {
+        const response = await api.put(`/invoices/${invoice._id}/status`, {
+          status: "לא",
+          paymentDate: null,
+          paymentMethod: null,
+        });
+
+        const updatedInvoice = response.data.data || response.data;
+
+        setInvoices((prev) =>
+          prev.map((inv) => (inv._id === invoice._id ? updatedInvoice : inv))
+        );
+
+        setAllInvoices((prev) =>
+          prev.map((inv) => (inv._id === invoice._id ? updatedInvoice : inv))
+        );
+
+        toast.success("סטטוס התשלום עודכן ל - לא שולם", {
+          className: "sonner-toast success rtl",
+        });
+        return;
+      }
+
+      // אם לא שולם - פתח מודל לסימון כ"שולם"
       if (invoice.paid !== "כן") {
         setPaymentCapture({
           open: true,
@@ -1648,7 +1705,7 @@ const InvoicesPage = () => {
         return;
       }
 
-      // ביטול תשלום
+      // ביטול תשלום (כן -> לא)
       const response = await api.put(`/invoices/${invoice._id}/status`, {
         status: "לא",
         paymentDate: null,
@@ -1824,7 +1881,7 @@ const InvoicesPage = () => {
 
       // 🟢 כאן היה הבאג — עכשיו מתוקן:
       groupedBySupplier[supplierId].projects.add(
-        invoice.projects?.map((p) => p.projectName).join(", ") || ""
+        getProjectNamesWithoutMilga(invoice.projects || [])
       );
     });
 
@@ -2088,7 +2145,7 @@ const InvoicesPage = () => {
         "שם ספק": supplier?.name || "לא זמין",
         "מספר חשבונית": invoice.invoiceNumber || "",
         "שם פרויקט":
-          invoice.projects?.map((p) => p.projectName).join(", ") || "",
+          getProjectNamesWithoutMilga(invoice.projects || []),
         סכום: invoice.totalAmount || 0,
         "סוג מסמך": invoice.documentType || "לא זמין",
         "תאריך חשבונית": formatDate(invoice.createdAt),
@@ -2642,6 +2699,8 @@ const InvoicesPage = () => {
                             className={`w-6 h-6 inline-block border-2 rounded-full transition-all ${
                               invoice.paid === "כן"
                                 ? "bg-emerald-500 border-emerald-500"
+                                : invoice.paid === "יצא לתשלום"
+                                ? "bg-blue-500 border-blue-500"
                                 : "bg-gray-200 border-gray-400"
                             } flex items-center justify-center`}
                           >
@@ -2656,6 +2715,17 @@ const InvoicesPage = () => {
                                 strokeLinejoin="round"
                               >
                                 <path d="M20 6L9 17l-5-5" />
+                              </svg>
+                            )}
+                            {invoice.paid === "יצא לתשלום" && (
+                              <svg
+                                viewBox="0 0 24 24"
+                                className="w-4 h-4"
+                                fill="white"
+                                stroke="white"
+                                strokeWidth="1"
+                              >
+                                <path d="M12 2l2.4 7.4h7.6l-6 4.6 2.3 7-6.3-4.6-6.3 4.6 2.3-7-6-4.6h7.6z" />
                               </svg>
                             )}
                           </span>
@@ -3455,7 +3525,7 @@ const InvoicesPage = () => {
                           חשבונית #{inv.invoiceNumber}
                         </span>
                         <span className="text-xs text-slate-500">
-                          {inv.projects?.map((p) => p.projectName).join(", ")}
+                          {getProjectNamesWithoutMilga(inv.projects || [])}
                         </span>
                       </div>
                     ))}

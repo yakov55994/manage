@@ -132,14 +132,23 @@ const ProjectDetailsPage = () => {
               return String(pid) === String(id);
             });
 
-            // בדיקה 2: אם זו חשבונית מילגה שיורדת מהפרויקט הזה (fundedFromProjectId)
+            // בדיקה 2: אם זו חשבונית מילגה שיורדת מהפרויקט הזה (fundedFromProjectId ברמת החשבונית)
             const fundedId = typeof invoice.fundedFromProjectId === "string"
               ? invoice.fundedFromProjectId
               : invoice.fundedFromProjectId?._id;
 
             const isFundedFrom = fundedId && String(fundedId) === String(id);
 
-            return inProjects || isFundedFrom;
+            // בדיקה 3: בדוק אם אחד מהפרויקטים בחשבונית ממומן מהפרויקט הזה (fundedFromProjectId ברמת הפרויקט)
+            const hasProjectFundedFrom = invoice.projects?.some((p) => {
+              const projectFundedId = typeof p.fundedFromProjectId === "string"
+                ? p.fundedFromProjectId
+                : p.fundedFromProjectId?._id;
+
+              return projectFundedId && String(projectFundedId) === String(id);
+            });
+
+            return inProjects || isFundedFrom || hasProjectFundedFrom;
           });
 
           setInvoices(projectInvoices);
