@@ -148,6 +148,24 @@ const InvoiceEditPage = () => {
               }));
 
             setRows(builtRows);
+
+            // -------- FUNDING PROJECT MAP ----------
+            // ✅ אם יש fundedFromProjectId או פרויקט מילגה, טען את המיפוי
+            const milgaProject = invoice.projects.find(
+              (p) => (p.projectId.name || p.projectName) === "מילגה"
+            );
+
+            if (milgaProject && invoice.fundedFromProjectId) {
+              const milgaId = milgaProject.projectId._id || milgaProject.projectId;
+              const fundedId =
+                typeof invoice.fundedFromProjectId === "string"
+                  ? invoice.fundedFromProjectId
+                  : invoice.fundedFromProjectId._id;
+
+              setFundingProjectsMap({
+                [milgaId]: fundedId,
+              });
+            }
           }
         }
       } catch (error) {
