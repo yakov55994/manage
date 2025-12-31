@@ -90,14 +90,21 @@ async generateMasav(req, res) {
     const JSZip = (await import("jszip")).default;
     const zip = new JSZip();
 
-    zip.file("masav.txt", txt);
-    zip.file("masav-summary.pdf", pdfBuffer);
+    // יצירת שם קובץ עם תאריך (dd-mm-yyyy)
+    const today = new Date();
+    const day = String(today.getDate()).padStart(2, '0');
+    const month = String(today.getMonth() + 1).padStart(2, '0');
+    const year = today.getFullYear();
+    const dateStr = `${day}-${month}-${year}`;
+
+    zip.file(`זיכויים_${dateStr}.txt`, txt);
+    zip.file(`זיכויים (סיכום)_${dateStr}.pdf`, pdfBuffer);
 
     const zipContent = await zip.generateAsync({ type: "nodebuffer" });
 
     res.writeHead(200, {
       "Content-Type": "application/zip",
-      "Content-Disposition": "attachment; filename=masav_bundle.zip",
+      "Content-Disposition": `attachment; filename=זיכויים_${dateStr}.zip`,
     });
 
     res.end(zipContent);
