@@ -5,10 +5,6 @@ import banksData from "../path/to/banks_and_branches.json" assert { type: "json"
 
 
 export async function generateMasavPDF({ payments, companyInfo, executionDate }) {
-  console.log("🔥 generateMasavPDF WAS CALLED!");
-  console.log("🔥 payments is:", payments);
-
-  console.log("📄 MASAV PDF STARTED");
 
   const templatePath = path.join(process.cwd(), "templates", "masav-report.html");
   const cssPath = path.join(process.cwd(), "templates", "masav-report.css");
@@ -19,7 +15,6 @@ export async function generateMasavPDF({ payments, companyInfo, executionDate })
   const tempHtmlPath = path.join(tmpDir, "masavReport.html");
 
   // --- Load HTML & CSS ---
-  console.log("📄 Loading HTML & CSS...");
   let html = fs.readFileSync(templatePath, "utf8");
   let css = fs.readFileSync(cssPath, "utf8");
 
@@ -45,8 +40,6 @@ export async function generateMasavPDF({ payments, companyInfo, executionDate })
 
     return bank ? bank.bankCode : "";
   }
-  console.log(payments[0]);
-
 
   // --- Build rows ---
   const rowsHTML = payments
@@ -93,7 +86,6 @@ export async function generateMasavPDF({ payments, companyInfo, executionDate })
   fs.writeFileSync(tempHtmlPath, html);
 
   // --- Generate PDF ---
-  console.log("🧪 Generating PDF...");
   const file = { content: html };
 
   const pdfBuffer = await pdf.generatePdf(file, {
@@ -104,7 +96,6 @@ export async function generateMasavPDF({ payments, companyInfo, executionDate })
   const pdfPath = path.join(tmpDir, `masav-report-${Date.now()}.pdf`);
   fs.writeFileSync(pdfPath, pdfBuffer);
 
-  console.log("📦 PDF saved:", pdfPath);
 
   try {
     fs.unlinkSync(tempHtmlPath);

@@ -46,8 +46,6 @@ const SupplierDetailsPage = () => {
     if (!id) return;
 
     const load = async () => {
-      console.log("🔥 SUPPLIER PAGE START LOAD id =", id);
-
       try {
         setLoading(true);
         setInvoicesLoading(true); // ← להתחיל טעינת חשבוניות
@@ -55,19 +53,14 @@ const SupplierDetailsPage = () => {
         const res = await api.get(`/suppliers/${id}`);
         const supplier = res?.data?.data;
 
-        console.log("RAW RESPONSE:", res.data);
-        console.log("FINAL SUPPLIER:", supplier);
-
         setSupplier(supplier);
         setInvoices(supplier?.invoices ?? []);
 
       } catch (err) {
-        console.log("❌ ERROR FETCHING SUPPLIER:", err);
         toast.error("שגיאה בטעינת הספק", {
           className: "sonner-toast error rtl",
         });
       } finally {
-        console.log("✅ FINALLY RAN - STOP LOADING");
 
         setLoading(false);
         setInvoicesLoading(false); // ← זה מה שהיה חסר!

@@ -192,13 +192,6 @@ router.post("/download-zip", async (req, res) => {
     if (!files || files.length === 0) {
       return res.status(400).json({ error: "לא התקבלו קבצים ליצירת ZIP" });
     }
-
-    // 🔍 לוג לבדיקה - האם הקבצים מגיעים ממוינים?
-    console.log("📦 ZIP Request - Supplier order:");
-    files.forEach((f, i) => {
-      console.log(`  ${i + 1}. ${f.supplierName} (חשבונית ${f.invoiceNumber})`);
-    });
-
     const zip = new JSZip();
 
     for (const file of files) {
@@ -207,7 +200,6 @@ router.post("/download-zip", async (req, res) => {
 
         // בדיקה שה-URL תקף
         if (!url || (!url.startsWith('http://') && !url.startsWith('https://'))) {
-          console.log("❌ URL לא תקף:", url, "עבור חשבונית:", file.invoiceNumber);
           continue;
         }
 
@@ -220,7 +212,6 @@ router.post("/download-zip", async (req, res) => {
         }
 
         if (!response.ok) {
-          console.log("❌ שגיאה בהורדת קובץ:", file.url);
           continue;
         }
 

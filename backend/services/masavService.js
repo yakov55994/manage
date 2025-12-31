@@ -136,8 +136,29 @@ export function generateMasavFile(companyInfo, payments, executionDate) {
     totalAmount += Number(p.amount);
     let row = new Array(128).fill("0");
 
+<<<<<<< Updated upstream
     // 1. זיהוי רשומה (פוזיציה 1, אורך 1)
     putAt(row, 1, "1", 1, " ", "right");
+=======
+    const line =
+      "1" +                                         // 1   (1)     - סוג רשומה
+      fixLen(instituteId, 8, "0", "left") +         // 8   (2-9)   - מספר מוסד
+      "00" +                                        // 2   (10-11) - FILLER
+      "000000000" +                                 // 9   (12-20) - מספר חשבון שולח
+      fixLen(p.bankNumber, 2, "0", "left") +        // 2   (21-22) - קוד בנק נהנה
+      fixLen(p.branchNumber, 3, "0", "left") +      // 3   (23-25) - קוד סניף נהנה
+      "000000" +                                    // 6   (26-31) - FILLER
+      fixLen(p.internalId, 9, "0", "left") +        // 9   (32-40) - ח.פ נהנה
+      fixLen(p.accountNumber, 9, "0", "left") +     // 9   (41-49) - מספר חשבון נהנה
+      "0" +                                         // 1   (50)    - FILLER
+      fixLen(p.supplierName, 16, " ", "right") +    // 16  (51-66) - שם נהנה
+      fixLen(String(p.amount), 11, "0", "left") +   // 11  (67-77) - סכום באגורות
+      "01" +                                        // 2   (78-79) - קוד מסלול
+      execDate.slice(2,6) +                         // 4   (80-83) - תאריך MMDD
+      "00" +                                        // 2   (84-85) - FILLER
+      fixLen("", 43, " ");                          // 43  (86-128) - FILLER
+                                                    // סה"כ: 128 תווים
+>>>>>>> Stashed changes
 
     // 2. מוסד/נושא (פוזיציות 2-9, אורך 8)
     putAt(row, 2, instituteId, 8, "0", "left");
@@ -202,6 +223,7 @@ export function generateMasavFile(companyInfo, payments, executionDate) {
   // =====================================================
   let sRow = new Array(128).fill(" ");
 
+<<<<<<< Updated upstream
   // 1. זיהוי רשומה (פוזיציה 1, אורך 1)
   putAt(sRow, 1, "5", 1, " ", "right");
 
@@ -238,6 +260,11 @@ export function generateMasavFile(companyInfo, payments, executionDate) {
 
   // ✅ וידוא שכל שורה היא בדיוק 128 תווים
   lines = lines.map(line => line.padEnd(128, " "));
+=======
+  // =====================================================
+  // END RECORD — חובה
+  // =====================================================
+>>>>>>> Stashed changes
 
   return lines.join("\r\n");
 }

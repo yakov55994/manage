@@ -428,7 +428,6 @@ async function updateInvoice(user, invoiceId, data) {
 
   // חשב מחדש תקציב עבור הפרויקט הישן שממומן (אם היה ושונה)
   if (oldFundedFromProjectId && oldFundedFromProjectId !== String(fundedFromProjectId)) {
-    console.log(`🔄 Recalculating budget for OLD fundedFromProjectId after update: ${oldFundedFromProjectId}`);
     await recalculateRemainingBudget(oldFundedFromProjectId);
   }
 
@@ -439,7 +438,6 @@ async function updateInvoice(user, invoiceId, data) {
 // MOVE INVOICE TO MULTIPLE PROJECTS - פונקציה חדשה
 // ===============================================
 async function moveInvoiceToMultipleProjects(user, invoice, targetProjects, fundedFromProjectId = null) {
-  console.log("🔄 Moving invoice to multiple projects:", { invoiceId: invoice._id, targetProjects, fundedFromProjectId });
 
   // תוקף הסכום הכולל
   const totalAllocated = targetProjects.reduce((sum, p) => sum + Number(p.sum), 0);
@@ -536,13 +534,11 @@ async function moveInvoiceToMultipleProjects(user, invoice, targetProjects, fund
 
   // חשב מחדש תקציב עבור הפרויקט החדש שממומן (אם יש)
   if (fundedFromProjectId) {
-    console.log(`🔄 Recalculating budget for NEW fundedFromProjectId: ${fundedFromProjectId}`);
     await recalculateRemainingBudget(fundedFromProjectId);
   }
 
   // חשב מחדש תקציב עבור הפרויקט הישן שממומן (אם היה ושונה)
   if (oldFundedFromProjectId && oldFundedFromProjectId !== String(fundedFromProjectId)) {
-    console.log(`🔄 Recalculating budget for OLD fundedFromProjectId: ${oldFundedFromProjectId}`);
     await recalculateRemainingBudget(oldFundedFromProjectId);
   }
 
@@ -570,12 +566,10 @@ async function moveInvoiceToMultipleProjects(user, invoice, targetProjects, fund
 // MOVE INVOICE - תמיכה במספר פרויקטים
 // ===============================================
 async function moveInvoice(user, invoiceId, fromProjectId, toProjectId, fundedFromProjectId, targetProjects) {
-  console.log("🔄 Move Invoice Request:", { invoiceId, fromProjectId, toProjectId, fundedFromProjectId, targetProjects });
 
   const invoice = await Invoice.findById(invoiceId);
   if (!invoice) throw new Error("חשבונית לא נמצאה");
 
-  console.log("📄 Invoice projects:", invoice.projects);
 
   if (invoice.type === "salary")
     throw new Error("אי אפשר להעביר חשבונית משכורות");
@@ -614,11 +608,9 @@ async function moveInvoice(user, invoiceId, fromProjectId, toProjectId, fundedFr
   // מצא את החלק של הפרויקט המקורי
   const partIndex = invoice.projects.findIndex((p) => {
     const pid = p?.projectId?._id || p?.projectId;
-    console.log(`Comparing: ${String(pid)} === ${fromProjectId} ?`, String(pid) === fromProjectId);
     return String(pid) === fromProjectId;
   });
 
-  console.log("📍 Part index found:", partIndex);
 
   if (partIndex === -1) {
     console.error("❌ Project not found in invoice. Available projects:",
@@ -631,7 +623,6 @@ async function moveInvoice(user, invoiceId, fromProjectId, toProjectId, fundedFr
   }
 
   const part = invoice.projects[partIndex];
-  console.log("✅ Found part to move:", part);
 
   // בדיקת הרשאות
   if (user.role !== "admin") {
@@ -712,13 +703,11 @@ async function moveInvoice(user, invoiceId, fromProjectId, toProjectId, fundedFr
 
   // חשב מחדש תקציב עבור הפרויקט החדש שממומן (אם יש)
   if (fundedFromProjectId) {
-    console.log(`🔄 Recalculating budget for NEW fundedFromProjectId: ${fundedFromProjectId}`);
     await recalculateRemainingBudget(fundedFromProjectId);
   }
 
   // חשב מחדש תקציב עבור הפרויקט הישן שממומן (אם היה ושונה)
   if (oldFundedFromProjectId && oldFundedFromProjectId !== String(fundedFromProjectId)) {
-    console.log(`🔄 Recalculating budget for OLD fundedFromProjectId: ${oldFundedFromProjectId}`);
     await recalculateRemainingBudget(oldFundedFromProjectId);
   }
 

@@ -201,13 +201,11 @@ const InvoicesPage = () => {
   // 🔄 Restore filter state from localStorage when returning from invoice details
   useEffect(() => {
     const savedFilters = localStorage.getItem('invoiceFilters');
-    console.log('🔍 Checking for saved filters:', savedFilters);
     if (savedFilters) {
       try {
         const filters = JSON.parse(savedFilters);
         // רק אם באנו מרשימת החשבוניות (יש לנו את הסימן)
         if (filters._fromInvoiceList) {
-          console.log('✅ Restoring filters from invoice list:', filters);
           if (filters.searchTerm !== undefined) setSearchTerm(filters.searchTerm);
           if (filters.paymentFilter !== undefined) setPaymentFilter(filters.paymentFilter);
           if (filters.statusFilter !== undefined) setStatusFilter(filters.statusFilter);
@@ -243,7 +241,6 @@ const InvoicesPage = () => {
       sortOrder,
       _fromInvoiceList: true,
     };
-    console.log('💾 Saving filters to localStorage:', filterState);
     localStorage.setItem('invoiceFilters', JSON.stringify(filterState));
   }, [searchTerm, paymentFilter, statusFilter, documentStatusFilter, advancedFilters, sortBy, sortOrder]);
 

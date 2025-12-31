@@ -4,8 +4,6 @@ import pdf from "html-pdf-node";
 
 export async function generateSalaryExportPDF({ salaries, projectName, isMultipleProjects = false }) {
   try {
-    console.log("📄 Starting salary PDF generation...");
-    console.log(`Project: ${projectName}, Salaries count: ${salaries.length}`);
 
     const templatePath = path.join(
       process.cwd(),
@@ -18,7 +16,6 @@ export async function generateSalaryExportPDF({ salaries, projectName, isMultipl
       "salary-export.css"
     );
 
-    console.log("📁 Reading templates...");
     let html = fs.readFileSync(templatePath, "utf8");
     const css = fs.readFileSync(cssPath, "utf8");
 
@@ -74,7 +71,6 @@ export async function generateSalaryExportPDF({ salaries, projectName, isMultipl
       .replace(/\{\{year\}\}/g, new Date().getFullYear())
       .replace(/\{\{css\}\}/g, ''); // Remove any remaining {{css}} placeholders
 
-    console.log("🔄 Generating PDF from HTML...");
 
     // html-pdf-node doesn't use handlebars - we already replaced the variables
     // So we need to pass the HTML as-is without using handlebars
@@ -87,14 +83,12 @@ export async function generateSalaryExportPDF({ salaries, projectName, isMultipl
 
     const pdfBuffer = await pdf.generatePdf(file, options);
 
-    console.log("💾 Saving PDF to disk...");
     const tmpDir = path.join(process.cwd(), "tmp");
     if (!fs.existsSync(tmpDir)) fs.mkdirSync(tmpDir);
 
     const pdfPath = path.join(tmpDir, `salary-export-${Date.now()}.pdf`);
     fs.writeFileSync(pdfPath, pdfBuffer);
 
-    console.log(`✅ Salary PDF created successfully: ${pdfPath}`);
     return pdfPath;
   } catch (error) {
     console.error("❌ Error in generateSalaryExportPDF:", error);
