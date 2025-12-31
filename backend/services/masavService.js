@@ -202,7 +202,6 @@ export function generateMasavFile(companyInfo, payments, executionDate) {
   // =====================================================
   let sRow = new Array(128).fill(" ");
 
-<<<<<<< Updated upstream
   // 1. זיהוי רשומה (פוזיציה 1, אורך 1)
   putAt(sRow, 1, "5", 1, " ", "right");
 
@@ -239,14 +238,9 @@ export function generateMasavFile(companyInfo, payments, executionDate) {
 
   // ✅ וידוא שכל שורה היא בדיוק 128 תווים
   lines = lines.map(line => line.padEnd(128, " "));
-=======
   // =====================================================
   // END RECORD — חובה
   // =====================================================
-<<<<<<< Updated upstream
->>>>>>> Stashed changes
-=======
->>>>>>> Stashed changes
 
   return lines.join("\r\n");
 }
