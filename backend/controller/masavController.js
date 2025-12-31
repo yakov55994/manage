@@ -95,20 +95,8 @@ async generateMasav(req, res) {
     const JSZip = (await import("jszip")).default;
     const zip = new JSZip();
 
-<<<<<<< Updated upstream
-    // יצירת שם קובץ עם תאריך (dd-mm-yyyy)
-    const today = new Date();
-    const day = String(today.getDate()).padStart(2, '0');
-    const month = String(today.getMonth() + 1).padStart(2, '0');
-    const year = today.getFullYear();
-    const dateStr = `${day}-${month}-${year}`;
-
-    zip.file(`זיכויים_${dateStr}.txt`, txt);
-    zip.file(`זיכויים (סיכום)_${dateStr}.pdf`, pdfBuffer);
-=======
     zip.file(`זיכוייים ${formattedDate}.txt`, txt);
     zip.file(`זיכוייים (סיכום) ${formattedDate}.pdf`, pdfBuffer);
->>>>>>> Stashed changes
 
     const zipContent = await zip.generateAsync({ type: "nodebuffer" });
 
@@ -118,11 +106,7 @@ async generateMasav(req, res) {
 
     res.writeHead(200, {
       "Content-Type": "application/zip",
-<<<<<<< Updated upstream
-      "Content-Disposition": `attachment; filename=זיכויים_${dateStr}.zip`,
-=======
       "Content-Disposition": `attachment; filename="${encodedFileName}"; filename*=UTF-8''${encodedFileName}`,
->>>>>>> Stashed changes
     });
 
     res.end(zipContent);
