@@ -33,7 +33,7 @@ const invoiceControllers = {
       if (req.user.role === "accountant") {
         // רואת חשבון רואה את כל החשבוניות במערכת
         const invoices = await Invoice.find({})
-          .populate("supplierId")
+          .populate("supplierId", "name phone bankDetails business_tax")
           .populate("fundedFromProjectId")
           .sort({ createdAt: -1 });
 

@@ -40,6 +40,11 @@ async generateMasav(req, res) {
   try {
     const { payments, companyInfo, executionDate } = req.body;
 
+    // יצירת שם קובץ עם תאריך בפורמט DD-MM-YYYY
+    const fileDate = executionDate; // YYYY-MM-DD
+    const [year, month, day] = fileDate.split('-');
+    const formattedDate = `${day}-${month}-${year}`;
+
     // ✅ איחוד ספקים - כל ספק עם כמה חשבוניות יופיע פעם אחת
     const supplierMap = new Map();
 
@@ -90,6 +95,7 @@ async generateMasav(req, res) {
     const JSZip = (await import("jszip")).default;
     const zip = new JSZip();
 
+<<<<<<< Updated upstream
     // יצירת שם קובץ עם תאריך (dd-mm-yyyy)
     const today = new Date();
     const day = String(today.getDate()).padStart(2, '0');
@@ -99,12 +105,24 @@ async generateMasav(req, res) {
 
     zip.file(`זיכויים_${dateStr}.txt`, txt);
     zip.file(`זיכויים (סיכום)_${dateStr}.pdf`, pdfBuffer);
+=======
+    zip.file(`זיכוייים ${formattedDate}.txt`, txt);
+    zip.file(`זיכוייים (סיכום) ${formattedDate}.pdf`, pdfBuffer);
+>>>>>>> Stashed changes
 
     const zipContent = await zip.generateAsync({ type: "nodebuffer" });
 
+    // קידוד שם הקובץ ל-UTF-8 עבור HTTP header
+    const fileName = `זיכוייים ${formattedDate}.zip`;
+    const encodedFileName = encodeURIComponent(fileName);
+
     res.writeHead(200, {
       "Content-Type": "application/zip",
+<<<<<<< Updated upstream
       "Content-Disposition": `attachment; filename=זיכויים_${dateStr}.zip`,
+=======
+      "Content-Disposition": `attachment; filename="${encodedFileName}"; filename*=UTF-8''${encodedFileName}`,
+>>>>>>> Stashed changes
     });
 
     res.end(zipContent);

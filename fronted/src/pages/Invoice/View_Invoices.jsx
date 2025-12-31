@@ -2445,7 +2445,7 @@ const InvoicesPage = () => {
                     onChange={toggleSelectAll}
                     className="w-5 h-5 accent-white cursor-pointer"
                   /> */}
-                        <span className="text-xs">בחר הכל</span>
+                        <span className="text-xs">סמן למחיקה</span>
                       </div>
                     </th>
                   )}

@@ -50,11 +50,12 @@ export default function MasavModal({ open, onClose, invoices, onInvoicesUpdated 
 
       if (!p.supplierName?.trim()) errors.push(`שורה ${row}: שם ספק חסר`);
 
-      if (!/^[0-9]+$/.test(p.amount) || p.amount <= 0)
+      if (!/^[0-9]+$/.test(String(p.amount)) || p.amount <= 0)
         errors.push(`שורה ${row}: סכום חייב להיות גדול מ-0`);
 
-      if (!/^[0-9]{9}$/.test(p.internalId))
-        errors.push(`שורה ${row}: מזהה ספק חייב להיות 9 ספרות`);
+      // ✅ בדיקה משופרת - מספר זהות/ע.מ חובה ולא יכול להיות 000000000
+      if (!/^[0-9]{9}$/.test(p.internalId) || p.internalId === "000000000")
+        errors.push(`שורה ${row}: מספר ע.מ/ת.ז חייב להיות 9 ספרות (לא אפסים) - ספק: ${p.supplierName}`);
     });
 
     return errors;
@@ -130,20 +131,32 @@ export default function MasavModal({ open, onClose, invoices, onInvoicesUpdated 
       // ✅ שמות הפרויקטים מהחשבונית
       const projectNames = inv.projects?.map(p => p.projectName).join(", ") || "";
 
+      // ✅ תיקון: מספר עוסק מורשה/ת.ז - חובה!
+      // נסה קודם business_tax, אם אין - נסה idNumber או taxId
+      const rawTaxId = s.business_tax || s.idNumber || s.taxId || "";
+      const cleanTaxId = String(rawTaxId).replace(/\D/g, ""); // מנקה תווים לא מספריים
+      const internalId = cleanTaxId.padStart(9, "0");
+
+      // ✅ אסמכתא - מספר חשבונית או מזהה אחר
+      const asmachta = String(inv.invoiceNumber || inv._id || "").slice(-20);
+
       return {
         bankNumber: String(bankCodeMap[bd.bankName] || "")
           .replace(/\D/g, "")         // מסיר כל תו לא ספרתי
           .slice(-2)                  // לוקח רק 2 ספרות אחרונות לתקן מס״ב
           .padStart(2, "0"),
         branchNumber: String(bd.branchNumber).padStart(3, "0"),
-        accountNumber: account9.padStart(9, "0"), // ⬅ זה המפתח
+        accountNumber: account9.padStart(9, "0"),
         amount,
         supplierName: s.name,
-        internalId: String(s.business_tax || "0").padStart(9, "0"),
-        invoiceNumbers: inv.invoiceNumber || "",  // ✅ מספר חשבונית
-        projectNames,  // ✅ שמות פרויקטים
+        internalId,              // ✅ מספר ע.מ/ת.ז - תוקן!
+        asmachta,                // ✅ אסמכתא - נוסף!
+        invoiceNumbers: inv.invoiceNumber || "",
+        projectNames,
       };
     });
+    // בתוך generate(), לפני שיוצרים payments
+    console.log("Supplier data:", withBankDetails[0]?.supplierId);
 
     // ולידציה בצד לקוח
     const clientErrors = validateClient(payments);
@@ -181,6 +194,7 @@ export default function MasavModal({ open, onClose, invoices, onInvoicesUpdated 
       const url = window.URL.createObjectURL(new Blob([res.data]));
       const link = document.createElement("a");
       link.href = url;
+<<<<<<< Updated upstream
 
       // 📅 שם קובץ עם תאריך (dd-mm-yyyy)
       const today = new Date();
@@ -190,6 +204,9 @@ export default function MasavModal({ open, onClose, invoices, onInvoicesUpdated 
       const dateStr = `${day}-${month}-${year}`;
 
       link.download = `masav_${dateStr}.zip`;
+=======
+      link.download = `זיכויים - ${executionDate}.zip`;
+>>>>>>> Stashed changes
       link.click();
 
       // ✅ עדכון סטטוס החשבוניות שיצאו למס"ב ל"יצא לתשלום"
@@ -353,13 +370,15 @@ export default function MasavModal({ open, onClose, invoices, onInvoicesUpdated 
               {filteredInvoices.map((inv) => {
                 const isSelected = selected.some((x) => x._id === inv._id);
                 const hasNoBankDetails = !hasBankDetails(inv.supplierId);
+                // ✅ בדיקה נוספת - האם יש מספר ע.מ
+                const hasNoTaxId = !inv.supplierId?.business_tax && !inv.supplierId?.idNumber && !inv.supplierId?.taxId;
 
                 return (
                   <label
                     key={inv._id}
                     className={`flex items-center justify-between gap-3 p-4 rounded-xl cursor-pointer transition-all
                       ${isSelected
-                        ? hasNoBankDetails
+                        ? (hasNoBankDetails || hasNoTaxId)
                           ? "bg-red-50 border-red-300"
                           : "bg-orange-100 border-orange-300"
                         : "bg-white border-orange-100 hover:bg-orange-50"
@@ -377,11 +396,14 @@ export default function MasavModal({ open, onClose, invoices, onInvoicesUpdated 
                       <div className="flex-1">
                         <div className="flex items-center gap-2">
                           {hasNoBankDetails && (
-                            <span className="text-red-500">⚠️</span>
+                            <span className="text-red-500" title="חסר פרטי בנק">⚠️</span>
+                          )}
+                          {hasNoTaxId && (
+                            <span className="text-yellow-500" title="חסר מספר ע.מ">🆔</span>
                           )}
                           <span
                             className={`font-bold text-sm ${isSelected
-                              ? hasNoBankDetails
+                              ? (hasNoBankDetails || hasNoTaxId)
                                 ? "text-red-900"
                                 : "text-orange-900"
                               : "text-slate-700"
@@ -392,6 +414,7 @@ export default function MasavModal({ open, onClose, invoices, onInvoicesUpdated 
                         </div>
                         <div className="text-xs text-slate-500 mt-1">
                           {inv.supplierId?.name}
+                          {hasNoTaxId && <span className="text-yellow-600 mr-2">(חסר ע.מ)</span>}
                         </div>
                       </div>
                       <span className="font-bold text-orange-700">
