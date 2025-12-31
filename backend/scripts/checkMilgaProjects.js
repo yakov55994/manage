@@ -5,21 +5,11 @@ const mongoURI = "mongodb+srv://yakov1020:Yakov7470893@management-app.qrrmy.mong
 
 async function checkProjects() {
   try {
-    console.log("🔌 Connecting to MongoDB...");
     await mongoose.connect(mongoURI);
-    console.log("✅ Connected!");
 
     const all = await Project.find({}).select('name isMilga type');
     const milga = all.filter(p => p.isMilga || p.type === 'milga');
     const regular = all.filter(p => !p.isMilga && p.type !== 'milga');
-
-    console.log(`\n📊 Total projects: ${all.length}`);
-    console.log(`🎓 Milga projects: ${milga.length}`);
-    milga.forEach(p => {
-      console.log(`   - ${p.name} (isMilga: ${p.isMilga}, type: ${p.type})`);
-    });
-
-    console.log(`\n📁 Regular projects: ${regular.length}`);
 
     process.exit(0);
   } catch (error) {

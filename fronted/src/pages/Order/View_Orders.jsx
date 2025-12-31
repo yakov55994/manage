@@ -987,17 +987,7 @@ const OrdersPage = () => {
           ? res.data
           : [];
 
-        ordersData.slice(0, 10).forEach((ord, i) => {
-          console.log(`ORDER #${i + 1}:`);
-
-          if (ord.supplierId && typeof ord.supplierId === "object") {
-            console.log("supplierId keys:", Object.keys(ord.supplierId));
-            console.log("bankDetails:", ord.supplierId.bankDetails);
-          }
-
-        });
-
-        setAllOrders(ordersData);
+       setAllOrders(ordersData);
 
         setOrders(ordersData);
       } catch (error) {

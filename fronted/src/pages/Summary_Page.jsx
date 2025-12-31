@@ -573,7 +573,6 @@ const SummaryPage = () => {
                       <td className="px-6 py-4 font-medium text-gray-700">
                         {invoice.projectName}
                       </td>
-                      {console.log(invoice)}
                       <td className="px-6 py-4 font-medium">
                         {formatCurrency(invoice.totalAmount)}
                       </td>

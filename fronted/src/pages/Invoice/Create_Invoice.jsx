@@ -321,8 +321,6 @@ const CreateInvoice = () => {
         fundedFromProjectId: fundedFromProjectId || null,
       };
 
-      console.log("PAYLOAD SENT:", payload);
-
       if (isSalary) {
         const base = Number(salaryBaseAmount || 0);
         const overhead = Number(salaryOverheadPercent || 0);

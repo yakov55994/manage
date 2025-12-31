@@ -24,9 +24,6 @@ export default function MoveInvoiceModal({
         // הביא רק שדות הכרחיים (שמור כמו שה־API שלך תומך)
         const { data } = await api.get("/projects");
         const projectsList = Array.isArray(data.data) ? data.data : data?.projects || [];
-        console.log("📌 Projects loaded:", projectsList.length);
-        console.log("📌 Projects with isMilga:", projectsList.filter(p => p.isMilga).map(p => p.name));
-        console.log("📌 Projects WITHOUT isMilga:", projectsList.filter(p => !p.isMilga).length);
         setProjects(projectsList);
       } catch (err) {
         console.error(err);

@@ -100,13 +100,13 @@ async generateMasav(req, res) {
 
     const zipContent = await zip.generateAsync({ type: "nodebuffer" });
 
-    // קידוד שם הקובץ ל-UTF-8 עבור HTTP header
+    // קידוד UTF-8 לשם הקובץ בעברית
     const fileName = `זיכוייים ${formattedDate}.zip`;
     const encodedFileName = encodeURIComponent(fileName);
 
     res.writeHead(200, {
       "Content-Type": "application/zip",
-      "Content-Disposition": `attachment; filename="${encodedFileName}"; filename*=UTF-8''${encodedFileName}`,
+      "Content-Disposition": `attachment; filename*=UTF-8''${encodedFileName}`,
     });
 
     res.end(zipContent);

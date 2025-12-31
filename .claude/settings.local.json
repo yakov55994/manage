@@ -13,7 +13,10 @@
       "Bash(node scripts/debugBudget.js:*)",
       "Bash(npm start)",
       "Bash(node scripts/checkMilgaProjects.js:*)",
-      "Bash(node scripts/resetInvoicePaymentStatus.js:*)"
+      "Bash(node scripts/resetInvoicePaymentStatus.js:*)",
+      "Bash(git fetch:*)",
+      "Bash(git stash:*)",
+      "Bash(git add:*)"
     ]
   }
 }

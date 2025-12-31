@@ -391,7 +391,6 @@ const ProjectDetailsPage = () => {
 
       // במקרה של 418, ננסה שוב אוטומטית
       if (err.response?.status === 418 && retryCount < MAX_RETRIES) {
-        console.log(`Retrying export (attempt ${retryCount + 1}/${MAX_RETRIES})...`);
         await new Promise(resolve => setTimeout(resolve, 1000)); // המתנה של שנייה
         return handleExportSalaries(retryCount + 1);
       }

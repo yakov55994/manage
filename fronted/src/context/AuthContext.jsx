@@ -152,7 +152,7 @@ export const AuthProvider = ({ children }) => {
         localStorage.removeItem("user");
       }
     } else {
-      console.log("⚠️ No token or user in localStorage");
+      console.error("⚠️ No token or user in localStorage");
     }
 
     setLoading(false);

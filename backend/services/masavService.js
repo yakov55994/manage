@@ -238,6 +238,9 @@ export function generateMasavFile(companyInfo, payments, executionDate) {
 
   // ✅ וידוא שכל שורה היא בדיוק 128 תווים
   lines = lines.map(line => line.padEnd(128, " "));
+  // =====================================================
+  // END RECORD — חובה
+  // =====================================================
 
   return lines.join("\r\n");
 }

@@ -73,7 +73,7 @@ orderSchema.pre('deleteOne', { document: true, query: false }, async function(ne
             resource_type: file.resourceType || 'raw'
           });
         } else {
-          console.log('⚠️ לא נמצא publicId עבור:', file.name);
+          console.error('⚠️ לא נמצא publicId עבור:', file.name);
         }
       }
     }

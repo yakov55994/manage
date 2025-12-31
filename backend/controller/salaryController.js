@@ -163,11 +163,9 @@ export async function deleteSalary(req, res) {
 // =======================================================
 export async function exportSalaries(req, res) {
   try {
-    console.log("🚀 Export salaries endpoint called");
 
     // ✅ תמיכה גם ב-GET וגם ב-POST
     let projectIds = req.body.projectIds || req.query.projectIds;
-    console.log("📌 Project IDs (raw):", projectIds);
 
     if (!projectIds) {
       return res.status(400).json({
@@ -180,24 +178,20 @@ export async function exportSalaries(req, res) {
     const idsArray = Array.isArray(projectIds)
       ? projectIds
       : projectIds.split(',').map(id => id.trim());
-    console.log("📌 Project IDs array:", idsArray);
 
     // מציאת כל הפרויקטים
     const projects = await Project.find({ _id: { $in: idsArray } });
     if (projects.length === 0) {
-      console.log("❌ No projects found");
       return res.status(404).json({
         success: false,
         error: "No projects found",
       });
     }
-    console.log("✅ Projects found:", projects.length);
 
     // מציאת כל המשכורות מהפרויקטים שנבחרו
     const salaries = await Salary.find({ projectId: { $in: idsArray } })
       .populate("projectId", "name")
       .sort({ date: -1 });
-    console.log("📊 Total salaries found:", salaries.length);
 
     // סינון פרויקטים שיש להם משכורות בלבד
     const projectsWithSalaries = projects.filter(project =>
@@ -211,14 +205,12 @@ export async function exportSalaries(req, res) {
       });
     }
 
-    console.log("🎨 Starting PDF generation...");
     const projectNames = projectsWithSalaries.map(p => p.name).join(', ');
     const pdfPath = await generateSalaryExportPDF({
       salaries,
       projectName: projectNames,
       isMultipleProjects: projectsWithSalaries.length > 1,
     });
-    console.log("✅ PDF generated at:", pdfPath);
 
     const fileName = projectsWithSalaries.length === 1
       ? `salary-export-${projectsWithSalaries[0].name}.pdf`
@@ -227,7 +219,6 @@ export async function exportSalaries(req, res) {
     res.download(pdfPath, fileName, (err) => {
       if (err) console.error("PDF DOWNLOAD ERROR:", err);
       fs.unlinkSync(pdfPath);
-      console.log("🗑️ Temp PDF file deleted");
     });
   } catch (err) {
     console.error("❌ EXPORT SALARIES ERROR:", err);
