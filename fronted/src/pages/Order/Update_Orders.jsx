@@ -405,7 +405,7 @@ const OrderEditPage = () => {
                 סכום (₪)
               </label>
               <input
-                type="number"
+                type="text"
                 value={sum}
                 onChange={(e) => setSum(e.target.value)}
                 disabled={!canEdit}
@@ -522,7 +522,7 @@ const OrderEditPage = () => {
                   סכום שהוגש (₪)
                 </label>
                 <input
-                  type="number"
+                  type="text"
                   value={submittedAmount}
                   onChange={(e) => setSubmittedAmount(e.target.value)}
                   disabled={!canEdit}

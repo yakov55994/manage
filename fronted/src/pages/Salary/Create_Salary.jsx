@@ -280,7 +280,7 @@ const CreateSalary = () => {
                 </div>
 
                 <input
-                  type="number"
+                  type="text"
                   name="overheadPercent"
                   value={form.overheadPercent}
                   onChange={handleChange}

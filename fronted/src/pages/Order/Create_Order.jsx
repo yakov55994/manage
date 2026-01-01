@@ -612,7 +612,7 @@ const CreateOrder = () => {
                         סכום ההזמנה
                       </label>
                       <input
-                        type="number"
+                        type="text"
                         value={order.sum}
                         onChange={(e) =>
                           handleOrderChange(index, "sum", e.target.value)

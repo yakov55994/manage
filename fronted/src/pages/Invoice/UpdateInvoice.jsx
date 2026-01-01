@@ -654,7 +654,7 @@ const InvoiceEditPage = () => {
 
               <label className="font-bold mb-1 block">סכום</label>
               <input
-                type="number"
+                type="text"
                 value={row.sum}
                 onChange={(e) => {
                   const clone = [...rows];
