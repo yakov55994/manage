@@ -92,10 +92,14 @@ async generateMasav(req, res) {
 
     const pdfBuffer = fs.readFileSync(pdfPath);
 
+    // המרה ל-ANSI (Windows-1255) כדי שהבנק יוכל לקרוא את הקובץ
+    const iconv = (await import("iconv-lite")).default;
+    const txtBuffer = iconv.encode(txt, 'windows-1255');
+
     const JSZip = (await import("jszip")).default;
     const zip = new JSZip();
 
-    zip.file(`זיכוייים ${formattedDate}.txt`, txt);
+    zip.file(`זיכוייים ${formattedDate}.txt`, txtBuffer);
     zip.file(`זיכוייים (סיכום) ${formattedDate}.pdf`, pdfBuffer);
 
     const zipContent = await zip.generateAsync({ type: "nodebuffer" });

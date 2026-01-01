@@ -1,5 +1,5 @@
 // ================================================
-// MASAV FILE SERVICE – לפי המפרט הרשמי של מס"ב
+// MASAV FILE SERVICE – לפי המפרט הרשמי של מס"ב 013
 // ================================================
 
 // ------------------------------------------------
@@ -34,37 +34,60 @@ export function validatePayments(payments = []) {
     if (!/^[0-9]{1,9}$/.test(p.internalId)) {
       errors.push(`רשומה ${row}: מס׳ זהות/ספק חייב להיות עד 9 ספרות`);
     }
+    // בדיקה שהמספר לא מורכב רק מאפסים
+    if (p.internalId && /^0+$/.test(p.internalId)) {
+      errors.push(`רשומה ${row}: מספר ע.מ/ת.ז חייב להיות 9 ספרות (לא אפסים) - ספק: ${p.supplierName}`);
+    }
   });
 
   return errors;
 }
 
 // ------------------------------------------------
-//  FILE GENERATION - לפי המפרט הרשמי
+// HELPER FUNCTIONS
 // ------------------------------------------------
 
 /**
- * מזריקה נתונים לתוך מערך תווים במיקום מדויק
- * @param {Array} rowArray - המערך המייצג את השורה (128 תאים)
- * @param {number} position - מיקום התחלה (1-128)
- * @param {string|number} data - הנתון להזרקה
- * @param {number} length - אורך השדה המוקצה
- * @param {string} padChar - תו מילוי (רווח או אפס)
- * @param {string} align - "left" = padding משמאל (למספרים), "right" = padding מימין (לטקסט)
+ * מילוי משמאל באפסים
  */
-function putAt(rowArray, position, data, length, padChar = "0", align = "left") {
-  let str = String(data || "").substring(0, length);
-  // align="left" אומר שה-padding הוא משמאל (המספר/טקסט צמוד לימין) - מתאים למספרים
-  // align="right" אומר שה-padding הוא מימין (הטקסט צמוד לשמאל) - מתאים לעברית
-  str = align === "left" ? str.padStart(length, padChar) : str.padEnd(length, padChar);
-
-  for (let i = 0; i < length; i++) {
-    rowArray[(position - 1) + i] = str[i];
-  }
+function padLeft(value, length, char = '0') {
+  return String(value || '').padStart(length, char);
 }
 
 /**
- * פורמט תאריך DDMMYY מאובייקט Date
+ * מילוי מימין ברווחים
+ */
+function padRight(value, length, char = ' ') {
+  return String(value || '').substring(0, length).padEnd(length, char);
+}
+
+/**
+ * פורמט תאריך YYYYMMDD
+ */
+function formatDate(date) {
+  const d = new Date(date);
+  const year = String(d.getFullYear());
+  const month = String(d.getMonth() + 1).padStart(2, '0');
+  const day = String(d.getDate()).padStart(2, '0');
+  return year + month + day;
+}
+
+/**
+ * פורמט שעה HHMM
+ */
+function formatTime(date = new Date()) {
+  const d = new Date(date);
+  const hours = String(d.getHours()).padStart(2, '0');
+  const minutes = String(d.getMinutes()).padStart(2, '0');
+  return hours + minutes;
+}
+
+// ------------------------------------------------
+//  FILE GENERATION - פורמט K-1-5 (128 תווים)
+// ------------------------------------------------
+
+/**
+ * פורמט תאריך DDMMYY
  */
 function formatDateDDMMYY(date) {
   const d = new Date(date);
@@ -76,173 +99,101 @@ function formatDateDDMMYY(date) {
 
 export function generateMasavFile(companyInfo, payments, executionDate) {
   const { instituteId, senderId, companyName } = companyInfo;
+
+  // תאריך ביצוע התשלום (שהמשתמש בחר)
   const execDate = formatDateDDMMYY(executionDate);
+  // תאריך יצירת הקובץ (היום)
+  const creationDate = formatDateDDMMYY(new Date());
 
   let lines = [];
-
-  // =====================================================
-  // רשומת K - כותרת (Header) - לפי מפרט רשמי
-  // =====================================================
-  // אורך רשומה: 128 תווים
-  let kRow = new Array(128).fill(" ");
-
-  // 1. זיהוי רשומה (פוזיציה 1, אורך 1)
-  putAt(kRow, 1, "K", 1, " ", "right");
-
-  // 2. מוסד/נושא (פוזיציות 2-9, אורך 8)
-  putAt(kRow, 2, instituteId, 8, "0", "left");
-
-  // 3. מטבע (פוזיציות 10-11, אורך 2) - '00'
-  putAt(kRow, 10, "00", 2, "0", "left");
-
-  // 4. תאריך התשלום DDMMYY (פוזיציות 12-17, אורך 6)
-  putAt(kRow, 12, execDate, 6, "0", "left");
-
-  // 5. FILLER (פוזיציה 18, אורך 1) - '0'
-  putAt(kRow, 18, "0", 1, "0", "left");
-
-  // 6. מספר סידורי (פוזיציות 19-21, אורך 3) - '001'
-  putAt(kRow, 19, "001", 3, "0", "left");
-
-  // 7. FILLER (פוזיציה 22, אורך 1) - '0'
-  putAt(kRow, 22, "0", 1, "0", "left");
-
-  // 8. תאריך יצירת הסרט DDMMYY (פוזיציות 23-28, אורך 6)
-  putAt(kRow, 23, execDate, 6, "0", "left");
-
-  // 9. מוסד שולח (פוזיציות 29-33, אורך 5)
-  putAt(kRow, 29, senderId, 5, "0", "left");
-
-  // 10. FILLER אפסים (פוזיציות 34-39, אורך 6)
-  putAt(kRow, 34, "000000", 6, "0", "left");
-
-  // 11. שם המוסד/נושא (פוזיציות 40-69, אורך 30) - צמוד לימין = padding משמאל
-  putAt(kRow, 40, companyName, 30, " ", "left");
-
-  // 12. FILLER ריק (פוזיציות 70-125, אורך 56) - כבר מלא ברווחים
-
-  // 13. זיהוי כותרת (פוזיציות 126-128, אורך 3)
-  putAt(kRow, 126, "KOT", 3, " ", "right");
-
-  lines.push(kRow.join(""));
-
-  // =====================================================
-  // רשומת 1 - תנועה (Movement) - לפי מפרט רשמי
-  // =====================================================
   let totalAmount = 0;
 
+  // =====================================================
+  // רשומת K - כותרת (128 תווים)
+  // =====================================================
+  // דוגמה: K92982289002512180001025121892982000000                 חינוך עם חיוך                                                        KOT
+  let rowK = '';
+  rowK += 'K';                                    // 1: סוג רשומה
+  rowK += padLeft(instituteId, 8, '0');          // 2-9: מוסד/נושא (8)
+  rowK += '00';                                   // 10-11: מטבע (2)
+  rowK += execDate;                               // 12-17: תאריך תשלום DDMMYY (6)
+  rowK += '0';                                    // 18: FILLER (1)
+  rowK += '001';                                  // 19-21: מספר סידורי (3)
+  rowK += '0';                                    // 22: FILLER (1)
+  rowK += creationDate;                           // 23-28: תאריך יצירה DDMMYY (6)
+  rowK += padLeft(senderId, 5, '0');             // 29-33: מוסד שולח (5)
+  rowK += '000000';                               // 34-39: FILLER (6)
+  // שם החברה צריך להיות מיושר לימין (רווחים משמאל)
+  rowK += padLeft(companyName, 30, ' ');         // 40-69: שם המוסד (30)
+  rowK += padRight('', 56, ' ');                 // 70-125: FILLER (56)
+  rowK += 'KOT';                                  // 126-128: זיהוי כותרת (3)
+
+  lines.push(rowK);
+
+  // =====================================================
+  // רשומת 1 - תנועה (128 תווים)
+  // =====================================================
+  // דוגמה: 192982289000000002053900000004702120515754364שלוה מיזמי שילוב00000009698000000000000000000113300000000000006000000000000000000
   payments.forEach(p => {
-    // הסכום באגורות
-    totalAmount += Number(p.amount);
-    let row = new Array(128).fill("0");
+    const amountInAgorot = Number(p.amount);
+    totalAmount += amountInAgorot;
 
-    // 1. זיהוי רשומה (פוזיציה 1, אורך 1)
-    putAt(row, 1, "1", 1, " ", "right");
+    let row1 = '';
+    row1 += '1';                                           // 1: סוג רשומה
+    row1 += padLeft(instituteId, 8, '0');                 // 2-9: מוסד/נושא (8)
+    row1 += '00';                                          // 10-11: מטבע (2)
+    row1 += '000000';                                      // 12-17: FILLER (6)
+    row1 += padLeft(p.bankNumber, 2, '0');                // 18-19: קוד בנק (2)
+    row1 += padLeft(p.branchNumber, 3, '0');              // 20-22: מספר סניף (3)
+    row1 += '0000';                                        // 23-26: סוג חשבון (4)
+    row1 += padLeft(p.accountNumber, 9, '0');             // 27-35: מספר חשבון (9)
+    row1 += '0';                                           // 36: FILLER (1)
+    row1 += padLeft(p.internalId, 9, '0');                // 37-45: מס' זהות (9)
+    row1 += padRight(p.supplierName, 16, ' ');            // 46-61: שם הזכאי (16)
+    row1 += padLeft(amountInAgorot, 13, '0');             // 62-74: סכום (13)
 
-    // 2. מוסד/נושא (פוזיציות 2-9, אורך 8)
-    putAt(row, 2, instituteId, 8, "0", "left");
+    // אסמכתא - מספר חשבונית או מזהה
+    const asmachta = p.invoiceNumbers || p.internalId || '';
+    row1 += padLeft(asmachta, 20, '0');                   // 75-94: אסמכתא (20)
 
-    // 3. מטבע (פוזיציות 10-11, אורך 2) - '00'
-    putAt(row, 10, "00", 2, "0", "left");
+    row1 += '00000000';                                    // 95-102: תקופת תשלום (8)
+    row1 += '000';                                         // 103-105: קוד מלל (3)
+    row1 += '006';                                         // 106-108: סוג תנועה (3)
+    row1 += padLeft('', 18, '0');                         // 109-126: FILLER (18)
+    row1 += '  ';                                          // 127-128: FILLER (2)
 
-    // 4. FILLER (פוזיציות 12-17, אורך 6) - '000000'
-    putAt(row, 12, "000000", 6, "0", "left");
-
-    // 5. קוד בנק (פוזיציות 18-19, אורך 2)
-    putAt(row, 18, p.bankNumber, 2, "0", "left");
-
-    // 6. מספר סניף (פוזיציות 20-22, אורך 3)
-    putAt(row, 20, p.branchNumber, 3, "0", "left");
-
-    // 7. סוג חשבון לזיכוי (פוזיציות 23-26, אורך 4) - אפסים
-    putAt(row, 23, "0000", 4, "0", "left");
-
-    // 8. מספר חשבון (פוזיציות 27-35, אורך 9)
-    putAt(row, 27, p.accountNumber, 9, "0", "left");
-
-    // 9. FILLER (פוזיציה 36, אורך 1) - '0'
-    putAt(row, 36, "0", 1, "0", "left");
-
-    // 10. מס' זיהוי של הזכאי - ת.ז. (פוזיציות 37-45, אורך 9)
-    putAt(row, 37, p.internalId, 9, "0", "left");
-
-    // 11. שם הזכאי (פוזיציות 46-61, אורך 16) - מימין לשמאל
-    putAt(row, 46, p.supplierName, 16, " ", "right");
-
-    // 12. סכום לתשלום (פוזיציות 62-74, אורך 13) - 11 ש"ח + 2 אגורות
-    // הסכום מגיע באגורות (כמו בקוד המקורי)
-    putAt(row, 62, p.amount, 13, "0", "left");
-
-    // 13. מס' מזהה לזכאי במוסד/אסמכתא (פוזיציות 75-94, אורך 20)
-    // אפשר להשתמש ב-internalId או בשדה נפרד
-    const asmachta = p.asmachta || p.internalId || "";
-    putAt(row, 75, asmachta, 20, "0", "left");
-
-    // 14. תקופת התשלום (פוזיציות 95-102, אורך 8) - YYMM YYMM
-    const period = p.paymentPeriod || "00000000";
-    putAt(row, 95, period, 8, "0", "left");
-
-    // 15. קוד מלל (פוזיציות 103-105, אורך 3) - אפסים
-    putAt(row, 103, "000", 3, "0", "left");
-
-    // 16. סוג תנועה (פוזיציות 106-108, אורך 3) - '006' לזיכוי רגיל
-    putAt(row, 106, "006", 3, "0", "left");
-
-    // 17. FILLER אפסים (פוזיציות 109-126, אורך 18)
-    putAt(row, 109, "000000000000000000", 18, "0", "left");
-
-    // 18. FILLER ריק (פוזיציות 127-128, אורך 2)
-    putAt(row, 127, "  ", 2, " ", "right");
-
-    lines.push(row.join(""));
+    lines.push(row1);
   });
 
   // =====================================================
-  // רשומת 5 - סיכום (Trailer) - לפי מפרט רשמי
+  // רשומת 5 - סיכום (128 תווים)
   // =====================================================
-  let sRow = new Array(128).fill(" ");
+  // דוגמה: 59298228900251218000100000000096980000000000000000000000010000000
+  let row5 = '';
+  row5 += '5';                                    // 1: סוג רשומה
+  row5 += padLeft(instituteId, 8, '0');          // 2-9: מוסד/נושא (8)
+  row5 += '00';                                   // 10-11: מטבע (2)
+  row5 += execDate;                               // 12-17: תאריך תשלום (6)
+  row5 += '0';                                    // 18: FILLER (1)
+  row5 += '001';                                  // 19-21: מספר סידורי (3)
+  row5 += padLeft(totalAmount, 15, '0');         // 22-36: סכום התנועות (15)
+  row5 += padLeft('', 15, '0');                  // 37-51: FILLER (15)
+  row5 += padLeft(payments.length, 7, '0');      // 52-58: מספר התנועות (7)
+  row5 += padLeft('', 7, '0');                   // 59-65: FILLER (7)
+  row5 += padRight('', 63, ' ');                 // 66-128: FILLER (63)
 
-  // 1. זיהוי רשומה (פוזיציה 1, אורך 1)
-  putAt(sRow, 1, "5", 1, " ", "right");
-
-  // 2. מוסד/נושא (פוזיציות 2-9, אורך 8)
-  putAt(sRow, 2, instituteId, 8, "0", "left");
-
-  // 3. מטבע (פוזיציות 10-11, אורך 2) - '00'
-  putAt(sRow, 10, "00", 2, "0", "left");
-
-  // 4. תאריך התשלום (פוזיציות 12-17, אורך 6)
-  putAt(sRow, 12, execDate, 6, "0", "left");
-
-  // 5. FILLER (פוזיציה 18, אורך 1) - '0'
-  putAt(sRow, 18, "0", 1, "0", "left");
-
-  // 6. מספר סידורי (פוזיציות 19-21, אורך 3) - '001'
-  putAt(sRow, 19, "001", 3, "0", "left");
-
-  // 7. סכום התנועות (פוזיציות 22-36, אורך 15)
-  putAt(sRow, 22, totalAmount, 15, "0", "left");
-
-  // 8. FILLER אפסים (פוזיציות 37-51, אורך 15)
-  putAt(sRow, 37, "000000000000000", 15, "0", "left");
-
-  // 9. מספר התנועות (פוזיציות 52-58, אורך 7)
-  putAt(sRow, 52, payments.length, 7, "0", "left");
-
-  // 10. FILLER אפסים (פוזיציות 59-65, אורך 7)
-  putAt(sRow, 59, "0000000", 7, "0", "left");
-
-  // 11. FILLER ריק (פוזיציות 66-128, אורך 63) - כבר מלא ברווחים
-
-  lines.push(sRow.join(""));
+  lines.push(row5);
 
   // ✅ וידוא שכל שורה היא בדיוק 128 תווים
-  lines = lines.map(line => line.padEnd(128, " "));
-  // =====================================================
-  // END RECORD — חובה
-  // =====================================================
+  const validated = lines.map((line, idx) => {
+    if (line.length !== 128) {
+      console.warn(`שורה ${idx + 1} באורך ${line.length} במקום 128`);
+      return line.padEnd(128, ' ').substring(0, 128);
+    }
+    return line;
+  });
 
-  return lines.join("\r\n");
+  return validated.join("\r\n");
 }
 
 // ------------------------------------------------
@@ -255,46 +206,55 @@ export function testMasav() {
     companyName: "חינוך עם חיוך"
   };
 
-  // נתונים שמתאימים לקובץ התקין
-  // שים לב: הסכום באגורות! 969800 = 9698.00 ש"ח
+  // נתוני בדיקה - סכום באגורות
   const pay = [{
     bankNumber: "20",
     branchNumber: "539",
     accountNumber: "470212",
-    internalId: "515754364",      // מס' זהות - חובה!
+    internalId: "515754364",
     supplierName: "שלוה מיזמי שילוב",
-    amount: "969800",             // סכום באגורות (9698.00 ש"ח)
-    asmachta: "1133"              // אסמכתא
+    amount: "969800",            // 9698.00 ש"ח
+    invoiceNumbers: "1133"
   }];
 
   const result = generateMasavFile(company, pay, "2018-12-25");
-  console.log("--- Generated File Content ---");
-  console.log(result);
-  console.log("\n--- Line lengths ---");
-  result.split("\r\n").forEach((line, i) => {
-    console.log(`Line ${i + 1}: ${line.length} chars`);
-  });
 
-  // השוואה לקובץ התקין
+  // קובץ תקין להשוואה
   const correctLines = [
     "K92982289002512180001025121892982000000                 חינוך עם חיוך                                                        KOT",
     "192982289000000002053900000004702120515754364שלוה מיזמי שילוב00000009698000000000000000000113300000000000006000000000000000000  ",
     "59298228900251218000100000000096980000000000000000000000010000000                                                               "
   ];
 
-  console.log("\n--- Comparison with correct file ---");
+  console.log("=== קובץ שנוצר ===\n");
+  console.log(result);
+  console.log("\n=== השוואה לקובץ תקין ===");
+
   const generatedLines = result.split("\r\n");
-  for (let i = 0; i < 3; i++) {
-    const match = generatedLines[i] === correctLines[i];
-    console.log(`Line ${i + 1}: ${match ? '✓ MATCH' : '✗ DIFFERENT'}`);
-    if (!match) {
-      console.log(`  Expected: ${correctLines[i]}`);
-      console.log(`  Got:      ${generatedLines[i]}`);
+
+  generatedLines.forEach((line, i) => {
+    const type = line[0];
+    const typeName = type === 'K' ? 'כותרת' : type === '1' ? 'תנועה' : type === '5' ? 'סיכום' : 'לא ידוע';
+    const isCorrectLength = line.length === 128;
+    const matchesCorrect = line === correctLines[i];
+
+    console.log(`\nשורה ${i + 1} (${typeName}):`);
+    console.log(`  אורך: ${line.length} תווים ${isCorrectLength ? '✓' : '✗'}`);
+    console.log(`  תואם לקובץ תקין: ${matchesCorrect ? '✓' : '✗'}`);
+
+    if (!matchesCorrect && correctLines[i]) {
+      console.log(`  צפוי: ${correctLines[i]}`);
+      console.log(`  קיבלנו: ${line}`);
+
+      // מציאת ההבדלים
+      for (let j = 0; j < Math.max(line.length, correctLines[i].length); j++) {
+        if (line[j] !== correctLines[i][j]) {
+          console.log(`  הבדל בתו ${j + 1}: צפוי '${correctLines[i][j]}' קיבלנו '${line[j]}'`);
+          break;
+        }
+      }
     }
-  }
+  });
 
   return result;
 }
-
-// הרצת הבדיקה
-testMasav();

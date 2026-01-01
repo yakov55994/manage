@@ -16,7 +16,8 @@
       "Bash(node scripts/resetInvoicePaymentStatus.js:*)",
       "Bash(git fetch:*)",
       "Bash(git stash:*)",
-      "Bash(git add:*)"
+      "Bash(git add:*)",
+      "Bash(npm install:*)"
     ]
   }
 }
