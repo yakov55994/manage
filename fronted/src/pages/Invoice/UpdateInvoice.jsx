@@ -417,7 +417,7 @@ const InvoiceEditPage = () => {
     );
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-orange-50 via-amber-50 to-yellow-50 relative overflow-hidden py-12">
+    <div className="min-h-screen bg-gradient-to-br from-orange-50 via-amber-50 to-yellow-50 relative overflow-hidden pt-20 sm:pt-24 md:pt-28 pb-8 sm:pb-12">
       {/* Animated Background */}
       <div className="absolute inset-0 overflow-hidden pointer-events-none">
         <div className="absolute top-0 left-1/4 w-96 h-96 bg-gradient-to-br from-orange-400/20 to-amber-400/20 rounded-full blur-3xl animate-pulse"></div>
@@ -426,17 +426,17 @@ const InvoiceEditPage = () => {
 
       <div className="relative z-10 container max-w-5xl mx-auto px-6">
         {/* HEADER */}
-        <header className="mb-10">
+        <header className="mb-4 sm:mb-5 md:mb-6 sm:mb-8 md:mb-10">
           <div className="relative">
-            <div className="absolute -inset-x-6 -inset-y-3 bg-gradient-to-r from-orange-500 via-amber-500 to-yellow-500 rounded-3xl opacity-5 blur-xl"></div>
+            <div className="absolute -inset-x-6 -inset-y-3 bg-gradient-to-r from-orange-500 via-amber-500 to-yellow-500 rounded-2xl sm:rounded-3xl opacity-5 blur-xl"></div>
 
-            <div className="relative bg-white/80 backdrop-blur-xl rounded-3xl shadow-2xl shadow-orange-500/10 p-8 border border-white/50">
-              <div className="flex items-center justify-center gap-4">
+            <div className="relative bg-white/80 backdrop-blur-xl rounded-2xl sm:rounded-3xl shadow-2xl shadow-orange-500/10 p-4 sm:p-4 sm:p-5 md:p-6 md:p-8 border border-white/50">
+              <div className="flex items-center justify-center gap-3 sm:gap-4">
                 <div className="p-4 rounded-2xl bg-gradient-to-br from-orange-500 to-amber-600 shadow-lg shadow-orange-500/30">
-                  <ClipboardList className="w-10 h-10 text-white" />
+                  <ClipboardList className="w-6 h-6 sm:w-8 sm:h-8 md:w-10 md:h-10 text-white" />
                 </div>
                 <div className="text-center">
-                  <h1 className="text-4xl font-black text-slate-900">עריכת חשבונית</h1>
+                  <h1 className="text-2xl sm:text-xl sm:text-2xl md:text-3xl md:text-4xl font-black text-slate-900">עריכת חשבונית</h1>
                 </div>
               </div>
             </div>
@@ -444,7 +444,7 @@ const InvoiceEditPage = () => {
         </header>
 
         {/* PROJECT SELECTION */}
-        <div className="bg-white rounded-3xl shadow-xl p-6 mb-10">
+        <div className="bg-white rounded-2xl sm:rounded-3xl shadow-xl p-4 sm:p-5 md:p-6 mb-4 sm:mb-5 md:mb-6 sm:mb-8 md:mb-10">
           <ProjectSelector
             projects={projects}
             selectedProjects={selectedProjects}
@@ -469,7 +469,7 @@ const InvoiceEditPage = () => {
         />
 
         {/* GLOBAL FIELDS */}
-        <div className="bg-white rounded-3xl shadow-xl p-6 mb-10 grid grid-cols-1 md:grid-cols-2 gap-6">
+        <div className="bg-white rounded-2xl sm:rounded-3xl shadow-xl p-4 sm:p-5 md:p-6 mb-4 sm:mb-5 md:mb-6 sm:mb-8 md:mb-10 grid grid-cols-1 md:grid-cols-2 gap-6">
           <SupplierSelector
             value={globalFields.supplierId}
             onSelect={(s) => updateGlobal("supplierId", s._id)}
@@ -604,7 +604,7 @@ const InvoiceEditPage = () => {
             />
           </div>
 
-          <div className="bg-white shadow-xl p-6 mb-10">
+          <div className="bg-white shadow-xl p-4 sm:p-5 md:p-6 mb-4 sm:mb-5 md:mb-6 sm:mb-8 md:mb-10">
             <FileUploader
               folder="invoices"
               askForDocumentType={true}
@@ -647,7 +647,7 @@ const InvoiceEditPage = () => {
         {/* ROWS PER PROJECT */}
         <div className="space-y-6">
           {rows.map((row, index) => (
-            <div key={index} className="bg-white rounded-3xl shadow-xl p-6">
+            <div key={index} className="bg-white rounded-2xl sm:rounded-3xl shadow-xl p-4 sm:p-5 md:p-6">
               <h3 className="text-xl font-bold mb-3">
                 פרויקט: {row.projectName}
               </h3>

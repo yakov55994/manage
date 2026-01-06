@@ -125,7 +125,7 @@ const InvoiceDetailsPage = () => {
     return (
       <div className="min-h-screen flex flex-col justify-center items-center bg-orange-50">
         <AlertCircle className="w-20 h-20 text-red-500" />
-        <h1 className="text-3xl font-bold text-red-600">חשבונית לא נמצאה</h1>
+        <h1 className="text-xl sm:text-2xl md:text-3xl font-bold text-red-600">חשבונית לא נמצאה</h1>
         <button
           onClick={() => navigate("/invoices")}
           className="mt-6 px-6 py-3 rounded-xl bg-slate-700 text-white hover:bg-slate-800"
@@ -139,7 +139,7 @@ const InvoiceDetailsPage = () => {
   const hasNonSalaryInvoices = invoice.type !== "salary";
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-orange-50 via-amber-50 to-yellow-50 relative overflow-hidden py-12">
+    <div className="min-h-screen bg-gradient-to-br from-orange-50 via-amber-50 to-yellow-50 relative overflow-hidden pt-20 sm:pt-24 md:pt-28 pb-8 sm:pb-12">
       {/* Animated Background */}
       <div className="absolute inset-0 overflow-hidden pointer-events-none">
         <div className="absolute top-0 left-1/4 w-96 h-96 bg-gradient-to-br from-orange-400/20 to-amber-400/20 rounded-full blur-3xl animate-pulse"></div>
@@ -148,17 +148,17 @@ const InvoiceDetailsPage = () => {
 
       <div className="relative z-10 max-w-5xl mx-auto px-6">
         {/* HEADER */}
-        <header className="mb-10">
+        <header className="mb-4 sm:mb-5 md:mb-6 sm:mb-8 md:mb-10">
           <div className="relative">
-            <div className="absolute -inset-x-6 -inset-y-3 bg-gradient-to-r from-orange-500 via-amber-500 to-yellow-500 rounded-3xl opacity-5 blur-xl"></div>
+            <div className="absolute -inset-x-6 -inset-y-3 bg-gradient-to-r from-orange-500 via-amber-500 to-yellow-500 rounded-2xl sm:rounded-3xl opacity-5 blur-xl"></div>
 
-            <div className="relative bg-white/80 backdrop-blur-xl rounded-3xl shadow-2xl shadow-orange-500/10 p-8 border border-white/50">
+            <div className="relative bg-white/80 backdrop-blur-xl rounded-2xl sm:rounded-3xl shadow-2xl shadow-orange-500/10 p-4 sm:p-4 sm:p-5 md:p-6 md:p-8 border border-white/50">
               <div className="flex flex-col items-center">
                 <div className="p-4 rounded-2xl bg-gradient-to-br from-orange-500 to-amber-600 shadow-lg shadow-orange-500/30">
-                  <Receipt className="w-10 h-10 text-white" />
+                  <Receipt className="w-6 h-6 sm:w-8 sm:h-8 md:w-10 md:h-10 text-white" />
                 </div>
 
-                <h1 className="text-4xl font-black mt-4 text-slate-900 flex items-center gap-3">
+                <h1 className="text-2xl sm:text-xl sm:text-2xl md:text-3xl md:text-4xl font-black mt-4 text-slate-900 flex items-center gap-3">
                   <span>חשבונית #{invoice.invoiceNumber}</span>
                   {invoice.fundedFromProjectId && (
                     <span className="inline-flex items-center px-3 py-1.5 rounded-full text-base font-bold bg-gradient-to-r from-orange-400 to-pink-500 text-white shadow-lg">
@@ -167,7 +167,7 @@ const InvoiceDetailsPage = () => {
                   )}
                 </h1>
 
-                <div className="flex gap-4 mt-6">
+                <div className="flex gap-3 sm:gap-4 mt-6">
             <button
               onClick={() => navigate("/invoices")}
               className="px-6 py-3 rounded-xl bg-slate-200 text-slate-700 font-bold"
@@ -204,7 +204,7 @@ const InvoiceDetailsPage = () => {
         </header>
 
         {/* DETAILS */}
-        <div className="bg-white/90 shadow-lg rounded-3xl p-8 border border-orange-100">
+        <div className="bg-white/90 shadow-lg rounded-2xl sm:rounded-3xl p-4 sm:p-4 sm:p-5 md:p-6 md:p-8 border border-orange-100">
         {/* סכום כולל */}
         <div className="mb-8">
           <h2 className="text-2xl font-bold flex items-center gap-2">
@@ -217,7 +217,7 @@ const InvoiceDetailsPage = () => {
         </div>
 
         {/* שדות כלליים */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-3 sm:gap-4 sm:p-5 md:p-6 mb-8">
           {
             hasNonSalaryInvoices && (
 
@@ -331,7 +331,7 @@ const InvoiceDetailsPage = () => {
         </div>
 
         {/* PROJECTS */}
-        <div className="mb-10">
+        <div className="mb-4 sm:mb-5 md:mb-6 sm:mb-8 md:mb-10">
           <h2 className="text-2xl font-bold flex items-center gap-2 mb-4">
             <Building2 className="w-6 h-6 text-orange-600" />
             פרויקטים בחשבונית
@@ -382,15 +382,15 @@ const InvoiceDetailsPage = () => {
       {/* DELETE MODAL */}
       {confirmOpen && (
         <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50">
-          <div className="bg-white p-8 rounded-2xl shadow-xl max-w-md w-full">
+          <div className="bg-white p-4 sm:p-4 sm:p-5 md:p-6 md:p-8 rounded-2xl shadow-xl max-w-md w-full">
             <h3 className="text-2xl font-bold text-center mb-4">
               למחוק חשבונית?
             </h3>
-            <p className="text-center text-slate-700 mb-6">
+            <p className="text-center text-slate-700 mb-4 sm:mb-5 md:mb-6">
               פעולה זו בלתי הפיכה.
             </p>
 
-            <div className="flex gap-4">
+            <div className="flex gap-3 sm:gap-4">
               <button
                 onClick={handleDelete}
                 className="flex-1 bg-red-600 text-white py-3 rounded-xl font-bold"

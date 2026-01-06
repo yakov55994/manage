@@ -17,7 +17,9 @@
       "Bash(git fetch:*)",
       "Bash(git stash:*)",
       "Bash(git add:*)",
-      "Bash(npm install:*)"
+      "Bash(npm install:*)",
+      "Bash(node fix-mobile.js:*)",
+      "Bash(cd:*)"
     ]
   }
 }

@@ -216,18 +216,18 @@ const SupplierEditPage = () => {
     <div className="min-h-screen bg-gradient-to-br from-orange-50 via-amber-50 to-orange-100 py-8 px-4">
       <div className="max-w-6xl mx-auto">
         {/* Header */}
-        <div className="bg-white rounded-2xl shadow-xl p-6 mb-8">
+        <div className="bg-white rounded-2xl shadow-xl p-4 sm:p-5 md:p-6 mb-8">
           <div className="flex items-center justify-center gap-3 mb-2">
             <div className="bg-gradient-to-br from-orange-500 to-amber-500 p-3 rounded-xl shadow-lg">
-              <UserCog className="text-white w-8 h-8" />
+              <UserCog className="text-white w-6 h-6 sm:w-7 sm:h-7 md:w-8 md:h-8" />
             </div>
-            <h1 className="text-4xl font-bold text-gray-900">עריכת ספק</h1>
+            <h1 className="text-2xl sm:text-xl sm:text-2xl md:text-3xl md:text-4xl font-bold text-gray-900">עריכת ספק</h1>
           </div>
           <div className="h-1 w-32 bg-gradient-to-r from-orange-500 to-amber-500 rounded-full mx-auto"></div>
         </div>
 
         {/* כפתור חזרה */}
-        <div className="mb-6">
+        <div className="mb-4 sm:mb-5 md:mb-6">
           <button
             onClick={() => navigate(`/suppliers/${id}`)}
             className="inline-flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-gray-500 to-gray-600 text-white rounded-xl hover:from-gray-600 hover:to-gray-700 transition-all duration-300 shadow-lg hover:shadow-xl font-medium"
@@ -240,18 +240,18 @@ const SupplierEditPage = () => {
         {/* טופס עריכה */}
         <form
           onSubmit={handleSubmit}
-          className="bg-white rounded-2xl shadow-xl p-8"
+          className="bg-white rounded-2xl shadow-xl p-4 sm:p-4 sm:p-5 md:p-6 md:p-8"
         >
           {/* פרטי ספק עיקריים */}
           <div className="mb-8">
-            <div className="flex items-center gap-3 mb-6 pb-4 border-b-2 border-gradient-to-r from-orange-200 to-amber-200">
+            <div className="flex items-center gap-3 mb-4 sm:mb-5 md:mb-6 pb-4 border-b-2 border-gradient-to-r from-orange-200 to-amber-200">
               <div className="bg-gradient-to-br from-orange-500 to-amber-500 p-2 rounded-lg shadow-md">
                 <User className="text-white w-6 h-6" />
               </div>
               <h2 className="text-2xl font-bold text-gray-900">פרטי הספק</h2>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4 sm:p-5 md:p-6">
               {/* שם הספק */}
               <div className="space-y-2">
                 <label className="flex items-center gap-2 text-sm font-semibold text-gray-700">
@@ -370,7 +370,7 @@ const SupplierEditPage = () => {
 
           {/* פרטי בנק */}
           <div className="mb-8">
-            <div className="flex items-center gap-3 mb-6 pb-4 border-b-2 border-gradient-to-r from-orange-200 to-amber-200">
+            <div className="flex items-center gap-3 mb-4 sm:mb-5 md:mb-6 pb-4 border-b-2 border-gradient-to-r from-orange-200 to-amber-200">
               <div className="bg-gradient-to-br from-green-500 to-emerald-500 p-2 rounded-lg shadow-md">
                 <Building2 className="text-white w-6 h-6" />
               </div>
@@ -382,7 +382,7 @@ const SupplierEditPage = () => {
               </span>
             </div>
 
-            <div className="bg-gradient-to-br from-amber-50 to-orange-50 p-6 rounded-xl border-2 border-amber-200 mb-6">
+            <div className="bg-gradient-to-br from-amber-50 to-orange-50 p-4 sm:p-5 md:p-6 rounded-xl border-2 border-amber-200 mb-4 sm:mb-5 md:mb-6">
               <div className="flex items-start gap-3">
                 <AlertCircle className="w-5 h-5 text-amber-600 flex-shrink-0 mt-0.5" />
                 <p className="text-sm text-gray-700 font-medium">
@@ -393,7 +393,7 @@ const SupplierEditPage = () => {
             </div>
 
             {/* בחירת בנק */}
-            <div className="mb-6">
+            <div className="mb-4 sm:mb-5 md:mb-6">
               <label className="flex items-center gap-2 text-sm font-semibold text-gray-700 mb-2">
                 <div className="bg-teal-100 p-1.5 rounded-lg">
                   <Building2 className="w-4 h-4 text-teal-600" />
@@ -416,7 +416,7 @@ const SupplierEditPage = () => {
 
             {/* דרופדאון סניפים */}
             {supplier.bankDetails.bankObj?.branches?.length > 0 && (
-              <div className="mb-6">
+              <div className="mb-4 sm:mb-5 md:mb-6">
                 <label className="flex items-center gap-2 text-sm font-semibold text-gray-700 mb-2">
                   <div className="bg-cyan-100 p-1.5 rounded-lg">
                     <MapPin className="w-4 h-4 text-cyan-600" />
@@ -525,7 +525,7 @@ const SupplierEditPage = () => {
           </div>
 
           {/* כפתורי פעולה */}
-          <div className="flex gap-4 pt-6 border-t-2 border-gray-200">
+          <div className="flex gap-3 sm:gap-4 pt-6 border-t-2 border-gray-200">
             <button
               type="submit"
               disabled={loading}

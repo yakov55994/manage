@@ -89,10 +89,10 @@ const Home = () => {
         <div className={`transform transition-all duration-1000 ${
           isLoaded ? 'translate-y-0 opacity-100' : 'translate-y-10 opacity-0'
         }`}>
-          <div className="backdrop-blur-xl bg-white/10 p-12 rounded-3xl shadow-2xl text-center border border-white/20 max-w-4xl">
+          <div className="backdrop-blur-xl bg-white/10 p-12 rounded-2xl sm:rounded-3xl shadow-2xl text-center border border-white/20 max-w-4xl">
             
             {/* Header with Logo */}
-            <div className="flex items-center justify-center gap-4 mb-8">
+            <div className="flex items-center justify-center gap-3 sm:gap-4 mb-8">
               <Settings
                 className="mr-28 transition-all duration-700 hover:rotate-180 cursor-pointer size-16 text-orange-400 drop-shadow-lg animate-pulse"
               />
@@ -103,14 +103,14 @@ const Home = () => {
 
             {/* Subtitle with Typing Effect */}
             <div className="mb-12">
-              <p className="text-2xl md:text-3xl text-gray-200 font-light leading-relaxed">
+              <p className="text-2xl md:text-xl sm:text-2xl md:text-3xl text-gray-200 font-light leading-relaxed">
                 האתר שינהל לך מה שצריך בצורה 
                 <span className="bg-gradient-to-r from-orange-400 via-orange-500 to-orange-600 bg-clip-text text-transparent font-semibold"> איכותית ונוחה!</span>
               </p>
             </div>
 
             {/* Feature Icons */}
-            <div className="flex justify-center gap-8 mb-12">
+            <div className="flex justify-center gap-3 sm:gap-4 sm:p-4 sm:p-5 md:p-6 md:p-8 mb-12">
               {features.map((feature, index) => (
                 <div
                   key={index}

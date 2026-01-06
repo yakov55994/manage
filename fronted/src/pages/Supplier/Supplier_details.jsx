@@ -113,7 +113,7 @@ const SupplierDetailsPage = () => {
           <div className="absolute inset-0 bg-gradient-to-r from-orange-500 to-amber-500 blur-3xl opacity-20 animate-pulse"></div>
           <ClipLoader size={100} color="#f97316" loading />
         </div>
-        <h1 className="mt-8 font-bold text-3xl text-slate-900">
+        <h1 className="mt-8 font-bold text-xl sm:text-2xl md:text-3xl text-slate-900">
           טוען פרטי ספק...
         </h1>
       </div>
@@ -125,7 +125,7 @@ const SupplierDetailsPage = () => {
       <div className="min-h-screen bg-gradient-to-br from-red-50 via-orange-50 to-yellow-50 flex flex-col justify-center items-center">
         <div className="text-center">
           <XCircle className="w-20 h-20 text-red-500 mx-auto mb-4" />
-          <h1 className="text-3xl font-bold text-red-600">ספק לא נמצא</h1>
+          <h1 className="text-xl sm:text-2xl md:text-3xl font-bold text-red-600">ספק לא נמצא</h1>
           <button
             onClick={() => navigate("/suppliers")}
             className="mt-6 px-6 py-3 bg-gradient-to-r from-slate-600 to-slate-700 text-white rounded-xl hover:from-slate-700 hover:to-slate-800 transition-all shadow-lg"
@@ -190,7 +190,7 @@ const SupplierDetailsPage = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-orange-50 via-amber-50 to-yellow-50 relative overflow-hidden py-12">
+    <div className="min-h-screen bg-gradient-to-br from-orange-50 via-amber-50 to-yellow-50 relative overflow-hidden pt-20 sm:pt-24 md:pt-28 pb-8 sm:pb-12">
       {/* Animated Background Elements */}
       <div className="absolute inset-0 overflow-hidden pointer-events-none">
         <div className="absolute top-0 left-1/4 w-96 h-96 bg-gradient-to-br from-orange-400/20 to-amber-400/20 rounded-full blur-3xl animate-pulse"></div>
@@ -199,17 +199,17 @@ const SupplierDetailsPage = () => {
 
       <div className="relative z-10 container mx-auto px-4 md:px-6 max-w-7xl">
         {/* Hero Header */}
-        <header className="mb-10">
+        <header className="mb-4 sm:mb-5 md:mb-6 sm:mb-8 md:mb-10">
           <div className="relative">
-            <div className="absolute -inset-x-6 -inset-y-3 bg-gradient-to-r from-orange-500 via-amber-500 to-yellow-500 rounded-3xl opacity-5 blur-xl"></div>
+            <div className="absolute -inset-x-6 -inset-y-3 bg-gradient-to-r from-orange-500 via-amber-500 to-yellow-500 rounded-2xl sm:rounded-3xl opacity-5 blur-xl"></div>
 
-            <div className="relative bg-white/80 backdrop-blur-xl rounded-3xl shadow-2xl shadow-orange-500/10 p-8 border border-white/50">
-              <div className="flex items-center justify-center gap-4 mb-6">
+            <div className="relative bg-white/80 backdrop-blur-xl rounded-2xl sm:rounded-3xl shadow-2xl shadow-orange-500/10 p-4 sm:p-4 sm:p-5 md:p-6 md:p-8 border border-white/50">
+              <div className="flex items-center justify-center gap-3 sm:gap-4 mb-4 sm:mb-5 md:mb-6">
                 <div className="p-4 rounded-2xl bg-gradient-to-br from-orange-500 to-amber-600 shadow-lg shadow-orange-500/30">
-                  <User className="w-10 h-10 text-white" />
+                  <User className="w-6 h-6 sm:w-8 sm:h-8 md:w-10 md:h-10 text-white" />
                 </div>
                 <div className="text-center">
-                  <h1 className="text-4xl font-black text-slate-900">
+                  <h1 className="text-2xl sm:text-xl sm:text-2xl md:text-3xl md:text-4xl font-black text-slate-900">
                     פרטי ספק
                   </h1>
                   <div className="flex items-center justify-center gap-2 mt-2">
@@ -222,7 +222,7 @@ const SupplierDetailsPage = () => {
               </div>
 
               {/* Action Buttons */}
-              <div className="flex justify-center gap-4">
+              <div className="flex justify-center gap-3 sm:gap-4">
                 <button
                   onClick={() => navigate("/suppliers")}
                   className="flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-slate-200 to-slate-300 text-slate-700 font-bold rounded-xl hover:from-slate-300 hover:to-slate-400 transition-all shadow-lg"
@@ -243,10 +243,10 @@ const SupplierDetailsPage = () => {
         </header>
 
         {/* Supplier Details Section */}
-        <div className="relative mb-6">
-          <div className="absolute -inset-2 bg-gradient-to-r from-orange-500 via-amber-500 to-yellow-500 rounded-3xl opacity-10 blur-xl"></div>
+        <div className="relative mb-4 sm:mb-5 md:mb-6">
+          <div className="absolute -inset-2 bg-gradient-to-r from-orange-500 via-amber-500 to-yellow-500 rounded-2xl sm:rounded-3xl opacity-10 blur-xl"></div>
 
-          <div className="relative bg-white/90 backdrop-blur-xl rounded-3xl shadow-xl shadow-orange-500/10 border border-white/50 overflow-hidden">
+          <div className="relative bg-white/90 backdrop-blur-xl rounded-2xl sm:rounded-3xl shadow-xl shadow-orange-500/10 border border-white/50 overflow-hidden">
             {/* Section Header */}
             <div className="bg-gradient-to-r from-orange-500 via-amber-500 to-yellow-500 p-1">
               <div className="bg-white/95 backdrop-blur-xl p-4">
@@ -262,8 +262,8 @@ const SupplierDetailsPage = () => {
             </div>
 
             {/* Supplier Info Grid */}
-            <div className="p-6">
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            <div className="p-4 sm:p-5 md:p-6">
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4 sm:p-5 md:p-6">
                 {/* Name */}
                 <div className="group p-4 rounded-xl bg-gradient-to-br from-orange-50 to-amber-50 border-2 border-orange-200 hover:border-orange-400 transition-all">
                   <div className="flex items-start gap-3">
@@ -396,10 +396,10 @@ const SupplierDetailsPage = () => {
 
 
           supplier.bankDetails ? (
-            <div className="relative mb-6">
-              <div className="absolute -inset-2 bg-gradient-to-r from-emerald-500 via-teal-500 to-cyan-500 rounded-3xl opacity-10 blur-xl"></div>
+            <div className="relative mb-4 sm:mb-5 md:mb-6">
+              <div className="absolute -inset-2 bg-gradient-to-r from-emerald-500 via-teal-500 to-cyan-500 rounded-2xl sm:rounded-3xl opacity-10 blur-xl"></div>
 
-              <div className="relative bg-white/90 backdrop-blur-xl rounded-3xl shadow-xl shadow-emerald-500/10 border border-white/50 overflow-hidden">
+              <div className="relative bg-white/90 backdrop-blur-xl rounded-2xl sm:rounded-3xl shadow-xl shadow-emerald-500/10 border border-white/50 overflow-hidden">
                 <div className="bg-gradient-to-r from-emerald-500 via-teal-500 to-cyan-500 p-1">
                   <div className="bg-white/95 backdrop-blur-xl p-4">
                     <div className="flex items-center gap-3">
@@ -413,8 +413,8 @@ const SupplierDetailsPage = () => {
                   </div>
                 </div>
 
-                <div className="p-6">
-                  <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                <div className="p-4 sm:p-5 md:p-6">
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-3 sm:gap-4 sm:p-5 md:p-6">
                     <div className="group p-4 rounded-xl bg-gradient-to-br from-emerald-50 to-teal-50 border-2 border-emerald-200 hover:border-emerald-400 transition-all">
                       <div className="flex items-start gap-3">
                         <div className="p-2 rounded-lg bg-emerald-100">
@@ -467,7 +467,7 @@ const SupplierDetailsPage = () => {
               </div>
             </div>
           ) : (
-            <div className="relative mb-6">
+            <div className="relative mb-4 sm:mb-5 md:mb-6">
               <div className="bg-gradient-to-r from-yellow-100 to-amber-100 border-r-4 border-yellow-500 rounded-xl p-4 flex items-start gap-3">
                 <AlertCircle className="w-5 h-5 text-yellow-600 flex-shrink-0 mt-0.5" />
                 <div>
@@ -482,9 +482,9 @@ const SupplierDetailsPage = () => {
 
         {/* Invoices Section */}
         <div className="relative">
-          <div className="absolute -inset-2 bg-gradient-to-r from-purple-500 via-indigo-500 to-blue-500 rounded-3xl opacity-10 blur-xl"></div>
+          <div className="absolute -inset-2 bg-gradient-to-r from-purple-500 via-indigo-500 to-blue-500 rounded-2xl sm:rounded-3xl opacity-10 blur-xl"></div>
 
-          <div className="relative bg-white/90 backdrop-blur-xl rounded-3xl shadow-xl shadow-purple-500/10 border border-white/50 overflow-hidden">
+          <div className="relative bg-white/90 backdrop-blur-xl rounded-2xl sm:rounded-3xl shadow-xl shadow-purple-500/10 border border-white/50 overflow-hidden">
             <div className="bg-gradient-to-r from-purple-500 via-indigo-500 to-blue-500 p-1">
               <div className="bg-white/95 backdrop-blur-xl p-4">
                 <div className="flex items-center gap-3">
@@ -498,7 +498,7 @@ const SupplierDetailsPage = () => {
               </div>
             </div>
 
-            <div className="p-6">
+            <div className="p-4 sm:p-5 md:p-6">
               {invoicesLoading ? (
                 <div className="flex items-center gap-3 text-slate-700 justify-center py-8">
                   <ClipLoader size={26} color="#8b5cf6" />
@@ -512,7 +512,7 @@ const SupplierDetailsPage = () => {
               ) : (
                 <>
                   {/* Summary */}
-                  {/* <div className="mb-4 flex flex-wrap gap-4 p-4 rounded-xl bg-gradient-to-r from-purple-50 to-indigo-50 border border-purple-200">
+                  {/* <div className="mb-4 flex flex-wrap gap-3 sm:gap-4 p-4 rounded-xl bg-gradient-to-r from-purple-50 to-indigo-50 border border-purple-200">
                     <div className="flex items-center gap-2">
                       <span className="font-bold text-purple-900">
                         סה״כ חשבוניות:

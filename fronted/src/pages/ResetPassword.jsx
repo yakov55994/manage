@@ -97,14 +97,14 @@ useEffect(() => {
   if (!tokenValid) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-orange-50 via-amber-50 to-orange-50 flex items-center justify-center p-4">
-        <div className="bg-white rounded-2xl shadow-2xl p-8 max-w-md w-full text-center">
+        <div className="bg-white rounded-2xl shadow-2xl p-4 sm:p-4 sm:p-5 md:p-6 md:p-8 max-w-md w-full text-center">
           <div className="mx-auto w-16 h-16 rounded-full bg-red-100 flex items-center justify-center mb-4">
-            <XCircle className="w-10 h-10 text-red-500" />
+            <XCircle className="w-6 h-6 sm:w-8 sm:h-8 md:w-10 md:h-10 text-red-500" />
           </div>
           <h2 className="text-2xl font-bold text-gray-800 mb-2">
             קישור לא תקף
           </h2>
-          <p className="text-gray-600 mb-6">
+          <p className="text-gray-600 mb-4 sm:mb-5 md:mb-6">
             הקישור לא תקף או שפג תוקפו. אנא בקש קישור חדש.
           </p>
           <button
@@ -120,13 +120,13 @@ useEffect(() => {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-orange-50 via-amber-50 to-orange-50 flex items-center justify-center p-4">
-      <div className="bg-white rounded-2xl shadow-2xl p-8 max-w-md w-full">
+      <div className="bg-white rounded-2xl shadow-2xl p-4 sm:p-4 sm:p-5 md:p-6 md:p-8 max-w-md w-full">
         {/* Header */}
         <div className="text-center mb-8">
           <div className="mx-auto w-16 h-16 rounded-full bg-gradient-to-r from-orange-400 to-amber-400 flex items-center justify-center mb-4">
-            <Lock className="w-8 h-8 text-white" />
+            <Lock className="w-6 h-6 sm:w-7 sm:h-7 md:w-8 md:h-8 text-white" />
           </div>
-          <h2 className="text-3xl font-bold text-gray-800 mb-2">
+          <h2 className="text-xl sm:text-2xl md:text-3xl font-bold text-gray-800 mb-2">
             בחר סיסמה חדשה
           </h2>
           <p className="text-gray-600">

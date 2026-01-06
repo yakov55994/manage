@@ -70,18 +70,18 @@ const CreateProject = () => {
       {/* Main Card */}
       <div className="relative z-10 w-full max-w-2xl">
         {/* Decorative gradient background */}
-        <div className="absolute -inset-4 bg-gradient-to-r from-orange-500 via-amber-500 to-yellow-500 rounded-3xl opacity-10 blur-2xl"></div>
+        <div className="absolute -inset-4 bg-gradient-to-r from-orange-500 via-amber-500 to-yellow-500 rounded-2xl sm:rounded-3xl opacity-10 blur-2xl"></div>
 
-        <div className="relative bg-white/90 backdrop-blur-2xl rounded-3xl shadow-2xl shadow-orange-500/10 border border-white/50 overflow-hidden">
+        <div className="relative bg-white/90 backdrop-blur-2xl rounded-2xl sm:rounded-3xl shadow-2xl shadow-orange-500/10 border border-white/50 overflow-hidden">
           {/* Header with Gradient Border */}
           <div className="bg-gradient-to-r from-orange-500 via-amber-500 to-yellow-500 p-1">
-            <div className="bg-white/95 backdrop-blur-xl p-8">
-              <div className="flex items-center justify-center gap-4 mb-4">
+            <div className="bg-white/95 backdrop-blur-xl p-4 sm:p-4 sm:p-5 md:p-6 md:p-8">
+              <div className="flex items-center justify-center gap-3 sm:gap-4 mb-4">
                 <div className="p-4 rounded-2xl bg-gradient-to-br from-orange-500 to-amber-600 shadow-lg shadow-orange-500/30">
-                  <FolderPlus className="w-10 h-10 text-white" />
+                  <FolderPlus className="w-6 h-6 sm:w-8 sm:h-8 md:w-10 md:h-10 text-white" />
                 </div>
                 <div className="text-center">
-                  <h2 className="text-4xl font-black text-slate-900">
+                  <h2 className="text-2xl sm:text-xl sm:text-2xl md:text-3xl md:text-4xl font-black text-slate-900">
                     יצירת פרויקט חדש
                   </h2>
                   <div className="flex items-center justify-center gap-2 mt-2">
@@ -96,12 +96,12 @@ const CreateProject = () => {
           </div>
 
           {/* Form Body */}
-          <form onSubmit={handleSubmit} className="p-8 space-y-8">
+          <form onSubmit={handleSubmit} className="p-4 sm:p-4 sm:p-5 md:p-6 md:p-8 space-y-8">
             {/* Project Name Section */}
             <section className="relative">
               <div className="absolute -right-4 top-0 w-1 h-full bg-gradient-to-b from-orange-500 to-amber-500 rounded-full"></div>
 
-              <div className="flex items-center gap-3 mb-6">
+              <div className="flex items-center gap-3 mb-4 sm:mb-5 md:mb-6">
                 <div className="p-3 rounded-2xl bg-gradient-to-br from-orange-500 to-orange-600 shadow-lg shadow-orange-500/30">
                   <Building2 className="w-6 h-6 text-white" />
                 </div>
@@ -145,7 +145,7 @@ const CreateProject = () => {
             <section className="relative">
               <div className="absolute -right-4 top-0 w-1 h-full bg-gradient-to-b from-amber-500 to-yellow-500 rounded-full"></div>
 
-              <div className="flex items-center gap-3 mb-6">
+              <div className="flex items-center gap-3 mb-4 sm:mb-5 md:mb-6">
                 <div className="p-3 rounded-2xl bg-gradient-to-br from-amber-500 to-yellow-600 shadow-lg shadow-amber-500/30">
                   <User className="w-6 h-6 text-white" />
                 </div>
@@ -191,7 +191,7 @@ const CreateProject = () => {
 
             {/* Submit Button */}
             <div className="pt-6">
-              <div className="flex justify-center gap-4">
+              <div className="flex justify-center gap-3 sm:gap-4">
           
                 <button
                   type="submit"

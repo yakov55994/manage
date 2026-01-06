@@ -13,6 +13,9 @@ import {
   UserPlus,
   Users,
   ChevronDown,
+  Menu,
+  X,
+  DollarSign,
 } from "lucide-react";
 import { useAuth } from "../context/AuthContext.jsx";
 
@@ -20,6 +23,8 @@ const Sidebar = () => {
   const [activeDropdown, setActiveDropdown] = useState(null);
   const [query, setQuery] = useState("");
   const [closeTimeout, setCloseTimeout] = useState(null);
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [mobileActiveGroup, setMobileActiveGroup] = useState(null);
   const navigate = useNavigate();
 
   const { isAdmin, canViewModule, canEditModule, canViewAnyProject, user } = useAuth();
@@ -115,6 +120,25 @@ const Sidebar = () => {
       ],
     },
     {
+      id: "incomes",
+      icon: DollarSign,
+      text: "הכנסות",
+      show: isAdmin || canViewModule(null, "invoices") || canEditModule(null, "invoices"),
+      type: "dropdown",
+      items: [
+        {
+          text: "יצירת הכנסה",
+          path: "/create-income",
+          show: isAdmin || canEditModule(null, "invoices"),
+        },
+        {
+          text: "הצגת הכנסות",
+          path: "/incomes",
+          show: isAdmin || canViewModule(null, "invoices"),
+        },
+      ],
+    },
+    {
       id: "orders",
       icon: ShoppingCart,
       text: "הזמנות",
@@ -182,13 +206,26 @@ const Sidebar = () => {
   ];
 
   return (
-    <div
-      dir="rtl"
-      className="fixed top-0 left-0 right-0 bg-gradient-to-r from-gray-900 via-slate-800 to-gray-900 text-gray-100 px-6 py-4 shadow-2xl z-50 border-b-2 border-orange-500/30"
-    >
-      <div className="flex items-center justify-between h-12">
-        {/* תפריט ניווט */}
-        <nav className="flex items-center gap-1">
+    <>
+      <div
+        dir="rtl"
+        className="fixed top-0 left-0 right-0 bg-gradient-to-r from-gray-900 via-slate-800 to-gray-900 text-gray-100 px-4 md:px-6 py-3 md:py-4 shadow-2xl z-50 border-b-2 border-orange-500/30"
+      >
+        <div className="flex items-center justify-between h-10 md:h-12">
+          {/* כפתור תפריט המבורגר - רק במובייל */}
+          <button
+            onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+            className="md:hidden p-2 rounded-lg hover:bg-gray-700/50 transition-all"
+          >
+            {mobileMenuOpen ? (
+              <X className="w-6 h-6 text-orange-400" />
+            ) : (
+              <Menu className="w-6 h-6 text-orange-400" />
+            )}
+          </button>
+
+          {/* תפריט ניווט - מוסתר במובייל */}
+          <nav className="hidden md:flex items-center gap-1">
           {menuGroups
             .filter((group) => group.show)
             .map((group) => {
@@ -266,8 +303,8 @@ const Sidebar = () => {
             })}
         </nav>
 
-        {/* חיפוש */}
-        <div className="flex items-center gap-3">
+        {/* חיפוש - responsive */}
+        <div className="flex items-center gap-2 md:gap-3">
           <div className="relative">
             <input
               type="text"
@@ -275,22 +312,112 @@ const Sidebar = () => {
               onChange={(e) => setQuery(e.target.value)}
               onKeyPress={(e) => e.key === "Enter" && handleSearch()}
               placeholder="חיפוש..."
-              className="w-64 px-4 py-2 pr-10 bg-gray-700/50 border-2 border-gray-600 rounded-xl text-white placeholder-gray-400 focus:outline-none focus:border-orange-500 transition-all"
+              className="w-32 sm:w-48 md:w-64 px-3 md:px-4 py-1.5 md:py-2 pr-8 md:pr-10 bg-gray-700/50 border-2 border-gray-600 rounded-xl text-sm md:text-base text-white placeholder-gray-400 focus:outline-none focus:border-orange-500 transition-all"
             />
             <Search
-              className="absolute right-3 top-1/2 transform -translate-y-1/2 text-orange-400"
-              size={18}
+              className="absolute right-2 md:right-3 top-1/2 transform -translate-y-1/2 text-orange-400"
+              size={16}
             />
           </div>
           <button
             onClick={handleSearch}
-            className="px-4 py-2 bg-gradient-to-r from-orange-500 to-orange-600 text-white font-bold rounded-xl hover:from-orange-600 hover:to-orange-700 transition-all shadow-lg hover:shadow-xl"
+            className="px-3 md:px-4 py-1.5 md:py-2 bg-gradient-to-r from-orange-500 to-orange-600 text-white text-sm md:text-base font-bold rounded-xl hover:from-orange-600 hover:to-orange-700 transition-all shadow-lg hover:shadow-xl"
           >
             חפש
           </button>
         </div>
       </div>
     </div>
+
+    {/* תפריט מובייל */}
+    {mobileMenuOpen && (
+      <div className="fixed inset-0 bg-black/60 z-40 md:hidden" onClick={() => setMobileMenuOpen(false)}>
+        <div
+          dir="rtl"
+          className="fixed top-0 right-0 bottom-0 w-80 bg-gradient-to-b from-gray-900 via-slate-800 to-gray-900 shadow-2xl overflow-y-auto"
+          onClick={(e) => e.stopPropagation()}
+        >
+          {/* כותרת התפריט */}
+          <div className="p-4 border-b-2 border-orange-500/30 flex items-center justify-between">
+            <h2 className="text-xl font-bold text-white">תפריט</h2>
+            <button
+              onClick={() => setMobileMenuOpen(false)}
+              className="p-2 rounded-lg hover:bg-gray-700/50 transition-all"
+            >
+              <X className="w-6 h-6 text-orange-400" />
+            </button>
+          </div>
+
+          {/* פריטי התפריט */}
+          <div className="p-4 space-y-2">
+            {menuGroups
+              .filter((group) => group.show)
+              .map((group) => {
+                if (group.type === "single") {
+                  return (
+                    <Link
+                      key={group.id}
+                      to={group.path}
+                      onClick={() => setMobileMenuOpen(false)}
+                      className="flex items-center gap-3 px-4 py-3 rounded-xl bg-gray-800/50 hover:bg-gradient-to-r hover:from-orange-500 hover:to-orange-600 transition-all"
+                    >
+                      <group.icon className="text-orange-400" size={20} />
+                      <span className="text-sm font-medium text-gray-300">
+                        {group.text}
+                      </span>
+                    </Link>
+                  );
+                } else {
+                  const visibleItems = group.items.filter((item) => item.show);
+                  if (visibleItems.length === 0) return null;
+
+                  return (
+                    <div key={group.id} className="space-y-1">
+                      <button
+                        onClick={() =>
+                          setMobileActiveGroup(
+                            mobileActiveGroup === group.id ? null : group.id
+                          )
+                        }
+                        className="w-full flex items-center justify-between gap-3 px-4 py-3 rounded-xl bg-gray-800/50 hover:bg-gray-700/50 transition-all"
+                      >
+                        <div className="flex items-center gap-3">
+                          <group.icon className="text-orange-400" size={20} />
+                          <span className="text-sm font-medium text-gray-300">
+                            {group.text}
+                          </span>
+                        </div>
+                        <ChevronDown
+                          className={`text-orange-400 transition-transform ${
+                            mobileActiveGroup === group.id ? "rotate-180" : ""
+                          }`}
+                          size={18}
+                        />
+                      </button>
+
+                      {mobileActiveGroup === group.id && (
+                        <div className="pr-4 space-y-1">
+                          {visibleItems.map((item, index) => (
+                            <Link
+                              key={index}
+                              to={item.path}
+                              onClick={() => setMobileMenuOpen(false)}
+                              className="block px-4 py-2.5 rounded-lg text-sm text-gray-400 hover:bg-orange-500 hover:text-white transition-all"
+                            >
+                              {item.text}
+                            </Link>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  );
+                }
+              })}
+          </div>
+        </div>
+      </div>
+    )}
+    </>
   );
 };
 

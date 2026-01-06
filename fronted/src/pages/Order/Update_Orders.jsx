@@ -352,7 +352,7 @@ const OrderEditPage = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-orange-50 via-amber-50 to-yellow-50 relative overflow-hidden py-12">
+    <div className="min-h-screen bg-gradient-to-br from-orange-50 via-amber-50 to-yellow-50 relative overflow-hidden pt-20 sm:pt-24 md:pt-28 pb-8 sm:pb-12">
       {/* Animated Background */}
       <div className="absolute inset-0 overflow-hidden pointer-events-none">
         <div className="absolute top-0 left-1/4 w-96 h-96 bg-gradient-to-br from-orange-400/20 to-amber-400/20 rounded-full blur-3xl animate-pulse"></div>
@@ -361,17 +361,17 @@ const OrderEditPage = () => {
 
       <div className="relative z-10 max-w-6xl mx-auto px-6">
         {/* Hero Header */}
-        <header className="mb-10">
+        <header className="mb-4 sm:mb-5 md:mb-6 sm:mb-8 md:mb-10">
           <div className="relative">
-            <div className="absolute -inset-x-6 -inset-y-3 bg-gradient-to-r from-orange-500 via-amber-500 to-yellow-500 rounded-3xl opacity-5 blur-xl"></div>
+            <div className="absolute -inset-x-6 -inset-y-3 bg-gradient-to-r from-orange-500 via-amber-500 to-yellow-500 rounded-2xl sm:rounded-3xl opacity-5 blur-xl"></div>
 
-            <div className="relative bg-white/80 backdrop-blur-xl rounded-3xl shadow-2xl shadow-orange-500/10 p-8 border border-white/50">
-              <div className="flex items-center justify-center gap-4">
+            <div className="relative bg-white/80 backdrop-blur-xl rounded-2xl sm:rounded-3xl shadow-2xl shadow-orange-500/10 p-4 sm:p-4 sm:p-5 md:p-6 md:p-8 border border-white/50">
+              <div className="flex items-center justify-center gap-3 sm:gap-4">
                 <div className="p-4 rounded-2xl bg-gradient-to-br from-orange-500 to-amber-600 shadow-lg shadow-orange-500/30">
-                  <ShoppingCart className="w-10 h-10 text-white" />
+                  <ShoppingCart className="w-6 h-6 sm:w-8 sm:h-8 md:w-10 md:h-10 text-white" />
                 </div>
                 <div className="text-center">
-                  <h1 className="text-4xl font-black text-slate-900">עריכת הזמנה</h1>
+                  <h1 className="text-2xl sm:text-xl sm:text-2xl md:text-3xl md:text-4xl font-black text-slate-900">עריכת הזמנה</h1>
                   <p className="text-sm font-medium text-slate-600 mt-2">
                     הזמנה מספר: {orderNumber} | פרויקט: {projectName}
                   </p>
@@ -383,9 +383,9 @@ const OrderEditPage = () => {
 
         <form
           onSubmit={handleSubmit}
-          className="bg-white/90 backdrop-blur-xl rounded-3xl shadow-xl shadow-orange-500/10 p-8 border border-white/50"
+          className="bg-white/90 backdrop-blur-xl rounded-2xl sm:rounded-3xl shadow-xl shadow-orange-500/10 p-4 sm:p-4 sm:p-5 md:p-6 md:p-8 border border-white/50"
         >
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-3 sm:gap-4 sm:p-5 md:p-6 mb-8">
             <div>
               <label className="block text-sm font-semibold text-gray-700 mb-2">
                 <Hash className="inline w-4 h-4 mr-2" />
@@ -590,7 +590,7 @@ const OrderEditPage = () => {
           )}
 
           {!canEdit && (
-            <div className="mb-6 p-4 bg-amber-50 border-2 border-amber-200 rounded-xl">
+            <div className="mb-4 sm:mb-5 md:mb-6 p-4 bg-amber-50 border-2 border-amber-200 rounded-xl">
               <div className="flex items-center gap-2 text-amber-700">
                 <AlertCircle className="w-5 h-5" />
                 <span className="font-semibold">
@@ -600,7 +600,7 @@ const OrderEditPage = () => {
             </div>
           )}
 
-          <div className="flex justify-center gap-4">
+          <div className="flex justify-center gap-3 sm:gap-4">
             <button
               type="submit"
               disabled={submitting || !canEdit}

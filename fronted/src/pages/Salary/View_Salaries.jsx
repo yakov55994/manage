@@ -188,7 +188,7 @@ export default function View_Salaries() {
           <div className="absolute inset-0 bg-gradient-to-r from-orange-500 to-amber-500 blur-3xl opacity-20 animate-pulse"></div>
           <ClipLoader size={100} color="#f97316" loading />
         </div>
-        <h1 className="mt-8 font-bold text-3xl text-slate-900">
+        <h1 className="mt-8 font-bold text-xl sm:text-2xl md:text-3xl text-slate-900">
           טוען משכורות...
         </h1>
       </div>
@@ -219,7 +219,7 @@ export default function View_Salaries() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-orange-50 via-amber-50 to-yellow-50 relative overflow-hidden py-12">
+    <div className="min-h-screen bg-gradient-to-br from-orange-50 via-amber-50 to-yellow-50 relative overflow-hidden pt-20 sm:pt-24 md:pt-28 pb-8 sm:pb-12">
       {/* Animated Background */}
       <div className="absolute inset-0 overflow-hidden pointer-events-none">
         <div className="absolute top-0 left-1/4 w-96 h-96 bg-gradient-to-br from-orange-400/20 to-amber-400/20 rounded-full blur-3xl animate-pulse"></div>
@@ -228,17 +228,17 @@ export default function View_Salaries() {
 
       <div className="relative z-10 container mx-auto px-6 max-w-7xl">
         {/* Hero Header */}
-        <header className="mb-10">
+        <header className="mb-4 sm:mb-5 md:mb-6 sm:mb-8 md:mb-10">
           <div className="relative">
-            <div className="absolute -inset-x-6 -inset-y-3 bg-gradient-to-r from-orange-500 via-amber-500 to-yellow-500 rounded-3xl opacity-5 blur-xl"></div>
+            <div className="absolute -inset-x-6 -inset-y-3 bg-gradient-to-r from-orange-500 via-amber-500 to-yellow-500 rounded-2xl sm:rounded-3xl opacity-5 blur-xl"></div>
 
-            <div className="relative bg-white/80 backdrop-blur-xl rounded-3xl shadow-2xl shadow-orange-500/10 p-8 border border-white/50">
-              <div className="flex items-center justify-center gap-4">
+            <div className="relative bg-white/80 backdrop-blur-xl rounded-2xl sm:rounded-3xl shadow-2xl shadow-orange-500/10 p-4 sm:p-4 sm:p-5 md:p-6 md:p-8 border border-white/50">
+              <div className="flex items-center justify-center gap-3 sm:gap-4">
                 <div className="p-4 rounded-2xl bg-gradient-to-br from-orange-500 to-amber-600 shadow-lg shadow-orange-500/30">
-                  <Users className="w-10 h-10 text-white" />
+                  <Users className="w-6 h-6 sm:w-8 sm:h-8 md:w-10 md:h-10 text-white" />
                 </div>
                 <div className="text-center">
-                  <h1 className="text-4xl font-black text-slate-900">
+                  <h1 className="text-2xl sm:text-xl sm:text-2xl md:text-3xl md:text-4xl font-black text-slate-900">
                     רשימת משכורות
                   </h1>
                   <p className="text-sm font-medium text-slate-600 mt-2">
@@ -251,10 +251,10 @@ export default function View_Salaries() {
         </header>
 
         {/* Export Section */}
-        <div className="relative mb-6">
-          <div className="absolute -inset-2 bg-gradient-to-r from-emerald-500 via-teal-500 to-cyan-500 rounded-3xl opacity-10 blur-xl"></div>
+        <div className="relative mb-4 sm:mb-5 md:mb-6">
+          <div className="absolute -inset-2 bg-gradient-to-r from-emerald-500 via-teal-500 to-cyan-500 rounded-2xl sm:rounded-3xl opacity-10 blur-xl"></div>
 
-          <div className="relative bg-white/90 backdrop-blur-xl rounded-3xl shadow-xl shadow-emerald-500/10 p-6 border border-white/50">
+          <div className="relative bg-white/90 backdrop-blur-xl rounded-2xl sm:rounded-3xl shadow-xl shadow-emerald-500/10 p-4 sm:p-5 md:p-6 border border-white/50">
             <div className="space-y-4">
               <div>
                 <ProjectSelector
@@ -286,11 +286,11 @@ export default function View_Salaries() {
         </div>
 
         {/* Search & Filters */}
-        <div className="relative mb-6">
-          <div className="absolute -inset-2 bg-gradient-to-r from-orange-500 via-amber-500 to-yellow-500 rounded-3xl opacity-10 blur-xl"></div>
+        <div className="relative mb-4 sm:mb-5 md:mb-6">
+          <div className="absolute -inset-2 bg-gradient-to-r from-orange-500 via-amber-500 to-yellow-500 rounded-2xl sm:rounded-3xl opacity-10 blur-xl"></div>
 
-          <div className="relative bg-white/90 backdrop-blur-xl rounded-3xl shadow-xl shadow-orange-500/10 p-6 border border-white/50">
-            <div className="flex flex-col md:flex-row gap-4">
+          <div className="relative bg-white/90 backdrop-blur-xl rounded-2xl sm:rounded-3xl shadow-xl shadow-orange-500/10 p-4 sm:p-5 md:p-6 border border-white/50">
+            <div className="flex flex-col md:flex-row gap-3 sm:gap-4">
               {/* Search */}
               <div className="flex-1 relative">
                 <Search className="absolute right-4 top-1/2 -translate-y-1/2 w-5 h-5 text-orange-400" />
@@ -350,9 +350,9 @@ export default function View_Salaries() {
 
         {/* Salaries Table */}
         <div className="relative">
-          <div className="absolute -inset-2 bg-gradient-to-r from-orange-500 via-amber-500 to-yellow-500 rounded-3xl opacity-10 blur-xl"></div>
+          <div className="absolute -inset-2 bg-gradient-to-r from-orange-500 via-amber-500 to-yellow-500 rounded-2xl sm:rounded-3xl opacity-10 blur-xl"></div>
 
-          <div className="relative bg-white/90 backdrop-blur-xl rounded-3xl shadow-xl shadow-orange-500/10 border border-white/50 overflow-hidden">
+          <div className="relative bg-white/90 backdrop-blur-xl rounded-2xl sm:rounded-3xl shadow-xl shadow-orange-500/10 border border-white/50 overflow-hidden">
             {filteredSalaries.length === 0 ? (
               <div className="text-center py-20">
                 <Users className="w-16 h-16 mx-auto mb-4 text-orange-400 opacity-50" />
@@ -361,132 +361,249 @@ export default function View_Salaries() {
                 </p>
               </div>
             ) : (
-              <div className="overflow-x-auto">
-                <table className="min-w-full text-sm">
-                  <thead className="bg-gradient-to-r from-orange-500 via-amber-500 to-yellow-500">
-                    <tr>
-                      <th className="px-3 py-3 text-right text-xs font-bold text-white uppercase">
-                        שם עובד
-                      </th>
-                      <th className="px-3 py-3 text-right text-xs font-bold text-white uppercase">
-                        מחלקה
-                      </th>
-                      <th className="px-3 py-3 text-right text-xs font-bold text-white uppercase">
-                        פרויקט
-                      </th>
-                      <th className="px-3 py-3 text-center text-xs font-bold text-white uppercase">
-                        ברוטו
-                      </th>
-                      <th className="px-3 py-3 text-center text-xs font-bold text-white uppercase">
-                        תקורה
-                      </th>
-                      <th className="px-3 py-3 text-center text-xs font-bold text-white uppercase">
-                        סופי
-                      </th>
-                      <th className="px-3 py-3 text-center text-xs font-bold text-white uppercase">
-                        תאריך
-                      </th>
-                      <th className="px-3 py-3 text-right text-xs font-bold text-white uppercase">
-                        נוצר ע"י
-                      </th>
-                      <th className="px-3 py-3 text-center text-xs font-bold text-white uppercase">
-                        פעולות
-                      </th>
-                    </tr>
-                  </thead>
-                  <tbody className="bg-white divide-y divide-orange-100">
-                    {filteredSalaries.map((salary, index) => (
-                      <tr
-                        key={salary._id}
-                        className={`hover:bg-orange-50/50 transition-colors cursor-pointer ${
-                          index % 2 === 0 ? "bg-white" : "bg-orange-50/30"
-                        }`}
-                        onClick={() => navigate(`/salaries/${salary._id}`)}
-                      >
-                        <td className="px-3 py-2 whitespace-nowrap">
-                          <div className="flex items-center gap-1">
-                            <User className="w-3 h-3 text-orange-500" />
-                            <span className="font-bold text-slate-900 text-sm">
-                              {salary.employeeName}
-                            </span>
-                          </div>
-                        </td>
-                        <td className="px-3 py-2 whitespace-nowrap">
-                          <div className="flex items-center gap-1">
-                            <Briefcase className="w-3 h-3 text-amber-500" />
-                            <span className="text-xs text-slate-600">
-                              {salary.department || "—"}
-                            </span>
-                          </div>
-                        </td>
-                        <td className="px-3 py-2 whitespace-nowrap">
-                          <div className="flex items-center gap-1">
-                            <Building2 className="w-3 h-3 text-yellow-500" />
-                            <span className="text-xs text-slate-600">
-                              {salary.projectId?.name || "—"}
-                            </span>
-                          </div>
-                        </td>
-                        <td className="px-3 py-2 whitespace-nowrap text-center">
-                          <span className="font-bold text-slate-700 text-sm">
-                            {formatCurrency(salary.baseAmount)}
-                          </span>
-                        </td>
-                        <td className="px-3 py-2 whitespace-nowrap text-center">
-                          <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-bold bg-amber-100 text-amber-700">
-                            {salary.overheadPercent || 0}%
-                          </span>
-                        </td>
-                        <td className="px-3 py-2 whitespace-nowrap text-center">
-                          <span className="font-bold bg-gradient-to-r from-orange-600 to-amber-600 bg-clip-text text-transparent">
-                            {formatCurrency(salary.finalAmount)}
-                          </span>
-                        </td>
-                        <td className="px-3 py-2 whitespace-nowrap text-center text-xs text-slate-600">
-                          {formatDate(salary.date)}
-                        </td>
-                        <td className="px-3 py-2 whitespace-nowrap text-xs text-slate-600">
-                          {salary.createdByName || "—"}
-                        </td>
-                        <td className="px-3 py-2 text-center">
-                          <div className="flex justify-center gap-1">
-                            <button
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                navigate(`/salaries/${salary._id}`);
-                              }}
-                              className="p-1.5 hover:bg-blue-100 rounded-lg transition-colors group"
-                              title="צפייה"
-                            >
-                              <Eye className="w-3.5 h-3.5 text-blue-600 group-hover:text-blue-700" />
-                            </button>
-                            <button
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                navigate(`/update-salary/${salary._id}`);
-                              }}
-                              className="p-1.5 hover:bg-orange-100 rounded-lg transition-colors group"
-                              title="עריכה"
-                            >
-                              <Edit2 className="w-3.5 h-3.5 text-orange-600 group-hover:text-orange-700" />
-                            </button>
-                            <button
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                openDeleteModal(salary);
-                              }}
-                              className="p-1.5 hover:bg-red-100 rounded-lg transition-colors group"
-                              title="מחיקה"
-                            >
-                              <Trash2 className="w-3.5 h-3.5 text-red-600 group-hover:text-red-700" />
-                            </button>
-                          </div>
-                        </td>
+              <>
+                {/* Desktop Table */}
+                <div className="hidden lg:block overflow-x-auto">
+                  <table className="min-w-full text-sm">
+                    <thead className="bg-gradient-to-r from-orange-500 via-amber-500 to-yellow-500">
+                      <tr>
+                        <th className="px-3 py-3 text-right text-xs font-bold text-white uppercase">
+                          שם עובד
+                        </th>
+                        <th className="px-3 py-3 text-right text-xs font-bold text-white uppercase">
+                          מחלקה
+                        </th>
+                        <th className="px-3 py-3 text-right text-xs font-bold text-white uppercase">
+                          פרויקט
+                        </th>
+                        <th className="px-3 py-3 text-center text-xs font-bold text-white uppercase">
+                          ברוטו
+                        </th>
+                        <th className="px-3 py-3 text-center text-xs font-bold text-white uppercase">
+                          תקורה
+                        </th>
+                        <th className="px-3 py-3 text-center text-xs font-bold text-white uppercase">
+                          סופי
+                        </th>
+                        <th className="px-3 py-3 text-center text-xs font-bold text-white uppercase">
+                          תאריך
+                        </th>
+                        <th className="px-3 py-3 text-right text-xs font-bold text-white uppercase">
+                          נוצר ע"י
+                        </th>
+                        <th className="px-3 py-3 text-center text-xs font-bold text-white uppercase">
+                          פעולות
+                        </th>
                       </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
+                    </thead>
+                    <tbody className="bg-white divide-y divide-orange-100">
+                      {filteredSalaries.map((salary, index) => (
+                        <tr
+                          key={salary._id}
+                          className={`hover:bg-orange-50/50 transition-colors cursor-pointer ${
+                            index % 2 === 0 ? "bg-white" : "bg-orange-50/30"
+                          }`}
+                          onClick={() => navigate(`/salaries/${salary._id}`)}
+                        >
+                          <td className="px-3 py-2 whitespace-nowrap">
+                            <div className="flex items-center gap-1">
+                              <User className="w-3 h-3 text-orange-500" />
+                              <span className="font-bold text-slate-900 text-sm">
+                                {salary.employeeName}
+                              </span>
+                            </div>
+                          </td>
+                          <td className="px-3 py-2 whitespace-nowrap">
+                            <div className="flex items-center gap-1">
+                              <Briefcase className="w-3 h-3 text-amber-500" />
+                              <span className="text-xs text-slate-600">
+                                {salary.department || "—"}
+                              </span>
+                            </div>
+                          </td>
+                          <td className="px-3 py-2 whitespace-nowrap">
+                            <div className="flex items-center gap-1">
+                              <Building2 className="w-3 h-3 text-yellow-500" />
+                              <span className="text-xs text-slate-600">
+                                {salary.projectId?.name || "—"}
+                              </span>
+                            </div>
+                          </td>
+                          <td className="px-3 py-2 whitespace-nowrap text-center">
+                            <span className="font-bold text-slate-700 text-sm">
+                              {formatCurrency(salary.baseAmount)}
+                            </span>
+                          </td>
+                          <td className="px-3 py-2 whitespace-nowrap text-center">
+                            <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-bold bg-amber-100 text-amber-700">
+                              {salary.overheadPercent || 0}%
+                            </span>
+                          </td>
+                          <td className="px-3 py-2 whitespace-nowrap text-center">
+                            <span className="font-bold bg-gradient-to-r from-orange-600 to-amber-600 bg-clip-text text-transparent">
+                              {formatCurrency(salary.finalAmount)}
+                            </span>
+                          </td>
+                          <td className="px-3 py-2 whitespace-nowrap text-center text-xs text-slate-600">
+                            {formatDate(salary.date)}
+                          </td>
+                          <td className="px-3 py-2 whitespace-nowrap text-xs text-slate-600">
+                            {salary.createdByName || "—"}
+                          </td>
+                          <td className="px-3 py-2 text-center">
+                            <div className="flex justify-center gap-1">
+                              <button
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  navigate(`/salaries/${salary._id}`);
+                                }}
+                                className="p-1.5 hover:bg-blue-100 rounded-lg transition-colors group"
+                                title="צפייה"
+                              >
+                                <Eye className="w-3.5 h-3.5 text-blue-600 group-hover:text-blue-700" />
+                              </button>
+                              <button
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  navigate(`/update-salary/${salary._id}`);
+                                }}
+                                className="p-1.5 hover:bg-orange-100 rounded-lg transition-colors group"
+                                title="עריכה"
+                              >
+                                <Edit2 className="w-3.5 h-3.5 text-orange-600 group-hover:text-orange-700" />
+                              </button>
+                              <button
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  openDeleteModal(salary);
+                                }}
+                                className="p-1.5 hover:bg-red-100 rounded-lg transition-colors group"
+                                title="מחיקה"
+                              >
+                                <Trash2 className="w-3.5 h-3.5 text-red-600 group-hover:text-red-700" />
+                              </button>
+                            </div>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+
+                {/* Mobile Cards */}
+                <div className="lg:hidden space-y-4 p-4">
+                  {filteredSalaries.map((salary) => (
+                    <div
+                      key={salary._id}
+                      onClick={() => navigate(`/salaries/${salary._id}`)}
+                      className="bg-white/90 backdrop-blur-xl rounded-xl shadow-lg hover:shadow-xl transition-all border border-orange-100 p-4 cursor-pointer active:scale-98"
+                    >
+                      {/* Header - Employee Name */}
+                      <div className="flex items-center justify-between mb-3 pb-3 border-b border-orange-100">
+                        <div className="flex items-center gap-2">
+                          <div className="p-2 rounded-lg bg-gradient-to-br from-orange-500 to-amber-500">
+                            <User className="w-4 h-4 text-white" />
+                          </div>
+                          <div>
+                            <div className="text-xs text-slate-500">שם עובד</div>
+                            <div className="text-lg font-bold text-slate-900">
+                              {salary.employeeName}
+                            </div>
+                          </div>
+                        </div>
+                        <div className="text-right">
+                          <div className="text-xs text-slate-500">תאריך</div>
+                          <div className="text-sm font-medium text-slate-700">
+                            {formatDate(salary.date)}
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Department & Project */}
+                      <div className="grid grid-cols-2 gap-3 mb-3">
+                        <div>
+                          <div className="flex items-center gap-1 text-xs text-slate-500 mb-1">
+                            <Briefcase className="w-3 h-3" />
+                            מחלקה
+                          </div>
+                          <div className="text-sm font-medium text-slate-700">
+                            {salary.department || "—"}
+                          </div>
+                        </div>
+                        <div>
+                          <div className="flex items-center gap-1 text-xs text-slate-500 mb-1">
+                            <Building2 className="w-3 h-3" />
+                            פרויקט
+                          </div>
+                          <div className="text-sm font-medium text-slate-700">
+                            {salary.projectId?.name || "—"}
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Amounts */}
+                      <div className="grid grid-cols-3 gap-2 mb-3 bg-orange-50 rounded-lg p-3">
+                        <div className="text-center">
+                          <div className="text-xs text-slate-600 mb-1">ברוטו</div>
+                          <div className="text-sm font-bold text-slate-900">
+                            {formatCurrency(salary.baseAmount)}
+                          </div>
+                        </div>
+                        <div className="text-center">
+                          <div className="text-xs text-slate-600 mb-1">תקורה</div>
+                          <div className="inline-flex items-center px-2 py-1 rounded-full text-xs font-bold bg-amber-200 text-amber-800">
+                            {salary.overheadPercent || 0}%
+                          </div>
+                        </div>
+                        <div className="text-center">
+                          <div className="text-xs text-slate-600 mb-1">סופי</div>
+                          <div className="text-sm font-bold bg-gradient-to-r from-orange-600 to-amber-600 bg-clip-text text-transparent">
+                            {formatCurrency(salary.finalAmount)}
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Created By */}
+                      <div className="mb-3 text-xs text-slate-500">
+                        נוצר ע"י: <span className="font-medium text-slate-700">{salary.createdByName || "—"}</span>
+                      </div>
+
+                      {/* Action Buttons */}
+                      <div className="flex gap-2">
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            navigate(`/salaries/${salary._id}`);
+                          }}
+                          className="flex-1 flex items-center justify-center gap-2 px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors"
+                        >
+                          <Eye className="w-4 h-4" />
+                          <span>צפייה</span>
+                        </button>
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            navigate(`/update-salary/${salary._id}`);
+                          }}
+                          className="flex-1 flex items-center justify-center gap-2 px-4 py-2 bg-orange-500 text-white rounded-lg hover:bg-orange-600 transition-colors"
+                        >
+                          <Edit2 className="w-4 h-4" />
+                          <span>עריכה</span>
+                        </button>
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            openDeleteModal(salary);
+                          }}
+                          className="px-4 py-2 bg-red-500 text-white rounded-lg hover:bg-red-600 transition-colors"
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </>
             )}
           </div>
         </div>
@@ -494,10 +611,10 @@ export default function View_Salaries() {
         {/* Summary Card */}
         {filteredSalaries.length > 0 && (
           <div className="relative mt-6">
-            <div className="absolute -inset-2 bg-gradient-to-r from-orange-500 via-amber-500 to-yellow-500 rounded-3xl opacity-10 blur-xl"></div>
+            <div className="absolute -inset-2 bg-gradient-to-r from-orange-500 via-amber-500 to-yellow-500 rounded-2xl sm:rounded-3xl opacity-10 blur-xl"></div>
 
-            <div className="relative bg-white/90 backdrop-blur-xl rounded-3xl shadow-xl shadow-orange-500/10 p-6 border border-white/50">
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            <div className="relative bg-white/90 backdrop-blur-xl rounded-2xl sm:rounded-3xl shadow-xl shadow-orange-500/10 p-4 sm:p-5 md:p-6 border border-white/50">
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-3 sm:gap-4 sm:p-5 md:p-6">
                 <div className="text-center p-4 rounded-xl bg-gradient-to-br from-orange-50 to-amber-50 border-2 border-orange-200">
                   <p className="text-sm font-bold text-orange-600 mb-2">
                     סה"כ סכום ברוטו
@@ -543,14 +660,14 @@ export default function View_Salaries() {
         {deleteModal.open && (
           <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4">
             <div className="relative">
-              <div className="absolute -inset-4 bg-gradient-to-r from-red-500 to-rose-500 rounded-3xl opacity-20 blur-2xl"></div>
+              <div className="absolute -inset-4 bg-gradient-to-r from-red-500 to-rose-500 rounded-2xl sm:rounded-3xl opacity-20 blur-2xl"></div>
 
-              <div className="relative bg-white rounded-3xl shadow-2xl p-8 max-w-md w-full">
-                <div className="text-center mb-6">
+              <div className="relative bg-white rounded-2xl sm:rounded-3xl shadow-2xl p-4 sm:p-4 sm:p-5 md:p-6 md:p-8 max-w-md w-full">
+                <div className="text-center mb-4 sm:mb-5 md:mb-6">
                   <div className="mx-auto w-16 h-16 rounded-full bg-gradient-to-br from-red-500 to-rose-500 flex items-center justify-center mb-4">
-                    <Trash2 className="w-8 h-8 text-white" />
+                    <Trash2 className="w-6 h-6 sm:w-7 sm:h-7 md:w-8 md:h-8 text-white" />
                   </div>
-                  <h3 className="text-3xl font-bold text-slate-900 mb-2">
+                  <h3 className="text-xl sm:text-2xl md:text-3xl font-bold text-slate-900 mb-2">
                     האם אתה בטוח?
                   </h3>
                   <p className="text-slate-600">

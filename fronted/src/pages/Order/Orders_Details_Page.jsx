@@ -81,7 +81,7 @@ const OrderDetailsPage = () => {
           <div className="absolute inset-0 bg-gradient-to-r from-orange-500 to-amber-500 blur-3xl opacity-20 animate-pulse"></div>
           <ClipLoader size={100} color="#f97316" loading />
         </div>
-        <h1 className="mt-8 font-bold text-3xl text-slate-900">
+        <h1 className="mt-8 font-bold text-xl sm:text-2xl md:text-3xl text-slate-900">
           טוען פרטי הזמנה...
         </h1>
       </div>
@@ -230,7 +230,7 @@ const OrderDetailsPage = () => {
       <div className="min-h-screen bg-gradient-to-br from-red-50 via-orange-50 to-yellow-50 flex flex-col justify-center items-center">
         <div className="text-center">
           <AlertCircle className="w-20 h-20 text-red-500 mx-auto mb-4" />
-          <h1 className="text-3xl font-bold text-red-600">הזמנה לא נמצאה</h1>
+          <h1 className="text-xl sm:text-2xl md:text-3xl font-bold text-red-600">הזמנה לא נמצאה</h1>
           <button
             onClick={() => navigate("/orders")}
             className="mt-6 px-6 py-3 bg-gradient-to-r from-slate-600 to-slate-700 text-white rounded-xl hover:from-slate-700 hover:to-slate-800 transition-all shadow-lg"
@@ -243,7 +243,7 @@ const OrderDetailsPage = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-orange-50 via-amber-50 to-yellow-50 relative overflow-hidden py-12">
+    <div className="min-h-screen bg-gradient-to-br from-orange-50 via-amber-50 to-yellow-50 relative overflow-hidden pt-20 sm:pt-24 md:pt-28 pb-8 sm:pb-12">
       {/* Animated Background */}
       <div className="absolute inset-0 overflow-hidden pointer-events-none">
         <div className="absolute top-0 left-1/4 w-96 h-96 bg-gradient-to-br from-orange-400/20 to-amber-400/20 rounded-full blur-3xl animate-pulse"></div>
@@ -252,17 +252,17 @@ const OrderDetailsPage = () => {
 
       <div className="relative z-10 container mx-auto px-4 md:px-6 max-w-7xl">
         {/* Hero Header */}
-        <header className="mb-10">
+        <header className="mb-4 sm:mb-5 md:mb-6 sm:mb-8 md:mb-10">
           <div className="relative">
-            <div className="absolute -inset-x-6 -inset-y-3 bg-gradient-to-r from-orange-500 via-amber-500 to-yellow-500 rounded-3xl opacity-5 blur-xl"></div>
+            <div className="absolute -inset-x-6 -inset-y-3 bg-gradient-to-r from-orange-500 via-amber-500 to-yellow-500 rounded-2xl sm:rounded-3xl opacity-5 blur-xl"></div>
 
-            <div className="relative bg-white/80 backdrop-blur-xl rounded-3xl shadow-2xl shadow-orange-500/10 p-8 border border-white/50">
-              <div className="flex items-center justify-center gap-4 mb-6">
+            <div className="relative bg-white/80 backdrop-blur-xl rounded-2xl sm:rounded-3xl shadow-2xl shadow-orange-500/10 p-4 sm:p-4 sm:p-5 md:p-6 md:p-8 border border-white/50">
+              <div className="flex items-center justify-center gap-3 sm:gap-4 mb-4 sm:mb-5 md:mb-6">
                 <div className="p-4 rounded-2xl bg-gradient-to-br from-orange-500 to-amber-600 shadow-lg shadow-orange-500/30">
-                  <ShoppingCart className="w-10 h-10 text-white" />
+                  <ShoppingCart className="w-6 h-6 sm:w-8 sm:h-8 md:w-10 md:h-10 text-white" />
                 </div>
                 <div className="text-center">
-                  <h1 className="text-4xl font-black text-slate-900">
+                  <h1 className="text-2xl sm:text-xl sm:text-2xl md:text-3xl md:text-4xl font-black text-slate-900">
                     פרטי הזמנה
                   </h1>
                   <div className="flex items-center justify-center gap-2 mt-2">
@@ -275,7 +275,7 @@ const OrderDetailsPage = () => {
               </div>
 
               {/* Action Buttons */}
-              <div className="flex justify-center gap-4">
+              <div className="flex justify-center gap-3 sm:gap-4">
                 <button
                   onClick={() => navigate("/orders")}
                   className="flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-slate-200 to-slate-300 text-slate-700 font-bold rounded-xl hover:from-slate-300 hover:to-slate-400 transition-all shadow-lg"
@@ -309,10 +309,10 @@ const OrderDetailsPage = () => {
         </header>
 
         {/* Order Details Section */}
-        <div className="relative mb-6">
-          <div className="absolute -inset-2 bg-gradient-to-r from-orange-500 via-amber-500 to-yellow-500 rounded-3xl opacity-10 blur-xl"></div>
+        <div className="relative mb-4 sm:mb-5 md:mb-6">
+          <div className="absolute -inset-2 bg-gradient-to-r from-orange-500 via-amber-500 to-yellow-500 rounded-2xl sm:rounded-3xl opacity-10 blur-xl"></div>
 
-          <div className="relative bg-white/90 backdrop-blur-xl rounded-3xl shadow-xl shadow-orange-500/10 border border-white/50 overflow-hidden">
+          <div className="relative bg-white/90 backdrop-blur-xl rounded-2xl sm:rounded-3xl shadow-xl shadow-orange-500/10 border border-white/50 overflow-hidden">
             <div className="bg-gradient-to-r from-orange-500 via-amber-500 to-yellow-500 p-1">
               <div className="bg-white/95 backdrop-blur-xl p-4">
                 <div className="flex items-center gap-3">
@@ -326,8 +326,8 @@ const OrderDetailsPage = () => {
               </div>
             </div>
 
-            <div className="p-6">
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            <div className="p-4 sm:p-5 md:p-6">
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4 sm:p-5 md:p-6">
                 {/* שם המזמין */}
                 <div className="group p-4 rounded-xl bg-gradient-to-br from-orange-50 to-amber-50 border-2 border-orange-200 hover:border-orange-400 transition-all">
                   <div className="flex items-start gap-3">
@@ -507,9 +507,9 @@ const OrderDetailsPage = () => {
 
         {/* Files Section */}
         <div className="relative">
-          <div className="absolute -inset-2 bg-gradient-to-r from-purple-500 via-indigo-500 to-blue-500 rounded-3xl opacity-10 blur-xl"></div>
+          <div className="absolute -inset-2 bg-gradient-to-r from-purple-500 via-indigo-500 to-blue-500 rounded-2xl sm:rounded-3xl opacity-10 blur-xl"></div>
 
-          <div className="relative bg-white/90 backdrop-blur-xl rounded-3xl shadow-xl shadow-purple-500/10 border border-white/50 overflow-hidden">
+          <div className="relative bg-white/90 backdrop-blur-xl rounded-2xl sm:rounded-3xl shadow-xl shadow-purple-500/10 border border-white/50 overflow-hidden">
             <div className="bg-gradient-to-r from-purple-500 via-indigo-500 to-blue-500 p-1">
               <div className="bg-white/95 backdrop-blur-xl p-4">
                 <div className="flex items-center gap-3">
@@ -528,7 +528,7 @@ const OrderDetailsPage = () => {
               </div>
             </div>
 
-            <div className="p-6">
+            <div className="p-4 sm:p-5 md:p-6">
               {order.files && order.files.length > 0 ? (
                 <div className="space-y-3">
                   {order.files.map((file, index) => (
@@ -549,14 +549,14 @@ const OrderDetailsPage = () => {
         {confirmOpen && (
           <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4">
             <div className="relative">
-              <div className="absolute -inset-4 bg-gradient-to-r from-red-500 to-rose-500 rounded-3xl opacity-20 blur-2xl"></div>
+              <div className="absolute -inset-4 bg-gradient-to-r from-red-500 to-rose-500 rounded-2xl sm:rounded-3xl opacity-20 blur-2xl"></div>
 
-              <div className="relative bg-white rounded-3xl shadow-2xl p-8 max-w-md w-full">
-                <div className="text-center mb-6">
+              <div className="relative bg-white rounded-2xl sm:rounded-3xl shadow-2xl p-4 sm:p-4 sm:p-5 md:p-6 md:p-8 max-w-md w-full">
+                <div className="text-center mb-4 sm:mb-5 md:mb-6">
                   <div className="mx-auto w-16 h-16 rounded-full bg-gradient-to-br from-red-500 to-rose-500 flex items-center justify-center mb-4">
-                    <AlertCircle className="w-8 h-8 text-white" />
+                    <AlertCircle className="w-6 h-6 sm:w-7 sm:h-7 md:w-8 md:h-8 text-white" />
                   </div>
-                  <h3 className="text-3xl font-bold text-slate-900 mb-2">
+                  <h3 className="text-xl sm:text-2xl md:text-3xl font-bold text-slate-900 mb-2">
                     האם למחוק את ההזמנה?
                   </h3>
                   <p className="text-slate-600">הפעולה בלתי הפיכה.</p>

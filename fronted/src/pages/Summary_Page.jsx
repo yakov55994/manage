@@ -235,31 +235,31 @@ const SummaryPage = () => {
     <div className="min-h-screen bg-gradient-to-br from-orange-50 via-amber-50 to-orange-50 py-8 px-4">
       <div className="max-w-7xl mx-auto">
         {/* Header */}
-        <div className="bg-white rounded-2xl shadow-xl p-6 mb-8 border border-orange-100">
+        <div className="bg-white rounded-2xl shadow-xl p-4 sm:p-5 md:p-6 mb-8 border border-orange-100">
           <div className="flex items-center justify-center gap-3 mb-2">
             <div className="bg-gradient-to-br from-orange-400 to-amber-400 p-3 rounded-xl shadow-lg">
-              <BarChart3 className="text-white w-8 h-8" />
+              <BarChart3 className="text-white w-6 h-6 sm:w-7 sm:h-7 md:w-8 md:h-8" />
             </div>
-            <h1 className="text-4xl font-bold text-gray-900">סיכום כללי</h1>
+            <h1 className="text-2xl sm:text-xl sm:text-2xl md:text-3xl md:text-4xl font-bold text-gray-900">סיכום כללי</h1>
           </div>
           <div className="h-1 w-32 bg-gradient-to-r from-orange-400 to-amber-400 rounded-full mx-auto"></div>
         </div>
 
         {/* כרטיסים סטטיסטיים */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 sm:p-5 md:p-6 mb-8">
           {/* פרויקטים */}
           <div
             onClick={() => navigate("/projects")}
-            className="group bg-white rounded-2xl shadow-lg hover:shadow-2xl transition-all duration-300 p-6 cursor-pointer border-2 border-transparent hover:border-orange-300"
+            className="group bg-white rounded-2xl shadow-lg hover:shadow-2xl transition-all duration-300 p-4 sm:p-5 md:p-6 cursor-pointer border-2 border-transparent hover:border-orange-300"
           >
             <div className="flex items-center justify-between mb-4">
               <div className="bg-gradient-to-br from-orange-400 to-amber-400 p-3 rounded-xl shadow-md group-hover:scale-110 transition-transform">
-                <FolderKanban className="text-white w-8 h-8" />
+                <FolderKanban className="text-white w-6 h-6 sm:w-7 sm:h-7 md:w-8 md:h-8" />
               </div>
               <Eye className="w-5 h-5 text-gray-400 group-hover:text-orange-500 transition-colors" />
             </div>
             <h3 className="text-lg font-bold text-gray-700 mb-2">פרויקטים</h3>
-            <p className="text-4xl font-bold bg-gradient-to-r from-orange-500 to-amber-500 bg-clip-text text-transparent">
+            <p className="text-2xl sm:text-xl sm:text-2xl md:text-3xl md:text-4xl font-bold bg-gradient-to-r from-orange-500 to-amber-500 bg-clip-text text-transparent">
               {projects.length}
             </p>
           </div>
@@ -267,16 +267,16 @@ const SummaryPage = () => {
           {/* הזמנות */}
           <div
             onClick={() => navigate("/orders")}
-            className="group bg-white rounded-2xl shadow-lg hover:shadow-2xl transition-all duration-300 p-6 cursor-pointer border-2 border-transparent hover:border-orange-300"
+            className="group bg-white rounded-2xl shadow-lg hover:shadow-2xl transition-all duration-300 p-4 sm:p-5 md:p-6 cursor-pointer border-2 border-transparent hover:border-orange-300"
           >
             <div className="flex items-center justify-between mb-4">
               <div className="bg-gradient-to-br from-orange-400 to-amber-400 p-3 rounded-xl shadow-md group-hover:scale-110 transition-transform">
-                <ShoppingCart className="text-white w-8 h-8" />
+                <ShoppingCart className="text-white w-6 h-6 sm:w-7 sm:h-7 md:w-8 md:h-8" />
               </div>
               <Eye className="w-5 h-5 text-gray-400 group-hover:text-orange-500 transition-colors" />
             </div>
             <h3 className="text-lg font-bold text-gray-700 mb-2">הזמנות</h3>
-            <p className="text-4xl font-bold bg-gradient-to-r from-orange-500 to-amber-500 bg-clip-text text-transparent">
+            <p className="text-2xl sm:text-xl sm:text-2xl md:text-3xl md:text-4xl font-bold bg-gradient-to-r from-orange-500 to-amber-500 bg-clip-text text-transparent">
               {orders.length}
             </p>
           </div>
@@ -284,16 +284,16 @@ const SummaryPage = () => {
           {/* חשבוניות */}
           <div
             onClick={() => navigate("/invoices")}
-            className="group bg-white rounded-2xl shadow-lg hover:shadow-2xl transition-all duration-300 p-6 cursor-pointer border-2 border-transparent hover:border-orange-300"
+            className="group bg-white rounded-2xl shadow-lg hover:shadow-2xl transition-all duration-300 p-4 sm:p-5 md:p-6 cursor-pointer border-2 border-transparent hover:border-orange-300"
           >
             <div className="flex items-center justify-between mb-4">
               <div className="bg-gradient-to-br from-orange-400 to-amber-400 p-3 rounded-xl shadow-md group-hover:scale-110 transition-transform">
-                <FileText className="text-white w-8 h-8" />
+                <FileText className="text-white w-6 h-6 sm:w-7 sm:h-7 md:w-8 md:h-8" />
               </div>
               <Eye className="w-5 h-5 text-gray-400 group-hover:text-orange-500 transition-colors" />
             </div>
             <h3 className="text-lg font-bold text-gray-700 mb-2">חשבוניות</h3>
-            <p className="text-4xl font-bold bg-gradient-to-r from-orange-500 to-amber-500 bg-clip-text text-transparent">
+            <p className="text-2xl sm:text-xl sm:text-2xl md:text-3xl md:text-4xl font-bold bg-gradient-to-r from-orange-500 to-amber-500 bg-clip-text text-transparent">
               {invoices.length}
             </p>
           </div>
@@ -301,26 +301,26 @@ const SummaryPage = () => {
           {/* ספקים */}
           <div
             onClick={() => navigate("/suppliers")}
-            className="group bg-white rounded-2xl shadow-lg hover:shadow-2xl transition-all duration-300 p-6 cursor-pointer border-2 border-transparent hover:border-orange-300"
+            className="group bg-white rounded-2xl shadow-lg hover:shadow-2xl transition-all duration-300 p-4 sm:p-5 md:p-6 cursor-pointer border-2 border-transparent hover:border-orange-300"
           >
             <div className="flex items-center justify-between mb-4">
               <div className="bg-gradient-to-br from-orange-400 to-amber-400 p-3 rounded-xl shadow-md group-hover:scale-110 transition-transform">
-                <Users className="text-white w-8 h-8" />
+                <Users className="text-white w-6 h-6 sm:w-7 sm:h-7 md:w-8 md:h-8" />
               </div>
               <Eye className="w-5 h-5 text-gray-400 group-hover:text-orange-500 transition-colors" />
             </div>
             <h3 className="text-lg font-bold text-gray-700 mb-2">ספקים</h3>
-            <p className="text-4xl font-bold bg-gradient-to-r from-orange-500 to-amber-500 bg-clip-text text-transparent">
+            <p className="text-2xl sm:text-xl sm:text-2xl md:text-3xl md:text-4xl font-bold bg-gradient-to-r from-orange-500 to-amber-500 bg-clip-text text-transparent">
               {suppliers.length}
             </p>
           </div>
         </div>
 
         {/* סרגל כלים */}
-        <div className="bg-white rounded-2xl shadow-xl p-6 mb-8 border border-orange-100">
-          <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-6">
+        <div className="bg-white rounded-2xl shadow-xl p-4 sm:p-5 md:p-6 mb-8 border border-orange-100">
+          <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-3 sm:gap-4 sm:p-5 md:p-6">
             {/* פילטרים ומיונים */}
-            <div className="flex flex-wrap items-end gap-4">
+            <div className="flex flex-wrap items-end gap-3 sm:gap-4">
               <div>
                 <label className="flex items-center gap-2 text-sm font-semibold text-gray-700 mb-2">
                   <Filter className="w-4 h-4 text-orange-500" />
@@ -384,7 +384,7 @@ const SummaryPage = () => {
 
         {/* טבלת פרויקטים */}
         <div className="bg-white rounded-2xl shadow-xl overflow-hidden mb-8 border border-orange-100">
-          <div className="bg-gradient-to-r from-orange-300 to-amber-300 p-6">
+          <div className="bg-gradient-to-r from-orange-300 to-amber-300 p-4 sm:p-5 md:p-6">
             <div className="flex items-center gap-3">
               <FolderKanban className="text-white w-7 h-7" />
               <h2 className="text-2xl font-bold text-white">פרויקטים</h2>
@@ -463,7 +463,7 @@ const SummaryPage = () => {
 
         {/* טבלת הזמנות */}
         <div className="bg-white rounded-2xl shadow-xl overflow-hidden mb-8 border border-orange-100">
-          <div className="bg-gradient-to-r from-orange-300 to-amber-300 p-6">
+          <div className="bg-gradient-to-r from-orange-300 to-amber-300 p-4 sm:p-5 md:p-6">
             <div className="flex items-center gap-3">
               <ShoppingCart className="text-white w-7 h-7" />
               <h2 className="text-2xl font-bold text-white">הזמנות</h2>
@@ -536,7 +536,7 @@ const SummaryPage = () => {
 
         {/* טבלת חשבוניות */}
         <div className="bg-white rounded-2xl shadow-xl overflow-hidden mb-8 border border-orange-100">
-          <div className="bg-gradient-to-r from-orange-300 to-amber-300 p-6">
+          <div className="bg-gradient-to-r from-orange-300 to-amber-300 p-4 sm:p-5 md:p-6">
             <div className="flex items-center gap-3">
               <FileText className="text-white w-7 h-7" />
               <h2 className="text-2xl font-bold text-white">חשבוניות</h2>
@@ -611,7 +611,7 @@ const SummaryPage = () => {
 
         {/* טבלת ספקים */}
         <div className="bg-white rounded-2xl shadow-xl overflow-hidden mb-8 border border-orange-100">
-          <div className="bg-gradient-to-r from-orange-300 to-amber-300 p-6">
+          <div className="bg-gradient-to-r from-orange-300 to-amber-300 p-4 sm:p-5 md:p-6">
             <div className="flex items-center gap-3">
               <Users className="text-white w-7 h-7" />
               <h2 className="text-2xl font-bold text-white">ספקים</h2>

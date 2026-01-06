@@ -161,14 +161,14 @@ const Notes = () => {
             <div className="container mx-auto px-4">
                 <div className="bg-slate-800 rounded-lg shadow-xl border border-slate-600">
                     {/* Header */}
-                    <div className="p-6 border-b border-slate-600">
+                    <div className="p-4 sm:p-5 md:p-6 border-b border-slate-600">
                         <div className="text-center">
-                            <h1 className="text-4xl font-bold text-white">ניהול משימות</h1>
+                            <h1 className="text-2xl sm:text-xl sm:text-2xl md:text-3xl md:text-4xl font-bold text-white">ניהול משימות</h1>
                             <div className="h-1 w-24 bg-orange-500 rounded-full mt-2 mx-auto"></div>
                         </div>
                         
                         {/* סטטיסטיקות */}
-                        <div className="flex justify-center gap-8 mt-8">
+                        <div className="flex justify-center gap-3 sm:gap-4 sm:p-4 sm:p-5 md:p-6 md:p-8 mt-8">
                             <div className="text-center bg-slate-700 rounded-lg p-4 shadow-sm border border-slate-600">
                                 <div className="text-2xl font-bold text-orange-400">{notes.length}</div>
                                 <div className="text-slate-300 text-m">סה״כ משימות</div>
@@ -185,7 +185,7 @@ const Notes = () => {
                     </div>
 
                     {/* טופס הוספת/עריכת משימה */}
-                    <div className="p-6 border-b border-slate-600 bg-slate-750">
+                    <div className="p-4 sm:p-5 md:p-6 border-b border-slate-600 bg-slate-750">
                         <div className="max-w-2xl mx-auto">
                             <div className="flex items-center gap-3 mb-4">
                                 <div className="p-2 bg-orange-500 rounded-lg">
@@ -208,7 +208,7 @@ const Notes = () => {
                                 <div className="flex gap-3 justify-center">
                                     <button 
                                         type="submit" 
-                                        className="bg-orange-500 text-white px-6 py-2.5 rounded-3xl hover:bg-orange-600 transition-colors duration-200 font-medium flex items-center gap-2"
+                                        className="bg-orange-500 text-white px-6 py-2.5 rounded-2xl sm:rounded-3xl hover:bg-orange-600 transition-colors duration-200 font-medium flex items-center gap-2"
                                     >
                                         {editId ? <Edit3 size={18} /> : <Plus size={18} />}
                                         {editId ? "עדכן משימה" : "הוסף משימה"}
@@ -218,7 +218,7 @@ const Notes = () => {
                                         <button 
                                             type="button"
                                             onClick={cancelEdit}
-                                            className="bg-slate-600 text-slate-300 px-6 py-2.5 rounded-3xl hover:bg-slate-500 hover:text-white transition-colors duration-200 font-medium flex items-center gap-2"
+                                            className="bg-slate-600 text-slate-300 px-6 py-2.5 rounded-2xl sm:rounded-3xl hover:bg-slate-500 hover:text-white transition-colors duration-200 font-medium flex items-center gap-2"
                                         >
                                             <X size={18} />
                                             ביטול
@@ -230,10 +230,10 @@ const Notes = () => {
                     </div>
 
                     {/* רשימת המשימות */}
-                    <div className="p-6">
+                    <div className="p-4 sm:p-5 md:p-6">
                         {notes?.length > 0 ? (
                             <>
-                                <div className="flex items-center justify-between mb-6">
+                                <div className="flex items-center justify-between mb-4 sm:mb-5 md:mb-6">
                                     <h2 className="text-2xl font-bold text-white">רשימת המשימות</h2>
                                     <div className="flex gap-3 text-m">
                                         <span className="bg-blue-500 text-white px-3 py-1 rounded-full font-medium">
@@ -256,7 +256,7 @@ const Notes = () => {
                                             }`}
                                         >
                                             <div className="p-4">
-                                                <div className="flex items-start gap-4">
+                                                <div className="flex items-start gap-3 sm:gap-4">
                                                     {/* מספר המשימה ו/או סטטוס */}
                                                     <div className={`flex-shrink-0 w-8 h-8 rounded-lg flex items-center justify-center text-white font-bold text-m ${
                                                         note.completed 
@@ -337,11 +337,11 @@ const Notes = () => {
                             </>
                         ) : (
                             <div className="text-center py-16">
-                                <div className="w-24 h-24 bg-slate-700 rounded-full flex items-center justify-center mx-auto mb-6 border border-slate-600">
+                                <div className="w-24 h-24 bg-slate-700 rounded-full flex items-center justify-center mx-auto mb-4 sm:mb-5 md:mb-6 border border-slate-600">
                                     <FileText className="w-12 h-12 text-slate-400" />
                                 </div>
                                 <h3 className="text-2xl font-bold text-slate-300 mb-3">אין עדיין משימות</h3>
-                                <p className="text-lg text-slate-400 mb-6">
+                                <p className="text-lg text-slate-400 mb-4 sm:mb-5 md:mb-6">
                                     הוסף את המשימה הראשונה שלך כדי להתחיל
                                 </p>
                             </div>

@@ -158,10 +158,11 @@ async createProject(user, data) {
       { $set: { projectName: data.name } }
     );
 
-    // עדכון projectName בכל החשבוניות
+    // עדכון projectName בכל החשבוניות - בתוך מערך projects
     await Invoice.updateMany(
-      { projectId: projectId },
-      { $set: { projectName: data.name } }
+      { "projects.projectId": projectId },
+      { $set: { "projects.$[elem].projectName": data.name } },
+      { arrayFilters: [{ "elem.projectId": projectId }] }
     );
   }
 

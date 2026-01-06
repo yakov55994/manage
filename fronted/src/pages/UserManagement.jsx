@@ -410,13 +410,13 @@ const saveUser = async (e) => {
   if (loading || authLoading) {
     return (
       <div
-        className="min-h-screen bg-gradient-to-br from-orange-50 via-amber-50 to-orange-100 p-8"
+        className="min-h-screen bg-gradient-to-br from-orange-50 via-amber-50 to-orange-100 p-4 sm:p-4 sm:p-5 md:p-6 md:p-8"
         dir="rtl"
       >
         <div className="max-w-7xl mx-auto">
-          <div className="flex flex-col items-center justify-center py-20 gap-6">
+          <div className="flex flex-col items-center justify-center py-20 gap-3 sm:gap-4 sm:p-5 md:p-6">
             <ClipLoader color="#f97316" size={60} />
-            <h1 className="font-bold text-3xl text-slate-900 text-center">
+            <h1 className="font-bold text-xl sm:text-2xl md:text-3xl text-slate-900 text-center">
               טוען רשימת משתמשים...
             </h1>
           </div>
@@ -452,23 +452,23 @@ const saveUser = async (e) => {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-orange-50 via-amber-50 to-orange-50 p-8">
+    <div className="min-h-screen bg-gradient-to-br from-orange-50 via-amber-50 to-orange-50 p-4 sm:p-4 sm:p-5 md:p-6 md:p-8">
       {/* HEADER */}
       <div className="max-w-7xl mx-auto">
-        <div className="bg-gradient-to-r from-orange-400 to-amber-400 rounded-2xl shadow-xl p-8 mb-8">
+        <div className="bg-gradient-to-r from-orange-400 to-amber-400 rounded-2xl shadow-xl p-4 sm:p-4 sm:p-5 md:p-6 md:p-8 mb-8">
           <div className="flex items-center justify-between">
-            <div className="flex items-center gap-4">
+            <div className="flex items-center gap-3 sm:gap-4">
               <div className="bg-white/20 backdrop-blur-sm p-4 rounded-xl">
-                <Users className="w-10 h-10 " />
+                <Users className="w-6 h-6 sm:w-8 sm:h-8 md:w-10 md:h-10 " />
               </div>
               <div>
-                <h1 className="text-3xl font-bold  mb-2">ניהול משתמשים</h1>
+                <h1 className="text-xl sm:text-2xl md:text-3xl font-bold  mb-2">ניהול משתמשים</h1>
                 <p className="">ניהול גישות והרשאות</p>
               </div>
             </div>
             <button
               onClick={openCreate}
-              className="bg-white text-black px-6 py-3 rounded-3xl font-semibold hover:bg-black hover:text-white flex items-center gap-2 shadow-lg hover:shadow-xl transition-all"
+              className="bg-white text-black px-6 py-3 rounded-2xl sm:rounded-3xl font-semibold hover:bg-black hover:text-white flex items-center gap-2 shadow-lg hover:shadow-xl transition-all"
             >
               <Plus className="w-5 h-5" />
               משתמש חדש
@@ -476,7 +476,7 @@ const saveUser = async (e) => {
           </div>
 
           {/* Filter Bar */}
-          <div className="mt-6 flex items-center gap-4">
+          <div className="mt-6 flex items-center gap-3 sm:gap-4">
             <div className="flex items-center gap-2 bg-white/20 backdrop-blur-sm rounded-xl px-4 py-2">
               <Filter className="w-5 h-5 " />
               <select
@@ -502,17 +502,17 @@ const saveUser = async (e) => {
         </div>
 
         {/* CARDS GRID */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4 sm:p-5 md:p-6">
           {filteredUsers.map((u) => (
             <div
               key={u._id}
               className="bg-white rounded-2xl shadow-lg hover:shadow-xl transition-all overflow-hidden border border-orange-100"
             >
               {/* Card Header */}
-              <div className="bg-gradient-to-r from-orange-300 to-amber-300 p-6">
+              <div className="bg-gradient-to-r from-orange-300 to-amber-300 p-4 sm:p-5 md:p-6">
                 <div className="flex items-start justify-between mb-4">
                   <div className="bg-white/30 backdrop-blur-sm p-3 rounded-xl">
-                    <UserCircle className="w-10 h-10 " />
+                    <UserCircle className="w-6 h-6 sm:w-8 sm:h-8 md:w-10 md:h-10 " />
                   </div>
                   <div className="flex gap-2">
                     {/* כפתור איפוס סיסמה */}
@@ -558,7 +558,7 @@ const saveUser = async (e) => {
               </div>
 
               {/* Card Body */}
-              <div className="p-6 space-y-4">
+              <div className="p-4 sm:p-5 md:p-6 space-y-4">
                 {/* Role Badge */}
                 <div className="flex items-center justify-between">
                   <span className="text-gray-600 font-medium flex items-center gap-2">
@@ -619,10 +619,10 @@ const saveUser = async (e) => {
         <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4 z-50">
           <div className="bg-white rounded-2xl shadow-2xl w-full max-w-5xl max-h-[90vh] overflow-hidden flex flex-col">
             {/* Modal Header */}
-            <div className="bg-gradient-to-r from-orange-400 to-amber-400 p-6">
+            <div className="bg-gradient-to-r from-orange-400 to-amber-400 p-4 sm:p-5 md:p-6">
               <div className="flex items-center justify-between">
                 <h2 className="text-2xl font-bold  flex items-center gap-3">
-                  <UserCircle className="w-8 h-8" />
+                  <UserCircle className="w-6 h-6 sm:w-7 sm:h-7 md:w-8 md:h-8" />
                   {editingUser ? "עריכת משתמש" : "יצירת משתמש חדש"}
                 </h2>
                 <button
@@ -635,14 +635,14 @@ const saveUser = async (e) => {
             </div>
 
             {/* Modal Body */}
-            <form onSubmit={saveUser} className="flex-1 overflow-y-auto p-6">
+            <form onSubmit={saveUser} className="flex-1 overflow-y-auto p-4 sm:p-5 md:p-6">
               {/* BASIC FIELDS */}
-              <div className="bg-gradient-to-br from-orange-50 to-amber-50 rounded-xl p-6 mb-6 border border-orange-200">
+              <div className="bg-gradient-to-br from-orange-50 to-amber-50 rounded-xl p-4 sm:p-5 md:p-6 mb-4 sm:mb-5 md:mb-6 border border-orange-200">
                 <h3 className="text-lg font-bold text-gray-800 mb-4 flex items-center gap-2">
                   <User className="w-5 h-5 text-black" />
                   פרטי משתמש
                 </h3>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-3 sm:gap-4">
                   <div>
                     <label className="block text-sm font-semibold text-gray-700 mb-2">
                       שם משתמש *
@@ -750,7 +750,7 @@ const saveUser = async (e) => {
 
               {/* PROJECT PERMISSIONS */}
               {formData.role !== "admin" && (
-                <div className="bg-gradient-to-br from-orange-50 to-amber-50 rounded-xl p-6 border border-orange-200">
+                <div className="bg-gradient-to-br from-orange-50 to-amber-50 rounded-xl p-4 sm:p-5 md:p-6 border border-orange-200">
                   <div className="flex items-center justify-between mb-4">
                     <h3 className="text-lg font-bold text-gray-800 flex items-center gap-2">
                       <FolderKanban className="w-5 h-5 text-black" />
@@ -1013,8 +1013,8 @@ const saveUser = async (e) => {
             </form>
 
             {/* Modal Footer */}
-            <div className="border-t border-gray-200 p-6 bg-gray-50">
-              <div className="flex gap-4">
+            <div className="border-t border-gray-200 p-4 sm:p-5 md:p-6 bg-gray-50">
+              <div className="flex gap-3 sm:gap-4">
                 <button
                   type="submit"
                   onClick={saveUser}
@@ -1041,13 +1041,13 @@ const saveUser = async (e) => {
       {deleteModal.show && (
         <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4 z-50">
           <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md overflow-hidden">
-            <div className="bg-gradient-to-r from-red-500 to-red-600 p-6">
+            <div className="bg-gradient-to-r from-red-500 to-red-600 p-4 sm:p-5 md:p-6">
               <h2 className="text-2xl font-bold  flex items-center gap-3">
-                <Trash2 className="w-8 h-8" />
+                <Trash2 className="w-6 h-6 sm:w-7 sm:h-7 md:w-8 md:h-8" />
                 מחיקת משתמש
               </h2>
             </div>
-            <div className="p-6">
+            <div className="p-4 sm:p-5 md:p-6">
               <p className="text-gray-700 text-lg">
                 האם אתה בטוח שברצונך למחוק את המשתמש{" "}
                 <span className="font-bold text-orange-500">
@@ -1056,8 +1056,8 @@ const saveUser = async (e) => {
                 ?
               </p>
             </div>
-            <div className="border-t border-gray-200 p-6 bg-gray-50">
-              <div className="flex gap-4">
+            <div className="border-t border-gray-200 p-4 sm:p-5 md:p-6 bg-gray-50">
+              <div className="flex gap-3 sm:gap-4">
                 <button
                   onClick={deleteUser}
                   className="flex-1 bg-gradient-to-r from-red-500 to-red-600  p-4 rounded-xl hover:from-red-600 hover:to-red-700 font-semibold shadow-lg hover:shadow-xl transition-all flex items-center justify-center gap-2"

@@ -107,7 +107,7 @@ const SearchResults = () => {
   if (!query) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-slate-50 to-slate-200">
-        <div className="text-center p-8 bg-white rounded-2xl shadow-xl">
+        <div className="text-center p-4 sm:p-4 sm:p-5 md:p-6 md:p-8 bg-white rounded-2xl shadow-xl">
           <Search className="w-16 h-16 mx-auto mb-4 text-slate-400" />
           <p className="text-xl text-slate-600">נא להזין מילה לחיפוש</p>
         </div>
@@ -315,7 +315,7 @@ const SearchResults = () => {
 
     if (totalResults === 0 && !hasErrors) {
       return (
-        <div className="text-center p-8 bg-white rounded-2xl shadow-xl">
+        <div className="text-center p-4 sm:p-4 sm:p-5 md:p-6 md:p-8 bg-white rounded-2xl shadow-xl">
           <Search className="w-16 h-16 mx-auto mb-4 text-slate-400" />
           <p className="text-xl text-slate-600 mb-2">
             לא נמצאו תוצאות עבור "{query}"
@@ -337,7 +337,7 @@ const SearchResults = () => {
 
         {/* סיכום תוצאות */}
         {totalResults > 0 && (
-          <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-6">
+          <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-4 sm:mb-5 md:mb-6">
             <p className="text-blue-800 font-medium">
               נמצאו {totalResults} תוצאות: {projects.length} פרויקטים,{" "}
               {invoices.length} חשבוניות, {orders.length} הזמנות,{" "}
@@ -349,11 +349,11 @@ const SearchResults = () => {
         {/* תוצאות פרויקטים */}
         {projects.length > 0 && (
           <section className="animate-fadeIn">
-            <h2 className="text-2xl font-bold mb-6 flex items-center gap-2">
+            <h2 className="text-2xl font-bold mb-4 sm:mb-5 md:mb-6 flex items-center gap-2">
               <Package className="w-6 h-6 text-blue-500" />
               <span>פרוייקטים ({projects.length})</span>
             </h2>
-            <div className="flex flex-wrap gap-4 justify-start">
+            <div className="flex flex-wrap gap-3 sm:gap-4 justify-start">
               {projects.map((project) => (
                 <ResultCard
                   key={project._id}
@@ -369,11 +369,11 @@ const SearchResults = () => {
         {/* תוצאות חשבוניות */}
         {invoices.length > 0 && (
           <section className="animate-fadeIn">
-            <h2 className="text-2xl font-bold mb-6 flex items-center gap-2">
+            <h2 className="text-2xl font-bold mb-4 sm:mb-5 md:mb-6 flex items-center gap-2">
               <FileText className="w-6 h-6 text-purple-500" />
               <span>חשבוניות ({invoices.length})</span>
             </h2>
-            <div className="flex flex-wrap gap-4 justify-start">
+            <div className="flex flex-wrap gap-3 sm:gap-4 justify-start">
               {invoices.map((invoice) => (
                 <ResultCard
                   key={invoice._id}
@@ -389,11 +389,11 @@ const SearchResults = () => {
         {/* תוצאות הזמנות */}
         {orders.length > 0 && (
           <section className="animate-fadeIn">
-            <h2 className="text-2xl font-bold mb-6 flex items-center gap-2">
+            <h2 className="text-2xl font-bold mb-4 sm:mb-5 md:mb-6 flex items-center gap-2">
               <ShoppingCart className="w-6 h-6 text-amber-500" />
               <span>הזמנות ({orders.length})</span>
             </h2>
-            <div className="flex flex-wrap gap-4 justify-start">
+            <div className="flex flex-wrap gap-3 sm:gap-4 justify-start">
               {orders.map((order) => (
                 <ResultCard
                   key={order._id}
@@ -409,11 +409,11 @@ const SearchResults = () => {
         {/* תוצאות ספקים */}
         {suppliers.length > 0 && (
           <section className="animate-fadeIn">
-            <h2 className="text-2xl font-bold mb-6 flex items-center gap-2">
+            <h2 className="text-2xl font-bold mb-4 sm:mb-5 md:mb-6 flex items-center gap-2">
               <Truck className="w-6 h-6 text-green-500" />
               <span>ספקים ({suppliers.length})</span>
             </h2>
-            <div className="flex flex-wrap gap-4 justify-start">
+            <div className="flex flex-wrap gap-3 sm:gap-4 justify-start">
               {suppliers.map((supplier) => (
                 <ResultCard
                   key={supplier._id}
@@ -430,11 +430,11 @@ const SearchResults = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-200 p-4 md:p-8">
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-200 p-4 md:p-4 sm:p-4 sm:p-5 md:p-6 md:p-8">
       <div className="max-w-7xl mx-auto">
-        <div className="bg-white/50 backdrop-blur-sm rounded-3xl p-6 md:p-8 shadow-xl">
-          <h1 className="text-2xl md:text-3xl font-bold mb-8 flex items-center gap-3 flex-wrap">
-            <Search className="w-8 h-8 flex-shrink-0" />
+        <div className="bg-white/50 backdrop-blur-sm rounded-2xl sm:rounded-3xl p-4 sm:p-5 md:p-6 md:p-4 sm:p-6 md:p-8 shadow-xl">
+          <h1 className="text-2xl md:text-xl sm:text-2xl md:text-3xl font-bold mb-8 flex items-center gap-3 flex-wrap">
+            <Search className="w-6 h-6 sm:w-7 sm:h-7 md:w-8 md:h-8 flex-shrink-0" />
             <span className="break-words">תוצאות החיפוש עבור "{query}"</span>
           </h1>
           {renderResults()}

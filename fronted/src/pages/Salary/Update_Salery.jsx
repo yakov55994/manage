@@ -116,7 +116,7 @@ export default function EditSalary() {
           <div className="absolute inset-0 bg-gradient-to-r from-orange-500 to-amber-500 blur-3xl opacity-20 animate-pulse"></div>
           <ClipLoader size={100} color="#f97316" loading />
         </div>
-        <h1 className="mt-8 font-bold text-3xl text-slate-900">
+        <h1 className="mt-8 font-bold text-xl sm:text-2xl md:text-3xl text-slate-900">
           טוען משכורת...
         </h1>
       </div>
@@ -124,7 +124,7 @@ export default function EditSalary() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-orange-50 via-amber-50 to-yellow-50 relative overflow-hidden py-12">
+    <div className="min-h-screen bg-gradient-to-br from-orange-50 via-amber-50 to-yellow-50 relative overflow-hidden pt-20 sm:pt-24 md:pt-28 pb-8 sm:pb-12">
       {/* Animated Background */}
       <div className="absolute inset-0 overflow-hidden pointer-events-none">
         <div className="absolute top-0 left-1/4 w-96 h-96 bg-gradient-to-br from-orange-400/20 to-amber-400/20 rounded-full blur-3xl animate-pulse"></div>
@@ -134,16 +134,16 @@ export default function EditSalary() {
       <div className="relative z-10 max-w-4xl mx-auto px-6">
         {/* HEADER */}
         <div className="relative mb-8">
-          <div className="absolute -inset-6 bg-gradient-to-r from-orange-500 via-amber-500 to-yellow-500 rounded-3xl opacity-5 blur-xl"></div>
+          <div className="absolute -inset-6 bg-gradient-to-r from-orange-500 via-amber-500 to-yellow-500 rounded-2xl sm:rounded-3xl opacity-5 blur-xl"></div>
 
-          <div className="relative bg-white/80 backdrop-blur-xl rounded-3xl shadow-2xl shadow-orange-500/10 p-8 border border-white/50">
+          <div className="relative bg-white/80 backdrop-blur-xl rounded-2xl sm:rounded-3xl shadow-2xl shadow-orange-500/10 p-4 sm:p-4 sm:p-5 md:p-6 md:p-8 border border-white/50">
             <div className="flex items-center justify-between">
-              <div className="flex items-center gap-4">
+              <div className="flex items-center gap-3 sm:gap-4">
                 <div className="p-4 rounded-2xl bg-gradient-to-br from-orange-500 to-amber-600 shadow-lg shadow-orange-500/30">
-                  <Users className="w-10 h-10 text-white" />
+                  <Users className="w-6 h-6 sm:w-8 sm:h-8 md:w-10 md:h-10 text-white" />
                 </div>
                 <div>
-                  <h1 className="text-4xl font-black text-slate-900">
+                  <h1 className="text-2xl sm:text-xl sm:text-2xl md:text-3xl md:text-4xl font-black text-slate-900">
                     עריכת משכורת
                   </h1>
                   <p className="text-sm font-medium text-slate-600 mt-1">
@@ -158,9 +158,9 @@ export default function EditSalary() {
         {/* FORM */}
         <form onSubmit={handleSubmit}>
           <div className="relative">
-            <div className="absolute -inset-2 bg-gradient-to-r from-orange-500 via-amber-500 to-yellow-500 rounded-3xl opacity-10 blur-xl"></div>
+            <div className="absolute -inset-2 bg-gradient-to-r from-orange-500 via-amber-500 to-yellow-500 rounded-2xl sm:rounded-3xl opacity-10 blur-xl"></div>
 
-            <div className="relative bg-white/90 backdrop-blur-xl rounded-3xl shadow-xl shadow-orange-500/10 p-8 border border-white/50">
+            <div className="relative bg-white/90 backdrop-blur-xl rounded-2xl sm:rounded-3xl shadow-xl shadow-orange-500/10 p-4 sm:p-4 sm:p-5 md:p-6 md:p-8 border border-white/50">
               <div className="space-y-6">
                 {/* Project Selector */}
                 <div>
@@ -263,19 +263,19 @@ export default function EditSalary() {
                 </div>
 
                 {/* Final Amount Display */}
-                <div className="p-6 rounded-2xl bg-gradient-to-r from-orange-500 via-amber-500 to-yellow-500 shadow-xl shadow-orange-500/30">
+                <div className="p-4 sm:p-5 md:p-6 rounded-2xl bg-gradient-to-r from-orange-500 via-amber-500 to-yellow-500 shadow-xl shadow-orange-500/30">
                   <div className="text-center">
                     <p className="text-sm font-bold text-white/90 mb-2">
                       סכום סופי לתשלום
                     </p>
-                    <p className="text-4xl font-black text-white">
+                    <p className="text-2xl sm:text-xl sm:text-2xl md:text-3xl md:text-4xl font-black text-white">
                       ₪{finalAmount.toLocaleString("he-IL")}
                     </p>
                   </div>
                 </div>
 
                 {/* Action Buttons */}
-                <div className="flex gap-4 pt-4">
+                <div className="flex gap-3 sm:gap-4 pt-4">
                   <button
                     type="submit"
                     disabled={saving}

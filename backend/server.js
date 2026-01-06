@@ -15,6 +15,7 @@ import uploadRoute from './routes/uploadRoute.js';
 import suppliersRoutes from './routes/supplierRoutes.js';
 import documentsRoutes from './routes/documentRoutes.js';
 import masavRoutes from './routes/masavRoutes.js';
+import incomeRoutes from './routes/incomeRoutes.js';
 
 dotenv.config();
 const app = express();
@@ -87,8 +88,10 @@ app.use('/api/upload', uploadRoute);
 
 app.use('/api/documents', documentsRoutes);
 
-
 app.use('/api/masav', masavRoutes);
+
+// Incomes
+app.use('/api/incomes', incomeRoutes);
 
 
 

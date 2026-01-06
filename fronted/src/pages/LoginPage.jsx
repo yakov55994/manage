@@ -82,13 +82,13 @@
 //       <div className="relative w-full max-w-md ">
 //         <div className="absolute -top-28 left-1/2 -translate-x-1/2 flex flex-col items-center">
 //           <div className="w-16 h-16 bg-white rounded-2xl shadow-xl grid place-items-center hover:rotate-12 transition">
-//             <KeyRound className="w-8 h-8 text-orange-950" />
+//             <KeyRound className="w-6 h-6 sm:w-7 sm:h-7 md:w-8 md:h-8 text-orange-950" />
 //           </div>
 //         </div>
 
-//         <div className="bg-white rounded-3xl shadow-2xl overflow-hidden">
+//         <div className="bg-white rounded-2xl sm:rounded-3xl shadow-2xl overflow-hidden">
 //           <div className="px-8 pt-12 pb-8">
-//             <h2 className="text-3xl font-bold text-center mb-2 bg-gradient-to-r from-slate-800 to-slate-500 bg-clip-text text-transparent">
+//             <h2 className="text-xl sm:text-2xl md:text-3xl font-bold text-center mb-2 bg-gradient-to-r from-slate-800 to-slate-500 bg-clip-text text-transparent">
 //               התחברות למערכת
 //             </h2>
 //             <p className="text-center text-gray-500 text-sm font-bold">

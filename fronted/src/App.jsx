@@ -32,6 +32,8 @@ import SuppliersPage from "./pages/Supplier/Supplier_view.jsx";
 import SupplierDetailsPage from "./pages/Supplier/Supplier_details.jsx";
 import SupplierEditPage from "./pages/Supplier/Supplier_update.jsx";
 import UserManagement from "./pages/UserManagement.jsx";
+import CreateIncome from "./pages/Income/Create_Income.jsx";
+import ViewIncomes from "./pages/Income/View_Incomes.jsx";
 import NoAccess from "./pages/NoAccess.jsx";
 import ResetPassword from "./pages/ResetPassword.jsx";
 import { AuthProvider, useAuth } from "./context/AuthContext.jsx";
@@ -274,6 +276,23 @@ const AppContent = () => {
               element={
                 <ProtectedRoute module="suppliers" requireEdit={true}>
                   <SupplierEditPage />
+                </ProtectedRoute>
+              }
+            />
+
+            <Route
+              path="/create-income"
+              element={
+                <ProtectedRoute module="invoices" requireEdit={true}>
+                  <CreateIncome />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/incomes"
+              element={
+                <ProtectedRoute module="invoices">
+                  <ViewIncomes />
                 </ProtectedRoute>
               }
             />

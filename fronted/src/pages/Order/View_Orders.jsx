@@ -1276,7 +1276,7 @@ const OrdersPage = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-orange-50 via-amber-50 to-yellow-50 relative overflow-hidden py-12">
+    <div className="min-h-screen bg-gradient-to-br from-orange-50 via-amber-50 to-yellow-50 relative overflow-hidden pt-20 sm:pt-24 md:pt-28 pb-8 sm:pb-12">
       {/* Animated Background */}
       <div className="absolute inset-0 overflow-hidden pointer-events-none">
         <div className="absolute top-0 left-1/4 w-96 h-96 bg-gradient-to-br from-orange-400/20 to-amber-400/20 rounded-full blur-3xl animate-pulse"></div>
@@ -1285,22 +1285,22 @@ const OrdersPage = () => {
 
       <div className="relative z-10 container mx-auto px-4 md:px-6 max-w-7xl">
         {/* Hero Header */}
-        <header className="mb-10">
+        <header className="mb-6 sm:mb-8 md:mb-10">
           <div className="relative">
             <div className="absolute -inset-x-6 -inset-y-3 bg-gradient-to-r from-orange-500 via-amber-500 to-yellow-500 rounded-3xl opacity-5 blur-xl"></div>
 
-            <div className="relative bg-white/80 backdrop-blur-xl rounded-3xl shadow-2xl shadow-orange-500/10 p-8 border border-white/50">
-              <div className="flex items-center justify-center gap-4 mb-6">
-                <div className="p-4 rounded-2xl bg-gradient-to-br from-orange-500 to-amber-600 shadow-lg shadow-orange-500/30">
-                  <ShoppingCart className="w-10 h-10 text-white" />
+            <div className="relative bg-white/80 backdrop-blur-xl rounded-2xl sm:rounded-3xl shadow-2xl shadow-orange-500/10 p-4 sm:p-6 md:p-8 border border-white/50">
+              <div className="flex items-center justify-center gap-3 sm:gap-4 mb-4 sm:mb-6">
+                <div className="p-2 sm:p-3 md:p-4 rounded-xl sm:rounded-2xl bg-gradient-to-br from-orange-500 to-amber-600 shadow-lg shadow-orange-500/30">
+                  <ShoppingCart className="w-6 h-6 sm:w-8 sm:h-8 md:w-10 md:h-10 text-white" />
                 </div>
                 <div className="text-center">
-                  <h1 className="text-4xl font-black text-slate-900">
+                  <h1 className="text-2xl sm:text-3xl md:text-4xl font-black text-slate-900">
                     רשימת הזמנות
                   </h1>
-                  <div className="flex items-center justify-center gap-2 mt-2">
-                    <Sparkles className="w-4 h-4 text-orange-500" />
-                    <span className="text-sm font-medium text-slate-600">
+                  <div className="flex items-center justify-center gap-2 mt-1 sm:mt-2">
+                    <Sparkles className="w-3 h-3 sm:w-4 sm:h-4 text-orange-500" />
+                    <span className="text-xs sm:text-sm font-medium text-slate-600">
                       ניהול וניתוח הזמנות
                     </span>
                   </div>
@@ -1333,18 +1333,18 @@ const OrdersPage = () => {
         </header>
 
         {/* Controls Bar */}
-        <div className="mb-6 bg-white/80 backdrop-blur-xl rounded-2xl shadow-lg p-6 border border-white/50">
-          <div className="flex flex-col lg:flex-row justify-between items-center gap-4 mb-4">
+        <div className="mb-4 sm:mb-6 bg-white/80 backdrop-blur-xl rounded-xl sm:rounded-2xl shadow-lg p-4 sm:p-5 md:p-6 border border-white/50">
+          <div className="flex flex-col gap-4">
             {/* Sort & Filter Controls */}
-            <div className="flex flex-wrap items-center gap-4">
-              <div className="flex items-center gap-2">
-                <ArrowUpDown className="text-orange-600 w-5 h-5" />
-                <span className="font-bold text-slate-700">מיין לפי:</span>
+            <div className="flex flex-col sm:flex-row sm:flex-wrap items-stretch sm:items-center gap-3 sm:gap-4">
+              <div className="flex items-center gap-2 text-sm sm:text-base">
+                <ArrowUpDown className="text-orange-600 w-4 h-4 sm:w-5 sm:h-5" />
+                <span className="font-bold text-slate-700">מיין:</span>
               </div>
               <select
                 onChange={(e) => setSortBy(e.target.value)}
                 value={sortBy}
-                className="px-4 py-2 border-2 border-orange-200 rounded-xl bg-white font-bold text-slate-900 focus:border-orange-500 focus:outline-none focus:ring-4 focus:ring-orange-500/20 transition-all"
+                className="px-3 sm:px-4 py-2 border-2 border-orange-200 rounded-xl bg-white text-sm sm:text-base font-bold text-slate-900 focus:border-orange-500 focus:outline-none focus:ring-4 focus:ring-orange-500/20 transition-all"
               >
                 <option value="sum">סכום</option>
                 <option value="createdAt">תאריך יצירה</option>
@@ -1352,72 +1352,76 @@ const OrdersPage = () => {
               <select
                 onChange={(e) => setSortOrder(e.target.value)}
                 value={sortOrder}
-                className="px-4 py-2 border-2 border-orange-200 rounded-xl bg-white font-bold text-slate-900 focus:border-orange-500 focus:outline-none focus:ring-4 focus:ring-orange-500/20 transition-all"
+                className="px-3 sm:px-4 py-2 border-2 border-orange-200 rounded-xl bg-white text-sm sm:text-base font-bold text-slate-900 focus:border-orange-500 focus:outline-none focus:ring-4 focus:ring-orange-500/20 transition-all"
               >
                 <option value="asc">עולה</option>
                 <option value="desc">יורד</option>
               </select>
 
-              <div className="flex items-center gap-2">
-                <Filter className="text-orange-600 w-5 h-5" />
+              <div className="flex items-center gap-2 text-sm sm:text-base">
+                <Filter className="text-orange-600 w-4 h-4 sm:w-5 sm:h-5" />
                 <span className="font-bold text-slate-700">סינון:</span>
-                <select
-                  onChange={(e) => setSelectedStatus(e.target.value)}
-                  value={selectedStatus}
-                  className="px-4 py-2 border-2 border-orange-200 rounded-xl bg-white font-bold text-slate-900 focus:border-orange-500 focus:outline-none focus:ring-4 focus:ring-orange-500/20 transition-all"
-                >
-                  <option value="">כל הסטטוסים</option>
-                  <option value="הוגש">הוגש</option>
-                  <option value="לא הוגש">לא הוגש</option>
-                  <option value="בעיבוד">בעיבוד</option>
-                </select>
-
-                {(selectedStatus || searchTerm) && (
-                  <button
-                    onClick={() => {
-                      setSelectedStatus("");
-                      setSearchTerm("");
-                    }}
-                    className="px-4 py-2 bg-slate-200 text-slate-700 rounded-xl hover:bg-slate-300 transition-all font-bold"
-                  >
-                    נקה סינון
-                  </button>
-                )}
               </div>
+              <select
+                onChange={(e) => setSelectedStatus(e.target.value)}
+                value={selectedStatus}
+                className="px-3 sm:px-4 py-2 border-2 border-orange-200 rounded-xl bg-white text-sm sm:text-base font-bold text-slate-900 focus:border-orange-500 focus:outline-none focus:ring-4 focus:ring-orange-500/20 transition-all"
+              >
+                <option value="">כל הסטטוסים</option>
+                <option value="הוגש">הוגש</option>
+                <option value="לא הוגש">לא הוגש</option>
+                <option value="בעיבוד">בעיבוד</option>
+              </select>
+
+              {(selectedStatus || searchTerm) && (
+                <button
+                  onClick={() => {
+                    setSelectedStatus("");
+                    setSearchTerm("");
+                  }}
+                  className="px-3 sm:px-4 py-2 bg-slate-200 text-slate-700 rounded-xl hover:bg-slate-300 transition-all text-sm sm:text-base font-bold"
+                >
+                  נקה סינון
+                </button>
+              )}
             </div>
 
             {/* Export Buttons */}
-            <div className="flex gap-3">
-                   <button
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-2 sm:gap-3">
+              <button
                 onClick={() => navigate("/create-order")}
-                className="flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-orange-500 to-amber-500 text-white font-bold rounded-full hover:from-orange-600 hover:to-amber-600 transition-all shadow-lg whitespace-nowrap"
+                className="flex items-center justify-center gap-2 px-4 sm:px-5 md:px-6 py-2.5 sm:py-3 bg-gradient-to-r from-orange-500 to-amber-500 text-white text-sm sm:text-base font-bold rounded-full hover:from-orange-600 hover:to-amber-600 transition-all shadow-lg"
               >
-                <Sparkles className="w-5 h-5" />
-                <span>יצירת הזמנה</span>
+                <Sparkles className="w-4 h-4 sm:w-5 sm:h-5" />
+                <span className="hidden sm:inline">יצירת הזמנה</span>
+                <span className="sm:hidden">הזמנה +</span>
               </button>
 
               <button
                 onClick={() => setShowPrintModal(true)}
-                className="flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-orange-500 to-amber-500 text-white font-bold rounded-full hover:from-orange-600 hover:to-amber-600 transition-all shadow-lg whitespace-nowrap"
+                className="flex items-center justify-center gap-2 px-4 sm:px-5 md:px-6 py-2.5 sm:py-3 bg-gradient-to-r from-orange-500 to-amber-500 text-white text-sm sm:text-base font-bold rounded-full hover:from-orange-600 hover:to-amber-600 transition-all shadow-lg"
               >
-                <FileText className="w-5 h-5" />
-                <span>הדפסת מסמכים</span>
+                <FileText className="w-4 h-4 sm:w-5 sm:h-5" />
+                <span className="hidden sm:inline">הדפסת מסמכים</span>
+                <span className="sm:hidden">הדפסה</span>
               </button>
 
               <button
                 onClick={() => setShowReportModal(true)}
-                className="flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-orange-500 to-amber-500 text-white font-bold rounded-full hover:from-orange-600 hover:to-amber-600 transition-all shadow-lg whitespace-nowrap"
+                className="flex items-center justify-center gap-2 px-4 sm:px-5 md:px-6 py-2.5 sm:py-3 bg-gradient-to-r from-orange-500 to-amber-500 text-white text-sm sm:text-base font-bold rounded-full hover:from-orange-600 hover:to-amber-600 transition-all shadow-lg"
               >
-                <FileSpreadsheet className="w-5 h-5" />
-                <span>מחולל דוחות</span>
+                <FileSpreadsheet className="w-4 h-4 sm:w-5 sm:h-5" />
+                <span className="hidden sm:inline">מחולל דוחות</span>
+                <span className="sm:hidden">דוחות</span>
               </button>
 
               <button
                 onClick={exportToExcel}
-                className="flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-orange-500 to-amber-500 text-white font-bold rounded-full hover:from-orange-600 hover:to-amber-600 transition-all shadow-lg whitespace-nowrap"
+                className="flex items-center justify-center gap-2 px-4 sm:px-5 md:px-6 py-2.5 sm:py-3 bg-gradient-to-r from-orange-500 to-amber-500 text-white text-sm sm:text-base font-bold rounded-full hover:from-orange-600 hover:to-amber-600 transition-all shadow-lg"
               >
-                <DownloadCloud className="w-5 h-5" />
-                <span>ייצוא מהיר</span>
+                <DownloadCloud className="w-4 h-4 sm:w-5 sm:h-5" />
+                <span className="hidden sm:inline">ייצוא מהיר</span>
+                <span className="sm:hidden">ייצוא</span>
               </button>
             </div>
           </div>
@@ -1430,9 +1434,11 @@ const OrdersPage = () => {
 
         {/* Orders Table */}
         {sortedOrders.length > 0 ? (
-          <div className="bg-white/90 backdrop-blur-xl rounded-2xl shadow-xl border border-white/50 overflow-hidden">
-            <div className="overflow-x-auto">
-              <table className="w-full">
+          <>
+            {/* Desktop Table */}
+            <div className="hidden lg:block bg-white/90 backdrop-blur-xl rounded-2xl shadow-xl border border-white/50 overflow-hidden">
+              <div className="overflow-x-auto">
+                <table className="w-full">
                 <thead>
                   <tr className="bg-gradient-to-r from-orange-500 via-amber-500 to-yellow-500">
                     <th className="px-6 py-4 text-sm font-bold text-center text-white">
@@ -1579,6 +1585,104 @@ const OrdersPage = () => {
               </table>
             </div>
           </div>
+
+          {/* Mobile Cards */}
+          <div className="lg:hidden space-y-4">
+            {sortedOrders.map((order) => (
+              <div
+                key={order._id}
+                onClick={() => handleView(order._id)}
+                className="bg-white/90 backdrop-blur-xl rounded-xl shadow-lg border border-white/50 p-4 cursor-pointer hover:shadow-xl transition-all active:scale-[0.98]"
+              >
+                <div className="flex items-start justify-between mb-3">
+                  <div>
+                    <div className="text-xs text-slate-500 mb-1">מספר הזמנה</div>
+                    <div className="text-lg font-bold text-slate-900">{order.orderNumber}</div>
+                  </div>
+                  <div className="text-left">
+                    <div className="text-xs text-slate-500 mb-1">סכום</div>
+                    <div className="text-lg font-bold text-orange-600">{formatNumber(order.sum)} ₪</div>
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-2 gap-3 mb-3">
+                  <div>
+                    <div className="text-xs text-slate-500 mb-1">סטטוס</div>
+                    <div className="text-sm font-medium text-slate-900">{order.status}</div>
+                  </div>
+                  <div>
+                    <div className="text-xs text-slate-500 mb-1">קבצים</div>
+                    <div className="flex items-center gap-1">
+                      <Paperclip className="w-3 h-3 text-orange-500" />
+                      <span className="text-sm font-bold text-slate-900">{getOrderFilesCount(order)}</span>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="mb-3">
+                  <div className="text-xs text-slate-500 mb-1">פרויקט</div>
+                  <div className="text-sm font-medium text-slate-900">{order.projectName}</div>
+                </div>
+
+                {/* חשבונית/קבלה/זיכוי */}
+                <div className="flex flex-wrap gap-2 mb-3">
+                  {order.invoiceNumber || (order.invoiceFiles && order.invoiceFiles.length > 0) ? (
+                    <div className="flex items-center gap-1 px-2 py-1 rounded-lg bg-blue-100">
+                      <FileText className="w-3 h-3 text-blue-600" />
+                      <span className="text-xs font-bold text-blue-700">חשבונית</span>
+                    </div>
+                  ) : null}
+
+                  {order.receiptNumber || (order.receiptFiles && order.receiptFiles.length > 0) ? (
+                    <div className="flex items-center gap-1 px-2 py-1 rounded-lg bg-green-100">
+                      <FileText className="w-3 h-3 text-green-600" />
+                      <span className="text-xs font-bold text-green-700">קבלה</span>
+                    </div>
+                  ) : null}
+
+                  {order.isCredited ? (
+                    <div className="flex items-center gap-1 px-2 py-1 rounded-lg bg-purple-100">
+                      <CheckSquare className="w-3 h-3 text-purple-600" />
+                      <span className="text-xs font-bold text-purple-700">זוכה</span>
+                    </div>
+                  ) : null}
+                </div>
+
+                {/* Action Buttons */}
+                {(isAdmin || canEditOrders) && (
+                  <div className="flex gap-2 pt-3 border-t border-slate-200">
+                    {canEditOrders && (
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleEdit(order._id);
+                        }}
+                        className="flex-1 flex items-center justify-center gap-2 px-3 py-2 text-orange-600 bg-orange-50 hover:bg-orange-100 rounded-lg transition-all font-medium text-sm"
+                      >
+                        <Edit2 className="w-4 h-4" />
+                        <span>עריכה</span>
+                      </button>
+                    )}
+
+                    {isAdmin && (
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setOrderToDelete(order._id);
+                          setShowModal(true);
+                        }}
+                        className="flex-1 flex items-center justify-center gap-2 px-3 py-2 text-red-600 bg-red-50 hover:bg-red-100 rounded-lg transition-all font-medium text-sm"
+                      >
+                        <Trash2 className="w-4 h-4" />
+                        <span>מחיקה</span>
+                      </button>
+                    )}
+                  </div>
+                )}
+              </div>
+            ))}
+          </div>
+        </>
         ) : (
           <div className="bg-white/90 backdrop-blur-xl rounded-2xl shadow-xl border border-white/50 p-12 text-center">
             <ShoppingCart className="w-16 h-16 text-slate-300 mx-auto mb-4" />
