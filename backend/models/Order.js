@@ -51,25 +51,62 @@ const orderSchema = new mongoose.Schema({
   createdByName: {
     type: String,
     required: false
-  }
+  },
+
+  // ✅ שדות חשבונית
+  invoiceNumber: { type: String, required: false },
+  invoiceDate: { type: Date, required: false },
+  invoiceFiles: [{
+    name: { type: String, required: true },
+    url: { type: String, required: true },
+    type: { type: String, required: true },
+    size: { type: Number, required: true },
+    folder: { type: String, required: false },
+    _id: { type: mongoose.Schema.Types.ObjectId, ref: 'File' },
+    publicId: { type: String },
+    resourceType: { type: String }
+  }],
+
+  // ✅ שדות קבלה
+  receiptNumber: { type: String, required: false },
+  receiptDate: { type: Date, required: false },
+  receiptFiles: [{
+    name: { type: String, required: true },
+    url: { type: String, required: true },
+    type: { type: String, required: true },
+    size: { type: Number, required: true },
+    folder: { type: String, required: false },
+    _id: { type: mongoose.Schema.Types.ObjectId, ref: 'File' },
+    publicId: { type: String },
+    resourceType: { type: String }
+  }],
+
+  // ✅ שדות זיכוי
+  isCredited: { type: Boolean, default: false },
+  creditDate: { type: Date, required: false }
 
 });
 
 orderSchema.pre('deleteOne', { document: true, query: false }, async function(next) {
-  
+
   try {
-    if (this.files && this.files.length > 0) {
-      for (const file of this.files) {
-        // ✅ חלץ publicId מה-URL אם לא קיים
+    // ✅ מחיקת כל סוגי הקבצים
+    const fileArrays = [
+      this.files || [],
+      this.invoiceFiles || [],
+      this.receiptFiles || []
+    ];
+
+    for (const fileArray of fileArrays) {
+      for (const file of fileArray) {
         let publicId = file.publicId;
-        
+
         if (!publicId && file.url) {
           publicId = extractPublicIdFromUrl(file.url);
         }
-        
-        
+
         if (publicId) {
-          const result = await cloudinary.uploader.destroy(publicId, {
+          await cloudinary.uploader.destroy(publicId, {
             resource_type: file.resourceType || 'raw'
           });
         } else {

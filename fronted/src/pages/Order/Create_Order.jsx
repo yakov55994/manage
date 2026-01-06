@@ -151,6 +151,17 @@ const CreateOrder = () => {
         files: [],
         Contact_person: "",
         createdAt: "",
+        // ✅ שדות חשבונית
+        invoiceNumber: "",
+        invoiceDate: "",
+        invoiceFiles: [],
+        // ✅ שדות קבלה
+        receiptNumber: "",
+        receiptDate: "",
+        receiptFiles: [],
+        // ✅ שדות זיכוי
+        isCredited: false,
+        creditDate: "",
       },
     ]);
   };
@@ -237,6 +248,52 @@ const CreateOrder = () => {
     setOrders(newOrders);
   };
 
+  // ✅ טיפול בהעלאת קבצי חשבונית
+  const handleInvoiceUpload = (index, selectedFiles) => {
+    if (!selectedFiles || selectedFiles.length === 0) {
+      toast.info("לא נבחרו קבצים", { className: "sonner-toast info rtl" });
+      return;
+    }
+
+    const newOrders = [...orders];
+    if (!newOrders[index].invoiceFiles) {
+      newOrders[index].invoiceFiles = [];
+    }
+
+    const updatedFiles = [
+      ...newOrders[index].invoiceFiles,
+      ...selectedFiles.filter(
+        (file) => !newOrders[index].invoiceFiles.some((f) => f.name === file.name)
+      ),
+    ];
+
+    newOrders[index].invoiceFiles = updatedFiles;
+    setOrders(newOrders);
+  };
+
+  // ✅ טיפול בהעלאת קבצי קבלה
+  const handleReceiptUpload = (index, selectedFiles) => {
+    if (!selectedFiles || selectedFiles.length === 0) {
+      toast.info("לא נבחרו קבצים", { className: "sonner-toast info rtl" });
+      return;
+    }
+
+    const newOrders = [...orders];
+    if (!newOrders[index].receiptFiles) {
+      newOrders[index].receiptFiles = [];
+    }
+
+    const updatedFiles = [
+      ...newOrders[index].receiptFiles,
+      ...selectedFiles.filter(
+        (file) => !newOrders[index].receiptFiles.some((f) => f.name === file.name)
+      ),
+    ];
+
+    newOrders[index].receiptFiles = updatedFiles;
+    setOrders(newOrders);
+  };
+
   const validateSubmission = () => {
     if (!selectedProject) {
       toast.error("יש לבחור פרויקט תחילה", {
@@ -320,8 +377,8 @@ const CreateOrder = () => {
     try {
       const orderData = await Promise.all(
         orders.map(async (order) => {
+          // ✅ העלאת קבצי הזמנה
           let uploadedFiles = [];
-
           if (order.files && order.files.length > 0) {
             for (const fileData of order.files) {
               if (fileData.isLocal && fileData.file) {
@@ -354,6 +411,74 @@ const CreateOrder = () => {
             }
           }
 
+          // ✅ העלאת קבצי חשבונית
+          let uploadedInvoiceFiles = [];
+          if (order.invoiceFiles && order.invoiceFiles.length > 0) {
+            for (const fileData of order.invoiceFiles) {
+              if (fileData.isLocal && fileData.file) {
+                try {
+                  const formData = new FormData();
+                  formData.append("file", fileData.file);
+                  formData.append("folder", "invoices");
+
+                  const uploadResponse = await api.post(`/upload`, formData, {
+                    headers: { "Content-Type": "multipart/form-data" },
+                  });
+
+                  uploadedInvoiceFiles.push({
+                    name: fileData.name,
+                    url: uploadResponse.data.file.url,
+                    type: fileData.type,
+                    size: fileData.size,
+                    publicId: uploadResponse.data.file.publicId,
+                    resourceType: uploadResponse.data.file.resourceType,
+                  });
+                } catch (uploadError) {
+                  toast.error(`שגיאה בהעלאת חשבונית ${fileData.name}`, {
+                    className: "sonner-toast error rtl",
+                  });
+                  throw uploadError;
+                }
+              } else {
+                uploadedInvoiceFiles.push(fileData);
+              }
+            }
+          }
+
+          // ✅ העלאת קבצי קבלה
+          let uploadedReceiptFiles = [];
+          if (order.receiptFiles && order.receiptFiles.length > 0) {
+            for (const fileData of order.receiptFiles) {
+              if (fileData.isLocal && fileData.file) {
+                try {
+                  const formData = new FormData();
+                  formData.append("file", fileData.file);
+                  formData.append("folder", "receipts");
+
+                  const uploadResponse = await api.post(`/upload`, formData, {
+                    headers: { "Content-Type": "multipart/form-data" },
+                  });
+
+                  uploadedReceiptFiles.push({
+                    name: fileData.name,
+                    url: uploadResponse.data.file.url,
+                    type: fileData.type,
+                    size: fileData.size,
+                    publicId: uploadResponse.data.file.publicId,
+                    resourceType: uploadResponse.data.file.resourceType,
+                  });
+                } catch (uploadError) {
+                  toast.error(`שגיאה בהעלאת קבלה ${fileData.name}`, {
+                    className: "sonner-toast error rtl",
+                  });
+                  throw uploadError;
+                }
+              } else {
+                uploadedReceiptFiles.push(fileData);
+              }
+            }
+          }
+
           return {
             orderNumber: order.orderNumber,
             projectName: selectedProject.name,
@@ -366,11 +491,22 @@ const CreateOrder = () => {
             submittedAmount:
               order.status === "הוגש חלקי" ? Number(order.submittedAmount) : 0,
             invitingName: order.invitingName,
-            supplierId: order.supplierId || undefined, // 🆕
+            supplierId: order.supplierId || undefined,
             detail: order.detail,
             files: uploadedFiles,
             Contact_person: order.Contact_person,
             createdAt: order.createdAt,
+            // ✅ שדות חשבונית
+            invoiceNumber: order.invoiceNumber || undefined,
+            invoiceDate: order.invoiceDate || undefined,
+            invoiceFiles: uploadedInvoiceFiles,
+            // ✅ שדות קבלה
+            receiptNumber: order.receiptNumber || undefined,
+            receiptDate: order.receiptDate || undefined,
+            receiptFiles: uploadedReceiptFiles,
+            // ✅ שדות זיכוי
+            isCredited: order.isCredited || false,
+            creditDate: order.creditDate || undefined,
           };
         })
       );
@@ -403,6 +539,20 @@ const CreateOrder = () => {
   const handleRemoveFile = (orderIndex, fileIndex) => {
     const newOrders = [...orders];
     newOrders[orderIndex].files.splice(fileIndex, 1);
+    setOrders(newOrders);
+  };
+
+  // ✅ הסרת קובץ חשבונית
+  const handleRemoveInvoiceFile = (orderIndex, fileIndex) => {
+    const newOrders = [...orders];
+    newOrders[orderIndex].invoiceFiles.splice(fileIndex, 1);
+    setOrders(newOrders);
+  };
+
+  // ✅ הסרת קובץ קבלה
+  const handleRemoveReceiptFile = (orderIndex, fileIndex) => {
+    const newOrders = [...orders];
+    newOrders[orderIndex].receiptFiles.splice(fileIndex, 1);
     setOrders(newOrders);
   };
 
@@ -819,6 +969,236 @@ const CreateOrder = () => {
                           <p className="text-m font-medium">
                             אין קבצים מצורפים כרגע
                           </p>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* ✅ שדות חשבונית */}
+                  <div className="mt-6 p-6 rounded-2xl bg-gradient-to-br from-blue-50 to-indigo-50 border-2 border-blue-200">
+                    <h4 className="text-lg font-bold text-slate-900 mb-4 flex items-center gap-2">
+                      <FileText className="w-5 h-5 text-blue-600" />
+                      פרטי חשבונית (אופציונלי)
+                    </h4>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div className="group">
+                        <label className="text-m font-bold text-slate-700 mb-2 block">
+                          מספר חשבונית
+                        </label>
+                        <input
+                          type="text"
+                          value={order.invoiceNumber}
+                          onChange={(e) =>
+                            handleOrderChange(index, "invoiceNumber", e.target.value)
+                          }
+                          className="w-full rounded-xl border-2 border-slate-200 bg-white px-4 py-3 text-m font-medium focus:border-blue-500 focus:outline-none focus:ring-4 focus:ring-blue-500/20 transition-all"
+                          placeholder="הזן מספר חשבונית..."
+                        />
+                      </div>
+
+                      <div
+                        className="group cursor-pointer"
+                        onClick={(e) => {
+                          const input = e.currentTarget.querySelector('input[type="date"]');
+                          try {
+                            input?.showPicker();
+                          } catch {
+                            input?.focus();
+                          }
+                        }}
+                      >
+                        <label className="text-m font-bold text-slate-700 mb-2 flex items-center gap-2">
+                          <Calendar className="w-4 h-4 text-blue-500" />
+                          תאריך חשבונית
+                        </label>
+                        <input
+                          type="date"
+                          value={order.invoiceDate || ""}
+                          onChange={(e) =>
+                            handleOrderChange(index, "invoiceDate", e.target.value)
+                          }
+                          className="w-full rounded-xl border-2 border-slate-200 bg-white px-4 py-3 text-m font-medium focus:border-blue-500 focus:outline-none focus:ring-4 focus:ring-blue-500/20 transition-all cursor-pointer"
+                        />
+                      </div>
+
+                      <div className="md:col-span-2">
+                        <div className="p-4 rounded-xl bg-white border-2 border-dashed border-blue-300 hover:border-blue-400 transition-all">
+                          <FileUploader
+                            onUploadSuccess={(files) =>
+                              handleInvoiceUpload(index, files)
+                            }
+                            folder="invoices"
+                            label="העלה קבצי חשבונית"
+                            disabled={!canEditOrders}
+                            disabledMessage="אין לך הרשאה להעלות קבצים"
+                          />
+                        </div>
+
+                        {order.invoiceFiles && order.invoiceFiles.length > 0 && (
+                          <div className="mt-3 grid grid-cols-1 gap-2">
+                            {order.invoiceFiles.map((file, fileIndex) => (
+                              <div
+                                key={fileIndex}
+                                className="flex items-center justify-between rounded-xl border-2 border-blue-200 bg-white px-4 py-2 hover:border-blue-400 transition-all"
+                              >
+                                <div className="flex items-center gap-3 flex-1 truncate">
+                                  <FileText className="w-4 h-4 text-blue-600" />
+                                  <div className="truncate">{renderFile(file)}</div>
+                                </div>
+                                <button
+                                  onClick={() =>
+                                    handleRemoveInvoiceFile(index, fileIndex)
+                                  }
+                                  className="px-3 py-1 rounded-lg text-sm text-red-600 hover:bg-red-50 font-medium transition-all"
+                                >
+                                  הסר
+                                </button>
+                              </div>
+                            ))}
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* ✅ שדות קבלה */}
+                  <div className="mt-6 p-6 rounded-2xl bg-gradient-to-br from-green-50 to-emerald-50 border-2 border-green-200">
+                    <h4 className="text-lg font-bold text-slate-900 mb-4 flex items-center gap-2">
+                      <FileText className="w-5 h-5 text-green-600" />
+                      פרטי קבלה (אופציונלי)
+                    </h4>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div className="group">
+                        <label className="text-m font-bold text-slate-700 mb-2 block">
+                          מספר קבלה
+                        </label>
+                        <input
+                          type="text"
+                          value={order.receiptNumber}
+                          onChange={(e) =>
+                            handleOrderChange(index, "receiptNumber", e.target.value)
+                          }
+                          className="w-full rounded-xl border-2 border-slate-200 bg-white px-4 py-3 text-m font-medium focus:border-green-500 focus:outline-none focus:ring-4 focus:ring-green-500/20 transition-all"
+                          placeholder="הזן מספר קבלה..."
+                        />
+                      </div>
+
+                      <div
+                        className="group cursor-pointer"
+                        onClick={(e) => {
+                          const input = e.currentTarget.querySelector('input[type="date"]');
+                          try {
+                            input?.showPicker();
+                          } catch {
+                            input?.focus();
+                          }
+                        }}
+                      >
+                        <label className="text-m font-bold text-slate-700 mb-2 flex items-center gap-2">
+                          <Calendar className="w-4 h-4 text-green-500" />
+                          תאריך קבלה
+                        </label>
+                        <input
+                          type="date"
+                          value={order.receiptDate || ""}
+                          onChange={(e) =>
+                            handleOrderChange(index, "receiptDate", e.target.value)
+                          }
+                          className="w-full rounded-xl border-2 border-slate-200 bg-white px-4 py-3 text-m font-medium focus:border-green-500 focus:outline-none focus:ring-4 focus:ring-green-500/20 transition-all cursor-pointer"
+                        />
+                      </div>
+
+                      <div className="md:col-span-2">
+                        <div className="p-4 rounded-xl bg-white border-2 border-dashed border-green-300 hover:border-green-400 transition-all">
+                          <FileUploader
+                            onUploadSuccess={(files) =>
+                              handleReceiptUpload(index, files)
+                            }
+                            folder="receipts"
+                            label="העלה קבצי קבלה"
+                            disabled={!canEditOrders}
+                            disabledMessage="אין לך הרשאה להעלות קבצים"
+                          />
+                        </div>
+
+                        {order.receiptFiles && order.receiptFiles.length > 0 && (
+                          <div className="mt-3 grid grid-cols-1 gap-2">
+                            {order.receiptFiles.map((file, fileIndex) => (
+                              <div
+                                key={fileIndex}
+                                className="flex items-center justify-between rounded-xl border-2 border-green-200 bg-white px-4 py-2 hover:border-green-400 transition-all"
+                              >
+                                <div className="flex items-center gap-3 flex-1 truncate">
+                                  <FileText className="w-4 h-4 text-green-600" />
+                                  <div className="truncate">{renderFile(file)}</div>
+                                </div>
+                                <button
+                                  onClick={() =>
+                                    handleRemoveReceiptFile(index, fileIndex)
+                                  }
+                                  className="px-3 py-1 rounded-lg text-sm text-red-600 hover:bg-red-50 font-medium transition-all"
+                                >
+                                  הסר
+                                </button>
+                              </div>
+                            ))}
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* ✅ שדות זיכוי */}
+                  <div className="mt-6 p-6 rounded-2xl bg-gradient-to-br from-purple-50 to-violet-50 border-2 border-purple-200">
+                    <h4 className="text-lg font-bold text-slate-900 mb-4 flex items-center gap-2">
+                      <TrendingUp className="w-5 h-5 text-purple-600" />
+                      זיכוי לחשבון (אופציונלי)
+                    </h4>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div className="group">
+                        <label className="text-m font-bold text-slate-700 mb-2 flex items-center gap-2">
+                          האם זוכה לחשבון?
+                        </label>
+                        <select
+                          value={order.isCredited ? "true" : "false"}
+                          onChange={(e) => {
+                            const value = e.target.value === "true";
+                            handleOrderChange(index, "isCredited", value);
+                            if (!value) {
+                              handleOrderChange(index, "creditDate", "");
+                            }
+                          }}
+                          className="w-full rounded-xl border-2 border-slate-200 bg-white px-4 py-3 text-m font-medium focus:border-purple-500 focus:outline-none focus:ring-4 focus:ring-purple-500/20 transition-all"
+                        >
+                          <option value="false">לא</option>
+                          <option value="true">כן</option>
+                        </select>
+                      </div>
+
+                      {order.isCredited && (
+                        <div
+                          className="group cursor-pointer"
+                          onClick={(e) => {
+                            const input = e.currentTarget.querySelector('input[type="date"]');
+                            try {
+                              input?.showPicker();
+                            } catch {
+                              input?.focus();
+                            }
+                          }}
+                        >
+                          <label className="text-m font-bold text-slate-700 mb-2 flex items-center gap-2">
+                            <Calendar className="w-4 h-4 text-purple-500" />
+                            תאריך זיכוי בפועל
+                          </label>
+                          <input
+                            type="date"
+                            value={order.creditDate || ""}
+                            onChange={(e) =>
+                              handleOrderChange(index, "creditDate", e.target.value)
+                            }
+                            className="w-full rounded-xl border-2 border-slate-200 bg-white px-4 py-3 text-m font-medium focus:border-purple-500 focus:outline-none focus:ring-4 focus:ring-purple-500/20 transition-all cursor-pointer"
+                          />
                         </div>
                       )}
                     </div>

@@ -110,6 +110,16 @@ const OrdersPage = () => {
       count += order.files.length;
     }
 
+    // ✅ ספור קבצי חשבונית
+    if (Array.isArray(order.invoiceFiles) && order.invoiceFiles.length > 0) {
+      count += order.invoiceFiles.length;
+    }
+
+    // ✅ ספור קבצי קבלה
+    if (Array.isArray(order.receiptFiles) && order.receiptFiles.length > 0) {
+      count += order.receiptFiles.length;
+    }
+
     // ספור file יחיד (הזמנות ישנות)
     if (
       order.file &&
@@ -1440,6 +1450,9 @@ const OrdersPage = () => {
                     <th className="px-6 py-4 text-sm font-bold text-center text-white">
                       קבצים
                     </th>
+                    <th className="px-6 py-4 text-sm font-bold text-center text-white">
+                      חשבונית/קבלה/זיכוי
+                    </th>
                     {(isAdmin || canEditOrders) && (
                       <th className="px-6 py-4 text-sm font-bold text-center text-white">
                         פעולות
@@ -1477,6 +1490,56 @@ const OrdersPage = () => {
                           <span className="font-bold text-slate-900">
                             {getOrderFilesCount(order)}
                           </span>
+                        </div>
+                      </td>
+
+                      {/* ✅ עמודת חשבונית/קבלה/זיכוי */}
+                      <td className="px-6 py-4 text-center">
+                        <div className="flex items-center justify-center gap-3">
+                          {/* אינדיקטור חשבונית */}
+                          <div className="flex flex-col items-center gap-1">
+                            {order.invoiceNumber || (order.invoiceFiles && order.invoiceFiles.length > 0) ? (
+                              <div className="flex items-center gap-1 px-2 py-1 rounded-lg bg-blue-100">
+                                <FileText className="w-4 h-4 text-blue-600" />
+                                <span className="text-xs font-bold text-blue-700">חשבונית</span>
+                              </div>
+                            ) : (
+                              <div className="flex items-center gap-1 px-2 py-1 rounded-lg bg-slate-100">
+                                <FileText className="w-4 h-4 text-slate-400" />
+                                <span className="text-xs text-slate-400">-</span>
+                              </div>
+                            )}
+                          </div>
+
+                          {/* אינדיקטור קבלה */}
+                          <div className="flex flex-col items-center gap-1">
+                            {order.receiptNumber || (order.receiptFiles && order.receiptFiles.length > 0) ? (
+                              <div className="flex items-center gap-1 px-2 py-1 rounded-lg bg-green-100">
+                                <FileText className="w-4 h-4 text-green-600" />
+                                <span className="text-xs font-bold text-green-700">קבלה</span>
+                              </div>
+                            ) : (
+                              <div className="flex items-center gap-1 px-2 py-1 rounded-lg bg-slate-100">
+                                <FileText className="w-4 h-4 text-slate-400" />
+                                <span className="text-xs text-slate-400">-</span>
+                              </div>
+                            )}
+                          </div>
+
+                          {/* אינדיקטור זיכוי */}
+                          <div className="flex flex-col items-center gap-1">
+                            {order.isCredited ? (
+                              <div className="flex items-center gap-1 px-2 py-1 rounded-lg bg-purple-100">
+                                <CheckSquare className="w-4 h-4 text-purple-600" />
+                                <span className="text-xs font-bold text-purple-700">זוכה</span>
+                              </div>
+                            ) : (
+                              <div className="flex items-center gap-1 px-2 py-1 rounded-lg bg-slate-100">
+                                <Square className="w-4 h-4 text-slate-400" />
+                                <span className="text-xs text-slate-400">-</span>
+                              </div>
+                            )}
+                          </div>
                         </div>
                       </td>
 
