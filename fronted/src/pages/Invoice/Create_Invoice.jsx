@@ -242,6 +242,9 @@ const CreateInvoice = () => {
     if (isSalary && !fundedFromProjectId) {
       return toast.error("יש לבחור פרויקט ממנו יורד התקציב למשכורות");
     }
+    if (selectedProjects.some((p) => p._id === MILGA_ID) && !fundedFromProjectId) {
+      return toast.error("יש לבחור פרויקט ממנו יורד התקציב למילגה");
+    }
 
     if (!isSalary) {
       if (rows.length === 0) return toast.error("בחר לפחות פרויקט אחד");
@@ -464,6 +467,9 @@ const CreateInvoice = () => {
               {/* בחירת פרויקט מממן — רק אם נבחר פרויקט "מילגה" */}
               {selectedProjects.some((p) => p._id === MILGA_ID) && (
                 <div className="mt-4">
+                  <label className="block text-sm font-bold text-red-600 mb-2">
+                    * חובה לבחור פרויקט מממן למילגה
+                  </label>
                   <ProjectSelector
                     projects={projects.filter((p) => p._id !== MILGA_ID)}
                     selectedProjectId={fundedFromProjectId}
