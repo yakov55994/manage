@@ -268,11 +268,37 @@ export default function CreateIncome() {
             <div className="bg-white/90 backdrop-blur-xl rounded-2xl shadow-xl p-6 md:p-8 border border-white/50">
               {/* הוראות */}
               <div className="mb-6 p-4 bg-blue-50 border-2 border-blue-200 rounded-xl">
-                <h3 className="font-bold text-blue-900 mb-2">הוראות:</h3>
-                <ul className="text-sm text-blue-800 space-y-1">
-                  <li>• הקובץ צריך להכיל את העמודות: <strong>תאריך, זכות, תיאור</strong></li>
-                  <li>• ניתן להוסיף הערות כלליות בשדה למטה</li>
+                <div className="flex items-start justify-between mb-2">
+                  <h3 className="font-bold text-blue-900">הוראות:</h3>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const csv = 'תאריך,זכות,תיאור\n01/01/2026,5000,תשלום מלקוח א\n05/01/2026,3500,העברה בנקאית\n10/01/2026,2000,תשלום עבור שירותים';
+                      const blob = new Blob(['\ufeff' + csv], { type: 'text/csv;charset=utf-8;' });
+                      const link = document.createElement('a');
+                      link.href = URL.createObjectURL(blob);
+                      link.download = 'דוגמה_הכנסות.csv';
+                      link.click();
+                      toast.success('קובץ דוגמה הורד בהצלחה!');
+                    }}
+                    className="px-3 py-1 text-xs bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+                  >
+                    📥 הורד קובץ דוגמה
+                  </button>
+                </div>
+                <ul className="text-sm text-blue-800 space-y-2">
+                  <li>• <strong>חובה:</strong> הקובץ צריך להכיל 3 עמודות:
+                    <ul className="mr-4 mt-1 space-y-1">
+                      <li>- <strong>תאריך</strong> (או Date/ת.ערך/תאריך ערך)</li>
+                      <li>- <strong>זכות</strong> (או סכום/Amount/Debit)</li>
+                      <li>- <strong>תיאור</strong> (או Description/פרטים/הערות)</li>
+                    </ul>
+                  </li>
+                  <li>• לחצי על &quot;הורד קובץ דוגמה&quot; למעלה כדי לקבל תבנית מוכנה</li>
+                  <li>• ניתן להוסיף הערות כלליות שיתווספו לכל ההכנסות</li>
                   <li>• ניתן לשייך את כל ההכנסות לפרויקט ספציפי</li>
+                  <li>• כל שורה בקובץ תהפוך להכנסה נפרדת</li>
+                  <li className="text-red-700 font-bold">⚠️ אל תעלי ישירות ייצוא מהבנק - צריך להעתיק את הנתונים לקובץ הדוגמה</li>
                 </ul>
               </div>
 
@@ -289,7 +315,6 @@ export default function CreateIncome() {
                       onChange={handleFileChange}
                       className="hidden"
                       id="excel-file"
-                      required
                     />
                     <label
                       htmlFor="excel-file"

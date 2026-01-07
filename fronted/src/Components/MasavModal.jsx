@@ -161,7 +161,6 @@ export default function MasavModal({ open, onClose, invoices, onInvoicesUpdated 
       };
     });
     // בתוך generate(), לפני שיוצרים payments
-    console.log("Supplier data:", withBankDetails[0]?.supplierId);
 
     // ולידציה בצד לקוח
     const clientErrors = validateClient(payments);

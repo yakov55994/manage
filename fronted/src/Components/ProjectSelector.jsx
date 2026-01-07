@@ -1,30 +1,69 @@
 import { useState, useEffect } from "react";
-import { Search, Check } from "lucide-react";
+import { Search, Check, X } from "lucide-react";
+import api from "../api/api";
 
 /**
  * קומפוננטה אחידה לבחירת פרויקטים
- * @param {Array} projects - רשימת כל הפרויקטים
+ * @param {Array} projects - רשימת כל הפרויקטים (אופציונלי - אם לא מועבר, הקומפוננטה תטען בעצמה)
  * @param {Array} selectedProjects - פרויקטים נבחרים (עבור בחירה מרובה)
  * @param {String} selectedProjectId - ID פרויקט נבחר (עבור בחירה יחידה)
+ * @param {String} value - ID פרויקט נבחר (alias ל-selectedProjectId)
  * @param {Function} onProjectsChange - callback לעדכון בחירה מרובה
  * @param {Function} onProjectChange - callback לעדכון בחירה יחידה
+ * @param {Function} onSelect - callback לעדכון (מקבל את כל אובייקט הפרויקט או null)
  * @param {Boolean} multiSelect - האם לאפשר בחירה מרובה (default: false)
+ * @param {Boolean} allowClear - האם לאפשר ניקוי בחירה (default: false)
  * @param {String} label - כותרת השדה
  * @param {String} placeholder - placeholder לחיפוש
  * @param {Boolean} showSelectAll - האם להציג כפתור "בחר הכל" (רק בבחירה מרובה)
  */
 export default function ProjectSelector({
-  projects = [],
+  projects: projectsProp,
   selectedProjects = [],
   selectedProjectId = "",
+  value,
   onProjectsChange,
   onProjectChange,
+  onSelect,
   multiSelect = false,
+  allowClear = false,
   label = "בחר פרויקט",
   placeholder = "חפש פרויקט...",
   showSelectAll = false,
 }) {
   const [searchTerm, setSearchTerm] = useState("");
+  const [projects, setProjects] = useState(projectsProp || []);
+  const [loading, setLoading] = useState(!projectsProp);
+
+  // טען פרויקטים אם לא הועברו
+  useEffect(() => {
+    if (!projectsProp) {
+      fetchProjects();
+    }
+  }, [projectsProp]);
+
+  const fetchProjects = async () => {
+    try {
+      setLoading(true);
+      const response = await api.get("/projects");
+      setProjects(response.data?.data || []);
+    } catch (err) {
+      console.error("Error fetching projects:", err);
+      setProjects([]);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // עדכן projects אם הועברו כ-prop
+  useEffect(() => {
+    if (projectsProp) {
+      setProjects(projectsProp);
+    }
+  }, [projectsProp]);
+
+  // תמיכה ב-value prop
+  const currentSelectedId = value !== undefined ? value : selectedProjectId;
 
   // סינון פרויקטים לפי חיפוש
   const filteredProjects = projects.filter((p) => {
@@ -41,7 +80,7 @@ export default function ProjectSelector({
     if (multiSelect) {
       return selectedProjects.some((p) => p._id === projectId || p === projectId);
     } else {
-      return selectedProjectId === projectId;
+      return currentSelectedId === projectId;
     }
   };
 
@@ -65,7 +104,22 @@ export default function ProjectSelector({
       onProjectsChange?.(updated);
     } else {
       // בחירה יחידה
-      onProjectChange?.(project._id === selectedProjectId ? "" : project._id);
+      const newId = project._id === currentSelectedId ? "" : project._id;
+      const newProject = newId ? project : null;
+
+      // תמיכה בכל סוגי הcallbacks
+      onProjectChange?.(newId);
+      onSelect?.(newProject);
+    }
+  };
+
+  // ניקוי בחירה
+  const handleClear = () => {
+    if (multiSelect) {
+      onProjectsChange?.([]);
+    } else {
+      onProjectChange?.("");
+      onSelect?.(null);
     }
   };
 
@@ -87,12 +141,47 @@ export default function ProjectSelector({
     filteredProjects.length > 0 &&
     selectedProjects.length === filteredProjects.length;
 
+  // מציאת הפרויקט הנבחר
+  const selectedProject = !multiSelect && currentSelectedId
+    ? projects.find(p => p._id === currentSelectedId)
+    : null;
+
   return (
     <div className="w-full">
       {/* כותרת */}
-      <label className="block text-sm font-bold text-slate-700 mb-2">
-        {label}
-      </label>
+      <div className="flex items-center justify-between mb-2">
+        <label className="block text-sm font-bold text-slate-700">
+          {label}
+        </label>
+        {allowClear && !multiSelect && currentSelectedId && (
+          <button
+            type="button"
+            onClick={handleClear}
+            className="flex items-center gap-1 text-xs text-red-600 hover:text-red-700 font-medium"
+          >
+            <X className="w-3 h-3" />
+            נקה
+          </button>
+        )}
+      </div>
+
+      {/* הצגת פרויקט נבחר */}
+      {!multiSelect && selectedProject && (
+        <div className="mb-2 p-3 bg-orange-100 border-2 border-orange-300 rounded-xl flex items-center justify-between">
+          <span className="text-sm font-bold text-orange-900">
+            {selectedProject.name}
+          </span>
+          {allowClear && (
+            <button
+              type="button"
+              onClick={handleClear}
+              className="p-1 hover:bg-orange-200 rounded-lg transition-colors"
+            >
+              <X className="w-4 h-4 text-orange-700" />
+            </button>
+          )}
+        </div>
+      )}
 
       {/* מיכל הבחירה */}
       <div className="relative bg-gradient-to-br from-white to-orange-50/30 border-2 border-orange-200 rounded-2xl shadow-lg overflow-hidden">
@@ -133,7 +222,12 @@ export default function ProjectSelector({
 
         {/* רשימת פרויקטים */}
         <div className="p-5 max-h-[400px] overflow-y-auto space-y-2">
-          {filteredProjects.length === 0 ? (
+          {loading ? (
+            <div className="text-center text-gray-400 p-6">
+              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-orange-500 mx-auto mb-2"></div>
+              <p>טוען פרויקטים...</p>
+            </div>
+          ) : filteredProjects.length === 0 ? (
             <div className="text-center text-gray-400 p-6">
               {searchTerm ? "לא נמצאו פרויקטים התואמים לחיפוש" : "אין פרויקטים זמינים"}
             </div>

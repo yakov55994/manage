@@ -19,7 +19,12 @@
       "Bash(git add:*)",
       "Bash(npm install:*)",
       "Bash(node fix-mobile.js:*)",
-      "Bash(cd:*)"
+      "Bash(cd:*)",
+      "Bash(node scripts/syncProjectNames.js:*)",
+      "Bash(lsof:*)",
+      "Bash(xargs kill:*)",
+      "Bash(sudo lsof:*)",
+      "Bash(xargs:*)"
     ]
   }
 }

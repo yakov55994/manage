@@ -34,6 +34,39 @@ const projectSchema = new mongoose.Schema({
 
 });
 
+// 🔄 עדכון אוטומטי של שם הפרויקט בכל המסמכים המשוייכים
+projectSchema.post('findOneAndUpdate', async function(doc) {
+  if (!doc) return;
+
+  try {
+    const { default: Invoice } = await import("./Invoice.js");
+    const { default: Order } = await import("./Order.js");
+    const { default: Income } = await import("./Income.js");
+
+    // עדכן חשבוניות
+    await Invoice.updateMany(
+      { 'projects.projectId': doc._id },
+      { $set: { 'projects.$[elem].projectName': doc.name } },
+      { arrayFilters: [{ 'elem.projectId': doc._id }] }
+    );
+
+    // עדכן הזמנות
+    await Order.updateMany(
+      { projectId: doc._id },
+      { $set: { projectName: doc.name } }
+    );
+
+    // עדכן הכנסות
+    await Income.updateMany(
+      { projectId: doc._id },
+      { $set: { projectName: doc.name } }
+    );
+
+  } catch (err) {
+    console.error('❌ שגיאה בעדכון שם פרויקט:', err);
+  }
+});
+
 // Cascade delete invoices + orders + salaries when project is deleted
 projectSchema.pre('deleteOne', { document: true, query: false }, async function (next) {
   try {

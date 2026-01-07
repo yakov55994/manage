@@ -226,10 +226,6 @@ export function testMasav() {
     "59298228900251218000100000000096980000000000000000000000010000000                                                               "
   ];
 
-  console.log("=== קובץ שנוצר ===\n");
-  console.log(result);
-  console.log("\n=== השוואה לקובץ תקין ===");
-
   const generatedLines = result.split("\r\n");
 
   generatedLines.forEach((line, i) => {
@@ -238,18 +234,10 @@ export function testMasav() {
     const isCorrectLength = line.length === 128;
     const matchesCorrect = line === correctLines[i];
 
-    console.log(`\nשורה ${i + 1} (${typeName}):`);
-    console.log(`  אורך: ${line.length} תווים ${isCorrectLength ? '✓' : '✗'}`);
-    console.log(`  תואם לקובץ תקין: ${matchesCorrect ? '✓' : '✗'}`);
-
     if (!matchesCorrect && correctLines[i]) {
-      console.log(`  צפוי: ${correctLines[i]}`);
-      console.log(`  קיבלנו: ${line}`);
-
       // מציאת ההבדלים
       for (let j = 0; j < Math.max(line.length, correctLines[i].length); j++) {
         if (line[j] !== correctLines[i][j]) {
-          console.log(`  הבדל בתו ${j + 1}: צפוי '${correctLines[i][j]}' קיבלנו '${line[j]}'`);
           break;
         }
       }
