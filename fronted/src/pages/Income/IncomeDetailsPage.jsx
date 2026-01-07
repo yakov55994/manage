@@ -11,7 +11,9 @@ import {
   FileText,
   ArrowRight,
   StickyNote,
+  Link as LinkIcon,
 } from "lucide-react";
+import InvoiceSelector from "../../Components/InvoiceSelector";
 
 const IncomeDetailsPage = () => {
   const { id } = useParams();
@@ -21,6 +23,9 @@ const IncomeDetailsPage = () => {
   const [loading, setLoading] = useState(true);
   const [confirmOpen, setConfirmOpen] = useState(false);
   const [deleting, setDeleting] = useState(false);
+  const [linkModalOpen, setLinkModalOpen] = useState(false);
+  const [linking, setLinking] = useState(false);
+  const [selectedInvoiceId, setSelectedInvoiceId] = useState(null);
 
   useEffect(() => {
     const loadIncome = async () => {
@@ -70,6 +75,36 @@ const IncomeDetailsPage = () => {
     } finally {
       setDeleting(false);
       setConfirmOpen(false);
+    }
+  };
+
+  const handleLinkToInvoice = async (invoice) => {
+    if (!invoice) {
+      setLinkModalOpen(false);
+      return;
+    }
+
+    try {
+      setLinking(true);
+      await api.put(`/incomes/${income._id}`, {
+        invoiceId: invoice._id,
+        isCredited: "כן",
+        date: income.date, // שמירת תאריך הזיכוי המקורי
+        amount: income.amount,
+        description: income.description,
+        notes: income.notes,
+      });
+      toast.success("ההכנסה שויכה להזמנה בהצלחה!");
+
+      // רענון הנתונים
+      const res = await api.get(`/incomes/${income._id}`);
+      setIncome(res.data?.data);
+      setLinkModalOpen(false);
+    } catch (err) {
+      console.error(err);
+      toast.error("שגיאה בשיוך ההכנסה להזמנה");
+    } finally {
+      setLinking(false);
     }
   };
 
@@ -251,6 +286,15 @@ const IncomeDetailsPage = () => {
         {/* Action Buttons */}
         <div className="bg-white/90 backdrop-blur-xl rounded-2xl shadow-lg p-6 border border-white/50">
           <div className="flex flex-col sm:flex-row gap-3">
+            {/* כפתור שיוך להזמנה */}
+            <button
+              onClick={() => setLinkModalOpen(true)}
+              className="flex-1 flex items-center justify-center gap-2 px-6 py-3 bg-gradient-to-r from-purple-500 to-purple-600 text-white font-bold rounded-xl hover:from-purple-600 hover:to-purple-700 transition-all shadow-lg"
+            >
+              <LinkIcon className="w-5 h-5" />
+              {income.invoiceId ? "שנה הזמנה" : "שייך להזמנה"}
+            </button>
+
             <button
               onClick={() => navigate(`/update-income/${income._id}`)}
               className="flex-1 flex items-center justify-center gap-2 px-6 py-3 bg-gradient-to-r from-orange-500 to-amber-600 text-white font-bold rounded-xl hover:from-orange-600 hover:to-amber-700 transition-all shadow-lg"
@@ -269,6 +313,62 @@ const IncomeDetailsPage = () => {
           </div>
         </div>
       </div>
+
+      {/* Link to Invoice Modal */}
+      {linkModalOpen && (
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+          <div className="relative max-w-3xl w-full max-h-[90vh] overflow-y-auto">
+            <div className="absolute -inset-4 bg-gradient-to-r from-purple-500 to-purple-600 rounded-3xl opacity-20 blur-2xl"></div>
+
+            <div className="relative bg-white rounded-3xl shadow-2xl p-8">
+              <div className="text-center mb-6">
+                <div className="mx-auto w-16 h-16 rounded-full bg-gradient-to-br from-purple-500 to-purple-600 flex items-center justify-center mb-4">
+                  <LinkIcon className="w-8 h-8 text-white" />
+                </div>
+                <h3 className="text-2xl font-bold text-slate-900 mb-2">
+                  שיוך הכנסה להזמנה
+                </h3>
+                <p className="text-slate-600">
+                  בחר הזמנה לשיוך ההכנסה אליה. ההכנסה תסומן כ"זוכה" אוטומטית.
+                </p>
+              </div>
+
+              <div className="mb-6">
+                <InvoiceSelector
+                  value={selectedInvoiceId}
+                  onSelect={(invoice) => setSelectedInvoiceId(invoice?._id || null)}
+                  label="בחר הזמנה"
+                  placeholder="חפש הזמנה לפי מספר או פרטים..."
+                  allowClear={true}
+                />
+              </div>
+
+              <div className="flex gap-3">
+                <button
+                  onClick={() => {
+                    const invoice = selectedInvoiceId ? { _id: selectedInvoiceId } : null;
+                    handleLinkToInvoice(invoice);
+                  }}
+                  disabled={linking || !selectedInvoiceId}
+                  className="flex-1 px-6 py-3 rounded-xl font-bold text-white bg-gradient-to-r from-purple-500 to-purple-600 hover:from-purple-600 hover:to-purple-700 transition-all shadow-lg disabled:opacity-50"
+                >
+                  {linking ? "משייך..." : "שייך להזמנה"}
+                </button>
+                <button
+                  onClick={() => {
+                    setLinkModalOpen(false);
+                    setSelectedInvoiceId(null);
+                  }}
+                  disabled={linking}
+                  className="flex-1 px-6 py-3 rounded-xl font-bold text-slate-700 bg-slate-100 hover:bg-slate-200 transition-all disabled:opacity-50"
+                >
+                  ביטול
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Delete Confirmation Modal */}
       {confirmOpen && (

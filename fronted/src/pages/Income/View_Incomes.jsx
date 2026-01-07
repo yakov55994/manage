@@ -12,8 +12,10 @@ import {
   Calendar,
   FileText,
   ArrowUpDown,
+  Link,
 } from "lucide-react";
 import { toast } from "sonner";
+import InvoiceSelector from "../../Components/InvoiceSelector";
 
 export default function ViewIncomes() {
   const navigate = useNavigate();
@@ -23,6 +25,8 @@ export default function ViewIncomes() {
   const [sortBy, setSortBy] = useState("date");
   const [sortOrder, setSortOrder] = useState("desc");
   const [deleteModal, setDeleteModal] = useState({ open: false, incomeId: null });
+  const [linkModal, setLinkModal] = useState({ open: false, incomeId: null });
+  const [linking, setLinking] = useState(false);
 
   useEffect(() => {
     fetchIncomes();
@@ -48,7 +52,7 @@ export default function ViewIncomes() {
       return (
         income.description?.toLowerCase().includes(q) ||
         income.notes?.toLowerCase().includes(q) ||
-        income.projectName?.toLowerCase().includes(q) ||
+        income.invoiceNumber?.toLowerCase().includes(q) ||
         income.amount?.toString().includes(q)
       );
     })
@@ -94,6 +98,47 @@ export default function ViewIncomes() {
     } catch (err) {
       console.error("Delete error:", err);
       toast.error("שגיאה במחיקת הכנסה");
+    }
+  };
+
+  const handleLinkToInvoice = async (invoice) => {
+    try {
+      setLinking(true);
+      const currentIncome = incomes.find(i => i._id === linkModal.incomeId);
+
+      // אם אין הזמנה - ביטול שיוך
+      if (!invoice) {
+        await api.put(`/incomes/${linkModal.incomeId}`, {
+          invoiceId: null,
+          isCredited: "לא",
+          date: currentIncome.date,
+          amount: currentIncome.amount,
+          description: currentIncome.description,
+          notes: currentIncome.notes,
+        });
+        toast.success("השיוך בוטל בהצלחה!");
+      } else {
+        // שיוך להזמנה חדשה
+        await api.put(`/incomes/${linkModal.incomeId}`, {
+          invoiceId: invoice._id,
+          isCredited: "כן",
+          date: currentIncome.date,
+          amount: currentIncome.amount,
+          description: currentIncome.description,
+          notes: currentIncome.notes,
+        });
+        toast.success("ההכנסה שויכה להזמנה בהצלחה!");
+      }
+
+      // Refresh the incomes list to show updated data
+      await fetchIncomes();
+
+      setLinkModal({ open: false, incomeId: null });
+    } catch (err) {
+      console.error("Link error:", err);
+      toast.error("שגיאה בעדכון השיוך");
+    } finally {
+      setLinking(false);
     }
   };
 
@@ -163,7 +208,7 @@ export default function ViewIncomes() {
                     type="text"
                     value={searchTerm}
                     onChange={(e) => setSearchTerm(e.target.value)}
-                    placeholder="חפש לפי תיאור, הערות או פרויקט..."
+                    placeholder="חפש לפי תיאור, הערות או מספר הזמנה..."
                     className="w-full pr-12 pl-4 py-3 border-2 border-orange-200 rounded-xl bg-white focus:border-orange-500 focus:outline-none transition-all"
                   />
                 </div>
@@ -245,7 +290,10 @@ export default function ViewIncomes() {
                           תיאור
                         </th>
                         <th className="px-6 py-4 text-right text-sm font-bold text-white">
-                          פרויקט
+                          הזמנה
+                        </th>
+                        <th className="px-6 py-4 text-right text-sm font-bold text-white">
+                          זוכה
                         </th>
                         <th className="px-6 py-4 text-right text-sm font-bold text-white">
                           הערות
@@ -276,7 +324,18 @@ export default function ViewIncomes() {
                             {income.description}
                           </td>
                           <td className="px-6 py-4 text-sm text-slate-600">
-                            {income.projectName || "—"}
+                            {income.invoiceNumber ? `הזמנה #${income.invoiceNumber}` : "—"}
+                          </td>
+                          <td className="px-6 py-4 text-sm">
+                            {income.isCredited === "כן" ? (
+                              <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-bold bg-green-100 text-green-800 border border-green-300">
+                                זוכה ✓
+                              </span>
+                            ) : (
+                              <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-bold bg-slate-100 text-slate-600">
+                                לא זוכה
+                              </span>
+                            )}
                           </td>
                           <td className="px-6 py-4 text-sm text-slate-600">
                             {income.notes ? (
@@ -308,6 +367,16 @@ export default function ViewIncomes() {
                                 title="עריכה"
                               >
                                 <Edit2 className="w-4 h-4 text-orange-600" />
+                              </button>
+                              <button
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  setLinkModal({ open: true, incomeId: income._id });
+                                }}
+                                className="p-2 hover:bg-purple-100 rounded-lg transition-colors"
+                                title="שייך להזמנה"
+                              >
+                                <Link className="w-4 h-4 text-purple-600" />
                               </button>
                               <button
                                 onClick={(e) => {
@@ -356,15 +425,28 @@ export default function ViewIncomes() {
                         </div>
                       </div>
 
-                      {/* Project */}
-                      {income.projectName && (
-                        <div className="mb-3">
-                          <div className="text-xs text-slate-500 mb-1">פרויקט</div>
-                          <div className="text-sm font-medium text-slate-700">
-                            {income.projectName}
+                      {/* Invoice & Status */}
+                      <div className="mb-3 flex items-center gap-3">
+                        {income.invoiceNumber && (
+                          <div className="flex-1">
+                            <div className="text-xs text-slate-500 mb-1">הזמנה</div>
+                            <div className="text-sm font-medium text-slate-700">
+                              הזמנה #{income.invoiceNumber}
+                            </div>
                           </div>
+                        )}
+                        <div>
+                          {income.isCredited === "כן" ? (
+                            <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-bold bg-green-100 text-green-800 border border-green-300">
+                              זוכה ✓
+                            </span>
+                          ) : (
+                            <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-bold bg-slate-100 text-slate-600">
+                              לא זוכה
+                            </span>
+                          )}
                         </div>
-                      )}
+                      </div>
 
                       {/* Notes */}
                       {income.notes && (
@@ -397,6 +479,16 @@ export default function ViewIncomes() {
                         >
                           <Edit2 className="w-4 h-4" />
                           <span>עריכה</span>
+                        </button>
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setLinkModal({ open: true, incomeId: income._id });
+                          }}
+                          className="px-4 py-2 bg-purple-500 text-white rounded-lg hover:bg-purple-600 transition-colors"
+                          title="שייך להזמנה"
+                        >
+                          <Link className="w-4 h-4" />
                         </button>
                         <button
                           onClick={(e) => {
@@ -460,6 +552,49 @@ export default function ViewIncomes() {
                   className="flex-1 px-6 py-3 rounded-xl font-bold text-slate-700 bg-slate-100 hover:bg-slate-200 transition-all"
                 >
                   ביטול
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Link to Invoice Modal */}
+      {linkModal.open && (
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+          <div className="relative max-w-2xl w-full max-h-[85vh] overflow-y-auto">
+            <div className="absolute -inset-4 bg-gradient-to-r from-purple-500 to-violet-500 rounded-3xl opacity-20 blur-2xl"></div>
+
+            <div className="relative bg-white rounded-3xl shadow-2xl p-6">
+              <div className="mb-4">
+                <div className="flex items-center gap-3 mb-2">
+                  <div className="p-2 rounded-xl bg-gradient-to-br from-purple-500 to-violet-600 shadow-lg">
+                    <Link className="w-5 h-5 text-white" />
+                  </div>
+                  <div>
+                    <h3 className="text-xl font-bold text-slate-900">
+                      שייך הכנסה להזמנה
+                    </h3>
+                    <p className="text-xs text-slate-600">
+                      בחר הזמנה לשיוך או בטל שיוך קיים
+                    </p>
+                  </div>
+                </div>
+              </div>
+
+              <InvoiceSelector
+                onSelect={handleLinkToInvoice}
+                selectedInvoiceId={incomes.find(i => i._id === linkModal.incomeId)?.invoiceId?._id || null}
+                disabled={linking}
+              />
+
+              <div className="mt-4 flex justify-end">
+                <button
+                  onClick={() => setLinkModal({ open: false, incomeId: null })}
+                  disabled={linking}
+                  className="px-5 py-2 rounded-xl font-bold text-slate-700 bg-slate-100 hover:bg-slate-200 transition-all disabled:opacity-50"
+                >
+                  סגור
                 </button>
               </div>
             </div>

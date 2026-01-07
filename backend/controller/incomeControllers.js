@@ -184,8 +184,6 @@ const incomeController = {
           amount: amount.toString(),
           description: description.toString(),
           notes: notes,
-          invoiceId: req.body.invoiceId || null,
-          isCredited: req.body.invoiceId ? "כן" : "לא",
         };
       }).filter(item => item !== null); // סינון שורות ריקות
 

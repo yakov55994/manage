@@ -23,7 +23,6 @@ export default function CreateIncome() {
   // העלאת Excel
   const [excelFile, setExcelFile] = useState(null);
   const [excelNotes, setExcelNotes] = useState("");
-  const [excelInvoiceId, setExcelInvoiceId] = useState(null);
 
   const handleSingleIncomeChange = (field, value) => {
     setSingleIncome(prev => ({ ...prev, [field]: value }));
@@ -106,9 +105,6 @@ export default function CreateIncome() {
       const formData = new FormData();
       formData.append("file", excelFile);
       formData.append("notes", excelNotes);
-      if (excelInvoiceId) {
-        formData.append("invoiceId", excelInvoiceId);
-      }
 
       const response = await api.post("/incomes/upload-excel", formData, {
         headers: {
@@ -367,17 +363,6 @@ export default function CreateIncome() {
                       </span>
                     </label>
                   </div>
-                </div>
-
-                {/* שיוך להזמנה */}
-                <div>
-                  <InvoiceSelector
-                    value={excelInvoiceId}
-                    onSelect={(invoice) => setExcelInvoiceId(invoice?._id || null)}
-                    label="שיוך להזמנה (אופציונלי)"
-                    placeholder="שייך את כל ההכנסות להזמנה..."
-                    allowClear={true}
-                  />
                 </div>
 
                 {/* הערות כלליות */}

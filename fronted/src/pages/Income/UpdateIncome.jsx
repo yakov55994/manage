@@ -1,16 +1,18 @@
 import { useState, useEffect } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { toast } from "sonner";
-import { Save, ArrowLeft, DollarSign } from "lucide-react";
+import { Save, ArrowLeft, DollarSign, FileText, X } from "lucide-react";
 import { ClipLoader } from "react-spinners";
 import api from "../../api/api";
-import InvoiceSelector from "../../Components/InvoiceSelector";
+import OrderSelectionModal from "../../Components/OrderSelectionModal";
 
 export default function UpdateIncome() {
   const { id } = useParams();
   const navigate = useNavigate();
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [isOrderModalOpen, setIsOrderModalOpen] = useState(false);
+  const [selectedOrder, setSelectedOrder] = useState(null);
 
   const [formData, setFormData] = useState({
     date: "",
@@ -46,9 +48,13 @@ export default function UpdateIncome() {
         amount: income.amount || "",
         description: income.description || "",
         notes: income.notes || "",
-        invoiceId: income.invoiceId || null,
+        invoiceId: income.invoiceId?._id || income.invoiceId || null,
         isCredited: income.isCredited || "לא",
       });
+
+      if (income.invoiceId && typeof income.invoiceId === 'object') {
+        setSelectedOrder(income.invoiceId);
+      }
     } catch (error) {
       console.error("Error loading income:", error);
       toast.error("שגיאה בטעינת ההכנסה");
@@ -62,19 +68,21 @@ export default function UpdateIncome() {
     setFormData((prev) => ({ ...prev, [field]: value }));
   };
 
-  // טיפול בבחירת הזמנה
-  const handleInvoiceSelect = (invoice) => {
-    if (invoice) {
+  // טיפול בבחירת הזמנה מהמודל
+  const handleOrderSelect = (order) => {
+    if (order) {
+      setSelectedOrder(order);
       // שויכו להזמנה - עדכן שדות אוטומטית
       setFormData(prev => ({
         ...prev,
-        invoiceId: invoice._id,
+        invoiceId: order._id,
         isCredited: "כן",
         // התאריך תשלום יהיה תאריך הזיכוי (תאריך ההכנסה הנוכחי או התאריך שהמשתמש בחר)
         date: prev.date || new Date().toISOString().split("T")[0],
       }));
     } else {
       // ביטול שיוך
+      setSelectedOrder(null);
       setFormData(prev => ({
         ...prev,
         invoiceId: null,
@@ -210,12 +218,48 @@ export default function UpdateIncome() {
 
               {/* שיוך להזמנה */}
               <div className="md:col-span-2">
-                <InvoiceSelector
-                  value={formData.invoiceId}
-                  onSelect={handleInvoiceSelect}
-                  label="שיוך להזמנה (אופציונלי)"
-                  placeholder="בחר הזמנה..."
-                  allowClear={true}
+                <label className="block text-sm font-bold text-slate-700 mb-2">
+                  שיוך להזמנה (אופציונלי)
+                </label>
+
+                {selectedOrder ? (
+                  <div className="flex items-center justify-between p-4 bg-orange-50 border-2 border-orange-200 rounded-xl">
+                    <div className="flex items-center gap-3">
+                      <div className="p-2 bg-orange-100 rounded-lg text-orange-600">
+                        <FileText className="w-5 h-5" />
+                      </div>
+                      <div>
+                        <div className="font-bold text-slate-800">
+                          הזמנה #{selectedOrder.orderNumber || selectedOrder.invoiceNumber}
+                        </div>
+                        <div className="text-sm text-slate-500">
+                          {selectedOrder.projectName} • {selectedOrder.invitingName}
+                        </div>
+                      </div>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => setIsOrderModalOpen(true)}
+                      className="text-sm font-bold text-orange-600 hover:text-orange-700 hover:underline px-2"
+                    >
+                      החלף
+                    </button>
+                  </div>
+                ) : (
+                  <button
+                    type="button"
+                    onClick={() => setIsOrderModalOpen(true)}
+                    className="w-full py-3 border-2 border-dashed border-gray-300 rounded-xl text-gray-500 font-bold hover:border-orange-400 hover:text-orange-600 hover:bg-orange-50 transition-all"
+                  >
+                    + לחץ לשיוך הזמנה
+                  </button>
+                )}
+
+                <OrderSelectionModal
+                  isOpen={isOrderModalOpen}
+                  onClose={() => setIsOrderModalOpen(false)}
+                  onSelect={handleOrderSelect}
+                  selectedOrderId={formData.invoiceId}
                 />
               </div>
 
@@ -224,11 +268,10 @@ export default function UpdateIncome() {
                 <label className="block text-sm font-bold text-slate-700 mb-2">
                   האם זוכה
                 </label>
-                <div className={`px-4 py-3 border-2 rounded-xl ${
-                  formData.isCredited === "כן"
-                    ? "border-green-300 bg-green-50 text-green-800 font-bold"
-                    : "border-slate-200 bg-slate-50 text-slate-600"
-                }`}>
+                <div className={`px-4 py-3 border-2 rounded-xl ${formData.isCredited === "כן"
+                  ? "border-green-300 bg-green-50 text-green-800 font-bold"
+                  : "border-slate-200 bg-slate-50 text-slate-600"
+                  }`}>
                   {formData.isCredited}
                   {formData.isCredited === "כן" && (
                     <span className="text-xs text-green-600 mr-2">
