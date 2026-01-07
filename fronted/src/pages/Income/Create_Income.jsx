@@ -3,7 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 import { Upload, FileSpreadsheet, Plus, ArrowLeft, DollarSign } from "lucide-react";
 import api from "../../api/api";
-import ProjectSelector from "../../Components/ProjectSelector";
+import InvoiceSelector from "../../Components/InvoiceSelector";
 
 export default function CreateIncome() {
   const navigate = useNavigate();
@@ -16,16 +16,39 @@ export default function CreateIncome() {
     amount: "",
     description: "",
     notes: "",
-    projectId: null,
+    invoiceId: null,
+    isCredited: "לא",
   });
 
   // העלאת Excel
   const [excelFile, setExcelFile] = useState(null);
   const [excelNotes, setExcelNotes] = useState("");
-  const [excelProjectId, setExcelProjectId] = useState(null);
+  const [excelInvoiceId, setExcelInvoiceId] = useState(null);
 
   const handleSingleIncomeChange = (field, value) => {
     setSingleIncome(prev => ({ ...prev, [field]: value }));
+  };
+
+  // טיפול בבחירת הזמנה
+  const handleInvoiceSelect = (invoice) => {
+    if (invoice) {
+      // שויכו להזמנה - עדכן שדות אוטומטית
+      setSingleIncome(prev => ({
+        ...prev,
+        invoiceId: invoice._id,
+        isCredited: "כן",
+        // התאריך תשלום יהיה תאריך הזיכוי (תאריך ההכנסה הנוכחי או התאריך שהמשתמש בחר)
+        // אם עדיין לא בחר תאריך, נשתמש בתאריך של היום
+        date: prev.date || new Date().toISOString().split("T")[0],
+      }));
+    } else {
+      // ביטול שיוך
+      setSingleIncome(prev => ({
+        ...prev,
+        invoiceId: null,
+        isCredited: "לא",
+      }));
+    }
   };
 
   const handleFileChange = (e) => {
@@ -83,8 +106,8 @@ export default function CreateIncome() {
       const formData = new FormData();
       formData.append("file", excelFile);
       formData.append("notes", excelNotes);
-      if (excelProjectId) {
-        formData.append("projectId", excelProjectId);
+      if (excelInvoiceId) {
+        formData.append("invoiceId", excelInvoiceId);
       }
 
       const response = await api.post("/incomes/upload-excel", formData, {
@@ -223,15 +246,34 @@ export default function CreateIncome() {
                   />
                 </div>
 
-                {/* פרויקט */}
+                {/* שיוך להזמנה */}
                 <div className="md:col-span-2">
-                  <ProjectSelector
-                    value={singleIncome.projectId}
-                    onSelect={(project) => handleSingleIncomeChange("projectId", project?._id || null)}
-                    label="פרויקט (אופציונלי)"
-                    placeholder="בחר פרויקט..."
+                  <InvoiceSelector
+                    value={singleIncome.invoiceId}
+                    onSelect={handleInvoiceSelect}
+                    label="שיוך להזמנה (אופציונלי)"
+                    placeholder="בחר הזמנה..."
                     allowClear={true}
                   />
+                </div>
+
+                {/* האם זוכה - לקריאה בלבד */}
+                <div className="md:col-span-2">
+                  <label className="block text-sm font-bold text-slate-700 mb-2">
+                    האם זוכה
+                  </label>
+                  <div className={`px-4 py-3 border-2 rounded-xl ${
+                    singleIncome.isCredited === "כן"
+                      ? "border-green-300 bg-green-50 text-green-800 font-bold"
+                      : "border-slate-200 bg-slate-50 text-slate-600"
+                  }`}>
+                    {singleIncome.isCredited}
+                    {singleIncome.isCredited === "כן" && (
+                      <span className="text-xs text-green-600 mr-2">
+                        (משוייך להזמנה)
+                      </span>
+                    )}
+                  </div>
                 </div>
 
                 {/* הערות */}
@@ -296,7 +338,6 @@ export default function CreateIncome() {
                   </li>
                   <li>• לחצי על &quot;הורד קובץ דוגמה&quot; למעלה כדי לקבל תבנית מוכנה</li>
                   <li>• ניתן להוסיף הערות כלליות שיתווספו לכל ההכנסות</li>
-                  <li>• ניתן לשייך את כל ההכנסות לפרויקט ספציפי</li>
                   <li>• כל שורה בקובץ תהפוך להכנסה נפרדת</li>
                   <li className="text-red-700 font-bold">⚠️ אל תעלי ישירות ייצוא מהבנק - צריך להעתיק את הנתונים לקובץ הדוגמה</li>
                 </ul>
@@ -328,13 +369,13 @@ export default function CreateIncome() {
                   </div>
                 </div>
 
-                {/* פרויקט */}
+                {/* שיוך להזמנה */}
                 <div>
-                  <ProjectSelector
-                    value={excelProjectId}
-                    onSelect={(project) => setExcelProjectId(project?._id || null)}
-                    label="פרויקט (אופציונלי)"
-                    placeholder="שייך את כל ההכנסות לפרויקט..."
+                  <InvoiceSelector
+                    value={excelInvoiceId}
+                    onSelect={(invoice) => setExcelInvoiceId(invoice?._id || null)}
+                    label="שיוך להזמנה (אופציונלי)"
+                    placeholder="שייך את כל ההכנסות להזמנה..."
                     allowClear={true}
                   />
                 </div>

@@ -10,7 +10,6 @@ import {
   Calendar,
   FileText,
   ArrowRight,
-  Building2,
   StickyNote,
 } from "lucide-react";
 
@@ -184,19 +183,30 @@ const IncomeDetailsPage = () => {
             </div>
           </div>
 
-          {/* Project */}
+          {/* Invoice & Status */}
           <div className="bg-white/90 backdrop-blur-xl rounded-2xl shadow-lg p-6 border border-white/50">
             <div className="flex items-start gap-4">
               <div className="p-3 rounded-xl bg-gradient-to-br from-purple-500 to-purple-600 shadow-md">
-                <Building2 className="w-6 h-6 text-white" />
+                <FileText className="w-6 h-6 text-white" />
               </div>
               <div className="flex-1">
                 <div className="text-sm font-bold text-slate-600 mb-1">
-                  פרויקט
+                  הזמנה
                 </div>
                 <div className="text-xl font-bold text-slate-900">
-                  {income.projectName || "—"}
+                  {income.invoiceNumber ? `הזמנה #${income.invoiceNumber}` : "—"}
                 </div>
+                {income.isCredited && (
+                  <div className="mt-2">
+                    <span className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-bold ${
+                      income.isCredited === "כן"
+                        ? "bg-green-100 text-green-800 border border-green-300"
+                        : "bg-slate-100 text-slate-600 border border-slate-300"
+                    }`}>
+                      {income.isCredited === "כן" ? "זוכה ✓" : "לא זוכה"}
+                    </span>
+                  </div>
+                )}
               </div>
             </div>
           </div>

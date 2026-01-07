@@ -1,27 +1,19 @@
 import Income from "../models/Income.js";
-import Project from "../models/Project.js";
+import Invoice from "../models/Invoice.js";
 
 export default {
   // קבלת כל ההכנסות
   async getAllIncomes(user) {
     let query = {};
 
-    // משתמש רגיל - לפי הרשאות פרויקטים
-    if (user.role !== "admin") {
-      const allowedProjectIds = user.permissions
-        .map((p) => p.project?._id?.toString() || p.project.toString())
-        .filter(Boolean);
-
-      query = {
-        $or: [
-          { projectId: { $in: allowedProjectIds } },
-          { projectId: null }, // הכנסות שלא משוייכות לפרויקט
-        ],
-      };
-    }
+    // משתמש רגיל - לפי הרשאות פרויקטים (כרגע לא מגבילים לפי הזמנות)
+    // אם נרצה בעתיד להגביל לפי הזמנות, נוסיף כאן לוגיקה דומה
+    // if (user.role !== "admin") {
+    //   ...
+    // }
 
     const incomes = await Income.find(query)
-      .populate("projectId", "name")
+      .populate("invoiceId", "invoiceNumber invitingName totalAmount")
       .sort({ date: -1 });
 
     return incomes;
@@ -29,22 +21,14 @@ export default {
 
   // קבלת הכנסה לפי ID
   async getIncomeById(user, incomeId) {
-    const income = await Income.findById(incomeId).populate("projectId", "name");
+    const income = await Income.findById(incomeId).populate("invoiceId", "invoiceNumber invitingName totalAmount");
 
     if (!income) {
       throw new Error("הכנסה לא נמצאה");
     }
 
-    // בדיקת הרשאות
-    if (user.role !== "admin") {
-      const allowedProjectIds = user.permissions
-        .map((p) => String(p.project?._id || p.project))
-        .filter(Boolean);
-
-      if (income.projectId && !allowedProjectIds.includes(String(income.projectId._id))) {
-        throw new Error("אין הרשאה לצפות בהכנסה זו");
-      }
-    }
+    // בדיקת הרשאות - כרגע לא מגבילים לפי הזמנות
+    // אם נרצה בעתיד להגביל, נוסיף כאן לוגיקה דומה
 
     return income;
   },
@@ -57,11 +41,11 @@ export default {
       createdByName: user.username || user.name || "משתמש",
     };
 
-    // אם יש projectId, קבל את שם הפרויקט
-    if (data.projectId) {
-      const project = await Project.findById(data.projectId);
-      if (project) {
-        incomeData.projectName = project.name;
+    // אם יש invoiceId, קבל את מספר ההזמנה
+    if (data.invoiceId) {
+      const invoice = await Invoice.findById(data.invoiceId);
+      if (invoice) {
+        incomeData.invoiceNumber = invoice.invoiceNumber;
       }
     }
 
@@ -89,28 +73,20 @@ export default {
       throw new Error("הכנסה לא נמצאה");
     }
 
-    // בדיקת הרשאות
-    if (user.role !== "admin") {
-      const allowedProjectIds = user.permissions
-        .map((p) => String(p.project?._id || p.project))
-        .filter(Boolean);
+    // בדיקת הרשאות - כרגע לא מגבילים לפי הזמנות
+    // אם נרצה בעתיד להגביל, נוסיף כאן לוגיקה דומה
 
-      if (income.projectId && !allowedProjectIds.includes(String(income.projectId))) {
-        throw new Error("אין הרשאה לעדכן הכנסה זו");
-      }
-    }
-
-    // אם משנים את הפרויקט, עדכן את שם הפרויקט
-    if (data.projectId && data.projectId !== String(income.projectId)) {
-      const project = await Project.findById(data.projectId);
-      if (project) {
-        data.projectName = project.name;
+    // אם משנים את ההזמנה, עדכן את מספר ההזמנה
+    if (data.invoiceId && data.invoiceId !== String(income.invoiceId)) {
+      const invoice = await Invoice.findById(data.invoiceId);
+      if (invoice) {
+        data.invoiceNumber = invoice.invoiceNumber;
       }
     }
 
     const updatedIncome = await Income.findByIdAndUpdate(incomeId, data, {
       new: true,
-    }).populate("projectId", "name");
+    }).populate("invoiceId", "invoiceNumber invitingName totalAmount");
 
     return updatedIncome;
   },
@@ -140,10 +116,10 @@ export default {
       $or: [
         { description: regex },
         { notes: regex },
-        { projectName: regex },
+        { invoiceNumber: regex },
       ],
     })
-      .populate("projectId", "name")
+      .populate("invoiceId", "invoiceNumber invitingName totalAmount")
       .sort({ date: -1 })
       .limit(100);
 

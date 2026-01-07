@@ -4,7 +4,7 @@ import { toast } from "sonner";
 import { Save, ArrowLeft, DollarSign } from "lucide-react";
 import { ClipLoader } from "react-spinners";
 import api from "../../api/api";
-import ProjectSelector from "../../Components/ProjectSelector";
+import InvoiceSelector from "../../Components/InvoiceSelector";
 
 export default function UpdateIncome() {
   const { id } = useParams();
@@ -17,7 +17,8 @@ export default function UpdateIncome() {
     amount: "",
     description: "",
     notes: "",
-    projectId: null,
+    invoiceId: null,
+    isCredited: "לא",
   });
 
   useEffect(() => {
@@ -45,7 +46,8 @@ export default function UpdateIncome() {
         amount: income.amount || "",
         description: income.description || "",
         notes: income.notes || "",
-        projectId: income.projectId || null,
+        invoiceId: income.invoiceId || null,
+        isCredited: income.isCredited || "לא",
       });
     } catch (error) {
       console.error("Error loading income:", error);
@@ -58,6 +60,27 @@ export default function UpdateIncome() {
 
   const handleChange = (field, value) => {
     setFormData((prev) => ({ ...prev, [field]: value }));
+  };
+
+  // טיפול בבחירת הזמנה
+  const handleInvoiceSelect = (invoice) => {
+    if (invoice) {
+      // שויכו להזמנה - עדכן שדות אוטומטית
+      setFormData(prev => ({
+        ...prev,
+        invoiceId: invoice._id,
+        isCredited: "כן",
+        // התאריך תשלום יהיה תאריך הזיכוי (תאריך ההכנסה הנוכחי או התאריך שהמשתמש בחר)
+        date: prev.date || new Date().toISOString().split("T")[0],
+      }));
+    } else {
+      // ביטול שיוך
+      setFormData(prev => ({
+        ...prev,
+        invoiceId: null,
+        isCredited: "לא",
+      }));
+    }
   };
 
   const handleSubmit = async (e) => {
@@ -185,17 +208,34 @@ export default function UpdateIncome() {
                 />
               </div>
 
-              {/* פרויקט */}
+              {/* שיוך להזמנה */}
               <div className="md:col-span-2">
-                <ProjectSelector
-                  value={formData.projectId}
-                  onSelect={(project) =>
-                    handleChange("projectId", project?._id || null)
-                  }
-                  label="פרויקט (אופציונלי)"
-                  placeholder="בחר פרויקט..."
+                <InvoiceSelector
+                  value={formData.invoiceId}
+                  onSelect={handleInvoiceSelect}
+                  label="שיוך להזמנה (אופציונלי)"
+                  placeholder="בחר הזמנה..."
                   allowClear={true}
                 />
+              </div>
+
+              {/* האם זוכה - לקריאה בלבד */}
+              <div className="md:col-span-2">
+                <label className="block text-sm font-bold text-slate-700 mb-2">
+                  האם זוכה
+                </label>
+                <div className={`px-4 py-3 border-2 rounded-xl ${
+                  formData.isCredited === "כן"
+                    ? "border-green-300 bg-green-50 text-green-800 font-bold"
+                    : "border-slate-200 bg-slate-50 text-slate-600"
+                }`}>
+                  {formData.isCredited}
+                  {formData.isCredited === "כן" && (
+                    <span className="text-xs text-green-600 mr-2">
+                      (משוייך להזמנה)
+                    </span>
+                  )}
+                </div>
               </div>
 
               {/* הערות */}

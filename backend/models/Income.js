@@ -25,15 +25,22 @@ const incomeSchema = new mongoose.Schema({
     default: "",
   },
 
-  // פרויקט משוייך (אופציונלי)
-  projectId: {
+  // הזמנה משויכת (אופציונלי)
+  invoiceId: {
     type: mongoose.Schema.Types.ObjectId,
-    ref: "Project",
+    ref: "Invoice",
     default: null,
   },
-  projectName: {
+  invoiceNumber: {
     type: String,
     default: "",
+  },
+
+  // האם זוכה לאחר שיוך להזמנה
+  isCredited: {
+    type: String,
+    enum: ["כן", "לא"],
+    default: "לא",
   },
 
   // מי יצר
