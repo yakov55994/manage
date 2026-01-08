@@ -19,7 +19,7 @@ export default function UpdateIncome() {
     amount: "",
     description: "",
     notes: "",
-    invoiceId: null,
+    orderId: null,
     isCredited: "לא",
   });
 
@@ -48,12 +48,12 @@ export default function UpdateIncome() {
         amount: income.amount || "",
         description: income.description || "",
         notes: income.notes || "",
-        invoiceId: income.invoiceId?._id || income.invoiceId || null,
+        orderId: income.orderId?._id || income.orderId || null,
         isCredited: income.isCredited || "לא",
       });
 
-      if (income.invoiceId && typeof income.invoiceId === 'object') {
-        setSelectedOrder(income.invoiceId);
+      if (income.orderId && typeof income.orderId === 'object') {
+        setSelectedOrder(income.orderId);
       }
     } catch (error) {
       console.error("Error loading income:", error);
@@ -75,7 +75,7 @@ export default function UpdateIncome() {
       // שויכו להזמנה - עדכן שדות אוטומטית
       setFormData(prev => ({
         ...prev,
-        invoiceId: order._id,
+        orderId: order._id,
         isCredited: "כן",
         // התאריך תשלום יהיה תאריך הזיכוי (תאריך ההכנסה הנוכחי או התאריך שהמשתמש בחר)
         date: prev.date || new Date().toISOString().split("T")[0],
@@ -85,7 +85,7 @@ export default function UpdateIncome() {
       setSelectedOrder(null);
       setFormData(prev => ({
         ...prev,
-        invoiceId: null,
+        orderId: null,
         isCredited: "לא",
       }));
     }
@@ -230,7 +230,7 @@ export default function UpdateIncome() {
                       </div>
                       <div>
                         <div className="font-bold text-slate-800">
-                          הזמנה #{selectedOrder.orderNumber || selectedOrder.invoiceNumber}
+                          הזמנה #{selectedOrder.orderNumber}
                         </div>
                         <div className="text-sm text-slate-500">
                           {selectedOrder.projectName} • {selectedOrder.invitingName}
@@ -259,7 +259,7 @@ export default function UpdateIncome() {
                   isOpen={isOrderModalOpen}
                   onClose={() => setIsOrderModalOpen(false)}
                   onSelect={handleOrderSelect}
-                  selectedOrderId={formData.invoiceId}
+                  selectedOrderId={formData.orderId}
                 />
               </div>
 

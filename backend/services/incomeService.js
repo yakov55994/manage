@@ -1,5 +1,5 @@
 import Income from "../models/Income.js";
-import Invoice from "../models/Invoice.js";
+import Order from "../models/Order.js";
 
 export default {
   // קבלת כל ההכנסות
@@ -13,7 +13,7 @@ export default {
     // }
 
     const incomes = await Income.find(query)
-      .populate("invoiceId", "invoiceNumber invitingName totalAmount")
+      .populate("orderId", "orderNumber projectName sum")
       .sort({ date: -1 });
 
     return incomes;
@@ -21,7 +21,7 @@ export default {
 
   // קבלת הכנסה לפי ID
   async getIncomeById(user, incomeId) {
-    const income = await Income.findById(incomeId).populate("invoiceId", "invoiceNumber invitingName totalAmount");
+    const income = await Income.findById(incomeId).populate("orderId", "orderNumber projectName sum");
 
     if (!income) {
       throw new Error("הכנסה לא נמצאה");
@@ -41,11 +41,11 @@ export default {
       createdByName: user.username || user.name || "משתמש",
     };
 
-    // אם יש invoiceId, קבל את מספר ההזמנה
-    if (data.invoiceId) {
-      const invoice = await Invoice.findById(data.invoiceId);
-      if (invoice) {
-        incomeData.invoiceNumber = invoice.invoiceNumber;
+    // אם יש orderId, קבל את מספר ההזמנה
+    if (data.orderId) {
+      const order = await Order.findById(data.orderId);
+      if (order) {
+        incomeData.orderNumber = order.orderNumber;
       }
     }
 
@@ -77,16 +77,16 @@ export default {
     // אם נרצה בעתיד להגביל, נוסיף כאן לוגיקה דומה
 
     // אם משנים את ההזמנה, עדכן את מספר ההזמנה
-    if (data.invoiceId && data.invoiceId !== String(income.invoiceId)) {
-      const invoice = await Invoice.findById(data.invoiceId);
-      if (invoice) {
-        data.invoiceNumber = invoice.invoiceNumber;
+    if (data.orderId && data.orderId !== String(income.orderId)) {
+      const order = await Order.findById(data.orderId);
+      if (order) {
+        data.orderNumber = order.orderNumber;
       }
     }
 
     const updatedIncome = await Income.findByIdAndUpdate(incomeId, data, {
       new: true,
-    }).populate("invoiceId", "invoiceNumber invitingName totalAmount");
+    }).populate("orderId", "orderNumber projectName sum");
 
     return updatedIncome;
   },
@@ -116,10 +116,10 @@ export default {
       $or: [
         { description: regex },
         { notes: regex },
-        { invoiceNumber: regex },
+        { orderNumber: regex },
       ],
     })
-      .populate("invoiceId", "invoiceNumber invitingName totalAmount")
+      .populate("orderId", "orderNumber projectName sum")
       .sort({ date: -1 })
       .limit(100);
 

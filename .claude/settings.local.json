@@ -24,7 +24,10 @@
       "Bash(lsof:*)",
       "Bash(xargs kill:*)",
       "Bash(sudo lsof:*)",
-      "Bash(xargs:*)"
+      "Bash(xargs:*)",
+      "Bash(node scripts/migrateIncomeToOrders.js:*)",
+      "Bash(ls:*)",
+      "Bash(node scripts/cleanupIncomeFields.js:*)"
     ]
   }
 }

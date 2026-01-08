@@ -3,7 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 import { Upload, FileSpreadsheet, Plus, ArrowLeft, DollarSign } from "lucide-react";
 import api from "../../api/api";
-import InvoiceSelector from "../../Components/InvoiceSelector";
+import OrderSelector from "../../Components/OrderSelector";
 
 export default function CreateIncome() {
   const navigate = useNavigate();
@@ -16,7 +16,7 @@ export default function CreateIncome() {
     amount: "",
     description: "",
     notes: "",
-    invoiceId: null,
+    orderId: null,
     isCredited: "לא",
   });
 
@@ -29,12 +29,12 @@ export default function CreateIncome() {
   };
 
   // טיפול בבחירת הזמנה
-  const handleInvoiceSelect = (invoice) => {
-    if (invoice) {
+  const handleOrderSelect = (order) => {
+    if (order) {
       // שויכו להזמנה - עדכן שדות אוטומטית
       setSingleIncome(prev => ({
         ...prev,
-        invoiceId: invoice._id,
+        orderId: order._id,
         isCredited: "כן",
         // התאריך תשלום יהיה תאריך הזיכוי (תאריך ההכנסה הנוכחי או התאריך שהמשתמש בחר)
         // אם עדיין לא בחר תאריך, נשתמש בתאריך של היום
@@ -44,7 +44,7 @@ export default function CreateIncome() {
       // ביטול שיוך
       setSingleIncome(prev => ({
         ...prev,
-        invoiceId: null,
+        orderId: null,
         isCredited: "לא",
       }));
     }
@@ -244,9 +244,9 @@ export default function CreateIncome() {
 
                 {/* שיוך להזמנה */}
                 <div className="md:col-span-2">
-                  <InvoiceSelector
-                    value={singleIncome.invoiceId}
-                    onSelect={handleInvoiceSelect}
+                  <OrderSelector
+                    value={singleIncome.orderId}
+                    onSelect={handleOrderSelect}
                     label="שיוך להזמנה (אופציונלי)"
                     placeholder="בחר הזמנה..."
                     allowClear={true}

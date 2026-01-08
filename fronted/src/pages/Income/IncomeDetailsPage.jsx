@@ -87,7 +87,7 @@ const IncomeDetailsPage = () => {
     try {
       setLinking(true);
       await api.put(`/incomes/${income._id}`, {
-        invoiceId: invoice._id,
+        orderId: invoice._id,
         isCredited: "כן",
         date: income.date, // שמירת תאריך הזיכוי המקורי
         amount: income.amount,
@@ -229,7 +229,7 @@ const IncomeDetailsPage = () => {
                   הזמנה
                 </div>
                 <div className="text-xl font-bold text-slate-900">
-                  {income.invoiceNumber ? `הזמנה #${income.invoiceNumber}` : "—"}
+                  {income.orderNumber ? `הזמנה #${income.orderNumber}` : "—"}
                 </div>
                 {income.isCredited && (
                   <div className="mt-2">
@@ -292,7 +292,7 @@ const IncomeDetailsPage = () => {
               className="flex-1 flex items-center justify-center gap-2 px-6 py-3 bg-gradient-to-r from-purple-500 to-purple-600 text-white font-bold rounded-xl hover:from-purple-600 hover:to-purple-700 transition-all shadow-lg"
             >
               <LinkIcon className="w-5 h-5" />
-              {income.invoiceId ? "שנה הזמנה" : "שייך להזמנה"}
+              {income.orderId ? "שנה הזמנה" : "שייך להזמנה"}
             </button>
 
             <button

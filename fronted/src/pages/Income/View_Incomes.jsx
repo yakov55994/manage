@@ -15,7 +15,7 @@ import {
   Link,
 } from "lucide-react";
 import { toast } from "sonner";
-import InvoiceSelector from "../../Components/InvoiceSelector";
+import OrderSelector from "../../Components/OrderSelector";
 
 export default function ViewIncomes() {
   const navigate = useNavigate();
@@ -52,7 +52,7 @@ export default function ViewIncomes() {
       return (
         income.description?.toLowerCase().includes(q) ||
         income.notes?.toLowerCase().includes(q) ||
-        income.invoiceNumber?.toLowerCase().includes(q) ||
+        income.orderNumber?.toString().includes(q) ||
         income.amount?.toString().includes(q)
       );
     })
@@ -109,7 +109,7 @@ export default function ViewIncomes() {
       // אם אין הזמנה - ביטול שיוך
       if (!invoice) {
         await api.put(`/incomes/${linkModal.incomeId}`, {
-          invoiceId: null,
+          orderId: null,
           isCredited: "לא",
           date: currentIncome.date,
           amount: currentIncome.amount,
@@ -120,7 +120,7 @@ export default function ViewIncomes() {
       } else {
         // שיוך להזמנה חדשה
         await api.put(`/incomes/${linkModal.incomeId}`, {
-          invoiceId: invoice._id,
+          orderId: invoice._id,
           isCredited: "כן",
           date: currentIncome.date,
           amount: currentIncome.amount,
@@ -324,7 +324,7 @@ export default function ViewIncomes() {
                             {income.description}
                           </td>
                           <td className="px-6 py-4 text-sm text-slate-600">
-                            {income.invoiceNumber ? `הזמנה #${income.invoiceNumber}` : "—"}
+                            {income.orderNumber ? `הזמנה #${income.orderNumber}` : "—"}
                           </td>
                           <td className="px-6 py-4 text-sm">
                             {income.isCredited === "כן" ? (
@@ -427,11 +427,11 @@ export default function ViewIncomes() {
 
                       {/* Invoice & Status */}
                       <div className="mb-3 flex items-center gap-3">
-                        {income.invoiceNumber && (
+                        {income.orderNumber && (
                           <div className="flex-1">
                             <div className="text-xs text-slate-500 mb-1">הזמנה</div>
                             <div className="text-sm font-medium text-slate-700">
-                              הזמנה #{income.invoiceNumber}
+                              הזמנה #{income.orderNumber}
                             </div>
                           </div>
                         )}
@@ -582,10 +582,12 @@ export default function ViewIncomes() {
                 </div>
               </div>
 
-              <InvoiceSelector
+              <OrderSelector
+                value={incomes.find(i => i._id === linkModal.incomeId)?.orderId?._id || null}
                 onSelect={handleLinkToInvoice}
-                selectedInvoiceId={incomes.find(i => i._id === linkModal.incomeId)?.invoiceId?._id || null}
-                disabled={linking}
+                allowClear={true}
+                label="בחר הזמנה לשיוך"
+                placeholder="חפש הזמנה..."
               />
 
               <div className="mt-4 flex justify-end">

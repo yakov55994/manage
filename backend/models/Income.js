@@ -26,14 +26,14 @@ const incomeSchema = new mongoose.Schema({
   },
 
   // הזמנה משויכת (אופציונלי)
-  invoiceId: {
+  orderId: {
     type: mongoose.Schema.Types.ObjectId,
-    ref: "Invoice",
+    ref: "Order",
     default: null,
   },
-  invoiceNumber: {
-    type: String,
-    default: "",
+  orderNumber: {
+    type: Number,
+    default: null,
   },
 
   // האם זוכה לאחר שיוך להזמנה
