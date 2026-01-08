@@ -19,6 +19,8 @@ import {
   ExternalLink,
   Download,
   Paperclip,
+  CheckCircle,
+  X,
 } from "lucide-react";
 import { toast } from "sonner";
 import { useAuth } from "../../context/AuthContext";
@@ -500,47 +502,231 @@ const OrderDetailsPage = () => {
                     </div>
                   </div>
                 </div>
+
+                {/* ספק */}
+                {order.supplierId && (
+                  <div className="group p-4 rounded-xl bg-gradient-to-br from-orange-50 to-amber-50 border-2 border-orange-200 hover:border-orange-400 transition-all">
+                    <div className="flex items-start gap-3">
+                      <div className="p-2 rounded-lg bg-orange-100">
+                        <Briefcase className="w-4 h-4 text-orange-600" />
+                      </div>
+                      <div className="flex-1">
+                        <p className="text-xs font-bold text-orange-600 mb-1">
+                          ספק
+                        </p>
+                        <p className="text-sm font-bold text-slate-900">
+                          {typeof order.supplierId === 'object' ? order.supplierId.name : order.supplierId}
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                {/* תאריך הגשה */}
+                {order.submittedDate && order.status !== "לא הוגש" && (
+                  <div className="group p-4 rounded-xl bg-gradient-to-br from-orange-50 to-amber-50 border-2 border-orange-200 hover:border-orange-400 transition-all">
+                    <div className="flex items-start gap-3">
+                      <div className="p-2 rounded-lg bg-orange-100">
+                        <Calendar className="w-4 h-4 text-orange-600" />
+                      </div>
+                      <div className="flex-1">
+                        <p className="text-xs font-bold text-orange-600 mb-1">
+                          תאריך הגשה
+                        </p>
+                        <p className="text-sm font-bold text-slate-900">
+                          {formatHebrewDate(order.submittedDate)}
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                )}
               </div>
             </div>
           </div>
         </div>
 
-        {/* Files Section */}
-        <div className="relative">
-          <div className="absolute -inset-2 bg-gradient-to-r from-purple-500 via-indigo-500 to-blue-500 rounded-2xl sm:rounded-3xl opacity-10 blur-xl"></div>
+        {/* Order Files Section */}
+        {order.files && order.files.length > 0 && (
+          <div className="relative mb-4 sm:mb-5 md:mb-6">
+            <div className="absolute -inset-2 bg-gradient-to-r from-orange-500 via-amber-500 to-yellow-500 rounded-2xl sm:rounded-3xl opacity-10 blur-xl"></div>
 
-          <div className="relative bg-white/90 backdrop-blur-xl rounded-2xl sm:rounded-3xl shadow-xl shadow-purple-500/10 border border-white/50 overflow-hidden">
-            <div className="bg-gradient-to-r from-purple-500 via-indigo-500 to-blue-500 p-1">
-              <div className="bg-white/95 backdrop-blur-xl p-4">
-                <div className="flex items-center gap-3">
-                  <div className="p-2 rounded-xl bg-gradient-to-br from-purple-100 to-indigo-100">
-                    <Paperclip className="w-5 h-5 text-purple-600" />
-                  </div>
-                  <h2 className="text-2xl font-bold text-slate-900">
-                    קבצים מצורפים
-                  </h2>
-                  {order.files && order.files.length > 0 && (
-                    <span className="mr-auto px-3 py-1 rounded-full bg-purple-100 text-purple-700 text-sm font-bold">
+            <div className="relative bg-white/90 backdrop-blur-xl rounded-2xl sm:rounded-3xl shadow-xl shadow-orange-500/10 border border-white/50 overflow-hidden">
+              <div className="bg-gradient-to-r from-orange-500 via-amber-500 to-yellow-500 p-1">
+                <div className="bg-white/95 backdrop-blur-xl p-4">
+                  <div className="flex items-center gap-3">
+                    <div className="p-2 rounded-xl bg-gradient-to-br from-orange-100 to-amber-100">
+                      <FileText className="w-5 h-5 text-orange-600" />
+                    </div>
+                    <h2 className="text-2xl font-bold text-slate-900">
+                      מסמך הזמנה
+                    </h2>
+                    <span className="mr-auto px-3 py-1 rounded-full bg-orange-100 text-orange-700 text-sm font-bold">
                       {order.files.length}
                     </span>
-                  )}
+                  </div>
                 </div>
               </div>
-            </div>
 
-            <div className="p-4 sm:p-5 md:p-6">
-              {order.files && order.files.length > 0 ? (
+              <div className="p-4 sm:p-5 md:p-6">
                 <div className="space-y-3">
                   {order.files.map((file, index) => (
                     <div key={index}>{renderFile(file, index)}</div>
                   ))}
                 </div>
-              ) : (
-                <div className="text-center py-8 text-slate-600">
-                  <Paperclip className="w-12 h-12 mx-auto mb-3 opacity-50" />
-                  <p className="font-bold text-lg">אין קבצים מצורפים</p>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Financial Documents Section */}
+        <div className="relative mb-4 sm:mb-5 md:mb-6">
+          <div className="absolute -inset-2 bg-gradient-to-r from-blue-500 via-indigo-500 to-purple-500 rounded-2xl sm:rounded-3xl opacity-10 blur-xl"></div>
+
+          <div className="relative bg-white/90 backdrop-blur-xl rounded-2xl sm:rounded-3xl shadow-xl shadow-blue-500/10 border border-white/50 overflow-hidden">
+            <div className="bg-gradient-to-r from-blue-500 via-indigo-500 to-purple-500 p-1">
+              <div className="bg-white/95 backdrop-blur-xl p-4">
+                <div className="flex items-center gap-3">
+                  <div className="p-2 rounded-xl bg-gradient-to-br from-blue-100 to-indigo-100">
+                    <FileText className="w-5 h-5 text-blue-600" />
+                  </div>
+                  <h2 className="text-2xl font-bold text-slate-900">
+                    מסמכים פיננסיים
+                  </h2>
                 </div>
-              )}
+              </div>
+            </div>
+
+            <div className="p-4 sm:p-5 md:p-6">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                {/* חשבונית */}
+                <div className="p-6 rounded-xl bg-gradient-to-br from-blue-50 to-blue-100 border-2 border-blue-200">
+                  <h3 className="text-lg font-bold text-blue-900 mb-4 flex items-center gap-2">
+                    <FileText className="w-5 h-5" />
+                    חשבונית
+                  </h3>
+
+                  {order.invoiceNumber || (order.invoiceFiles && order.invoiceFiles.length > 0) ? (
+                    <div className="space-y-3">
+                      {order.invoiceNumber && (
+                        <div className="flex items-start gap-2">
+                          <Hash className="w-4 h-4 text-blue-600 mt-1" />
+                          <div>
+                            <p className="text-xs text-blue-600 font-semibold">מספר חשבונית</p>
+                            <p className="text-sm font-bold text-slate-900">{order.invoiceNumber}</p>
+                          </div>
+                        </div>
+                      )}
+
+                      {order.invoiceDate && (
+                        <div className="flex items-start gap-2">
+                          <Calendar className="w-4 h-4 text-blue-600 mt-1" />
+                          <div>
+                            <p className="text-xs text-blue-600 font-semibold">תאריך חשבונית</p>
+                            <p className="text-sm font-bold text-slate-900">{formatHebrewDate(order.invoiceDate)}</p>
+                          </div>
+                        </div>
+                      )}
+
+                      {order.invoiceFiles && order.invoiceFiles.length > 0 && (
+                        <div>
+                          <p className="text-xs text-blue-600 font-semibold mb-2">קבצי חשבונית ({order.invoiceFiles.length})</p>
+                          <div className="space-y-2">
+                            {order.invoiceFiles.map((file, index) => (
+                              <div key={index}>{renderFile(file, index)}</div>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  ) : (
+                    <div className="text-center py-4 text-slate-500">
+                      <FileText className="w-8 h-8 mx-auto mb-2 opacity-50" />
+                      <p className="text-sm">אין חשבונית</p>
+                    </div>
+                  )}
+                </div>
+
+                {/* קבלה */}
+                <div className="p-6 rounded-xl bg-gradient-to-br from-green-50 to-green-100 border-2 border-green-200">
+                  <h3 className="text-lg font-bold text-green-900 mb-4 flex items-center gap-2">
+                    <FileText className="w-5 h-5" />
+                    קבלה
+                  </h3>
+
+                  {order.receiptNumber || (order.receiptFiles && order.receiptFiles.length > 0) ? (
+                    <div className="space-y-3">
+                      {order.receiptNumber && (
+                        <div className="flex items-start gap-2">
+                          <Hash className="w-4 h-4 text-green-600 mt-1" />
+                          <div>
+                            <p className="text-xs text-green-600 font-semibold">מספר קבלה</p>
+                            <p className="text-sm font-bold text-slate-900">{order.receiptNumber}</p>
+                          </div>
+                        </div>
+                      )}
+
+                      {order.receiptDate && (
+                        <div className="flex items-start gap-2">
+                          <Calendar className="w-4 h-4 text-green-600 mt-1" />
+                          <div>
+                            <p className="text-xs text-green-600 font-semibold">תאריך קבלה</p>
+                            <p className="text-sm font-bold text-slate-900">{formatHebrewDate(order.receiptDate)}</p>
+                          </div>
+                        </div>
+                      )}
+
+                      {order.receiptFiles && order.receiptFiles.length > 0 && (
+                        <div>
+                          <p className="text-xs text-green-600 font-semibold mb-2">קבצי קבלה ({order.receiptFiles.length})</p>
+                          <div className="space-y-2">
+                            {order.receiptFiles.map((file, index) => (
+                              <div key={index}>{renderFile(file, index)}</div>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  ) : (
+                    <div className="text-center py-4 text-slate-500">
+                      <FileText className="w-8 h-8 mx-auto mb-2 opacity-50" />
+                      <p className="text-sm">אין קבלה</p>
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              {/* זיכוי */}
+              <div className={`mt-6 p-4 rounded-xl border-2 ${
+                order.isCredited
+                  ? 'bg-gradient-to-br from-purple-50 to-purple-100 border-purple-300'
+                  : 'bg-gradient-to-br from-slate-50 to-slate-100 border-slate-300'
+              }`}>
+                <div className="flex items-center gap-3">
+                  <div className={`p-2 rounded-lg ${order.isCredited ? 'bg-purple-200' : 'bg-slate-200'}`}>
+                    {order.isCredited ? (
+                      <CheckCircle className="w-5 h-5 text-purple-700" />
+                    ) : (
+                      <X className="w-5 h-5 text-slate-600" />
+                    )}
+                  </div>
+                  <div className="flex-1">
+                    <p className={`text-sm font-bold ${order.isCredited ? 'text-purple-900' : 'text-slate-900'}`}>
+                      {order.isCredited ? 'ההזמנה זוכתה' : 'ההזמנה לא זוכתה'}
+                    </p>
+                    <p className={`text-xs ${order.isCredited ? 'text-purple-700' : 'text-slate-600'}`}>
+                      {order.isCredited ? 'הזמנה זו סומנה כזיכוי' : 'הזמנה זו לא סומנה כזיכוי'}
+                    </p>
+                    {order.isCredited && order.creditDate && (
+                      <div className="flex items-center gap-2 mt-2">
+                        <Calendar className="w-3 h-3 text-purple-600" />
+                        <p className="text-xs text-purple-800">
+                          <span className="font-semibold">תאריך זיכוי:</span> {formatHebrewDate(order.creditDate)}
+                        </p>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              </div>
             </div>
           </div>
         </div>

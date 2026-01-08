@@ -1445,6 +1445,9 @@ const OrdersPage = () => {
                       מספר הזמנה
                     </th>
                     <th className="px-6 py-4 text-sm font-bold text-center text-white">
+                      שם מזמין
+                    </th>
+                    <th className="px-6 py-4 text-sm font-bold text-center text-white">
                       סכום
                     </th>
                     <th className="px-6 py-4 text-sm font-bold text-center text-white">
@@ -1452,6 +1455,9 @@ const OrdersPage = () => {
                     </th>
                     <th className="px-6 py-4 text-sm font-bold text-center text-white">
                       שם פרויקט
+                    </th>
+                    <th className="px-6 py-4 text-sm font-bold text-center text-white">
+                      תאריך יצירה
                     </th>
                     <th className="px-6 py-4 text-sm font-bold text-center text-white">
                       קבצים
@@ -1477,6 +1483,10 @@ const OrdersPage = () => {
                         {order.orderNumber}
                       </td>
 
+                      <td className="px-6 py-4 text-sm font-medium text-center text-slate-900">
+                        {order.invitingName || "-"}
+                      </td>
+
                       <td className="px-6 py-4 text-sm font-bold text-center text-slate-900">
                         {formatNumber(order.sum)} ₪
                       </td>
@@ -1487,6 +1497,10 @@ const OrdersPage = () => {
 
                       <td className="px-6 py-4 text-sm font-medium text-center text-slate-900">
                         {order.projectName}
+                      </td>
+
+                      <td className="px-6 py-4 text-sm font-medium text-center text-slate-900">
+                        {formatDate(order.createdAt)}
                       </td>
 
                       {/* 🆕 עמודת קבצים */}
@@ -1607,21 +1621,32 @@ const OrdersPage = () => {
 
                 <div className="grid grid-cols-2 gap-3 mb-3">
                   <div>
+                    <div className="text-xs text-slate-500 mb-1">שם מזמין</div>
+                    <div className="text-sm font-medium text-slate-900">{order.invitingName || "-"}</div>
+                  </div>
+                  <div>
                     <div className="text-xs text-slate-500 mb-1">סטטוס</div>
                     <div className="text-sm font-medium text-slate-900">{order.status}</div>
                   </div>
+                </div>
+
+                <div className="grid grid-cols-2 gap-3 mb-3">
                   <div>
-                    <div className="text-xs text-slate-500 mb-1">קבצים</div>
-                    <div className="flex items-center gap-1">
-                      <Paperclip className="w-3 h-3 text-orange-500" />
-                      <span className="text-sm font-bold text-slate-900">{getOrderFilesCount(order)}</span>
-                    </div>
+                    <div className="text-xs text-slate-500 mb-1">פרויקט</div>
+                    <div className="text-sm font-medium text-slate-900">{order.projectName}</div>
+                  </div>
+                  <div>
+                    <div className="text-xs text-slate-500 mb-1">תאריך יצירה</div>
+                    <div className="text-sm font-medium text-slate-900">{formatDate(order.createdAt)}</div>
                   </div>
                 </div>
 
                 <div className="mb-3">
-                  <div className="text-xs text-slate-500 mb-1">פרויקט</div>
-                  <div className="text-sm font-medium text-slate-900">{order.projectName}</div>
+                  <div className="text-xs text-slate-500 mb-1">קבצים</div>
+                  <div className="flex items-center gap-1">
+                    <Paperclip className="w-3 h-3 text-orange-500" />
+                    <span className="text-sm font-bold text-slate-900">{getOrderFilesCount(order)}</span>
+                  </div>
                 </div>
 
                 {/* חשבונית/קבלה/זיכוי */}

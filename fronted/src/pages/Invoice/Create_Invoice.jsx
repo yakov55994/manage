@@ -471,7 +471,7 @@ const CreateInvoice = () => {
                     * חובה לבחור פרויקט מממן למילגה
                   </label>
                   <ProjectSelector
-                    projects={projects.filter((p) => p._id !== MILGA_ID)}
+                    projects={projects}
                     selectedProjectId={fundedFromProjectId}
                     onProjectChange={(projectId) => setFundedFromProjectId(projectId)}
                     multiSelect={false}

@@ -162,6 +162,9 @@ const CreateOrder = () => {
         // ✅ שדות זיכוי
         isCredited: false,
         creditDate: "",
+        // ✅ שדות מילגה
+        isScholarship: false,
+        scholarshipProjectId: "",
       },
     ]);
   };
@@ -507,6 +510,9 @@ const CreateOrder = () => {
             // ✅ שדות זיכוי
             isCredited: order.isCredited || false,
             creditDate: order.creditDate || undefined,
+            // ✅ שדות מילגה
+            isScholarship: order.isScholarship || false,
+            scholarshipProjectId: order.isScholarship ? order.scholarshipProjectId : undefined,
           };
         })
       );
@@ -1020,6 +1026,53 @@ const CreateOrder = () => {
                           }
                           className="w-full rounded-xl border-2 border-slate-200 bg-white px-4 py-3 text-m font-medium focus:border-blue-500 focus:outline-none focus:ring-4 focus:ring-blue-500/20 transition-all cursor-pointer"
                         />
+                      </div>
+
+                      {/* ✅ מילגה */}
+                      <div className="md:col-span-2 p-4 rounded-xl bg-purple-50 border-2 border-purple-200">
+                        <div className="flex items-center gap-3 mb-3">
+                          <input
+                            type="checkbox"
+                            id={`isScholarship-${index}`}
+                            checked={order.isScholarship || false}
+                            onChange={(e) =>
+                              handleOrderChange(index, "isScholarship", e.target.checked)
+                            }
+                            disabled={!canEditOrders}
+                            className="w-5 h-5 text-purple-600 border-purple-300 rounded focus:ring-purple-500"
+                          />
+                          <label
+                            htmlFor={`isScholarship-${index}`}
+                            className="text-m font-bold text-purple-900 cursor-pointer"
+                          >
+                            חשבונית מילגה
+                          </label>
+                        </div>
+
+                        {order.isScholarship && (
+                          <div className="group">
+                            <label className="text-m font-bold text-slate-700 mb-2 flex items-center gap-2">
+                              <Briefcase className="w-4 h-4 text-purple-600" />
+                              פרויקט ממנו יורד התקציב
+                            </label>
+                            <select
+                              value={order.scholarshipProjectId || ""}
+                              onChange={(e) =>
+                                handleOrderChange(index, "scholarshipProjectId", e.target.value)
+                              }
+                              disabled={!canEditOrders}
+                              className="w-full rounded-xl border-2 border-purple-200 bg-white px-4 py-3 text-m font-medium focus:border-purple-500 focus:outline-none focus:ring-4 focus:ring-purple-500/20 transition-all"
+                            >
+                              <option value="">בחר פרויקט...</option>
+                              <option value="scholarship">מילגה</option>
+                              {projects.map((project) => (
+                                <option key={project._id} value={project._id}>
+                                  {project.name}
+                                </option>
+                              ))}
+                            </select>
+                          </div>
+                        )}
                       </div>
 
                       <div className="md:col-span-2">
