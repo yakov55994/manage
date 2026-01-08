@@ -59,7 +59,8 @@ const OrderDetailsPage = () => {
 
                 // עיבוד קבצים
                 const normalizeFiles = (filesArray) => {
-                    return (filesArray || []).map((file, i) => ({
+                    if (!filesArray || filesArray.length === 0) return [];
+                    return filesArray.map((file, i) => ({
                         ...file,
                         name: file.name || file.originalName || `קובץ ${i + 1}`,
                         url: file.url || file.fileUrl || file.secure_url,
@@ -69,6 +70,10 @@ const OrderDetailsPage = () => {
                 data.files = normalizeFiles(data.files);
                 data.invoiceFiles = normalizeFiles(data.invoiceFiles);
                 data.receiptFiles = normalizeFiles(data.receiptFiles);
+
+                console.log('📦 Order files:', data.files);
+                console.log('📄 Invoice files:', data.invoiceFiles);
+                console.log('🧾 Receipt files:', data.receiptFiles);
 
                 setOrder(data);
             } catch (err) {
@@ -315,10 +320,66 @@ const OrderDetailsPage = () => {
                     </div>
 
                     {/* FILES */}
-                    <div className="space-y-8">
-                        <FileSection title="קבצי הזמנה" files={order.files} icon={<Paperclip className="w-6 h-6 text-orange-600" />} />
-                        <FileSection title="קבצי חשבונית" files={order.invoiceFiles} icon={<FileText className="w-6 h-6 text-blue-600" />} />
-                        <FileSection title="קבצי קבלה" files={order.receiptFiles} icon={<FileText className="w-6 h-6 text-green-600" />} />
+                    <div className="space-y-6">
+                        {/* מסמך הזמנה */}
+                        <div className="p-6 bg-gradient-to-br from-orange-50 to-amber-50 rounded-2xl border-2 border-orange-200">
+                            <h3 className="text-xl font-bold text-slate-900 mb-4 flex items-center gap-2">
+                                <Paperclip className="w-5 h-5 text-orange-600" />
+                                מסמך הזמנה
+                            </h3>
+                            {(!order.files || order.files.length === 0) ? (
+                                <div className="text-center py-8 bg-white/50 rounded-xl border-2 border-dashed border-orange-200">
+                                    <Paperclip className="w-12 h-12 mx-auto mb-2 text-orange-300" />
+                                    <p className="text-orange-600 font-medium">אין מסמכים של ההזמנה</p>
+                                </div>
+                            ) : (
+                                <div className="space-y-3">
+                                    {order.files.map((file, idx) => (
+                                        <FileItem key={idx} file={file} />
+                                    ))}
+                                </div>
+                            )}
+                        </div>
+
+                        {/* קבצי חשבונית */}
+                        <div className="p-6 bg-gradient-to-br from-blue-50 to-indigo-50 rounded-2xl border-2 border-blue-200">
+                            <h3 className="text-xl font-bold text-slate-900 mb-4 flex items-center gap-2">
+                                <FileText className="w-5 h-5 text-blue-600" />
+                                קבצי חשבונית
+                            </h3>
+                            {(!order.invoiceFiles || order.invoiceFiles.length === 0) ? (
+                                <div className="text-center py-8 bg-white/50 rounded-xl border-2 border-dashed border-blue-200">
+                                    <FileText className="w-12 h-12 mx-auto mb-2 text-blue-300" />
+                                    <p className="text-blue-600 font-medium">אין קבצי חשבונית</p>
+                                </div>
+                            ) : (
+                                <div className="space-y-3">
+                                    {order.invoiceFiles.map((file, idx) => (
+                                        <FileItem key={idx} file={file} />
+                                    ))}
+                                </div>
+                            )}
+                        </div>
+
+                        {/* קבצי קבלה */}
+                        <div className="p-6 bg-gradient-to-br from-green-50 to-emerald-50 rounded-2xl border-2 border-green-200">
+                            <h3 className="text-xl font-bold text-slate-900 mb-4 flex items-center gap-2">
+                                <FileText className="w-5 h-5 text-green-600" />
+                                קבצי קבלה
+                            </h3>
+                            {(!order.receiptFiles || order.receiptFiles.length === 0) ? (
+                                <div className="text-center py-8 bg-white/50 rounded-xl border-2 border-dashed border-green-200">
+                                    <FileText className="w-12 h-12 mx-auto mb-2 text-green-300" />
+                                    <p className="text-green-600 font-medium">אין קבצי קבלה</p>
+                                </div>
+                            ) : (
+                                <div className="space-y-3">
+                                    {order.receiptFiles.map((file, idx) => (
+                                        <FileItem key={idx} file={file} />
+                                    ))}
+                                </div>
+                            )}
+                        </div>
                     </div>
                 </div>
 
@@ -367,29 +428,6 @@ const DetailCard = ({ label, value, icon, fullWidth = false }) => (
         </div>
     </div>
 );
-
-const FileSection = ({ title, files, icon }) => {
-    return (
-        <div>
-            <h2 className="text-2xl font-bold flex items-center gap-2 mb-4">
-                {icon}
-                {title}
-            </h2>
-            {(!files || files.length === 0) ? (
-                <div className="p-6 bg-slate-50 border-2 border-slate-200 rounded-xl text-center">
-                    <FileText className="w-12 h-12 mx-auto mb-2 text-slate-400" />
-                    <p className="text-slate-600 font-medium">אין קבצים</p>
-                </div>
-            ) : (
-                <div className="space-y-3">
-                    {files.map((file, idx) => (
-                        <FileItem key={idx} file={file} />
-                    ))}
-                </div>
-            )}
-        </div>
-    );
-}
 
 const FileItem = ({ file }) => {
     const url = file.url;

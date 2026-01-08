@@ -546,37 +546,44 @@ const OrderDetailsPage = () => {
         </div>
 
         {/* Order Files Section */}
-        {order.files && order.files.length > 0 && (
-          <div className="relative mb-4 sm:mb-5 md:mb-6">
-            <div className="absolute -inset-2 bg-gradient-to-r from-orange-500 via-amber-500 to-yellow-500 rounded-2xl sm:rounded-3xl opacity-10 blur-xl"></div>
+        <div className="relative mb-4 sm:mb-5 md:mb-6">
+          <div className="absolute -inset-2 bg-gradient-to-r from-orange-500 via-amber-500 to-yellow-500 rounded-2xl sm:rounded-3xl opacity-10 blur-xl"></div>
 
-            <div className="relative bg-white/90 backdrop-blur-xl rounded-2xl sm:rounded-3xl shadow-xl shadow-orange-500/10 border border-white/50 overflow-hidden">
-              <div className="bg-gradient-to-r from-orange-500 via-amber-500 to-yellow-500 p-1">
-                <div className="bg-white/95 backdrop-blur-xl p-4">
-                  <div className="flex items-center gap-3">
-                    <div className="p-2 rounded-xl bg-gradient-to-br from-orange-100 to-amber-100">
-                      <FileText className="w-5 h-5 text-orange-600" />
-                    </div>
-                    <h2 className="text-2xl font-bold text-slate-900">
-                      מסמך הזמנה
-                    </h2>
+          <div className="relative bg-white/90 backdrop-blur-xl rounded-2xl sm:rounded-3xl shadow-xl shadow-orange-500/10 border border-white/50 overflow-hidden">
+            <div className="bg-gradient-to-r from-orange-500 via-amber-500 to-yellow-500 p-1">
+              <div className="bg-white/95 backdrop-blur-xl p-4">
+                <div className="flex items-center gap-3">
+                  <div className="p-2 rounded-xl bg-gradient-to-br from-orange-100 to-amber-100">
+                    <FileText className="w-5 h-5 text-orange-600" />
+                  </div>
+                  <h2 className="text-2xl font-bold text-slate-900">
+                    מסמך הזמנה
+                  </h2>
+                  {order.files && order.files.length > 0 && (
                     <span className="mr-auto px-3 py-1 rounded-full bg-orange-100 text-orange-700 text-sm font-bold">
                       {order.files.length}
                     </span>
-                  </div>
+                  )}
                 </div>
               </div>
+            </div>
 
-              <div className="p-4 sm:p-5 md:p-6">
+            <div className="p-4 sm:p-5 md:p-6">
+              {(!order.files || order.files.length === 0) ? (
+                <div className="text-center py-8 bg-gradient-to-br from-orange-50/50 to-amber-50/50 rounded-xl border-2 border-dashed border-orange-200">
+                  <Paperclip className="w-12 h-12 mx-auto mb-3 text-orange-300" />
+                  <p className="text-orange-600 font-bold text-lg">אין מסמכים של ההזמנה</p>
+                </div>
+              ) : (
                 <div className="space-y-3">
                   {order.files.map((file, index) => (
                     <div key={index}>{renderFile(file, index)}</div>
                   ))}
                 </div>
-              </div>
+              )}
             </div>
           </div>
-        )}
+        </div>
 
         {/* Financial Documents Section */}
         <div className="relative mb-4 sm:mb-5 md:mb-6">
