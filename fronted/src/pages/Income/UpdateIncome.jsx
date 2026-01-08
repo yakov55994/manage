@@ -102,7 +102,89 @@ export default function UpdateIncome() {
     setSaving(true);
 
     try {
+      // קודם כל, טען את ההכנסה המקורית כדי לבדוק אם היה orderId קודם
+      const originalIncomeRes = await api.get(`/incomes/${id}`);
+      const originalIncome = originalIncomeRes.data?.data;
+      const oldOrderId = originalIncome?.orderId?._id || originalIncome?.orderId;
+      const newOrderId = formData.orderId;
+
+      console.log('📝 Update income - Old orderId:', oldOrderId, 'New orderId:', newOrderId);
+
+      // עדכן את ההכנסה
       await api.put(`/incomes/${id}`, formData);
+
+      // אם היה orderId קודם ועכשיו אין (ביטול שיוך)
+      if (oldOrderId && !newOrderId) {
+        console.log('🔓 Unlinking order:', oldOrderId);
+        try {
+          const orderRes = await api.get(`/orders/${oldOrderId}`);
+          const orderData = orderRes.data?.data || orderRes.data;
+
+          await api.put(`/orders/${oldOrderId}`, {
+            ...orderData,
+            projectId: typeof orderData.projectId === 'object'
+              ? (orderData.projectId._id || orderData.projectId.$oid)
+              : orderData.projectId,
+            supplierId: typeof orderData.supplierId === 'object'
+              ? (orderData.supplierId?._id || orderData.supplierId?.$oid)
+              : orderData.supplierId,
+            isCredited: false,
+            creditDate: null,
+          });
+          console.log('✅ Order unmarked as credited');
+        } catch (err) {
+          console.error('Error updating old order:', err);
+        }
+      }
+
+      // אם יש orderId חדש (שיוך חדש או שינוי שיוך)
+      if (newOrderId) {
+        console.log('🔗 Linking to order:', newOrderId);
+        try {
+          const orderRes = await api.get(`/orders/${newOrderId}`);
+          const orderData = orderRes.data?.data || orderRes.data;
+
+          await api.put(`/orders/${newOrderId}`, {
+            ...orderData,
+            projectId: typeof orderData.projectId === 'object'
+              ? (orderData.projectId._id || orderData.projectId.$oid)
+              : orderData.projectId,
+            supplierId: typeof orderData.supplierId === 'object'
+              ? (orderData.supplierId?._id || orderData.supplierId?.$oid)
+              : orderData.supplierId,
+            isCredited: true,
+            creditDate: formData.date,
+          });
+          console.log('✅ Order marked as credited');
+        } catch (err) {
+          console.error('Error updating new order:', err);
+        }
+
+        // אם השתנה orderId (היה orderId אחר קודם)
+        if (oldOrderId && oldOrderId !== newOrderId) {
+          console.log('🔄 Changing order link - unlinking old order:', oldOrderId);
+          try {
+            const oldOrderRes = await api.get(`/orders/${oldOrderId}`);
+            const oldOrderData = oldOrderRes.data?.data || oldOrderRes.data;
+
+            await api.put(`/orders/${oldOrderId}`, {
+              ...oldOrderData,
+              projectId: typeof oldOrderData.projectId === 'object'
+                ? (oldOrderData.projectId._id || oldOrderData.projectId.$oid)
+                : oldOrderData.projectId,
+              supplierId: typeof oldOrderData.supplierId === 'object'
+                ? (oldOrderData.supplierId?._id || oldOrderData.supplierId?.$oid)
+                : oldOrderData.supplierId,
+              isCredited: false,
+              creditDate: null,
+            });
+            console.log('✅ Old order unmarked as credited');
+          } catch (err) {
+            console.error('Error updating old order:', err);
+          }
+        }
+      }
+
       toast.success("ההכנסה עודכנה בהצלחה!");
       navigate(`/incomes/${id}`);
     } catch (error) {

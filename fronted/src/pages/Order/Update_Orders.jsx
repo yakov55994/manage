@@ -1028,46 +1028,54 @@ const OrderEditPage = () => {
             </div>
           </div>
 
-          <div className="mb-8">
-            <FileUploader
-              onUploadSuccess={handleFileUpload}
-              folder="orders"
-              label="העלה קבצים נוספים (הזמנה)"
-              disabled={!canEdit}
-              disabledMessage="אין לך הרשאת עריכה"
-            />
-          </div>
+          {/* מסמך הזמנה */}
+          <div className="mb-8 p-6 bg-gradient-to-br from-orange-50 to-amber-50 rounded-2xl border-2 border-orange-200">
+            <h3 className="text-xl font-bold text-slate-900 mb-4 flex items-center gap-2">
+              <FileText className="w-5 h-5 text-orange-600" />
+              עריכת מסמך הזמנה
+            </h3>
 
-          {files.length > 0 && (
-            <div className="mb-8">
-              <label className="block text-sm font-semibold text-gray-700 mb-3">
-                <Upload className="inline w-4 h-4 mr-2" />
-                קבצים מצורפים ({files.length})
-              </label>
-              <div className="space-y-3">
-                {files.map((file, index) => (
-                  <div
-                    key={index}
-                    className="flex items-center justify-between p-4 bg-orange-50 border-2 border-orange-200 rounded-xl"
-                  >
-                    <span className="text-sm font-medium text-gray-700">
-                      {file.name}
-                    </span>
-                    {canEdit && (
-                      <button
-                        type="button"
-                        onClick={() => handleRemoveFile(index)}
-                        className="px-3 py-1 bg-red-100 text-red-600 rounded-lg text-sm font-semibold hover:bg-red-200 transition-colors"
-                      >
-                        <X className="inline w-4 h-4 mr-1" />
-                        הסר
-                      </button>
-                    )}
-                  </div>
-                ))}
-              </div>
+            <div className="mb-4">
+              <FileUploader
+                onUploadSuccess={handleFileUpload}
+                folder="orders"
+                label="העלה קבצים נוספים"
+                disabled={!canEdit}
+                disabledMessage="אין לך הרשאת עריכה"
+              />
             </div>
-          )}
+
+            {files.length > 0 && (
+              <div>
+                <label className="block text-sm font-semibold text-gray-700 mb-3">
+                  <Upload className="inline w-4 h-4 mr-2" />
+                  קבצים מצורפים ({files.length})
+                </label>
+                <div className="space-y-3">
+                  {files.map((file, index) => (
+                    <div
+                      key={index}
+                      className="flex items-center justify-between p-4 bg-white border-2 border-orange-200 rounded-xl"
+                    >
+                      <span className="text-sm font-medium text-gray-700">
+                        {file.name}
+                      </span>
+                      {canEdit && (
+                        <button
+                          type="button"
+                          onClick={() => handleRemoveFile(index)}
+                          className="px-3 py-1 bg-red-100 text-red-600 rounded-lg text-sm font-semibold hover:bg-red-200 transition-colors"
+                        >
+                          <X className="inline w-4 h-4 mr-1" />
+                          הסר
+                        </button>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+          </div>
 
           {!canEdit && (
             <div className="mb-4 sm:mb-5 md:mb-6 p-4 bg-amber-50 border-2 border-amber-200 rounded-xl">

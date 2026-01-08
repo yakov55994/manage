@@ -39,7 +39,7 @@ export default function InvoiceSelector({
     }
   };
 
-  // סינון הזמנות לפי חיפוש
+  // סינון חשבוניות לפי חיפוש
   const filteredInvoices = invoices.filter((inv) => {
     const q = searchTerm.toLowerCase();
     return (
@@ -77,18 +77,6 @@ export default function InvoiceSelector({
     return new Date(date).toLocaleDateString("he-IL");
   };
 
-  // פורמט סטטוס תשלום
-  const getPaymentStatusColor = (paid) => {
-    switch (paid) {
-      case "כן":
-        return "bg-green-100 text-green-800 border-green-300";
-      case "יצא לתשלום":
-        return "bg-blue-100 text-blue-800 border-blue-300";
-      default:
-        return "bg-red-100 text-red-800 border-red-300";
-    }
-  };
-
   return (
     <div className="w-full">
       {/* כותרת */}
@@ -116,7 +104,7 @@ export default function InvoiceSelector({
               <FileText className="w-4 h-4 text-orange-700" />
               <div>
                 <span className="text-sm font-bold text-orange-900">
-                  הזמנה #{selectedInvoice.invoiceNumber}
+                  חשבונית #{selectedInvoice.invoiceNumber}
                 </span>
                 {selectedInvoice.invitingName && (
                   <span className="text-xs text-orange-700 mr-2">
@@ -193,7 +181,7 @@ export default function InvoiceSelector({
                     )}
                   </div>
 
-                  {/* פרטי ההזמנה */}
+                  {/* פרטי החשבונית */}
                   <div className="flex-1">
                     <div className="flex items-center gap-2 mb-1">
                       <FileText className="w-4 h-4 text-orange-600" />
@@ -202,17 +190,23 @@ export default function InvoiceSelector({
                           selected ? "text-orange-900" : "text-slate-700"
                         }`}
                       >
-                        הזמנה #{invoice.invoiceNumber}
+                        חשבונית #{invoice.invoiceNumber}
                       </span>
 
                       {/* סטטוס תשלום */}
-                      <span
-                        className={`inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold border ${getPaymentStatusColor(
-                          invoice.paid
-                        )}`}
-                      >
-                        {invoice.paid || "לא"}
-                      </span>
+                      {invoice.paid && (
+                        <span
+                          className={`inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold border ${
+                            invoice.paid === "כן"
+                              ? "bg-green-100 text-green-800 border-green-300"
+                              : invoice.paid === "יצא לתשלום"
+                              ? "bg-blue-100 text-blue-800 border-blue-300"
+                              : "bg-red-100 text-red-800 border-red-300"
+                          }`}
+                        >
+                          {invoice.paid}
+                        </span>
+                      )}
                     </div>
 
                     {/* שם מזמין */}

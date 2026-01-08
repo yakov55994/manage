@@ -105,9 +105,13 @@ export default function ViewIncomes() {
     try {
       setLinking(true);
       const currentIncome = incomes.find(i => i._id === linkModal.incomeId);
+      const oldOrderId = currentIncome.orderId?._id || currentIncome.orderId;
+
+      console.log('📝 Link from list - Old orderId:', oldOrderId, 'New orderId:', invoice?._id);
 
       // אם אין הזמנה - ביטול שיוך
       if (!invoice) {
+        // עדכן את ההכנסה
         await api.put(`/incomes/${linkModal.incomeId}`, {
           orderId: null,
           isCredited: "לא",
@@ -116,6 +120,31 @@ export default function ViewIncomes() {
           description: currentIncome.description,
           notes: currentIncome.notes,
         });
+
+        // אם היה orderId קודם, בטל את הזיכוי מההזמנה
+        if (oldOrderId) {
+          console.log('🔓 Unlinking old order:', oldOrderId);
+          try {
+            const orderRes = await api.get(`/orders/${oldOrderId}`);
+            const orderData = orderRes.data?.data || orderRes.data;
+
+            await api.put(`/orders/${oldOrderId}`, {
+              ...orderData,
+              projectId: typeof orderData.projectId === 'object'
+                ? (orderData.projectId._id || orderData.projectId.$oid)
+                : orderData.projectId,
+              supplierId: typeof orderData.supplierId === 'object'
+                ? (orderData.supplierId?._id || orderData.supplierId?.$oid)
+                : orderData.supplierId,
+              isCredited: false,
+              creditDate: null,
+            });
+            console.log('✅ Order unmarked as credited');
+          } catch (err) {
+            console.error('Error updating old order:', err);
+          }
+        }
+
         toast.success("השיוך בוטל בהצלחה!");
       } else {
         // שיוך להזמנה חדשה
@@ -127,7 +156,54 @@ export default function ViewIncomes() {
           description: currentIncome.description,
           notes: currentIncome.notes,
         });
-        toast.success("ההכנסה שויכה להזמנה בהצלחה!");
+
+        // עדכן את ההזמנה החדשה
+        console.log('🔗 Linking to new order:', invoice._id);
+        try {
+          const orderRes = await api.get(`/orders/${invoice._id}`);
+          const orderData = orderRes.data?.data || orderRes.data;
+
+          await api.put(`/orders/${invoice._id}`, {
+            ...orderData,
+            projectId: typeof orderData.projectId === 'object'
+              ? (orderData.projectId._id || orderData.projectId.$oid)
+              : orderData.projectId,
+            supplierId: typeof orderData.supplierId === 'object'
+              ? (orderData.supplierId?._id || orderData.supplierId?.$oid)
+              : orderData.supplierId,
+            isCredited: true,
+            creditDate: currentIncome.date,
+          });
+          console.log('✅ New order marked as credited');
+        } catch (err) {
+          console.error('Error updating new order:', err);
+        }
+
+        // אם היה orderId קודם שונה, בטל את הזיכוי ממנו
+        if (oldOrderId && oldOrderId !== invoice._id) {
+          console.log('🔄 Changing order - unlinking old order:', oldOrderId);
+          try {
+            const oldOrderRes = await api.get(`/orders/${oldOrderId}`);
+            const oldOrderData = oldOrderRes.data?.data || oldOrderRes.data;
+
+            await api.put(`/orders/${oldOrderId}`, {
+              ...oldOrderData,
+              projectId: typeof oldOrderData.projectId === 'object'
+                ? (oldOrderData.projectId._id || oldOrderData.projectId.$oid)
+                : oldOrderData.projectId,
+              supplierId: typeof oldOrderData.supplierId === 'object'
+                ? (oldOrderData.supplierId?._id || oldOrderData.supplierId?.$oid)
+                : oldOrderData.supplierId,
+              isCredited: false,
+              creditDate: null,
+            });
+            console.log('✅ Old order unmarked as credited');
+          } catch (err) {
+            console.error('Error updating old order:', err);
+          }
+        }
+
+        toast.success("ההכנסה שויכה להזמנה בהצלחה! ההזמנה סומנה כזוכה");
       }
 
       // Refresh the incomes list to show updated data

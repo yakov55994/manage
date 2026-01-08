@@ -80,7 +80,34 @@ export default function CreateIncome() {
     setLoading(true);
 
     try {
+      // צור הכנסה חדשה
       await api.post("/incomes", singleIncome);
+
+      // אם יש שיוך להזמנה, עדכן את ההזמנה
+      if (singleIncome.orderId) {
+        console.log('🔗 Creating income with order link:', singleIncome.orderId);
+        try {
+          const orderRes = await api.get(`/orders/${singleIncome.orderId}`);
+          const orderData = orderRes.data?.data || orderRes.data;
+
+          await api.put(`/orders/${singleIncome.orderId}`, {
+            ...orderData,
+            projectId: typeof orderData.projectId === 'object'
+              ? (orderData.projectId._id || orderData.projectId.$oid)
+              : orderData.projectId,
+            supplierId: typeof orderData.supplierId === 'object'
+              ? (orderData.supplierId?._id || orderData.supplierId?.$oid)
+              : orderData.supplierId,
+            isCredited: true,
+            creditDate: singleIncome.date,
+          });
+          console.log('✅ Order marked as credited');
+        } catch (err) {
+          console.error('Error updating order:', err);
+          toast.warning("ההכנסה נוצרה אך ההזמנה לא עודכנה");
+        }
+      }
+
       toast.success("ההכנסה נוצרה בהצלחה!");
       navigate("/incomes");
     } catch (error) {

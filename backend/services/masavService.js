@@ -38,6 +38,10 @@ export function validatePayments(payments = []) {
     if (p.internalId && /^0+$/.test(p.internalId)) {
       errors.push(`רשומה ${row}: מספר ע.מ/ת.ז חייב להיות 9 ספרות (לא אפסים) - ספק: ${p.supplierName}`);
     }
+    if (!/^[0-9]+$/.test(String(p.amount).replace(/[^0-9]/g, ''))) {
+      errors.push(`רשומה ${row}: סכום לא תקין`);
+    }
+
   });
 
   return errors;
@@ -135,7 +139,8 @@ export function generateMasavFile(companyInfo, payments, executionDate) {
   // =====================================================
   // דוגמה: 192982289000000002053900000004702120515754364שלוה מיזמי שילוב00000009698000000000000000000113300000000000006000000000000000000
   payments.forEach(p => {
-    const amountInAgorot = Number(p.amount);
+    const cleanAmount = String(p.amount).replace(/[^0-9]/g, '');
+    const amountInAgorot = Number(cleanAmount);
     totalAmount += amountInAgorot;
 
     let row1 = '';
@@ -149,11 +154,12 @@ export function generateMasavFile(companyInfo, payments, executionDate) {
     row1 += padLeft(p.accountNumber, 9, '0');             // 27-35: מספר חשבון (9)
     row1 += '0';                                           // 36: FILLER (1)
     row1 += padLeft(p.internalId, 9, '0');                // 37-45: מס' זהות (9)
-    row1 += padRight(p.supplierName, 16, ' ');            // 46-61: שם הזכאי (16)
+    row1 += padLeft(p.supplierName, 16, ' ');
     row1 += padLeft(amountInAgorot, 13, '0');             // 62-74: סכום (13)
 
     // אסמכתא - מספר חשבונית או מזהה
-    const asmachta = p.invoiceNumbers || p.internalId || '';
+    const asmachtaRaw = p.invoiceNumbers || p.internalId || '';
+    const asmachta = String(asmachtaRaw).replace(/[^0-9]/g, '');
     row1 += padLeft(asmachta, 20, '0');                   // 75-94: אסמכתא (20)
 
     row1 += '00000000';                                    // 95-102: תקופת תשלום (8)

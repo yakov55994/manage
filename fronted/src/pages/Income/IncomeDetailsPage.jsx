@@ -13,7 +13,7 @@ import {
   StickyNote,
   Link as LinkIcon,
 } from "lucide-react";
-import InvoiceSelector from "../../Components/InvoiceSelector";
+import OrderSelector from "../../Components/OrderSelector";
 
 const IncomeDetailsPage = () => {
   const { id } = useParams();
@@ -25,7 +25,7 @@ const IncomeDetailsPage = () => {
   const [deleting, setDeleting] = useState(false);
   const [linkModalOpen, setLinkModalOpen] = useState(false);
   const [linking, setLinking] = useState(false);
-  const [selectedInvoiceId, setSelectedInvoiceId] = useState(null);
+  const [selectedOrderId, setSelectedOrderId] = useState(null);
 
   useEffect(() => {
     const loadIncome = async () => {
@@ -78,23 +78,75 @@ const IncomeDetailsPage = () => {
     }
   };
 
-  const handleLinkToInvoice = async (invoice) => {
-    if (!invoice) {
+  const handleLinkToOrder = async (order) => {
+    if (!order) {
       setLinkModalOpen(false);
       return;
     }
 
     try {
       setLinking(true);
+      console.log('🔄 Starting link process...');
+      console.log('📋 Income ID:', income._id);
+      console.log('🎯 Order ID to link:', order._id);
+
+      // עדכון ההכנסה
+      console.log('💾 Updating income...');
       await api.put(`/incomes/${income._id}`, {
-        orderId: invoice._id,
+        orderId: order._id,
         isCredited: "כן",
         date: income.date, // שמירת תאריך הזיכוי המקורי
         amount: income.amount,
         description: income.description,
         notes: income.notes,
       });
-      toast.success("ההכנסה שויכה להזמנה בהצלחה!");
+      console.log('✅ Income updated successfully');
+
+      // קריאת נתוני ההזמנה הקיימת
+      console.log('📥 Fetching order data for ID:', order._id);
+      const orderRes = await api.get(`/orders/${order._id}`);
+      const orderData = orderRes.data?.data || orderRes.data;
+
+      console.log('📝 Order data before update:', orderData);
+      console.log('📅 Credit date from income:', income.date);
+
+      // הכנת הנתונים לעדכון - שליחת כל השדות הנדרשים
+      const updatePayload = {
+        orderNumber: orderData.orderNumber,
+        projectName: orderData.projectName,
+        projectId: typeof orderData.projectId === 'object'
+          ? (orderData.projectId._id || orderData.projectId.$oid)
+          : orderData.projectId,
+        sum: orderData.sum,
+        status: orderData.status,
+        invitingName: orderData.invitingName,
+        supplierId: typeof orderData.supplierId === 'object'
+          ? (orderData.supplierId?._id || orderData.supplierId?.$oid)
+          : orderData.supplierId,
+        detail: orderData.detail,
+        Contact_person: orderData.Contact_person,
+        createdAt: orderData.createdAt,
+        files: orderData.files || [],
+        submittedDate: orderData.submittedDate,
+        submittedAmount: orderData.submittedAmount,
+        invoiceNumber: orderData.invoiceNumber,
+        invoiceDate: orderData.invoiceDate,
+        invoiceFiles: orderData.invoiceFiles || [],
+        receiptNumber: orderData.receiptNumber,
+        receiptDate: orderData.receiptDate,
+        receiptFiles: orderData.receiptFiles || [],
+        // עדכון סטטוס זיכוי
+        isCredited: true,
+        creditDate: income.date, // תאריך הזיכוי מההכנסה
+      };
+
+      console.log('📤 Update payload:', updatePayload);
+
+      // עדכון ההזמנה
+      const updateRes = await api.put(`/orders/${order._id}`, updatePayload);
+      console.log('✅ Order update response:', updateRes.data);
+
+      toast.success("ההכנסה שויכה להזמנה בהצלחה! ההזמנה סומנה כזוכה");
 
       // רענון הנתונים
       const res = await api.get(`/incomes/${income._id}`);
@@ -334,9 +386,9 @@ const IncomeDetailsPage = () => {
               </div>
 
               <div className="mb-6">
-                <InvoiceSelector
-                  value={selectedInvoiceId}
-                  onSelect={(invoice) => setSelectedInvoiceId(invoice?._id || null)}
+                <OrderSelector
+                  value={selectedOrderId}
+                  onSelect={(order) => setSelectedOrderId(order?._id || null)}
                   label="בחר הזמנה"
                   placeholder="חפש הזמנה לפי מספר או פרטים..."
                   allowClear={true}
@@ -346,10 +398,10 @@ const IncomeDetailsPage = () => {
               <div className="flex gap-3">
                 <button
                   onClick={() => {
-                    const invoice = selectedInvoiceId ? { _id: selectedInvoiceId } : null;
-                    handleLinkToInvoice(invoice);
+                    const order = selectedOrderId ? { _id: selectedOrderId } : null;
+                    handleLinkToOrder(order);
                   }}
-                  disabled={linking || !selectedInvoiceId}
+                  disabled={linking || !selectedOrderId}
                   className="flex-1 px-6 py-3 rounded-xl font-bold text-white bg-gradient-to-r from-purple-500 to-purple-600 hover:from-purple-600 hover:to-purple-700 transition-all shadow-lg disabled:opacity-50"
                 >
                   {linking ? "משייך..." : "שייך להזמנה"}
@@ -357,7 +409,7 @@ const IncomeDetailsPage = () => {
                 <button
                   onClick={() => {
                     setLinkModalOpen(false);
-                    setSelectedInvoiceId(null);
+                    setSelectedOrderId(null);
                   }}
                   disabled={linking}
                   className="flex-1 px-6 py-3 rounded-xl font-bold text-slate-700 bg-slate-100 hover:bg-slate-200 transition-all disabled:opacity-50"
