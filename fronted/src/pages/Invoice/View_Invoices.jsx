@@ -148,6 +148,11 @@ const InvoicesPage = () => {
   const [masavModal, setMasavModal] = useState(false);
   const [selectedInvoices, setSelectedInvoices] = useState([]);
   const [showBulkDeleteModal, setShowBulkDeleteModal] = useState(false);
+  const [showBulkPaymentModal, setShowBulkPaymentModal] = useState(false);
+  const [bulkPaymentDate, setBulkPaymentDate] = useState(new Date().toISOString().slice(0, 10));
+  const [bulkPaymentMethod, setBulkPaymentMethod] = useState("");
+  const [bulkCheckNumber, setBulkCheckNumber] = useState("");
+  const [bulkCheckDate, setBulkCheckDate] = useState("");
   const [documentStatusFilter, setDocumentStatusFilter] = useState("all");
 
   const { user, isAdmin, canEditModule, canViewModule } = useAuth();
@@ -1733,6 +1738,92 @@ const InvoicesPage = () => {
     }
   };
 
+  const handleBulkPayment = async () => {
+    if (!bulkPaymentDate) {
+      toast.error("יש לבחור תאריך תשלום", {
+        className: "sonner-toast error rtl",
+      });
+      return;
+    }
+
+    if (!bulkPaymentMethod) {
+      toast.error("יש לבחור אמצעי תשלום", {
+        className: "sonner-toast error rtl",
+      });
+      return;
+    }
+
+    if (bulkPaymentMethod === "check" && !bulkCheckNumber) {
+      toast.error("יש למלא מספר צ'ק", {
+        className: "sonner-toast error rtl",
+      });
+      return;
+    }
+
+    try {
+      const invoiceIds = selectedInvoices.map(inv => inv._id);
+
+      await api.put("/invoices/bulk/update-status", {
+        invoiceIds,
+        status: "כן",
+        paymentDate: bulkPaymentDate,
+        paymentMethod: bulkPaymentMethod,
+        checkNumber: bulkPaymentMethod === "check" ? bulkCheckNumber : null,
+        checkDate: bulkPaymentMethod === "check" ? bulkCheckDate : null,
+      });
+
+      // עדכון המצב המקומי
+      setInvoices(prev =>
+        prev.map(inv =>
+          invoiceIds.includes(inv._id)
+            ? {
+                ...inv,
+                paid: "כן",
+                paymentDate: bulkPaymentDate,
+                paymentMethod: bulkPaymentMethod,
+                checkNumber: bulkPaymentMethod === "check" ? bulkCheckNumber : null,
+                checkDate: bulkPaymentMethod === "check" ? bulkCheckDate : null,
+              }
+            : inv
+        )
+      );
+      setAllInvoices(prev =>
+        prev.map(inv =>
+          invoiceIds.includes(inv._id)
+            ? {
+                ...inv,
+                paid: "כן",
+                paymentDate: bulkPaymentDate,
+                paymentMethod: bulkPaymentMethod,
+                checkNumber: bulkPaymentMethod === "check" ? bulkCheckNumber : null,
+                checkDate: bulkPaymentMethod === "check" ? bulkCheckDate : null,
+              }
+            : inv
+        )
+      );
+
+      const paymentInfo = bulkPaymentMethod === "check"
+        ? `צ'ק ${bulkCheckNumber}`
+        : "העברה בנקאית";
+
+      toast.success(`${selectedInvoices.length} חשבוניות סומנו כשולמו בתאריך ${new Date(bulkPaymentDate).toLocaleDateString('he-IL')} (${paymentInfo})`, {
+        className: "sonner-toast success rtl",
+      });
+
+      setShowBulkPaymentModal(false);
+      setSelectedInvoices([]);
+      setBulkPaymentDate(new Date().toISOString().slice(0, 10));
+      setBulkPaymentMethod("");
+      setBulkCheckNumber("");
+      setBulkCheckDate("");
+    } catch (error) {
+      console.error(error);
+      toast.error("שגיאה בעדכון סטטוס התשלומים", {
+        className: "sonner-toast error rtl",
+      });
+    }
+  };
+
   if (loading) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-orange-50 via-amber-50 to-yellow-50 flex flex-col justify-center items-center">
@@ -2259,13 +2350,22 @@ const InvoicesPage = () => {
         <div className="mb-6 bg-white/80 backdrop-blur-xl rounded-2xl shadow-lg p-6 border border-white/50">
           <div className="flex flex-col lg:flex-row justify-between items-center gap-4 mb-4">
             {selectedInvoices.length > 0 && canEditInvoices && isAdmin && (
-              <button
-                onClick={() => setShowBulkDeleteModal(true)}
-                className="flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-red-500 to-rose-500 text-white font-bold rounded-xl hover:from-red-600 hover:to-rose-600 transition-all shadow-lg animate-bounce-slow"
-              >
-                <Trash2 className="w-5 h-5" />
-                <span>מחק {selectedInvoices.length} נבחרות</span>
-              </button>
+              <div className="flex gap-3">
+                <button
+                  onClick={() => setShowBulkDeleteModal(true)}
+                  className="flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-red-500 to-rose-500 text-white font-bold rounded-xl hover:from-red-600 hover:to-rose-600 transition-all shadow-lg animate-bounce-slow"
+                >
+                  <Trash2 className="w-5 h-5" />
+                  <span>מחק {selectedInvoices.length} נבחרות</span>
+                </button>
+                <button
+                  onClick={() => setShowBulkPaymentModal(true)}
+                  className="flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-green-500 to-emerald-500 text-white font-bold rounded-xl hover:from-green-600 hover:to-emerald-600 transition-all shadow-lg"
+                >
+                  <CheckSquare className="w-5 h-5" />
+                  <span>סמן {selectedInvoices.length} לתשלום</span>
+                </button>
+              </div>
             )}
 
             {/* Sort & Filter Controls */}
@@ -3578,6 +3678,147 @@ const InvoicesPage = () => {
                 </button>
                 <button
                   onClick={() => setShowBulkDeleteModal(false)}
+                  className="flex-1 px-6 py-3 rounded-xl font-bold text-slate-700 bg-slate-100 hover:bg-slate-200 transition-all"
+                >
+                  ביטול
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {showBulkPaymentModal && (
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+          <div className="relative">
+            <div className="absolute -inset-4 bg-gradient-to-r from-green-500 to-emerald-500 rounded-3xl opacity-20 blur-2xl"></div>
+
+            <div className="relative bg-white rounded-3xl shadow-2xl p-8 max-w-md w-full">
+              <div className="text-center mb-6">
+                <div className="mx-auto w-16 h-16 rounded-full bg-gradient-to-br from-green-500 to-emerald-500 flex items-center justify-center mb-4">
+                  <CheckSquare className="w-8 h-8 text-white" />
+                </div>
+                <h3 className="text-3xl font-bold text-slate-900 mb-2">
+                  סימון חשבוניות לתשלום
+                </h3>
+                <p className="text-slate-600 mb-4">
+                  פעולה זו תסמן{" "}
+                  <span className="font-bold text-green-600">
+                    {selectedInvoices.length} חשבוניות
+                  </span>{" "}
+                  כשולמו באותו תאריך.
+                </p>
+
+                {/* בחירת תאריך תשלום */}
+                <div className="mb-4">
+                  <label className="block text-right font-bold mb-2 text-slate-700">
+                    תאריך תשלום
+                  </label>
+                  <input
+                    type="date"
+                    value={bulkPaymentDate}
+                    onChange={(e) => setBulkPaymentDate(e.target.value)}
+                    className="w-full p-3 border-2 border-green-200 rounded-xl focus:border-green-500 focus:outline-none"
+                  />
+                </div>
+
+                {/* בחירת אמצעי תשלום */}
+                <div className="mb-4">
+                  <label className="block text-right font-bold mb-2 text-slate-700">
+                    אמצעי תשלום <span className="text-red-500">*</span>
+                  </label>
+                  <select
+                    value={bulkPaymentMethod}
+                    onChange={(e) => {
+                      setBulkPaymentMethod(e.target.value);
+                      // אם משנים לא צ'ק - נקה את שדות הצ'ק
+                      if (e.target.value !== "check") {
+                        setBulkCheckNumber("");
+                        setBulkCheckDate("");
+                      }
+                    }}
+                    className="w-full p-3 border-2 border-green-200 rounded-xl focus:border-green-500 focus:outline-none"
+                  >
+                    <option value="">בחר אמצעי תשלום...</option>
+                    <option value="bank_transfer">העברה בנקאית</option>
+                    <option value="check">צ'ק</option>
+                  </select>
+                </div>
+
+                {/* שדות צ'ק - מופיעים רק אם בחרו צ'ק */}
+                {bulkPaymentMethod === "check" && (
+                  <>
+                    <div className="mb-4">
+                      <label className="block text-right font-bold mb-2 text-slate-700">
+                        מספר צ'ק <span className="text-red-500">*</span>
+                      </label>
+                      <input
+                        type="text"
+                        value={bulkCheckNumber}
+                        onChange={(e) => setBulkCheckNumber(e.target.value)}
+                        placeholder="הזן מספר צ'ק"
+                        className="w-full p-3 border-2 border-green-200 rounded-xl focus:border-green-500 focus:outline-none"
+                      />
+                    </div>
+
+                    <div className="mb-4">
+                      <label className="block text-right font-bold mb-2 text-slate-700">
+                        תאריך פירעון צ'ק (אופציונלי)
+                      </label>
+                      <input
+                        type="date"
+                        value={bulkCheckDate}
+                        onChange={(e) => setBulkCheckDate(e.target.value)}
+                        className="w-full p-3 border-2 border-green-200 rounded-xl focus:border-green-500 focus:outline-none"
+                      />
+                    </div>
+                  </>
+                )}
+
+                {/* רשימת החשבוניות שנבחרו */}
+                <div className="max-h-48 overflow-y-auto bg-green-50 rounded-xl p-4 mb-4">
+                  <div className="text-right space-y-2">
+                    {selectedInvoices.map((inv) => (
+                      <div
+                        key={inv._id}
+                        className="text-sm text-slate-700 flex justify-between items-center border-b border-green-200 pb-2"
+                      >
+                        <span className="font-medium">
+                          חשבונית #{inv.invoiceNumber}
+                        </span>
+                        <span className="text-xs text-slate-500">
+                          {formatNumber(inv.totalAmount)} ₪
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                <div className="bg-green-50 rounded-xl p-3 mb-4">
+                  <p className="text-sm text-green-800 font-medium">
+                    סה"כ לתשלום:{" "}
+                    <span className="text-lg font-bold">
+                      {formatNumber(
+                        selectedInvoices.reduce(
+                          (sum, inv) => sum + (inv.totalAmount || 0),
+                          0
+                        )
+                      )}{" "}
+                      ₪
+                    </span>
+                  </p>
+                </div>
+              </div>
+
+              <div className="flex gap-3">
+                <button
+                  onClick={handleBulkPayment}
+                  className="flex-1 px-6 py-3 rounded-xl font-bold text-white bg-gradient-to-r from-green-500 to-emerald-500 hover:from-green-600 hover:to-emerald-600 transition-all shadow-lg"
+                >
+                  אשר תשלום
+                </button>
+                <button
+                  onClick={() => setShowBulkPaymentModal(false)}
                   className="flex-1 px-6 py-3 rounded-xl font-bold text-slate-700 bg-slate-100 hover:bg-slate-200 transition-all"
                 >
                   ביטול

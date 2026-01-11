@@ -172,7 +172,7 @@ async getInvoiceById(req, res) {
   // ===============================================
   async bulkUpdatePaymentStatus(req, res) {
     try {
-      const { invoiceIds, status } = req.body;
+      const { invoiceIds, status, paymentDate, paymentMethod, checkNumber, checkDate } = req.body;
 
       if (!invoiceIds || !Array.isArray(invoiceIds) || invoiceIds.length === 0) {
         return res.status(400).json({
@@ -188,9 +188,37 @@ async getInvoiceById(req, res) {
         });
       }
 
+      // בניית אובייקט העדכון
+      const updateObj = { paid: status };
+
+      // אם הסטטוס הוא "כן" - הוסף פרטי תשלום
+      if (status === "כן") {
+        if (paymentDate) {
+          updateObj.paymentDate = paymentDate;
+        }
+        if (paymentMethod) {
+          updateObj.paymentMethod = paymentMethod;
+        }
+        // אם זה צ'ק והוזן מספר צ'ק
+        if (paymentMethod === "check" && checkNumber) {
+          updateObj.checkNumber = checkNumber;
+          if (checkDate) {
+            updateObj.checkDate = checkDate;
+          }
+        }
+      }
+
+      // אם הסטטוס הוא "לא" - נקה את כל פרטי התשלום
+      if (status === "לא") {
+        updateObj.paymentDate = null;
+        updateObj.paymentMethod = null;
+        updateObj.checkNumber = null;
+        updateObj.checkDate = null;
+      }
+
       const updated = await Invoice.updateMany(
         { _id: { $in: invoiceIds } },
-        { $set: { paid: status } }
+        { $set: updateObj }
       );
 
       res.json({

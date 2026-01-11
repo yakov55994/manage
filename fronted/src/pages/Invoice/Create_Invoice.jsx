@@ -70,6 +70,7 @@ const CreateInvoice = () => {
 
   const [rows, setRows] = useState(draft?.rows || []);
   const [fundedFromProjectId, setFundedFromProjectId] = useState("");
+  const [fundedFromProjectIds, setFundedFromProjectIds] = useState(draft?.fundedFromProjectIds || []);
 
   // ✅ הוסף את זה אחרי ה-useState של form
   useEffect(() => {
@@ -78,9 +79,10 @@ const CreateInvoice = () => {
       selectedProjects,
       rows,
       fundedFromProjectId, // ← הוספנו
+      fundedFromProjectIds, // ← הוספנו
     };
     localStorage.setItem("invoiceDraft", JSON.stringify(dataToSave));
-  }, [form, selectedProjects, rows, fundedFromProjectId]);
+  }, [form, selectedProjects, rows, fundedFromProjectId, fundedFromProjectIds]);
 
   const [loading, setLoading] = useState(false);
   const [showPaymentModal, setShowPaymentModal] = useState(false);
@@ -166,21 +168,24 @@ const CreateInvoice = () => {
         };
       });
 
-    // ✅ אם בחרו רק מילגה (ללא פרויקטים אחרים) ויש fundedFromProjectId - הוסף row עבורו
+    // ✅ אם בחרו מילגה ויש פרויקטים ממממנים - הוסף rows עבורם
     if (
       selectedProjects.some((p) => p._id === MILGA_ID) &&
-      fundedFromProjectId &&
-      !newRows.find((r) => r.projectId === fundedFromProjectId)
+      fundedFromProjectIds.length > 0
     ) {
-      const fundedProject = projects.find((p) => p._id === fundedFromProjectId);
-      if (fundedProject) {
-        const existingRow = rows.find((r) => r.projectId === fundedFromProjectId);
-        newRows.push({
-          projectId: fundedProject._id,
-          projectName: fundedProject.name,
-          sum: existingRow?.sum || "",
-        });
-      }
+      fundedFromProjectIds.forEach(fundedProjectId => {
+        if (!newRows.find((r) => r.projectId === fundedProjectId)) {
+          const fundedProject = projects.find((p) => p._id === fundedProjectId);
+          if (fundedProject) {
+            const existingRow = rows.find((r) => r.projectId === fundedProjectId);
+            newRows.push({
+              projectId: fundedProject._id,
+              projectName: fundedProject.name,
+              sum: existingRow?.sum || "",
+            });
+          }
+        }
+      });
     }
 
     // ✅ רק עדכן אם באמת יש שינוי (למנוע לולאה אינסופית)
@@ -196,7 +201,7 @@ const CreateInvoice = () => {
     if (hasChanged) {
       setRows(newRows);
     }
-  }, [selectedProjects, fundedFromProjectId, projects, rows]); // ✅ הוסף גם rows כי אנחנו קוראים אותו
+  }, [selectedProjects, fundedFromProjectIds, projects, rows]); // ✅ הוסף גם rows כי אנחנו קוראים אותו
 
   // ============================
   // FILE UPLOAD HANDLER
@@ -242,8 +247,8 @@ const CreateInvoice = () => {
     if (isSalary && !fundedFromProjectId) {
       return toast.error("יש לבחור פרויקט ממנו יורד התקציב למשכורות");
     }
-    if (selectedProjects.some((p) => p._id === MILGA_ID) && !fundedFromProjectId) {
-      return toast.error("יש לבחור פרויקט ממנו יורד התקציב למילגה");
+    if (selectedProjects.some((p) => p._id === MILGA_ID) && fundedFromProjectIds.length === 0) {
+      return toast.error("יש לבחור לפחות פרויקט אחד ממנו יורד התקציב למילגה");
     }
 
     if (!isSalary) {
@@ -464,19 +469,22 @@ const CreateInvoice = () => {
                 placeholder="חפש פרויקט..."
                 showSelectAll={true}
               />
-              {/* בחירת פרויקט מממן — רק אם נבחר פרויקט "מילגה" */}
+              {/* בחירת פרויקט/ים מממן/ים — רק אם נבחר פרויקט "מילגה" */}
               {selectedProjects.some((p) => p._id === MILGA_ID) && (
                 <div className="mt-4">
                   <label className="block text-sm font-bold text-red-600 mb-2">
-                    * חובה לבחור פרויקט מממן למילגה
+                    * חובה לבחור פרויקט/ים ממממן/ים למילגה
                   </label>
                   <ProjectSelector
                     projects={projects}
-                    selectedProjectId={fundedFromProjectId}
-                    onProjectChange={(projectId) => setFundedFromProjectId(projectId)}
-                    multiSelect={false}
-                    label="מאיזה פרויקט יורד התקציב?"
-                    placeholder="חפש פרויקט מממן..."
+                    selectedProjects={fundedFromProjectIds.map(id => projects.find(p => p._id === id)).filter(Boolean)}
+                    onProjectsChange={(selectedProjs) => {
+                      setFundedFromProjectIds(selectedProjs.map(p => p._id));
+                    }}
+                    multiSelect={true}
+                    label="מאילו פרויקטים יורד התקציב?"
+                    placeholder="חפש פרויקטים ממממנים..."
+                    showSelectAll={false}
                   />
                 </div>
               )}

@@ -3,12 +3,13 @@ import { X, Search, Wallet } from "lucide-react";
 import { toast } from "sonner";
 
 /**
- * מודל לבחירת פרויקט ממומן עבור פרויקטי מילגה
+ * מודל לבחירת פרויקט/ים ממומן/ים עבור פרויקטי מילגה
  * @param {Boolean} open - האם המודל פתוח
  * @param {Function} onClose - סגירת המודל
  * @param {Array} projects - רשימת כל הפרויקטים
- * @param {Function} onSelect - callback עם הפרויקט שנבחר
+ * @param {Function} onSelect - callback עם הפרויקט/ים שנבחר/ו
  * @param {String} milgaProjectName - שם פרויקט המילגה
+ * @param {Boolean} multiSelect - האם לאפשר בחירה מרובה (ברירת מחדל: false)
  */
 export default function FundingProjectModal({
   open,
@@ -16,9 +17,11 @@ export default function FundingProjectModal({
   projects = [],
   onSelect,
   milgaProjectName = "",
+  multiSelect = false,
 }) {
   const [search, setSearch] = useState("");
   const [selectedProjectId, setSelectedProjectId] = useState("");
+  const [selectedProjectIds, setSelectedProjectIds] = useState([]);
 
   // סינון רק פרויקטים שאינם מילגה
   const regularProjects = useMemo(() => {
@@ -33,24 +36,49 @@ export default function FundingProjectModal({
   }, [regularProjects, search]);
 
   const handleSubmit = () => {
-    if (!selectedProjectId) {
-      toast.error("יש לבחור פרויקט ממומן");
-      return;
+    if (multiSelect) {
+      if (selectedProjectIds.length === 0) {
+        toast.error("יש לבחור לפחות פרויקט אחד");
+        return;
+      }
+
+      const selectedProjects = projects.filter((p) =>
+        selectedProjectIds.includes(p._id)
+      );
+      onSelect?.(selectedProjects);
+    } else {
+      if (!selectedProjectId) {
+        toast.error("יש לבחור פרויקט ממומן");
+        return;
+      }
+
+      const selectedProject = projects.find((p) => p._id === selectedProjectId);
+      onSelect?.(selectedProject);
     }
 
-    const selectedProject = projects.find((p) => p._id === selectedProjectId);
-    onSelect?.(selectedProject);
     onClose();
 
     // איפוס
     setSelectedProjectId("");
+    setSelectedProjectIds([]);
     setSearch("");
   };
 
   const handleClose = () => {
     setSelectedProjectId("");
+    setSelectedProjectIds([]);
     setSearch("");
     onClose();
+  };
+
+  const toggleProjectSelection = (projectId) => {
+    setSelectedProjectIds((prev) => {
+      if (prev.includes(projectId)) {
+        return prev.filter((id) => id !== projectId);
+      } else {
+        return [...prev, projectId];
+      }
+    });
   };
 
   if (!open) return null;
@@ -113,13 +141,22 @@ export default function FundingProjectModal({
                 {filtered.map((p) => (
                   <li key={p._id}>
                     <label className="flex items-center gap-2 p-2.5 cursor-pointer hover:bg-orange-50 transition-colors">
-                      <input
-                        type="radio"
-                        name="fundingProject"
-                        className="w-4 h-4 accent-orange-500"
-                        checked={String(selectedProjectId) === String(p._id)}
-                        onChange={() => setSelectedProjectId(p._id)}
-                      />
+                      {multiSelect ? (
+                        <input
+                          type="checkbox"
+                          className="w-4 h-4 accent-orange-500"
+                          checked={selectedProjectIds.includes(p._id)}
+                          onChange={() => toggleProjectSelection(p._id)}
+                        />
+                      ) : (
+                        <input
+                          type="radio"
+                          name="fundingProject"
+                          className="w-4 h-4 accent-orange-500"
+                          checked={String(selectedProjectId) === String(p._id)}
+                          onChange={() => setSelectedProjectId(p._id)}
+                        />
+                      )}
                       <div className="flex-1 min-w-0">
                         <span className="font-medium text-sm block truncate">
                           {p.name}
@@ -147,10 +184,11 @@ export default function FundingProjectModal({
             </button>
             <button
               onClick={handleSubmit}
-              disabled={!selectedProjectId}
+              disabled={multiSelect ? selectedProjectIds.length === 0 : !selectedProjectId}
               className="px-5 py-2 rounded-lg bg-gradient-to-r from-orange-500 to-amber-500 text-white hover:from-orange-600 hover:to-amber-600 disabled:opacity-50 disabled:cursor-not-allowed transition-all text-sm font-bold shadow-sm"
             >
               אישור
+              {multiSelect && selectedProjectIds.length > 0 && ` (${selectedProjectIds.length})`}
             </button>
           </div>
         </div>
