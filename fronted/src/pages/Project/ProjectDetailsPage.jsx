@@ -22,6 +22,7 @@ import {
 import { toast } from "sonner";
 import { useAuth } from "../../context/AuthContext.jsx";
 import CreatorInfo from "../../Components/CreatorInfo";
+import SubmittedInvoices from "../../Components/SubmittedInvoices";
 
 const ProjectDetailsPage = () => {
   const { id } = useParams();
@@ -671,6 +672,14 @@ const ProjectDetailsPage = () => {
             </div>
           </div>
         </div>
+
+        {/* ✅ Submitted Invoices Section - חשבוניות שהוגשו */}
+        {canViewInvoices() && (
+          <div className="mb-4 sm:mb-5 md:mb-6">
+            <SubmittedInvoices projectId={id} projectName={project?.name} />
+          </div>
+        )}
+
         {!isSalaryProject && (
           <>
             {/* Orders Section */}

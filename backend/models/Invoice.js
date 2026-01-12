@@ -10,12 +10,16 @@ const InvoiceProjectSchema = new mongoose.Schema({
   },
   projectName: { type: String, required: true },
   sum: { type: Number, required: true },
-  // ✅ עבור פרויקטי מילגה - מאיזה פרויקט להוריד את התקציב
+  // ✅ עבור פרויקטי מילגה - מאיזה פרויקט/ים להוריד את התקציב
   fundedFromProjectId: {
     type: mongoose.Schema.Types.ObjectId,
     ref: "Project",
     default: null,
   },
+  fundedFromProjectIds: [{
+    type: mongoose.Schema.Types.ObjectId,
+    ref: "Project"
+  }],
 });
 
 const FileSchema = new mongoose.Schema({
@@ -55,7 +59,16 @@ const invoiceSchema = new mongoose.Schema({
   salaryDepartment: { type: String, default: null }, // מחלקה - לא חובה
 
   createdAt: { type: Date, required: false },
-  status: { type: String, enum: ['הוגש', 'לא הוגש', 'בעיבוד'], required: false },
+  status: { type: String, enum: ['הוגש', 'לא הוגש', 'בעיבוד'], default: 'לא הוגש', required: false },
+
+  // ✅ פרויקט שאליו הוגשה החשבונית (אם הוגשה)
+  submittedToProjectId: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: "Project",
+    default: null
+  },
+  submittedAt: { type: Date, default: null }, // תאריך ההגשה
+
   invitingName: { type: String, required: false },
   detail: { type: String, required: false },
 
@@ -112,11 +125,16 @@ supplierId: {
   },
   createdByName: { type: String },
 
+  // ✅ תמיכה הן בגרסה ישנה (יחיד) והן בגרסה חדשה (מרובה)
   fundedFromProjectId: {
     type: mongoose.Schema.Types.ObjectId,
     ref: "Project",
     default: null
   },
+  fundedFromProjectIds: [{
+    type: mongoose.Schema.Types.ObjectId,
+    ref: "Project"
+  }],
 });
 
 // --------------------------------

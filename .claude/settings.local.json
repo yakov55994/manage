@@ -27,7 +27,15 @@
       "Bash(xargs:*)",
       "Bash(node scripts/migrateIncomeToOrders.js:*)",
       "Bash(ls:*)",
-      "Bash(node scripts/cleanupIncomeFields.js:*)"
+      "Bash(node scripts/cleanupIncomeFields.js:*)",
+      "Bash(timeout 5 tail:*)",
+      "Bash(exit 0)",
+      "Bash(timeout 3 tail:*)",
+      "Bash(netstat:*)",
+      "Bash(findstr:*)",
+      "Bash(taskkill //F //PID 87604)",
+      "Bash(taskkill //F //PID 63368)",
+      "Bash(timeout 8 tail:*)"
     ]
   }
 }

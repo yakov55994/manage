@@ -20,6 +20,7 @@ import InvoiceDetailsPage from "./pages/Invoice/InvoiceDetailsPage";
 import Order_Detail_Page from "./pages/Order/Orders_Details_Page.jsx";
 import UpdateProject from "./pages/Project/UpdateProject.jsx";
 import UpdateInvoice from "./pages/Invoice/UpdateInvoice.jsx";
+import AllSubmittedInvoices from "./pages/Invoice/AllSubmittedInvoices.jsx";
 import UpdateOrder from "./pages/Order/Update_Orders.jsx";
 import SearchResults from "./pages/Search/SearchResults.jsx";
 import Home from "./pages/Home.jsx";
@@ -196,6 +197,14 @@ const AppContent = () => {
               element={
                 <ProtectedRoute module="invoices">
                   <Invoices />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/submitted-invoices"
+              element={
+                <ProtectedRoute module="invoices">
+                  <AllSubmittedInvoices />
                 </ProtectedRoute>
               }
             />

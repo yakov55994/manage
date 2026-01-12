@@ -32,10 +32,13 @@ const InvoiceEditPage = () => {
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
 
-  // ✅ מצב עבור מודל בחירת פרויקט ממומן
+  // ✅ מצב עבור מודל בחירת פרויקט/ים ממומן/ים
   const [showFundingModal, setShowFundingModal] = useState(false);
   const [pendingMilgaProject, setPendingMilgaProject] = useState(null);
-  const [fundingProjectsMap, setFundingProjectsMap] = useState({}); // { milgaProjectId: fundingProjectId }
+  const [fundingProjectsMap, setFundingProjectsMap] = useState({}); // { milgaProjectId: [fundingProjectId1, fundingProjectId2, ...] }
+
+  // ✅ מצב עבור מודל הגשת חשבונית
+  const [showSubmissionModal, setShowSubmissionModal] = useState(false);
 
   const [globalFields, setGlobalFields] = useState({
     invoiceNumber: "",
@@ -49,8 +52,13 @@ const InvoiceEditPage = () => {
     paymentMethod: "",
     checkNumber: "", // ✅ הוסף
     checkDate: "",
+    status: "לא הוגש", // ✅ סטטוס הגשה
+    submittedToProjectId: null, // ✅ פרויקט שאליו הוגשה החשבונית
+    submittedAt: null, // ✅ תאריך הגשה
     files: [],
   });
+  const [forceUnsubmit, setForceUnsubmit] = useState(false);
+
 
   const { id } = useParams();
   const navigate = useNavigate();
@@ -122,6 +130,11 @@ const InvoiceEditPage = () => {
               checkDate: invoice.checkDate
                 ? invoice.checkDate.split("T")[0]
                 : "",
+              status: invoice.status || "לא הוגש",
+              submittedToProjectId: invoice.submittedToProjectId?._id || invoice.submittedToProjectId || null,
+              submittedAt: invoice.submittedAt
+                ? invoice.submittedAt.split("T")[0]
+                : null,
             }));
 
             // -------- SELECTED PROJECTS ----------
@@ -150,21 +163,33 @@ const InvoiceEditPage = () => {
             setRows(builtRows);
 
             // -------- FUNDING PROJECT MAP ----------
-            // ✅ אם יש fundedFromProjectId או פרויקט מילגה, טען את המיפוי
+            // ✅ אם יש fundedFromProjectId או fundedFromProjectIds, טען את המיפוי
             const milgaProject = invoice.projects.find(
               (p) => (p.projectId.name || p.projectName) === "מילגה"
             );
 
-            if (milgaProject && invoice.fundedFromProjectId) {
+            if (milgaProject) {
               const milgaId = milgaProject.projectId._id || milgaProject.projectId;
-              const fundedId =
-                typeof invoice.fundedFromProjectId === "string"
-                  ? invoice.fundedFromProjectId
-                  : invoice.fundedFromProjectId._id;
 
-              setFundingProjectsMap({
-                [milgaId]: fundedId,
-              });
+              // תמיכה גם בגרסה הישנה (יחיד) וגם בגרסה החדשה (מרובה)
+              if (invoice.fundedFromProjectIds && Array.isArray(invoice.fundedFromProjectIds)) {
+                // גרסה חדשה - מערך
+                const fundedIds = invoice.fundedFromProjectIds.map(id =>
+                  typeof id === "string" ? id : id._id
+                );
+                setFundingProjectsMap({
+                  [milgaId]: fundedIds,
+                });
+              } else if (invoice.fundedFromProjectId) {
+                // גרסה ישנה - ערך יחיד - המר למערך
+                const fundedId =
+                  typeof invoice.fundedFromProjectId === "string"
+                    ? invoice.fundedFromProjectId
+                    : invoice.fundedFromProjectId._id;
+                setFundingProjectsMap({
+                  [milgaId]: [fundedId],
+                });
+              }
             }
           }
         }
@@ -228,29 +253,44 @@ const InvoiceEditPage = () => {
     });
   };
 
-  // טיפול בבחירת פרויקט ממומן
-  const handleFundingProjectSelect = (fundingProject) => {
+  // טיפול בבחירת פרויקט/ים ממומן/ים
+  const handleFundingProjectSelect = (fundingProjectOrProjects) => {
     if (!pendingMilgaProject) return;
 
-    // שמור את המיפוי בין פרויקט מילגה לפרויקט ממומן
+    // תמיכה גם בפרויקט יחיד וגם במערך של פרויקטים
+    const fundingProjects = Array.isArray(fundingProjectOrProjects)
+      ? fundingProjectOrProjects
+      : [fundingProjectOrProjects];
+
+    const fundingProjectIds = fundingProjects.map(p => p._id);
+
+    // שמור את המיפוי בין פרויקט מילגה לפרויקטים ממומנים
     setFundingProjectsMap((prev) => ({
       ...prev,
-      [pendingMilgaProject._id]: fundingProject._id,
+      [pendingMilgaProject._id]: fundingProjectIds,
     }));
 
     // עכשיו הוסף את פרויקט המילגה לבחירה
     const updatedProjects = [...selectedProjects, pendingMilgaProject];
     setSelectedProjects(updatedProjects);
 
-    // הוסף שורה
-    setRows((prev) => [
-      ...prev,
-      {
-        projectId: pendingMilgaProject._id,
-        projectName: pendingMilgaProject.name,
-        sum: "",
-      },
-    ]);
+    // הוסף שורות עבור כל הפרויקטים הממומנים
+    setRows((prev) => {
+      const newRows = [...prev];
+
+      // הוסף שורה לכל פרויקט ממומן
+      fundingProjects.forEach(fp => {
+        if (!newRows.find(r => r.projectId === fp._id)) {
+          newRows.push({
+            projectId: fp._id,
+            projectName: fp.name,
+            sum: "",
+          });
+        }
+      });
+
+      return newRows;
+    });
 
     // נקה את המצב הזמני
     setPendingMilgaProject(null);
@@ -309,6 +349,11 @@ const InvoiceEditPage = () => {
       !globalFields.checkNumber
     ) {
       return toast.error("יש למלא מספר צ'ק");
+    }
+
+    // ✅ בדיקה עבור הגשה
+    if (globalFields.status === "הוגש" && !globalFields.submittedToProjectId) {
+      return toast.error("יש לבחור פרויקט להגשה");
     }
     for (let i = 0; i < rows.length; i++) {
       if (!rows[i].sum || rows[i].sum <= 0) {
@@ -372,25 +417,50 @@ const InvoiceEditPage = () => {
           });
         }
       }
+      let finalStatus = globalFields.status;
+      let finalSubmittedProject = globalFields.submittedToProjectId;
+      let finalSubmittedAt = globalFields.submittedAt;
+
+      if (forceUnsubmit && globalFields.status !== "הוגש") {
+        finalStatus = "לא הוגש";
+        finalSubmittedProject = null;
+        finalSubmittedAt = null;
+      }
+
+
+      const {
+        status,
+        submittedToProjectId,
+        submittedAt,
+        ...restGlobalFields
+      } = globalFields;
 
       const payload = {
-        ...globalFields,
-        files: uploadedGlobalFiles, // קבצים כלליים מועלים
+        ...restGlobalFields, // ❗ בלי status והגשה
+        files: uploadedGlobalFiles,
         paymentMethod:
           globalFields.paid === "כן" ? globalFields.paymentMethod : "",
-        paymentDate: globalFields.paid === "כן" ? globalFields.paymentDate : "",
+        paymentDate:
+          globalFields.paid === "כן" ? globalFields.paymentDate : "",
         checkNumber:
           globalFields.paid === "כן" && globalFields.paymentMethod === "check"
             ? globalFields.checkNumber
-            : null, // ✅ הוסף
+            : null,
         checkDate:
           globalFields.paid === "כן" && globalFields.paymentMethod === "check"
             ? globalFields.checkDate
-            : null, // ✅ הוסף
+            : null,
         projects: finalProjects,
-        fundingProjectsMap, // ✅ מיפוי פרויקטי מילגה לפרויקטים ממומנים
+        fundingProjectsMap,
+
+        // ✅ הגשה – מקור אמת אחד בלבד
+        status: forceUnsubmit ? "לא הוגש" : status,
+        submittedToProjectId: forceUnsubmit ? null : submittedToProjectId,
+        submittedAt: forceUnsubmit ? null : submittedAt,
       };
 
+      setForceUnsubmit(false);
+      console.log(payload)
       await api.put(`/invoices/${id}`, payload);
 
       toast.success("החשבונית נשמרה בהצלחה!");
@@ -466,6 +536,7 @@ const InvoiceEditPage = () => {
           projects={projects}
           onSelect={handleFundingProjectSelect}
           milgaProjectName={pendingMilgaProject?.name || ""}
+          multiSelect={true}
         />
 
         {/* GLOBAL FIELDS */}
@@ -508,6 +579,69 @@ const InvoiceEditPage = () => {
               <option value="אין צורך">אין צורך</option>
             </select>
           </div>
+
+          {/* ✅ הגשת חשבונית */}
+          {/* ✅ הגשת חשבונית */}
+          <div className="md:col-span-2">
+            <label className="font-bold mb-2 block">הגשת חשבונית</label>
+
+            {/* 🔔 הודעת ביניים – ביטול הגשה לפני שמירה */}
+            {forceUnsubmit && (
+              <div className="mb-3 p-3 bg-yellow-50 border border-yellow-300 rounded-xl text-sm text-yellow-800">
+                ⚠️ ביטול הגשה בוצע – יש לשמור שינויים כדי להחיל
+              </div>
+            )}
+
+            {globalFields.status === "הוגש" &&
+              globalFields.submittedToProjectId &&
+              !forceUnsubmit ? (
+              <div className="flex items-center gap-3 p-3 bg-green-50 border border-green-200 rounded-xl">
+                <div className="flex-1">
+                  <p className="text-sm text-gray-600">
+                    סטטוס: <span className="font-bold text-green-700">הוגש</span>
+                  </p>
+                  <p className="text-sm text-gray-600">
+                    הוגש לפרויקט:{" "}
+                    <span className="font-bold">
+                      {projects.find(
+                        p => p._id === globalFields.submittedToProjectId
+                      )?.name || "טוען..."}
+                    </span>
+                  </p>
+                  {globalFields.submittedAt && (
+                    <p className="text-sm text-gray-600">
+                      תאריך הגשה:{" "}
+                      <span className="font-bold">
+                        {new Date(globalFields.submittedAt).toLocaleDateString("he-IL")}
+                      </span>
+                    </p>
+                  )}
+                </div>
+
+                <button
+                  type="button"
+                  onClick={() => {
+                    updateGlobal("status", "לא הוגש");
+                    updateGlobal("submittedToProjectId", null);
+                    updateGlobal("submittedAt", null);
+                    setForceUnsubmit(true);
+                  }}
+                  className="px-4 py-2 bg-red-500 text-white rounded-lg hover:bg-red-600 transition-colors text-sm font-medium"
+                >
+                  ביטול הגשה
+                </button>
+              </div>
+            ) : (
+              <button
+                type="button"
+                onClick={() => setShowSubmissionModal(true)}
+                className="w-56 p-3 bg-gradient-to-br from-orange-500 to-amber-600 text-white font-bold rounded-xl"
+              >
+                סמן כהוגש לפרויקט
+              </button>
+            )}
+          </div>
+
 
           {isAdmin && (
             <>
@@ -678,6 +812,82 @@ const InvoiceEditPage = () => {
           </button>
         </div>
       </div>
+
+      {/* ✅ Submission Modal - מודל בחירת פרויקט להגשה */}
+      {showSubmissionModal && (
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-2xl shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+            <div className="p-6 border-b border-gray-200">
+              <h2 className="text-2xl font-bold text-gray-800">סמן חשבונית כהוגשה</h2>
+              <p className="text-sm text-gray-600 mt-1">בחר את הפרויקט שאליו הוגשה החשבונית</p>
+            </div>
+
+            <div className="p-6">
+              <div className="mb-4">
+                <label className="font-bold mb-2 block">בחר פרויקט:</label>
+                <select
+                  className="w-full p-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  value={globalFields.submittedToProjectId || ""}
+                  onChange={(e) => updateGlobal("submittedToProjectId", e.target.value || null)}
+                >
+                  <option value="">בחר פרויקט...</option>
+                  {projects.map((p) => (
+                    <option key={p._id} value={p._id}>
+                      {p.name}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              <div className="mb-4">
+                <label className="font-bold mb-2 block">תאריך הגשה:</label>
+                <input
+                  type="date"
+                  className="w-full p-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  value={globalFields.submittedAt || new Date().toISOString().split("T")[0]}
+                  onChange={(e) => updateGlobal("submittedAt", e.target.value)}
+                />
+              </div>
+            </div>
+
+            <div className="p-6 border-t border-gray-200 flex gap-3">
+              <button
+                onClick={() => {
+                  if (!globalFields.submittedToProjectId) {
+                    toast.error("יש לבחור פרויקט");
+                    return;
+                  }
+
+                  setGlobalFields(prev => ({
+                    ...prev,
+                    status: "הוגש",
+                    submittedToProjectId: prev.submittedToProjectId,
+                    submittedAt: prev.submittedAt || new Date().toISOString().split("T")[0],
+                  }));
+
+                  setForceUnsubmit(false);
+                  setShowSubmissionModal(false);
+                  toast.success("החשבונית סומנה כהוגשה");
+                }}
+
+
+                className="flex-1 py-3 bg-gradient-to-br from-orange-500 to-amber-600 text-white font-bold rounded-xl  transition-all"
+              >
+                אישור
+              </button>
+              <button
+                onClick={() => {
+                  setShowSubmissionModal(false);
+                  updateGlobal("submittedToProjectId", null);
+                }}
+                className="flex-1 py-3 bg-gray-300 text-gray-700 font-bold rounded-xl hover:bg-gray-400 transition-colors"
+              >
+                ביטול
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

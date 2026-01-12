@@ -307,6 +307,35 @@ const InvoiceDetailsPage = () => {
             value={invoice.createdByName || "—"}
           />
 
+          {/* ✅ הצגת סטטוס הגשה */}
+          <DetailCard
+            label="סטטוס הגשה"
+            icon={<FileText />}
+            value={
+              invoice.status === "הוגש"
+                ? <span className="font-bold text-green-600">הוגש ✓</span>
+                : <span className="text-gray-500">לא הוגש</span>
+            }
+          />
+
+          {/* ✅ אם הוגש - הצג לאיזה פרויקט */}
+          {invoice.status === "הוגש" && invoice.submittedToProjectId && (
+            <DetailCard
+              label="הוגש לפרויקט"
+              icon={<Building2 />}
+              value={invoice.submittedToProjectId?.name || "טוען..."}
+            />
+          )}
+
+          {/* ✅ אם הוגש - הצג תאריך הגשה */}
+          {invoice.status === "הוגש" && invoice.submittedAt && (
+            <DetailCard
+              label="תאריך הגשה"
+              icon={<Calendar />}
+              value={formatDate(invoice.submittedAt)}
+            />
+          )}
+
           {/* תווית מילגה - אם החשבונית יורדת מפרויקט מילגה */}
           {invoice.fundedFromProjectId && (
             <>

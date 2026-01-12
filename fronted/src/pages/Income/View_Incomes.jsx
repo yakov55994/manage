@@ -70,6 +70,47 @@ export default function ViewIncomes() {
       return sortOrder === "asc" ? comparison : -comparison;
     });
 
+  const groupIncomesByMonth = (incomes) => {
+    return incomes.reduce((acc, income) => {
+      if (!income.date) return acc;
+
+      const date = new Date(income.date);
+      const key = `${date.getFullYear()}-${date.getMonth()}`;
+
+      if (!acc[key]) {
+        acc[key] = {
+          year: date.getFullYear(),
+          month: date.getMonth(),
+          incomes: [],
+        };
+      }
+
+      acc[key].incomes.push(income);
+      return acc;
+    }, {});
+  };
+
+  const HEBREW_MONTHS = [
+    "ינואר",
+    "פברואר",
+    "מרץ",
+    "אפריל",
+    "מאי",
+    "יוני",
+    "יולי",
+    "אוגוסט",
+    "ספטמבר",
+    "אוקטובר",
+    "נובמבר",
+    "דצמבר",
+  ];
+
+  const groupedIncomes = groupIncomesByMonth(filteredIncomes);
+
+  const groupedByMonthSorted = Object.values(groupedIncomes).sort(
+    (a, b) => new Date(b.year, b.month) - new Date(a.year, a.month)
+  );
+
   const toggleSort = (field) => {
     if (sortBy === field) {
       setSortOrder(sortOrder === "asc" ? "desc" : "asc");
@@ -337,20 +378,16 @@ export default function ViewIncomes() {
           </div>
         </div>
 
-        {/* Incomes Table */}
-        <div className="relative mb-6">
-          <div className="absolute -inset-2 bg-gradient-to-r from-orange-500 via-amber-500 to-yellow-500 rounded-3xl opacity-10 blur-xl"></div>
+        {/* Incomes Groups */}
+        {filteredIncomes.length > 0 ? (
+          <div className="space-y-8">
+            {groupedByMonthSorted.map((group) => (
+              <div key={`${group.year}-${group.month}`} className="bg-white/80 backdrop-blur-xl rounded-2xl shadow-lg p-6 border border-white/50">
+                {/* כותרת חודש ושנה */}
+               <h2 className="text-xl font-bold text-slate-900 mb-6 ">
+                  {HEBREW_MONTHS[group.month]} {group.year} <span className="text-sm"> ({group.incomes.length})</span>
+                </h2>
 
-          <div className="relative bg-white/90 backdrop-blur-xl rounded-3xl shadow-xl border border-white/50 overflow-hidden">
-            {filteredIncomes.length === 0 ? (
-              <div className="text-center py-20">
-                <DollarSign className="w-16 h-16 mx-auto mb-4 text-orange-400 opacity-50" />
-                <p className="font-bold text-xl text-slate-600">
-                  {searchTerm ? "לא נמצאו הכנסות" : "אין הכנסות להצגה"}
-                </p>
-              </div>
-            ) : (
-              <>
                 {/* Desktop Table */}
                 <div className="hidden lg:block overflow-x-auto">
                   <table className="min-w-full">
@@ -380,7 +417,7 @@ export default function ViewIncomes() {
                       </tr>
                     </thead>
                     <tbody className="bg-white divide-y divide-orange-100">
-                      {filteredIncomes.map((income, index) => (
+                      {group.incomes.map((income, index) => (
                         <tr
                           key={income._id}
                           className={`hover:bg-orange-50/50 transition-colors cursor-pointer ${
@@ -473,8 +510,8 @@ export default function ViewIncomes() {
                 </div>
 
                 {/* Mobile Cards */}
-                <div className="lg:hidden space-y-4 p-4">
-                  {filteredIncomes.map((income) => (
+                <div className="lg:hidden space-y-4">
+                  {group.incomes.map((income) => (
                     <div
                       key={income._id}
                       onClick={() => navigate(`/incomes/${income._id}`)}
@@ -579,14 +616,25 @@ export default function ViewIncomes() {
                     </div>
                   ))}
                 </div>
-              </>
-            )}
+              </div>
+            ))}
           </div>
-        </div>
+        ) : (
+          <div className="relative mb-6">
+            <div className="absolute -inset-2 bg-gradient-to-r from-orange-500 via-amber-500 to-yellow-500 rounded-3xl opacity-10 blur-xl"></div>
+
+            <div className="relative bg-white/90 backdrop-blur-xl rounded-3xl shadow-xl border border-white/50 overflow-hidden p-12 text-center">
+              <DollarSign className="w-16 h-16 mx-auto mb-4 text-orange-400 opacity-50" />
+              <p className="font-bold text-xl text-slate-600">
+                {searchTerm ? "לא נמצאו הכנסות" : "אין הכנסות להצגה"}
+              </p>
+            </div>
+          </div>
+        )}
 
         {/* Summary */}
         {filteredIncomes.length > 0 && (
-          <div className="bg-white/90 backdrop-blur-xl rounded-2xl shadow-xl p-6 border border-white/50">
+          <div className="bg-white/90 backdrop-blur-xl rounded-2xl shadow-xl p-6 border border-white/50 mt-8">
             <div className="flex items-center justify-between">
               <span className="text-lg font-bold text-slate-700">סה"כ הכנסות:</span>
               <span className="text-3xl font-black bg-gradient-to-r from-orange-600 to-amber-600 bg-clip-text text-transparent">

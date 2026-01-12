@@ -64,6 +64,9 @@ const CreateInvoice = () => {
       paymentMethod: "",
       checkNumber: "",
       checkDate: "",
+      status: "לא הוגש", // ✅ סטטוס הגשה
+      submittedToProjectId: null, // ✅ פרויקט שאליו הוגשה החשבונית
+      submittedAt: null, // ✅ תאריך הגשה
       files: [],
     }
   );
@@ -71,6 +74,9 @@ const CreateInvoice = () => {
   const [rows, setRows] = useState(draft?.rows || []);
   const [fundedFromProjectId, setFundedFromProjectId] = useState("");
   const [fundedFromProjectIds, setFundedFromProjectIds] = useState(draft?.fundedFromProjectIds || []);
+
+  // ✅ מצב עבור מודל הגשת חשבונית
+  const [showSubmissionModal, setShowSubmissionModal] = useState(false);
 
   // ✅ הוסף את זה אחרי ה-useState של form
   useEffect(() => {
@@ -244,6 +250,12 @@ const CreateInvoice = () => {
     ) {
       return toast.error("יש למלא מספר צ'ק");
     }
+
+    // ✅ בדיקה עבור הגשה
+    if (form.status === "הוגש" && !form.submittedToProjectId) {
+      return toast.error("יש לבחור פרויקט להגשה");
+    }
+
     if (isSalary && !fundedFromProjectId) {
       return toast.error("יש לבחור פרויקט ממנו יורד התקציב למשכורות");
     }
@@ -324,9 +336,15 @@ const CreateInvoice = () => {
             : null,
 
         files: uploadedFiles,
-        status: "לא הוגש",
 
+        // ✅ שדות הגשה
+        status: form.status || "לא הוגש",
+        submittedToProjectId: form.submittedToProjectId || null,
+        submittedAt: form.submittedAt || null,
+
+        // תמיכה בשתי הגרסאות - ישנה (יחיד) וחדשה (מרובה)
         fundedFromProjectId: fundedFromProjectId || null,
+        fundedFromProjectIds: fundedFromProjectIds && fundedFromProjectIds.length > 0 ? fundedFromProjectIds : null,
       };
 
       if (isSalary) {
@@ -676,6 +694,48 @@ const CreateInvoice = () => {
             </select>
           </div>
 
+          {/* ✅ הגשת חשבונית */}
+          <div className="md:col-span-2">
+            <label className="font-bold mb-2 block">הגשת חשבונית</label>
+            {form.status === "הוגש" && form.submittedToProjectId ? (
+              <div className="flex items-center gap-3 p-3 bg-green-50 border border-green-200 rounded-xl">
+                <div className="flex-1">
+                  <p className="text-sm text-gray-600">סטטוס: <span className="font-bold text-green-700">הוגש</span></p>
+                  <p className="text-sm text-gray-600">
+                    הוגש לפרויקט: <span className="font-bold">{projects.find(p => p._id === form.submittedToProjectId)?.name || "טוען..."}</span>
+                  </p>
+                  {form.submittedAt && (
+                    <p className="text-sm text-gray-600">
+                      תאריך הגשה: <span className="font-bold">{new Date(form.submittedAt).toLocaleDateString("he-IL")}</span>
+                    </p>
+                  )}
+                </div>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setForm((prev) => ({
+                      ...prev,
+                      status: "לא הוגש",
+                      submittedToProjectId: null,
+                      submittedAt: null,
+                    }));
+                  }}
+                  className="px-4 py-2 bg-red-500 text-white rounded-lg hover:bg-red-600 transition-colors text-sm font-medium"
+                >
+                  ביטול הגשה
+                </button>
+              </div>
+            ) : (
+              <button
+                type="button"
+                onClick={() => setShowSubmissionModal(true)}
+                className="w-full p-3 bg-gradient-to-r from-blue-600 to-indigo-600 text-white font-bold rounded-xl hover:from-blue-700 hover:to-indigo-700 transition-all shadow-lg"
+              >
+                סמן כהוגש לפרויקט
+              </button>
+            )}
+          </div>
+
           {/* ✅ סטטוס תשלום */}
           <div>
             <label>סטטוס תשלום</label>
@@ -897,6 +957,89 @@ const CreateInvoice = () => {
           </button>
         </div>
       </div>
+
+      {/* ✅ Submission Modal - מודל בחירת פרויקט להגשה */}
+      {showSubmissionModal && (
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-2xl shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+            <div className="p-6 border-b border-gray-200">
+              <h2 className="text-2xl font-bold text-gray-800">סמן חשבונית כהוגשה</h2>
+              <p className="text-sm text-gray-600 mt-1">בחר את הפרויקט שאליו תוגש החשבונית</p>
+            </div>
+
+            <div className="p-6">
+              <div className="mb-4">
+                <label className="font-bold mb-2 block">בחר פרויקט:</label>
+                <select
+                  className="w-full p-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  value={form.submittedToProjectId || ""}
+                  onChange={(e) =>
+                    setForm((prev) => ({
+                      ...prev,
+                      submittedToProjectId: e.target.value || null,
+                    }))
+                  }
+                >
+                  <option value="">בחר פרויקט...</option>
+                  {projects.map((p) => (
+                    <option key={p._id} value={p._id}>
+                      {p.name}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              <div className="mb-4">
+                <label className="font-bold mb-2 block">תאריך הגשה:</label>
+                <input
+                  type="date"
+                  className="w-full p-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  value={form.submittedAt || new Date().toISOString().split("T")[0]}
+                  onChange={(e) =>
+                    setForm((prev) => ({
+                      ...prev,
+                      submittedAt: e.target.value,
+                    }))
+                  }
+                />
+              </div>
+            </div>
+
+            <div className="p-6 border-t border-gray-200 flex gap-3">
+              <button
+                onClick={() => {
+                  if (!form.submittedToProjectId) {
+                    toast.error("יש לבחור פרויקט");
+                    return;
+                  }
+                  setForm((prev) => ({
+                    ...prev,
+                    status: "הוגש",
+                    submittedAt: prev.submittedAt || new Date().toISOString().split("T")[0],
+                  }));
+                  setShowSubmissionModal(false);
+                  toast.success("החשבונית תסומן כהוגשה");
+                }}
+                className="flex-1 py-3 bg-gradient-to-r from-blue-600 to-indigo-600 text-white font-bold rounded-xl hover:from-blue-700 hover:to-indigo-700 transition-all"
+              >
+                אישור
+              </button>
+              <button
+                onClick={() => {
+                  setShowSubmissionModal(false);
+                  setForm((prev) => ({
+                    ...prev,
+                    submittedToProjectId: null,
+                  }));
+                }}
+                className="flex-1 py-3 bg-gray-300 text-gray-700 font-bold rounded-xl hover:bg-gray-400 transition-colors"
+              >
+                ביטול
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

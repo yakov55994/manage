@@ -111,7 +111,7 @@ async function searchInvoices(query) {
       const totalAmount = invoice.totalAmount?.toString() || "";
 
       return supplierName.toLowerCase().includes(query.toLowerCase()) ||
-             totalAmount.includes(query);
+        totalAmount.includes(query);
     });
   }
 
@@ -157,7 +157,8 @@ async function getInvoiceById(user, invoiceId) {
   const invoice = await Invoice.findById(invoiceId)
     .populate("supplierId")
     .populate("projects.projectId", "name invitingName budget remainingBudget")
-    .populate("fundedFromProjectId", "name");
+    .populate("fundedFromProjectId", "name")
+    .populate("submittedToProjectId", "name");
 
   if (!invoice) return null;
 
@@ -273,7 +274,7 @@ async function createInvoice(user, data) {
     return createSalaryInvoice(user, data);
   }
 
-  const { projects, files, fundedFromProjectId, supplierId, ...basic } = data;
+  const { projects, files, fundedFromProjectId, fundedFromProjectIds, supplierId, ...basic } = data;
 
   if (!projects || !projects.length)
     throw new Error("חובה לבחור לפחות פרויקט אחד");
@@ -304,7 +305,9 @@ async function createInvoice(user, data) {
     projects,
     totalAmount,
     files,
+    // תמיכה בשתי הגרסאות
     fundedFromProjectId: fundedFromProjectId || null,
+    fundedFromProjectIds: fundedFromProjectIds || null,
     createdBy: user._id,
     createdByName: user.username || user.name,
   });
@@ -352,7 +355,11 @@ async function updateInvoice(user, invoiceId, data) {
     projects: newProjects,
     files: newFiles = [],
     fundedFromProjectId,
-    fundingProjectsMap = {}, // ✅ מיפוי פרויקטי מילגה לפרויקטים ממומנים
+    fundedFromProjectIds,
+    fundingProjectsMap = {}, // ✅ מיפוי פרויקטי מילגה לפרויקטים ממומנים (יכול להיות מערך)
+    status,
+    submittedToProjectId,
+    submittedAt,
     ...basic
   } = data;
 
@@ -361,7 +368,7 @@ async function updateInvoice(user, invoiceId, data) {
   const finalFiles = newFiles;
 
   // וודא שכל פרויקט יש לו projectName מעודכן
-  // ✅ הוסף גם fundedFromProjectId לכל פרויקט מילגה
+  // ✅ הוסף גם fundedFromProjectId/fundedFromProjectIds לכל פרויקט מילגה
   const projectsWithNames = await Promise.all(
     newProjects.map(async (p) => {
       const project = await Project.findById(p.projectId).select("name isMilga type");
@@ -369,32 +376,67 @@ async function updateInvoice(user, invoiceId, data) {
       // בדוק אם זה פרויקט מילגה
       const isMilgaProject = project?.isMilga || project?.type === "milga";
 
-      // קבל את ה-fundedFromProjectId מהמיפוי אם קיים
-      const fundingProjectId = fundingProjectsMap[p.projectId] || null;
+      // קבל את ה-fundedFromProjectId/Ids מהמיפוי אם קיים
+      const fundingProjectIdOrIds = fundingProjectsMap[p.projectId] || null;
 
       return {
         projectId: p.projectId,
         projectName: project?.name || p.projectName,
         sum: p.sum,
-        fundedFromProjectId: isMilgaProject ? fundingProjectId : null, // ✅ הוסף לכל פרויקט
+        // תמיכה גם בערך יחיד וגם במערך
+        fundedFromProjectId: isMilgaProject && !Array.isArray(fundingProjectIdOrIds) ? fundingProjectIdOrIds : null,
+        fundedFromProjectIds: isMilgaProject && Array.isArray(fundingProjectIdOrIds) ? fundingProjectIdOrIds : null,
       };
     })
   );
 
-  const updated = await Invoice.findByIdAndUpdate(
-    invoiceId,
-    {
-      ...basic,
-      projects: projectsWithNames,
-      totalAmount: projectsWithNames.reduce(
-        (sum, p) => sum + Number(p.sum),
-        0
-      ),
-      files: finalFiles,
-      fundedFromProjectId: fundedFromProjectId || null,
-    },
-    { new: true }
-  );
+  // ✅ טיפול בסטטוס הגשה – מאפשר ביטול
+let updateFields = {
+  ...basic,
+  projects: projectsWithNames,
+  totalAmount: projectsWithNames.reduce(
+    (sum, p) => sum + Number(p.sum),
+    0
+  ),
+  files: finalFiles,
+};
+
+let unsetFields = {};
+
+if (status === "הוגש") {
+  if (!submittedToProjectId) {
+    throw new Error("חובה לבחור פרויקט להגשה");
+  }
+
+  updateFields.status = "הוגש";
+  updateFields.submittedToProjectId = submittedToProjectId;
+  updateFields.submittedAt = submittedAt || new Date();
+}
+
+if (status === "לא הוגש") {
+  updateFields.status = "לא הוגש";
+  unsetFields.submittedToProjectId = "";
+  unsetFields.submittedAt = "";
+}
+
+if (fundedFromProjectId !== undefined) {
+  updateFields.fundedFromProjectId = fundedFromProjectId;
+}
+
+if (fundedFromProjectIds !== undefined) {
+  updateFields.fundedFromProjectIds = fundedFromProjectIds;
+}
+
+const updated = await Invoice.findByIdAndUpdate(
+  invoiceId,
+  {
+    $set: updateFields,
+    ...(Object.keys(unsetFields).length ? { $unset: unsetFields } : {}),
+  },
+  { new: true }
+);
+
+
 
   const newProjectIds = projectsWithNames.map((p) =>
     p.projectId.toString()
@@ -437,7 +479,7 @@ async function updateInvoice(user, invoiceId, data) {
 // ===============================================
 // MOVE INVOICE TO MULTIPLE PROJECTS - פונקציה חדשה
 // ===============================================
-async function moveInvoiceToMultipleProjects(user, invoice, targetProjects, fundedFromProjectId = null) {
+async function moveInvoiceToMultipleProjects(user, invoice, targetProjects, fundedFromProjectId = null, fundedFromProjectIds = null) {
 
   // תוקף הסכום הכולל
   const totalAllocated = targetProjects.reduce((sum, p) => sum + Number(p.sum), 0);
@@ -473,6 +515,7 @@ async function moveInvoiceToMultipleProjects(user, invoice, targetProjects, fund
   // שמור את הפרויקטים הישנים לצורך עדכון התקציבים
   const oldProjectIds = invoice.projects.map(p => String(p.projectId?._id || p.projectId));
   const oldFundedFromProjectId = invoice.fundedFromProjectId ? String(invoice.fundedFromProjectId) : null;
+  const oldFundedFromProjectIds = invoice.fundedFromProjectIds || [];
 
   // בדוק אם יש פרויקט מילגה ברשימה
   const hasMilgaProject = await Promise.all(
@@ -482,9 +525,12 @@ async function moveInvoiceToMultipleProjects(user, invoice, targetProjects, fund
     })
   ).then(results => results.some(Boolean));
 
-  // אם יש פרויקט מילגה ולא סופק fundedFromProjectId - זרוק שגיאה
-  if (hasMilgaProject && !fundedFromProjectId) {
-    throw new Error("פרויקט מילגה דורש בחירת פרויקט ממומן");
+  // אם יש פרויקט מילגה ולא סופקו פרויקטים ממומנים - זרוק שגיאה
+  if (hasMilgaProject && !fundedFromProjectIds && !fundedFromProjectId) {
+    throw new Error("פרויקט מילגה דורש בחירת פרויקט/ים ממומן/ים");
+  }
+  if (hasMilgaProject && fundedFromProjectIds && fundedFromProjectIds.length === 0) {
+    throw new Error("פרויקט מילגה דורש בחירת לפחות פרויקט ממומן אחד");
   }
 
   // בנה את מערך הפרויקטים החדש
@@ -504,12 +550,17 @@ async function moveInvoiceToMultipleProjects(user, invoice, targetProjects, fund
   invoice.projects = newProjects;
   invoice.totalAmount = totalAllocated;
 
-  // עדכן את fundedFromProjectId
-  if (fundedFromProjectId) {
+  // עדכן את fundedFromProjectIds או fundedFromProjectId (תמיכה לאחור)
+  if (fundedFromProjectIds && fundedFromProjectIds.length > 0) {
+    invoice.fundedFromProjectIds = fundedFromProjectIds;
+    invoice.fundedFromProjectId = null; // נקה את הישן
+  } else if (fundedFromProjectId) {
     invoice.fundedFromProjectId = fundedFromProjectId;
+    invoice.fundedFromProjectIds = []; // נקה את החדש
   } else if (!hasMilgaProject) {
-    // אם אין פרויקט מילגה, נקה את fundedFromProjectId
+    // אם אין פרויקט מילגה, נקה את שניהם
     invoice.fundedFromProjectId = null;
+    invoice.fundedFromProjectIds = [];
   }
 
   // שמור
@@ -532,21 +583,34 @@ async function moveInvoiceToMultipleProjects(user, invoice, targetProjects, fund
     await recalculateRemainingBudget(newId);
   }
 
-  // חשב מחדש תקציב עבור הפרויקט החדש שממומן (אם יש)
-  if (fundedFromProjectId) {
+  // חשב מחדש תקציב עבור הפרויקטים החדשים שממומנים (אם יש)
+  if (fundedFromProjectIds && fundedFromProjectIds.length > 0) {
+    for (const fundedId of fundedFromProjectIds) {
+      await recalculateRemainingBudget(fundedId);
+    }
+  } else if (fundedFromProjectId) {
     await recalculateRemainingBudget(fundedFromProjectId);
   }
 
-  // חשב מחדש תקציב עבור הפרויקט הישן שממומן (אם היה ושונה)
-  if (oldFundedFromProjectId && oldFundedFromProjectId !== String(fundedFromProjectId)) {
-    await recalculateRemainingBudget(oldFundedFromProjectId);
+  // חשב מחדש תקציב עבור הפרויקטים הישנים שממומנים (אם היו ושונו)
+  const newFundedIds = fundedFromProjectIds || (fundedFromProjectId ? [fundedFromProjectId] : []);
+  const allOldFundedIds = [...oldFundedFromProjectIds];
+  if (oldFundedFromProjectId) {
+    allOldFundedIds.push(oldFundedFromProjectId);
+  }
+
+  for (const oldFundedId of allOldFundedIds) {
+    if (!newFundedIds.includes(String(oldFundedId))) {
+      await recalculateRemainingBudget(oldFundedId);
+    }
   }
 
   // טען מחדש עם populate
   const populated = await Invoice.findById(invoice._id)
     .populate("projects.projectId", "name invitingName")
     .populate("supplierId", "name phone email bankDetails")
-    .populate("fundedFromProjectId", "name");
+    .populate("fundedFromProjectId", "name")
+    .populate("fundedFromProjectIds", "name");
 
   if (!populated) throw new Error("שגיאה בטעינת החשבונית לאחר ההעברה");
 
@@ -565,7 +629,7 @@ async function moveInvoiceToMultipleProjects(user, invoice, targetProjects, fund
 // ===============================================
 // MOVE INVOICE - תמיכה במספר פרויקטים
 // ===============================================
-async function moveInvoice(user, invoiceId, fromProjectId, toProjectId, fundedFromProjectId, targetProjects) {
+async function moveInvoice(user, invoiceId, fromProjectId, toProjectId, fundedFromProjectId, targetProjects, fundedFromProjectIds) {
 
   const invoice = await Invoice.findById(invoiceId);
   if (!invoice) throw new Error("חשבונית לא נמצאה");
@@ -577,7 +641,7 @@ async function moveInvoice(user, invoiceId, fromProjectId, toProjectId, fundedFr
   // תמיכה ב-API חדש ו-API ישן
   if (targetProjects && Array.isArray(targetProjects)) {
     // API חדש - העברה למספר פרויקטים
-    return await moveInvoiceToMultipleProjects(user, invoice, targetProjects, fundedFromProjectId);
+    return await moveInvoiceToMultipleProjects(user, invoice, targetProjects, fundedFromProjectId, fundedFromProjectIds);
   }
 
   // API ישן - תמיכה לאחור

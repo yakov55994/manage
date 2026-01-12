@@ -20,6 +20,10 @@ const orderSchema = new mongoose.Schema({
   submittedAmount: { type: Number, default: 0 },
   submittedDate: { type: Date, default: null },
 
+  // ✅ זוכה לחשבון בנק - האם ההזמנה זוכתה (שולמה) לחשבון הבנק
+  creditedToBankAccount: { type: Boolean, default: false },
+  creditedDate: { type: Date, default: null }, // תאריך הזיכוי
+
   invitingName: { type: String, required: true }, // מי ביצע את ההזמנה
   detail: { type: String, required: false },
 

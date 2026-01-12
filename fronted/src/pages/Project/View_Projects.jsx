@@ -167,43 +167,39 @@ const ProjectsPage = ({ initialProjects = [] }) => {
               <h2 class="files-title">📎 קבצים מצורפים (${allFiles.length})</h2>
               <div class="files-grid">
                 ${allFiles
-                  .map((file, idx) => {
-                    const isImage = file.type?.startsWith("image/");
-                    return `
+              .map((file, idx) => {
+                const isImage = file.type?.startsWith("image/");
+                return `
                     <div class="file-card">
                       <div class="file-header">
                         <span class="file-number">#${idx + 1}</span>
-                        <span class="file-badge">${file.docType} ${
-                      file.docNumber
-                    }</span>
+                        <span class="file-badge">${file.docType} ${file.docNumber
+                  }</span>
                       </div>
                       
-                      ${
-                        isImage
-                          ? `
+                      ${isImage
+                    ? `
                         <img src="${file.url}" alt="${file.name}" class="file-image" />
                       `
-                          : `
+                    : `
                         <div class="file-placeholder">
                           <span class="file-icon">📄</span>
-                          <span class="file-type">${
-                            file.type === "application/pdf" ? "PDF" : "קובץ"
-                          }</span>
+                          <span class="file-type">${file.type === "application/pdf" ? "PDF" : "קובץ"
+                    }</span>
                         </div>
                       `
-                      }
+                  }
                       
                       <div class="file-info">
                         <p class="file-name">${file.name}</p>
                         <p class="file-project">${file.project || "-"}</p>
-                        <a href="${
-                          file.url
-                        }" target="_blank" class="file-link">פתח קובץ ↗</a>
+                        <a href="${file.url
+                  }" target="_blank" class="file-link">פתח קובץ ↗</a>
                       </div>
                     </div>
                   `;
-                  })
-                  .join("")}
+              })
+              .join("")}
               </div>
             </div>
           `;
@@ -511,50 +507,45 @@ const ProjectsPage = ({ initialProjects = [] }) => {
             </div>
             <h1>📋 דוח מסמכים</h1>
             <div class="date">תאריך הפקה: ${new Date().toLocaleDateString(
-              "he-IL",
-              {
-                year: "numeric",
-                month: "long",
-                day: "numeric",
-                hour: "2-digit",
-                minute: "2-digit",
-              }
-            )}</div>
+        "he-IL",
+        {
+          year: "numeric",
+          month: "long",
+          day: "numeric",
+          hour: "2-digit",
+          minute: "2-digit",
+        }
+      )}</div>
           </div>
 
-          ${
-            selectedProject || selectedSupplier || fromDate || toDate
-              ? `
+          ${selectedProject || selectedSupplier || fromDate || toDate
+          ? `
           <div class="filters">
             <h3>🔍 פילטרים</h3>
-            ${
-              selectedProject
-                ? `<p><strong>פרויקט:</strong> ${selectedProject}</p>`
-                : ""
-            }
-            ${
-              selectedSupplier
-                ? `<p><strong>ספק:</strong> ${selectedSupplier}</p>`
-                : ""
-            }
-            ${
+            ${selectedProject
+            ? `<p><strong>פרויקט:</strong> ${selectedProject}</p>`
+            : ""
+          }
+            ${selectedSupplier
+            ? `<p><strong>ספק:</strong> ${selectedSupplier}</p>`
+            : ""
+          }
+            ${fromDate
+            ? `<p><strong>מתאריך:</strong> ${new Date(
               fromDate
-                ? `<p><strong>מתאריך:</strong> ${new Date(
-                    fromDate
-                  ).toLocaleDateString("he-IL")}</p>`
-                : ""
-            }
-            ${
+            ).toLocaleDateString("he-IL")}</p>`
+            : ""
+          }
+            ${toDate
+            ? `<p><strong>עד תאריך:</strong> ${new Date(
               toDate
-                ? `<p><strong>עד תאריך:</strong> ${new Date(
-                    toDate
-                  ).toLocaleDateString("he-IL")}</p>`
-                : ""
-            }
+            ).toLocaleDateString("he-IL")}</p>`
+            : ""
+          }
           </div>
           `
-              : ""
-          }
+          : ""
+        }
 
           <table>
             <thead>
@@ -570,8 +561,8 @@ const ProjectsPage = ({ initialProjects = [] }) => {
             </thead>
             <tbody>
               ${docs
-                .map(
-                  (d, idx) => `
+          .map(
+            (d, idx) => `
                 <tr>
                   <td>${idx + 1}</td>
                   <td>${d.type}</td>
@@ -581,8 +572,8 @@ const ProjectsPage = ({ initialProjects = [] }) => {
                   <td>${new Date(d.date).toLocaleDateString("he-IL")}</td>
                   <td>₪${(d.totalAmount || 0).toLocaleString("he-IL")}</td>
                 </tr>`
-                )
-                .join("")}
+          )
+          .join("")}
               <tr class="total-row">
                 <td colspan="6" style="text-align: left;">סה״כ כולל:</td>
                 <td>₪${totalSum.toLocaleString("he-IL")}</td>
@@ -594,8 +585,8 @@ const ProjectsPage = ({ initialProjects = [] }) => {
 
           <div class="footer">
             <p>מסמך זה הופק אוטומטית ממערכת ניהולון ⚙ | נכון לתאריך ${new Date().toLocaleDateString(
-              "he-IL"
-            )}</p>
+            "he-IL"
+          )}</p>
           </div>
 
           <script>
@@ -776,19 +767,18 @@ const ProjectsPage = ({ initialProjects = [] }) => {
           const extension = file.name.includes(".")
             ? file.name.split(".").pop()
             : file.type === "application/pdf"
-            ? "pdf"
-            : file.type === "image/png"
-            ? "png"
-            : file.type === "image/jpeg"
-            ? "jpg"
-            : "file";
+              ? "pdf"
+              : file.type === "image/png"
+                ? "png"
+                : file.type === "image/jpeg"
+                  ? "jpg"
+                  : "file";
 
           const safeProjectName = file.project.replace(/[^א-תa-zA-Z0-9]/g, "_");
           const safeDocType = file.docType.replace(/[^א-תa-zA-Z0-9]/g, "_");
           const safeDocNumber = file.docNumber ? `_${file.docNumber}` : "";
-          const fileName = `${
-            index + 1
-          }_${safeProjectName}_${safeDocType}${safeDocNumber}.${extension}`;
+          const fileName = `${index + 1
+            }_${safeProjectName}_${safeDocType}${safeDocNumber}.${extension}`;
 
           // הוספת הקובץ ל-ZIP
           zip.file(fileName, blob);
@@ -811,12 +801,11 @@ const ProjectsPage = ({ initialProjects = [] }) => {
       // יצירת קובץ ZIP והורדה
       const zipBlob = await zip.generateAsync({ type: "blob" });
 
-      const zipFileName = `קבצים_${
-        selectedProject
+      const zipFileName = `קבצים_${selectedProject
           ? projectsToProcess[0]?.name.replace(/[^א-תa-zA-Z0-9]/g, "_") ||
-            "פרויקט"
+          "פרויקט"
           : "כל_הפרויקטים"
-      }_${new Date().toLocaleDateString("he-IL").replace(/\//g, "-")}.zip`;
+        }_${new Date().toLocaleDateString("he-IL").replace(/\//g, "-")}.zip`;
 
       saveAs(zipBlob, zipFileName);
 
@@ -895,8 +884,8 @@ const ProjectsPage = ({ initialProjects = [] }) => {
 
         // בדיקה אם החיפוש קיים באחד מהשדות
         return textFields.some(field => field.includes(q)) ||
-               numericFields.some(field => field.includes(searchTerm)) ||
-               dateFields.some(field => field.includes(searchTerm));
+          numericFields.some(field => field.includes(searchTerm)) ||
+          dateFields.some(field => field.includes(searchTerm));
       });
     }
 
@@ -932,7 +921,7 @@ const ProjectsPage = ({ initialProjects = [] }) => {
           (project) =>
             project.remainingBudget !== undefined &&
             project.remainingBudget >=
-              parseInt(advancedFilters.remainingBudgetMin)
+            parseInt(advancedFilters.remainingBudgetMin)
         );
       }
       if (advancedFilters.remainingBudgetMax) {
@@ -940,7 +929,7 @@ const ProjectsPage = ({ initialProjects = [] }) => {
           (project) =>
             project.remainingBudget !== undefined &&
             project.remainingBudget <=
-              parseInt(advancedFilters.remainingBudgetMax)
+            parseInt(advancedFilters.remainingBudgetMax)
         );
       }
       if (advancedFilters.projectName) {
@@ -1242,7 +1231,7 @@ const ProjectsPage = ({ initialProjects = [] }) => {
       const { budgetUsed, budgetPercentage, projectStatus } =
         calculateProjectStats(project);
       const inv = invoiceStats(project);
-      
+
 
       const row = {};
 
@@ -1389,8 +1378,8 @@ const ProjectsPage = ({ initialProjects = [] }) => {
         const data = Array.isArray(response.data?.data)
           ? response.data.data
           : Array.isArray(response.data)
-          ? response.data
-          : [];
+            ? response.data
+            : [];
 
         // אם עדיין טוען את המשתמש – אל תסנן כלום, תציג את כל הפרויקטים זמנית
         if (authLoading) {
@@ -1593,7 +1582,7 @@ const ProjectsPage = ({ initialProjects = [] }) => {
             </div>
 
             {/* Export Buttons */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-2 sm:gap-3">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-2 sm:gap-3">
               <button
                 onClick={() => navigate("/create-project")}
                 className="flex items-center justify-center gap-2 px-4 sm:px-5 md:px-6 py-2.5 sm:py-3 bg-gradient-to-r from-orange-500 to-amber-500 text-white text-sm sm:text-base font-bold rounded-full hover:from-orange-600 hover:to-amber-600 transition-all shadow-lg"
@@ -1602,6 +1591,7 @@ const ProjectsPage = ({ initialProjects = [] }) => {
                 <span className="hidden sm:inline">יצירת פרוייקט</span>
                 <span className="sm:hidden">פרויקט +</span>
               </button>
+
               <button
                 onClick={() => setShowPrintModal(true)}
                 className="flex items-center justify-center gap-2 px-4 sm:px-5 md:px-6 py-2.5 sm:py-3 bg-gradient-to-r from-orange-500 to-amber-500 text-white text-sm sm:text-base font-bold rounded-full hover:from-orange-600 hover:to-amber-600 transition-all shadow-lg"
@@ -1627,6 +1617,14 @@ const ProjectsPage = ({ initialProjects = [] }) => {
                 <span className="hidden sm:inline">ייצוא מהיר</span>
                 <span className="sm:hidden">ייצוא</span>
               </button>
+              <button
+                onClick={() => navigate("/submitted-invoices")}
+                className="flex items-center justify-center gap-2 px-4 sm:px-5 md:px-6 py-2.5 sm:py-3 bg-gradient-to-r from-orange-500 to-amber-500 text-white text-sm sm:text-base font-bold rounded-full hover:from-orange-600 hover:to-amber-600 transition-all shadow-lg"
+              >
+                <FileSpreadsheet className="w-4 h-4 sm:w-5 sm:h-5" />
+                <span className="hidden sm:inline">חשבוניות שהוגשו</span>
+                <span className="sm:hidden">הוגשו</span>
+              </button>
             </div>
           </div>
 
@@ -1643,262 +1641,262 @@ const ProjectsPage = ({ initialProjects = [] }) => {
             <div className="hidden lg:block bg-white/90 backdrop-blur-xl rounded-2xl shadow-xl border border-white/50 overflow-hidden">
               <div className="overflow-x-auto">
                 <table className="w-full">
-                <thead>
-                  <tr className="bg-gradient-to-r from-orange-500 via-amber-500 to-yellow-500">
-                    <th className="px-4 py-4 text-sm font-bold text-white">
-                      שם הפרויקט
-                    </th>
-                    <th className="px-4 py-4 text-sm font-bold text-white">
-                      תקציב
-                    </th>
-                    <th className="px-4 py-4 text-sm font-bold text-white">
-                      תקציב שנותר
-                    </th>
-                    <th className="px-4 py-4 text-sm font-bold text-white">
-                      שם המזמין
-                    </th>
-                    <th className="px-4 py-4 text-sm font-bold text-white">
-                      תאריך יצירה
-                    </th>
-                    <th className="px-4 py-4 text-sm font-bold text-white">
-                      איש קשר
-                    </th>
-                    <th className="px-4 py-4 text-sm font-bold text-white">
-                      מס' קבצים
-                    </th>
-                    {isAdmin && (
+                  <thead>
+                    <tr className="bg-gradient-to-r from-orange-500 via-amber-500 to-yellow-500">
                       <th className="px-4 py-4 text-sm font-bold text-white">
-                        פעולות
+                        שם הפרויקט
                       </th>
-                    )}
-                  </tr>
-                </thead>
-                <tbody>
-                  {sortedProjects.map((project, index) => (
-                    <tr
-                      key={project._id}
-                      onClick={() => handleView(project._id)}
-                      className="cursor-pointer border-t border-orange-100 hover:bg-orange-50 transition-colors"
-                    >
-                      <td className="px-4 py-4 text-sm font-bold text-center text-slate-900">
-                        <div className="flex items-center justify-center gap-2">
-                          <span>{project.name}</span>
-                          {project.type === "salary" && (
-                            <span className="inline-flex items-center px-2 py-1 rounded-full text-[10px] font-bold bg-gradient-to-r from-blue-500 to-purple-600 text-white shadow-md">
-                              משכורת
-                            </span>
-                          )}
-                        </div>
-                      </td>
-                      <td className="px-4 py-4 text-sm font-bold text-center text-slate-900">
-                        {project.type !== "salary" ? (
-                          <td>{formatNumber(project.budget)} ₪</td>
-                        ) : (
-                          <td className="text-gray-400">פרוייקט ללא תקציב</td>
-                        )}
-                      </td>
-                      <td className="px-4 py-4 text-sm font-bold text-center text-slate-900">
-                         {project.name !== "salary" ? (
-                          <td>{formatNumber(project.remainingBudget)} ₪</td>
-                        ) : (
-                          <td className="text-gray-400">פרוייקט ללא תקציב</td>
-                        )}
-                      </td>
-                      <td className="px-4 py-4 text-sm font-medium text-center text-slate-900">
-                        {project.invitingName}
-                      </td>
-                      <td className="px-4 py-4 text-sm font-medium text-center text-slate-900">
-                        {formatDate(project.createdAt)}
-                      </td>
-                      <td className="px-4 py-4 text-sm font-medium text-center text-slate-900">
-                        {project.Contact_person}
-                      </td>
-                      <td className="px-4 py-4 text-sm font-medium text-center text-slate-900">
-                        {(() => {
-                          // 🔍 דיבוג מפורט
-                          const invoiceFiles = invoiceStats(project).fileCount;
-
-                          let orderFiles = 0;
-                          if (Array.isArray(project.orders)) {
-                            project.orders.forEach((order) => {
-                              if (
-                                Array.isArray(order.files) &&
-                                order.files.length > 0
-                              ) {
-                                orderFiles += order.files.length;
-                              }
-
-                              if (
-                                order.file &&
-                                typeof order.file === "string" &&
-                                order.file.trim() !== "" &&
-                                order.file.startsWith("http")
-                              ) {
-                                orderFiles += 1;
-                              }
-                            });
-                          }
-
-                          const total = invoiceFiles + orderFiles;
-
-                          return (
-                            <div className="flex flex-col items-center">
-                              <span className="font-bold text-lg text-orange-600">
-                                {total}
-                              </span>
-                              {total > 0 && (
-                                <span className="text-xs text-slate-500">
-                                  ({invoiceFiles} חשבוניות, {orderFiles} הזמנות)
-                                </span>
-                              )}
-                            </div>
-                          );
-                        })()}
-                      </td>
-
-                      {/* 🔥 גם פה צריך את התנאי! */}
+                      <th className="px-4 py-4 text-sm font-bold text-white">
+                        תקציב
+                      </th>
+                      <th className="px-4 py-4 text-sm font-bold text-white">
+                        תקציב שנותר
+                      </th>
+                      <th className="px-4 py-4 text-sm font-bold text-white">
+                        שם המזמין
+                      </th>
+                      <th className="px-4 py-4 text-sm font-bold text-white">
+                        תאריך יצירה
+                      </th>
+                      <th className="px-4 py-4 text-sm font-bold text-white">
+                        איש קשר
+                      </th>
+                      <th className="px-4 py-4 text-sm font-bold text-white">
+                        מס' קבצים
+                      </th>
                       {isAdmin && (
-                        <td className="px-4 py-4">
-                          <div className="flex justify-center gap-2">
-                            <button
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                handleView(project._id);
-                              }}
-                              className="p-2 text-blue-600 hover:bg-blue-100 rounded-lg"
-                            >
-                              <Eye className="w-5 h-5" />
-                            </button>
-                            <button
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                handleEdit(project._id);
-                              }}
-                              className="p-2 text-orange-600 hover:bg-orange-100 rounded-lg"
-                            >
-                              <Edit2 className="w-5 h-5" />
-                            </button>
-                            <button
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                setProjectToDelete(project._id);
-                                setShowModal(true);
-                              }}
-                              className="p-2 text-red-600 hover:bg-red-100 rounded-lg"
-                            >
-                              <Trash2 className="w-5 h-5" />
-                            </button>
-                          </div>
-                        </td>
+                        <th className="px-4 py-4 text-sm font-bold text-white">
+                          פעולות
+                        </th>
                       )}
                     </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          </div>
+                  </thead>
+                  <tbody>
+                    {sortedProjects.map((project, index) => (
+                      <tr
+                        key={project._id}
+                        onClick={() => handleView(project._id)}
+                        className="cursor-pointer border-t border-orange-100 hover:bg-orange-50 transition-colors"
+                      >
+                        <td className="px-4 py-4 text-sm font-bold text-center text-slate-900">
+                          <div className="flex items-center justify-center gap-2">
+                            <span>{project.name}</span>
+                            {project.type === "salary" && (
+                              <span className="inline-flex items-center px-2 py-1 rounded-full text-[10px] font-bold bg-gradient-to-r from-blue-500 to-purple-600 text-white shadow-md">
+                                משכורת
+                              </span>
+                            )}
+                          </div>
+                        </td>
+                        <td className="px-4 py-4 text-sm font-bold text-center text-slate-900">
+                          {project.type !== "salary" ? (
+                            <td>{formatNumber(project.budget)} ₪</td>
+                          ) : (
+                            <td className="text-gray-400">פרוייקט ללא תקציב</td>
+                          )}
+                        </td>
+                        <td className="px-4 py-4 text-sm font-bold text-center text-slate-900">
+                          {project.name !== "salary" ? (
+                            <td>{formatNumber(project.remainingBudget)} ₪</td>
+                          ) : (
+                            <td className="text-gray-400">פרוייקט ללא תקציב</td>
+                          )}
+                        </td>
+                        <td className="px-4 py-4 text-sm font-medium text-center text-slate-900">
+                          {project.invitingName}
+                        </td>
+                        <td className="px-4 py-4 text-sm font-medium text-center text-slate-900">
+                          {formatDate(project.createdAt)}
+                        </td>
+                        <td className="px-4 py-4 text-sm font-medium text-center text-slate-900">
+                          {project.Contact_person}
+                        </td>
+                        <td className="px-4 py-4 text-sm font-medium text-center text-slate-900">
+                          {(() => {
+                            // 🔍 דיבוג מפורט
+                            const invoiceFiles = invoiceStats(project).fileCount;
 
-          {/* Mobile Cards */}
-          <div className="lg:hidden space-y-4">
-            {sortedProjects.map((project) => (
-              <div
-                key={project._id}
-                onClick={() => handleView(project._id)}
-                className="bg-white/90 backdrop-blur-xl rounded-xl shadow-lg border border-white/50 p-4 cursor-pointer hover:shadow-xl transition-all active:scale-[0.98]"
-              >
-                <div className="flex items-start justify-between mb-3">
-                  <div>
-                    <div className="text-xs text-slate-500 mb-1">שם הפרויקט</div>
-                    <div className="flex items-center gap-2">
-                      <span className="text-lg font-bold text-slate-900">{project.name}</span>
-                      {project.type === "salary" && (
-                        <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold bg-gradient-to-r from-blue-500 to-purple-600 text-white">
-                          משכורת
-                        </span>
-                      )}
-                    </div>
-                  </div>
-                </div>
+                            let orderFiles = 0;
+                            if (Array.isArray(project.orders)) {
+                              project.orders.forEach((order) => {
+                                if (
+                                  Array.isArray(order.files) &&
+                                  order.files.length > 0
+                                ) {
+                                  orderFiles += order.files.length;
+                                }
 
-                <div className="grid grid-cols-2 gap-3 mb-3">
-                  <div>
-                    <div className="text-xs text-slate-500 mb-1">תקציב</div>
-                    <div className="text-sm font-bold text-orange-600">
-                      {project.type !== "salary" ? `${formatNumber(project.budget)} ₪` : "ללא תקציב"}
-                    </div>
-                  </div>
-                  <div>
-                    <div className="text-xs text-slate-500 mb-1">תקציב שנותר</div>
-                    <div className="text-sm font-bold text-green-600">
-                      {project.type !== "salary" ? `${formatNumber(project.remainingBudget)} ₪` : "ללא תקציב"}
-                    </div>
-                  </div>
-                </div>
+                                if (
+                                  order.file &&
+                                  typeof order.file === "string" &&
+                                  order.file.trim() !== "" &&
+                                  order.file.startsWith("http")
+                                ) {
+                                  orderFiles += 1;
+                                }
+                              });
+                            }
 
-                <div className="grid grid-cols-2 gap-3 mb-3">
-                  <div>
-                    <div className="text-xs text-slate-500 mb-1">שם המזמין</div>
-                    <div className="text-sm font-medium text-slate-900">{project.invitingName || "-"}</div>
-                  </div>
-                  <div>
-                    <div className="text-xs text-slate-500 mb-1">קבצים</div>
-                    <div className="text-sm font-bold text-slate-900">{invoiceStats(project).fileCount}</div>
-                  </div>
-                </div>
+                            const total = invoiceFiles + orderFiles;
 
-                <div className="grid grid-cols-2 gap-3 mb-3">
-                  <div>
-                    <div className="text-xs text-slate-500 mb-1">תאריך יצירה</div>
-                    <div className="text-sm font-medium text-slate-900">{formatDate(project.createdAt)}</div>
-                  </div>
-                  <div>
-                    <div className="text-xs text-slate-500 mb-1">איש קשר</div>
-                    <div className="text-sm font-medium text-slate-900">{project.Contact_person || "-"}</div>
-                  </div>
-                </div>
+                            return (
+                              <div className="flex flex-col items-center">
+                                <span className="font-bold text-lg text-orange-600">
+                                  {total}
+                                </span>
+                                {total > 0 && (
+                                  <span className="text-xs text-slate-500">
+                                    ({invoiceFiles} חשבוניות, {orderFiles} הזמנות)
+                                  </span>
+                                )}
+                              </div>
+                            );
+                          })()}
+                        </td>
 
-                {/* Action Buttons */}
-                {isAdmin && (
-                  <div className="flex gap-2 pt-3 border-t border-slate-200">
-                    <button
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        handleEdit(project._id);
-                      }}
-                      className="flex-1 flex items-center justify-center gap-2 px-3 py-2 text-orange-600 bg-orange-50 hover:bg-orange-100 rounded-lg transition-all font-medium text-sm"
-                    >
-                      <Edit2 className="w-4 h-4" />
-                      <span>עריכה</span>
-                    </button>
-
-                    <button
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        handleView(project._id);
-                      }}
-                      className="flex-1 flex items-center justify-center gap-2 px-3 py-2 text-blue-600 bg-blue-50 hover:bg-blue-100 rounded-lg transition-all font-medium text-sm"
-                    >
-                      <Eye className="w-4 h-4" />
-                      <span>צפייה</span>
-                    </button>
-
-                    <button
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        setProjectToDelete(project._id);
-                        setShowModal(true);
-                      }}
-                      className="flex-1 flex items-center justify-center gap-2 px-3 py-2 text-red-600 bg-red-50 hover:bg-red-100 rounded-lg transition-all font-medium text-sm"
-                    >
-                      <Trash2 className="w-4 h-4" />
-                      <span>מחיקה</span>
-                    </button>
-                  </div>
-                )}
+                        {/* 🔥 גם פה צריך את התנאי! */}
+                        {isAdmin && (
+                          <td className="px-4 py-4">
+                            <div className="flex justify-center gap-2">
+                              <button
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  handleView(project._id);
+                                }}
+                                className="p-2 text-blue-600 hover:bg-blue-100 rounded-lg"
+                              >
+                                <Eye className="w-5 h-5" />
+                              </button>
+                              <button
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  handleEdit(project._id);
+                                }}
+                                className="p-2 text-orange-600 hover:bg-orange-100 rounded-lg"
+                              >
+                                <Edit2 className="w-5 h-5" />
+                              </button>
+                              <button
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  setProjectToDelete(project._id);
+                                  setShowModal(true);
+                                }}
+                                className="p-2 text-red-600 hover:bg-red-100 rounded-lg"
+                              >
+                                <Trash2 className="w-5 h-5" />
+                              </button>
+                            </div>
+                          </td>
+                        )}
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
               </div>
-            ))}
-          </div>
-        </>
+            </div>
+
+            {/* Mobile Cards */}
+            <div className="lg:hidden space-y-4">
+              {sortedProjects.map((project) => (
+                <div
+                  key={project._id}
+                  onClick={() => handleView(project._id)}
+                  className="bg-white/90 backdrop-blur-xl rounded-xl shadow-lg border border-white/50 p-4 cursor-pointer hover:shadow-xl transition-all active:scale-[0.98]"
+                >
+                  <div className="flex items-start justify-between mb-3">
+                    <div>
+                      <div className="text-xs text-slate-500 mb-1">שם הפרויקט</div>
+                      <div className="flex items-center gap-2">
+                        <span className="text-lg font-bold text-slate-900">{project.name}</span>
+                        {project.type === "salary" && (
+                          <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold bg-gradient-to-r from-blue-500 to-purple-600 text-white">
+                            משכורת
+                          </span>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-3 mb-3">
+                    <div>
+                      <div className="text-xs text-slate-500 mb-1">תקציב</div>
+                      <div className="text-sm font-bold text-orange-600">
+                        {project.type !== "salary" ? `${formatNumber(project.budget)} ₪` : "ללא תקציב"}
+                      </div>
+                    </div>
+                    <div>
+                      <div className="text-xs text-slate-500 mb-1">תקציב שנותר</div>
+                      <div className="text-sm font-bold text-green-600">
+                        {project.type !== "salary" ? `${formatNumber(project.remainingBudget)} ₪` : "ללא תקציב"}
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-3 mb-3">
+                    <div>
+                      <div className="text-xs text-slate-500 mb-1">שם המזמין</div>
+                      <div className="text-sm font-medium text-slate-900">{project.invitingName || "-"}</div>
+                    </div>
+                    <div>
+                      <div className="text-xs text-slate-500 mb-1">קבצים</div>
+                      <div className="text-sm font-bold text-slate-900">{invoiceStats(project).fileCount}</div>
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-3 mb-3">
+                    <div>
+                      <div className="text-xs text-slate-500 mb-1">תאריך יצירה</div>
+                      <div className="text-sm font-medium text-slate-900">{formatDate(project.createdAt)}</div>
+                    </div>
+                    <div>
+                      <div className="text-xs text-slate-500 mb-1">איש קשר</div>
+                      <div className="text-sm font-medium text-slate-900">{project.Contact_person || "-"}</div>
+                    </div>
+                  </div>
+
+                  {/* Action Buttons */}
+                  {isAdmin && (
+                    <div className="flex gap-2 pt-3 border-t border-slate-200">
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleEdit(project._id);
+                        }}
+                        className="flex-1 flex items-center justify-center gap-2 px-3 py-2 text-orange-600 bg-orange-50 hover:bg-orange-100 rounded-lg transition-all font-medium text-sm"
+                      >
+                        <Edit2 className="w-4 h-4" />
+                        <span>עריכה</span>
+                      </button>
+
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleView(project._id);
+                        }}
+                        className="flex-1 flex items-center justify-center gap-2 px-3 py-2 text-blue-600 bg-blue-50 hover:bg-blue-100 rounded-lg transition-all font-medium text-sm"
+                      >
+                        <Eye className="w-4 h-4" />
+                        <span>צפייה</span>
+                      </button>
+
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setProjectToDelete(project._id);
+                          setShowModal(true);
+                        }}
+                        className="flex-1 flex items-center justify-center gap-2 px-3 py-2 text-red-600 bg-red-50 hover:bg-red-100 rounded-lg transition-all font-medium text-sm"
+                      >
+                        <Trash2 className="w-4 h-4" />
+                        <span>מחיקה</span>
+                      </button>
+                    </div>
+                  )}
+                </div>
+              ))}
+            </div>
+          </>
         ) : (
           <div className="bg-white/90 backdrop-blur-xl rounded-2xl shadow-xl border border-white/50 p-12 text-center">
             <Building2 className="w-16 h-16 text-slate-300 mx-auto mb-4" />
@@ -2171,11 +2169,10 @@ const ProjectsPage = ({ initialProjects = [] }) => {
                         {availableColumns.map((column) => (
                           <label
                             key={column.key}
-                            className={`flex items-center gap-3 p-3 rounded-xl border-2 cursor-pointer transition-all ${
-                              exportColumns[column.key]
+                            className={`flex items-center gap-3 p-3 rounded-xl border-2 cursor-pointer transition-all ${exportColumns[column.key]
                                 ? "bg-gradient-to-br from-orange-50 to-amber-50 border-orange-400"
                                 : "bg-gray-50 border-gray-200 hover:border-gray-300"
-                            }`}
+                              }`}
                           >
                             <input
                               type="checkbox"
@@ -2184,11 +2181,10 @@ const ProjectsPage = ({ initialProjects = [] }) => {
                               className="w-5 h-5 text-orange-600 rounded focus:ring-2 focus:ring-orange-500"
                             />
                             <span
-                              className={`text-sm font-medium ${
-                                exportColumns[column.key]
+                              className={`text-sm font-medium ${exportColumns[column.key]
                                   ? "text-gray-900"
                                   : "text-gray-600"
-                              }`}
+                                }`}
                             >
                               {column.label}
                             </span>

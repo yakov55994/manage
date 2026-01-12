@@ -16,6 +16,7 @@ import suppliersRoutes from './routes/supplierRoutes.js';
 import documentsRoutes from './routes/documentRoutes.js';
 import masavRoutes from './routes/masavRoutes.js';
 import incomeRoutes from './routes/incomeRoutes.js';
+import submissionRoutes from './routes/submissionRoutes.js';
 
 dotenv.config();
 const app = express();
@@ -92,6 +93,9 @@ app.use('/api/masav', masavRoutes);
 
 // Incomes
 app.use('/api/incomes', incomeRoutes);
+
+// Submission routes
+app.use('/api/submissions', submissionRoutes);
 
 
 

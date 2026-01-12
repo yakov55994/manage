@@ -15,7 +15,8 @@ export default function MoveInvoiceModal({
   const [selectedProjectIds, setSelectedProjectIds] = useState([]); // שינוי ל-array
   const [step, setStep] = useState(1); // שלב 1: בחירת פרויקטים, שלב 2: קביעת סכומים
   const [projectAmounts, setProjectAmounts] = useState({}); // {projectId: amount}
-  const [fundedFromProjectId, setFundedFromProjectId] = useState(null); // פרויקט ממומן למילגות
+  const [fundedFromProjectId, setFundedFromProjectId] = useState(null); // פרויקט ממומן למילגות (גרסה ישנה)
+  const [fundedFromProjectIds, setFundedFromProjectIds] = useState([]); // פרויקטים ממומנים למילגות (גרסה חדשה)
 
   useEffect(() => {
     if (!open) return;
@@ -45,7 +46,21 @@ export default function MoveInvoiceModal({
 
       setSelectedProjectIds(currentProjectIds);
       setProjectAmounts({});
-      setFundedFromProjectId(invoice.fundedFromProjectId?._id || invoice.fundedFromProjectId || null);
+
+      // תמיכה בגרסה ישנה (יחיד) וגרסה חדשה (מערך)
+      if (invoice.fundedFromProjectIds && invoice.fundedFromProjectIds.length > 0) {
+        const ids = invoice.fundedFromProjectIds.map(id => id._id || id);
+        setFundedFromProjectIds(ids);
+        setFundedFromProjectId(null);
+      } else if (invoice.fundedFromProjectId) {
+        const id = invoice.fundedFromProjectId._id || invoice.fundedFromProjectId;
+        setFundedFromProjectId(id);
+        setFundedFromProjectIds([]);
+      } else {
+        setFundedFromProjectId(null);
+        setFundedFromProjectIds([]);
+      }
+
       setStep(1);
     }
   }, [open, invoice]);
@@ -104,9 +119,9 @@ export default function MoveInvoiceModal({
       }
     }
 
-    // בדוק אם יש פרויקט מילגה ולא נבחר פרויקט ממומן
-    if (hasMilgaProject && !fundedFromProjectId) {
-      toast.error("יש לבחור פרויקט ממומן עבור פרויקט המילגה");
+    // בדוק אם יש פרויקט מילגה ולא נבחרו פרויקטים ממומנים
+    if (hasMilgaProject && fundedFromProjectIds.length === 0) {
+      toast.error("יש לבחור לפחות פרויקט ממומן אחד עבור פרויקט המילגה");
       return;
     }
 
@@ -121,7 +136,7 @@ export default function MoveInvoiceModal({
 
       const payload = {
         targetProjects, // מערך של {projectId, sum}
-        fundedFromProjectId: hasMilgaProject ? fundedFromProjectId : null,
+        fundedFromProjectIds: hasMilgaProject && fundedFromProjectIds.length > 0 ? fundedFromProjectIds : null,
       };
 
       const { data } = await api.put(`/invoices/${invoice._id}/move`, payload);
@@ -300,30 +315,42 @@ export default function MoveInvoiceModal({
                 );
               })}
 
-              {/* בחירת פרויקט ממומן - רק אם יש פרויקט מילגה */}
+              {/* בחירת פרויקטים ממומנים - רק אם יש פרויקט מילגה */}
               {hasMilgaProject && (
                 <div className="border border-blue-200 bg-blue-50 rounded-lg p-3">
                   <div className="text-sm font-medium text-blue-900 mb-2">
-                    פרויקט ממומן (עבור פרויקטי מילגה):
+                    פרויקטים ממומנים (עבור פרויקטי מילגה):
                   </div>
-                  <select
-                    value={fundedFromProjectId || ""}
-                    onChange={(e) => setFundedFromProjectId(e.target.value || null)}
-                    className="w-full border border-blue-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                  >
-                    <option value="">בחר פרויקט ממומן</option>
+                  <div className="text-xs text-blue-700 mb-2">
+                    בחר מאיזה פרויקטים יורד התקציב עבור המילגה
+                  </div>
+                  <div className="max-h-40 overflow-y-auto border border-blue-300 rounded-lg bg-white">
                     {projects
                       .filter(p => !p.isMilga && p.type !== "milga")
                       .map(p => (
-                        <option key={p._id} value={p._id}>
-                          {p.name}
-                        </option>
+                        <label key={p._id} className="flex items-center gap-2 p-2 cursor-pointer hover:bg-blue-50 transition-colors border-b border-blue-100 last:border-b-0">
+                          <input
+                            type="checkbox"
+                            className="w-4 h-4 accent-blue-500"
+                            checked={fundedFromProjectIds.includes(p._id)}
+                            onChange={(e) => {
+                              if (e.target.checked) {
+                                setFundedFromProjectIds([...fundedFromProjectIds, p._id]);
+                              } else {
+                                setFundedFromProjectIds(fundedFromProjectIds.filter(id => id !== p._id));
+                              }
+                            }}
+                          />
+                          <span className="font-medium text-sm flex-1">{p.name}</span>
+                        </label>
                       ))
                     }
-                  </select>
-                  <div className="text-xs text-blue-700 mt-1">
-                    הפרויקט שממנו יורד התקציב עבור המילגה
                   </div>
+                  {fundedFromProjectIds.length > 0 && (
+                    <div className="text-xs text-blue-800 mt-2 font-medium">
+                      נבחרו {fundedFromProjectIds.length} פרויקטים ממומנים
+                    </div>
+                  )}
                 </div>
               )}
 

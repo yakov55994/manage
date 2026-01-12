@@ -1525,7 +1525,7 @@ const InvoicesPage = () => {
 
         setAllInvoices(filteredData);
         // לא מגדירים setInvoices כאן - getFilteredInvoices() יסנן אוטומטית
-      } catch (error) {
+      }  catch (error) {
         console.error("Error fetching invoices:", error);
         toast.error("שגיאה בטעינת הנתונים. נסה שנית מאוחר יותר.", {
           className: "sonner-toast error rtl",
@@ -2289,6 +2289,49 @@ const InvoicesPage = () => {
     setShowPrintModal(false);
   };
 
+  const groupInvoicesByMonth = (invoices) => {
+  return invoices.reduce((acc, invoice) => {
+    if (!invoice.createdAt) return acc;
+
+    const date = new Date(invoice.createdAt);
+    const key = `${date.getFullYear()}-${date.getMonth()}`; // למשל: 2026-0
+
+    if (!acc[key]) {
+      acc[key] = {
+        year: date.getFullYear(),
+        month: date.getMonth(),
+        invoices: [],
+      };
+    }
+
+    acc[key].invoices.push(invoice);
+    return acc;
+  }, {});
+};
+
+const HEBREW_MONTHS = [
+  "ינואר",
+  "פברואר",
+  "מרץ",
+  "אפריל",
+  "מאי",
+  "יוני",
+  "יולי",
+  "אוגוסט",
+  "ספטמבר",
+  "אוקטובר",
+  "נובמבר",
+  "דצמבר",
+];
+const groupedInvoices = groupInvoicesByMonth(sortedInvoices);
+
+// מיון חודשים – מהחדש לישן
+const groupedByMonthSorted = Object.values(groupedInvoices).sort(
+  (a, b) =>
+    new Date(b.year, b.month) - new Date(a.year, a.month)
+);
+
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-orange-50 via-amber-50 to-yellow-50 relative overflow-hidden pt-20 sm:pt-24 md:pt-28 pb-8 sm:pb-12">
       {/* Animated Background */}
@@ -2513,351 +2556,363 @@ const InvoicesPage = () => {
 
         {/* Invoices Table */}
         {sortedInvoices.length > 0 ? (
-          <div className="w-full overflow-hidden rounded-t-xl">
-            <table className="w-full">
-              <thead>
-                <tr
-                  className="bg-gradient-to-r from-orange-500 via-amber-500 to-yellow-500"
-                  style={{
-                    display: "grid",
-                    gap: "2px",
-                    gridTemplateColumns:
-                      canEditInvoices && isAdmin
-                        ? "0.4fr 0.9fr 1.1fr 0.9fr 0.9fr 0.9fr 0.9fr 1.3fr 0.9fr 0.7fr 0.9fr 1.1fr"
-                        : canEditInvoices
-                        ? "0.9fr 1.1fr 0.9fr 0.9fr 0.9fr 0.9fr 1.3fr 0.9fr 0.7fr 1.1fr"
-                        : "0.9fr 1.1fr 0.9fr 0.9fr 0.9fr 0.9fr 1.3fr 0.9fr 0.7fr",
-                  }}
-                >
-                  {/* עמודה 1: Checkbox - רק לאדמין */}
-                  {canEditInvoices && isAdmin && (
-                    <th className="px-4 py-4 text-sm font-bold text-center text-white">
-                      <div className="flex flex-col items-center gap-1">
-                        {/* <input
-                    type="checkbox"
-                    checked={
-                      selectedInvoices.length === sortedInvoices.length &&
-                      sortedInvoices.length > 0
-                    }
-                    onChange={toggleSelectAll}
-                    className="w-5 h-5 accent-white cursor-pointer"
-                  /> */}
-                        <span className="text-xs">סמן למחיקה</span>
-                      </div>
-                    </th>
-                  )}
+          <div className="space-y-8">
+            {groupedByMonthSorted.map((group) => (
+              <div key={`${group.year}-${group.month}`} className="bg-white/80 backdrop-blur-xl rounded-2xl shadow-lg p-6 border border-white/50">
+                {/* כותרת חודש ושנה */}
+                <h2 className="text-xl font-bold text-slate-900 mb-6 ">
+                  {HEBREW_MONTHS[group.month]} {group.year} <span className="text-sm"> ({group.invoices.length})</span>
+                </h2>
 
-                  {/* עמודה 2/1: סטטוס מסמך */}
-                  <th className="px-4 py-4 text-sm font-bold text-center text-white">
-                    סטטוס מסמך
-                  </th>
-
-                  {/* עמודה 3/2: שם הספק */}
-                  <th className="px-4 py-4 text-sm font-bold text-center text-white">
-                    שם הספק
-                  </th>
-
-                  {/* עמודה 4/3: מספר חשבונית */}
-                  <th className="px-4 py-4 text-sm font-bold text-center text-white">
-                    מס׳ חשבונית
-                  </th>
-
-                  {/* עמודה 5/4: סכום */}
-                  <th className="px-4 py-4 text-sm font-bold text-center text-white">
-                    סכום
-                  </th>
-
-                  {/* עמודה 6/5: תאריך */}
-                  <th className="px-4 py-4 text-sm font-bold text-center text-white">
-                    תאריך
-                  </th>
-
-                  {/* עמודה 7/6: סטטוס הגשה */}
-                  <th className="px-4 py-4 text-sm font-bold text-center text-white">
-                    סטטוס הגשה
-                  </th>
-
-                  {/* עמודה 8/7: שם פרוייקט */}
-                  <th className="px-4 py-4 text-sm font-bold text-center text-white">
-                    שם פרוייקט
-                  </th>
-
-                  {/* עמודה 9/8: תשלום */}
-                  <th className="px-4 py-4 text-sm font-bold text-center text-white">
-                    תשלום
-                  </th>
-
-                  {/* עמודה 10/9: קבצים */}
-                  <th className="px-4 py-4 text-sm font-bold text-center text-white">
-                    קבצים
-                  </th>
-
-                  {/* עמודה 11: סימון תשלום - רק לאדמין */}
-                  {canEditInvoices && isAdmin && (
-                    <th className="px-4 py-4 text-sm font-bold text-center text-white">
-                      סימון תשלום
-                    </th>
-                  )}
-
-                  {/* עמודה 12/11/10: פעולות - רק למי שיכול לערוך */}
-                  {canEditInvoices && (
-                    <th className="px-4 py-4 text-sm font-bold text-center text-white">
-                      פעולות
-                    </th>
-                  )}
-                </tr>
-              </thead>
-
-              <tbody>
-                {sortedInvoices.map((invoice) => (
-                  <tr
-                    key={invoice._id}
-                    className={`cursor-pointer border-t border-orange-100 hover:bg-orange-50 transition-colors ${
-                      selectedInvoices.some((inv) => inv._id === invoice._id)
-                        ? "bg-orange-100"
-                        : ""
-                    }`}
-                    style={{
-                      display: "grid",
-                      gap: "2px",
-                      gridTemplateColumns:
-                        canEditInvoices && isAdmin
-                          ? "0.4fr 0.9fr 1.1fr 0.9fr 0.9fr 0.9fr 0.9fr 1.3fr 0.9fr 0.7fr 0.9fr 1.1fr"
-                          : canEditInvoices
-                          ? "0.9fr 1.1fr 0.9fr 0.9fr 0.9fr 0.9fr 1.3fr 0.9fr 0.7fr 1.1fr"
-                          : "0.9fr 1.1fr 0.9fr 0.9fr 0.9fr 0.9fr 1.3fr 0.9fr 0.7fr",
-                    }}
-                    onClick={(e) => {
-                      if (
-                        !e.target.closest("label") &&
-                        !e.target.closest("input[type='checkbox']") &&
-                        !e.target.closest("button")
-                      ) {
-                        handleView(invoice._id);
-                      }
-                    }}
-                  >
-                    {/* עמודה 1: Checkbox - רק לאדמין */}
-                    {canEditInvoices && isAdmin && (
-                      <td
-                        className="px-2 py-4 text-center"
-                        onClick={(e) => e.stopPropagation()}
+                {/* טבלה לחשבוניות בחודש זה */}
+                <div className="w-full overflow-hidden rounded-t-xl">
+                  <table className="w-full">
+                    <thead>
+                      <tr
+                        className="bg-gradient-to-r from-orange-500 via-amber-500 to-yellow-500"
+                        style={{
+                          display: "grid",
+                          gap: "2px",
+                          gridTemplateColumns:
+                            canEditInvoices && isAdmin
+                              ? "0.4fr 0.9fr 1.1fr 0.9fr 0.9fr 0.9fr 0.9fr 1.3fr 0.9fr 0.7fr 0.9fr 1.1fr"
+                              : canEditInvoices
+                              ? "0.9fr 1.1fr 0.9fr 0.9fr 0.9fr 0.9fr 1.3fr 0.9fr 0.7fr 1.1fr"
+                              : "0.9fr 1.1fr 0.9fr 0.9fr 0.9fr 0.9fr 1.3fr 0.9fr 0.7fr",
+                        }}
                       >
-                        <input
+                        {/* עמודה 1: Checkbox - רק לאדמין */}
+                        {canEditInvoices && isAdmin && (
+                          <th className="px-4 py-4 text-sm font-bold text-center text-white">
+                            <div className="flex flex-col items-center gap-1">
+                              {/* <input
                           type="checkbox"
-                          checked={selectedInvoices.some(
-                            (inv) => inv._id === invoice._id
-                          )}
-                          onChange={() => toggleSelectInvoice(invoice)}
-                          className="w-5 h-5 accent-orange-500 cursor-pointer"
-                        />
-                      </td>
-                    )}
-
-                    {/* עמודה 2/1: סטטוס מסמך */}
-                    <td className="px-2 py-4 text-center">
-                      {(() => {
-                        const a = getActionState(invoice);
-                        return (
-                          <span
-                            className={`inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-bold border ${a.color}`}
-                          >
-                            <span>{a.status}</span>
-                            <span className="opacity-70">•</span>
-                            <span className="hidden lg:inline">{a.label}</span>
-                          </span>
-                        );
-                      })()}
-                    </td>
-
-                    {/* עמודה 3/2: שם הספק */}
-                    <td className="px-2 py-4 text-xs font-bold text-center text-slate-900">
-                      {invoice.type === "salary"  ? invoice.salaryEmployeeName : invoice.supplierId?.name || "-" } 
-                    </td>
-
-                    {/* עמודה 4/3: מספר חשבונית */}
-                    <td className="px-2 py-4 text-xs font-bold text-center text-slate-900">
-                      <div className="flex items-center justify-center gap-2">
-                        <span>
-                          {invoice.invoiceNumber || (
-                            <span className="text-red-500 italic">חסר</span>
-                          )}
-                        </span>
-                        {/* תגית מילגה */}
-                        {(invoice.fundedFromProjectId || invoice.projects?.some(p => p.projectName === "מילגה")) && (
-                          <span className="inline-flex items-center px-2 py-1 rounded-full text-[10px] font-bold bg-gradient-to-r from-orange-400 to-pink-500 text-white shadow-md">
-                            מילגה
-                          </span>
+                          checked={
+                            selectedInvoices.length === sortedInvoices.length &&
+                            sortedInvoices.length > 0
+                          }
+                          onChange={toggleSelectAll}
+                          className="w-5 h-5 accent-white cursor-pointer"
+                        /> */}
+                              <span className="text-xs">סמן למחיקה</span>
+                            </div>
+                          </th>
                         )}
-                        {/* תגית משכורת */}
-                        {invoice.type === "salary" && (
-                          <span className="inline-flex items-center px-2 py-1 rounded-full text-[10px] font-bold bg-gradient-to-r from-blue-500 to-purple-600 text-white shadow-md">
-                            משכורת
-                          </span>
+
+                        {/* עמודה 2/1: סטטוס מסמך */}
+                        <th className="px-4 py-4 text-sm font-bold text-center text-white">
+                          סטטוס מסמך
+                        </th>
+
+                        {/* עמודה 3/2: שם הספק */}
+                        <th className="px-4 py-4 text-sm font-bold text-center text-white">
+                          שם הספק
+                        </th>
+
+                        {/* עמודה 4/3: מספר חשבונית */}
+                        <th className="px-4 py-4 text-sm font-bold text-center text-white">
+                          מס׳ חשבונית
+                        </th>
+
+                        {/* עמודה 5/3: סכום */}
+                        <th className="px-4 py-4 text-sm font-bold text-center text-white">
+                          סכום
+                        </th>
+
+                        {/* עמודה 6/4: תאריך */}
+                        <th className="px-4 py-4 text-sm font-bold text-center text-white">
+                          תאריך
+                        </th>
+
+                        {/* עמודה 7/5: סטטוס הגשה */}
+                        <th className="px-4 py-4 text-sm font-bold text-center text-white">
+                          סטטוס הגשה
+                        </th>
+
+                        {/* עמודה 8/6: שם פרוייקט */}
+                        <th className="px-4 py-4 text-sm font-bold text-center text-white">
+                          שם פרוייקט
+                        </th>
+
+                        {/* עמודה 9/7: תשלום */}
+                        <th className="px-4 py-4 text-sm font-bold text-center text-white">
+                          תשלום
+                        </th>
+
+                        {/* עמודה 10/8: קבצים */}
+                        <th className="px-4 py-4 text-sm font-bold text-center text-white">
+                          קבצים
+                        </th>
+
+                        {/* עמודה 11: סימון תשלום - רק לאדמין */}
+                        {canEditInvoices && isAdmin && (
+                          <th className="px-4 py-4 text-sm font-bold text-center text-white">
+                            סימון תשלום
+                          </th>
                         )}
-                      </div>
-                    </td>
 
-                    {/* עמודה 5/4: סכום */}
-                    <td className="px-2 py-4 text-xs font-bold text-center text-slate-900">
-                      {invoice.totalAmount ? (
-                        `${formatNumber(invoice.totalAmount)} ₪`
-                      ) : (
-                        <span className="text-red-500 italic">חסר</span>
-                      )}
-                    </td>
+                        {/* עמודה 12/11/10: פעולות - רק למי שיכול לערוך */}
+                        {canEditInvoices && (
+                          <th className="px-4 py-4 text-sm font-bold text-center text-white">
+                            פעולות
+                          </th>
+                        )}
+                      </tr>
+                    </thead>
 
-                    {/* עמודה 6/5: תאריך */}
-                    <td className="px-2 py-4 text-xs text-slate-600 text-center">
-                      {formatDate(invoice.createdAt)}
-                    </td>
+                    <tbody>
+                      {group.invoices.map((invoice) => (
+                        <tr
+                          key={invoice._id}
+                          className={`cursor-pointer border-t border-orange-100 hover:bg-orange-50 transition-colors ${
+                            selectedInvoices.some((inv) => inv._id === invoice._id)
+                              ? "bg-orange-100"
+                              : ""
+                          }`}
+                          style={{
+                            display: "grid",
+                            gap: "2px",
+                            gridTemplateColumns:
+                              canEditInvoices && isAdmin
+                                ? "0.4fr 0.9fr 1.1fr 0.9fr 0.9fr 0.9fr 0.9fr 1.3fr 0.9fr 0.7fr 0.9fr 1.1fr"
+                                : canEditInvoices
+                                ? "0.9fr 1.1fr 0.9fr 0.9fr 0.9fr 0.9fr 1.3fr 0.9fr 0.7fr 1.1fr"
+                                : "0.9fr 1.1fr 0.9fr 0.9fr 0.9fr 0.9fr 1.3fr 0.9fr 0.7fr",
+                          }}
+                          onClick={(e) => {
+                            if (
+                              !e.target.closest("label") &&
+                              !e.target.closest("input[type='checkbox']") &&
+                              !e.target.closest("button")
+                            ) {
+                              handleView(invoice._id);
+                            }
+                          }}
+                        >
+                          {/* עמודה 1: Checkbox - רק לאדמין */}
+                          {canEditInvoices && isAdmin && (
+                            <td
+                              className="px-2 py-4 text-center"
+                              onClick={(e) => e.stopPropagation()}
+                            >
+                              <input
+                                type="checkbox"
+                                checked={selectedInvoices.some(
+                                  (inv) => inv._id === invoice._id
+                                )}
+                                onChange={() => toggleSelectInvoice(invoice)}
+                                className="w-5 h-5 accent-orange-500 cursor-pointer"
+                              />
+                            </td>
+                          )}
 
-                    {/* עמודה 7/6: סטטוס הגשה */}
-                    <td className="px-2 py-4 text-xs font-medium text-center text-slate-900">
-                      {invoice.status || (
-                        <span className="text-red-500 italic">חסר</span>
-                      )}
-                    </td>
+                          {/* עמודה 2/1: סטטוס מסמך */}
+                          <td className="px-2 py-4 text-center">
+                            {(() => {
+                              const a = getActionState(invoice);
+                              return (
+                                <span
+                                  className={`inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-bold border ${a.color}`}
+                                >
+                                  <span>{a.status}</span>
+                                  <span className="opacity-70">•</span>
+                                  <span className="hidden lg:inline">{a.label}</span>
+                                </span>
+                              );
+                            })()}
+                          </td>
 
-                    {/* עמודה 8/7: שם פרוייקט */}
-                    <td className="px-2 py-4 text-xs text-center font-medium text-slate-900">
-                      {invoice.projects?.length
-                        ? invoice.projects
-                            .map(
-                              (p) =>
-                                p.projectName || p.projectId?.name || "ללא שם"
-                            )
-                            .join(", ")
-                        : "—"}
-                    </td>
+                          {/* עמודה 3/2: שם הספק */}
+                          <td className="px-2 py-4 text-xs font-bold text-center text-slate-900">
+                            {invoice.type === "salary"  ? invoice.salaryEmployeeName : invoice.supplierId?.name || "-" } 
+                          </td>
 
-                    {/* עמודה 9/8: תשלום */}
-                    <td className="px-2 py-4 text-center">
-                      {invoice.paid === "כן" ? (
-                        <span className="bg-emerald-100 text-emerald-700 px-2 py-1 rounded-full text-xs font-bold border border-emerald-200 whitespace-nowrap">
-                          שולם
-                        </span>
-                      ) : invoice.paid === "יצא לתשלום" ? (
-                        <span className="bg-blue-100 text-blue-700 px-2 py-1 rounded-full text-xs font-bold border border-blue-200 whitespace-nowrap">
-                          יצא לתשלום
-                        </span>
-                      ) : (
-                        <span className="bg-red-100 text-red-700 px-2 py-1 rounded-full text-xs font-bold border border-red-200 whitespace-nowrap">
-                          לא שולם
-                        </span>
-                      )}
-                    </td>
+                          {/* עמודה 4/3: מספר חשבונית */}
+                          <td className="px-2 py-4 text-xs font-bold text-center text-slate-900">
+                            <div className="flex items-center justify-center gap-2">
+                              <span>
+                                {invoice.invoiceNumber || (
+                                  <span className="text-red-500 italic">חסר</span>
+                                )}
+                              </span>
+                              {/* תגית מילגה */}
+                              {(invoice.fundedFromProjectId || invoice.projects?.some(p => p.projectName === "מילגה")) && (
+                                <span className="inline-flex items-center px-2 py-1 rounded-full text-[10px] font-bold bg-gradient-to-r from-orange-400 to-pink-500 text-white shadow-md">
+                                  מילגה
+                                </span>
+                              )}
+                              {/* תגית משכורת */}
+                              {invoice.type === "salary" && (
+                                <span className="inline-flex items-center px-2 py-1 rounded-full text-[10px] font-bold bg-gradient-to-r from-blue-500 to-purple-600 text-white shadow-md">
+                                  משכורת
+                                </span>
+                              )}
+                            </div>
+                          </td>
 
-                    {/* עמודה 10/9: קבצים */}
-                    <td className="px-2 py-4 text-center">
-                      <div className="flex items-center justify-center gap-1">
-                        <Paperclip className="w-4 h-4 text-orange-500" />
-                        <span className="font-bold text-slate-900 text-xs">
-                          {getInvoiceFilesCount(invoice)}
-                        </span>
-                      </div>
-                    </td>
-
-                    {/* עמודה 11: סימון תשלום - רק לאדמין */}
-                    {canEditInvoices && isAdmin && (
-                      <td className="px-2 py-4 text-center">
-                        <label className="relative inline-block cursor-pointer" title={
-                          invoice.paid === "כן" ? "לחץ להחזרה ללא שולם" :
-                          invoice.paid === "יצא לתשלום" ? "לחץ להחזרה ללא שולם" :
-                          "לחץ לסימון כשולם"
-                        }>
-                          <input
-                            type="checkbox"
-                            checked={invoice.paid === "כן"}
-                            onChange={(e) => {
-                              e.stopPropagation();
-                              togglePaymentStatus(invoice);
-                            }}
-                            className="absolute opacity-0 cursor-pointer"
-                          />
-                          <span
-                            className={`w-6 h-6 inline-block border-2 rounded-full transition-all ${
-                              invoice.paid === "כן"
-                                ? "bg-emerald-500 border-emerald-500"
-                                : invoice.paid === "יצא לתשלום"
-                                ? "bg-blue-500 border-blue-500"
-                                : "bg-gray-200 border-gray-400"
-                            } flex items-center justify-center`}
-                          >
-                            {invoice.paid === "כן" && (
-                              <svg
-                                viewBox="0 0 24 24"
-                                className="w-4 h-4"
-                                stroke="white"
-                                fill="none"
-                                strokeWidth="2"
-                                strokeLinecap="round"
-                                strokeLinejoin="round"
-                              >
-                                <path d="M20 6L9 17l-5-5" />
-                              </svg>
+                          {/* עמודה 5/4: סכום */}
+                          <td className="px-2 py-4 text-xs font-bold text-center text-slate-900">
+                            {invoice.totalAmount ? (
+                              `${formatNumber(invoice.totalAmount)} ₪`
+                            ) : (
+                              <span className="text-red-500 italic">חסר</span>
                             )}
-                            {invoice.paid === "יצא לתשלום" && (
-                              <svg
-                                viewBox="0 0 24 24"
-                                className="w-4 h-4"
-                                stroke="white"
-                                fill="white"
-                                strokeWidth="2"
-                              >
-                                <path d="M12 2L15 8L22 9L17 14L18 21L12 18L6 21L7 14L2 9L9 8Z" />
-                              </svg>
-                            )}
-                          </span>
-                        </label>
-                      </td>
-                    )}
+                          </td>
 
-                    {/* עמודה 12/11/10: פעולות */}
-                    {canEditInvoices && (
-                      <td className="px-2 py-4">
-                        <div className="flex justify-center gap-1">
-                          <button
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              handleEdit(invoice._id);
-                            }}
-                            className="p-1.5 text-orange-600 hover:bg-orange-100 rounded-lg transition-colors"
-                            title="ערוך"
-                          >
-                            <Edit2 className="w-4 h-4" />
-                          </button>
-                          {isAdmin && invoice.type != "salary" ? (
-                            <>
-                              <button
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  setMoveModal({ open: true, invoice });
-                                }}
-                                className="p-1.5 text-blue-600 hover:bg-blue-100 rounded-lg transition-colors"
-                                title="העבר לפרויקט אחר"
-                              >
-                                <ArrowLeftRight className="w-4 h-4" />
-                              </button>
-                              <button
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  handleConfirmDelete(invoice);
-                                }}
-                                className="p-1.5 text-red-600 hover:bg-red-100 rounded-lg transition-colors"
-                                title="מחק"
-                              >
-                                <Trash2 className="w-4 h-4" />
-                              </button>
-                            </>
-                          ) : <></>}
-                        </div>
-                      </td>
-                    )}
-                  </tr>
-                ))}
-              </tbody>
-            </table>
+                          {/* עמודה 6/5: תאריך */}
+                          <td className="px-2 py-4 text-xs text-slate-600 text-center">
+                            {formatDate(invoice.createdAt)}
+                          </td>
+
+                          {/* עמודה 7/6: סטטוס הגשה */}
+                          <td className="px-2 py-4 text-xs font-medium text-center text-slate-900">
+                            {invoice.status || (
+                              <span className="text-red-500 italic">חסר</span>
+                            )}
+                          </td>
+
+                          {/* עמודה 8/7: שם פרוייקט */}
+                          <td className="px-2 py-4 text-xs text-center font-medium text-slate-900">
+                            {invoice.projects?.length
+                              ? invoice.projects
+                                  .map(
+                                    (p) =>
+                                      p.projectName || p.projectId?.name || "ללא שם"
+                                  )
+                                  .join(", ")
+                              : "—"}
+                          </td>
+
+                          {/* עמודה 9/8: תשלום */}
+                          <td className="px-2 py-4 text-center">
+                            {invoice.paid === "כן" ? (
+                              <span className="bg-emerald-100 text-emerald-700 px-2 py-1 rounded-full text-xs font-bold border border-emerald-200 whitespace-nowrap">
+                                שולם
+                              </span>
+                            ) : invoice.paid === "יצא לתשלום" ? (
+                              <span className="bg-blue-100 text-blue-700 px-2 py-1 rounded-full text-xs font-bold border border-blue-200 whitespace-nowrap">
+                                יצא לתשלום
+                              </span>
+                            ) : (
+                              <span className="bg-red-100 text-red-700 px-2 py-1 rounded-full text-xs font-bold border border-red-200 whitespace-nowrap">
+                                לא שולם
+                              </span>
+                            )}
+                          </td>
+
+                          {/* עמודה 10/9: קבצים */}
+                          <td className="px-2 py-4 text-center">
+                            <div className="flex items-center justify-center gap-1">
+                              <Paperclip className="w-4 h-4 text-orange-500" />
+                              <span className="font-bold text-slate-900 text-xs">
+                                {getInvoiceFilesCount(invoice)}
+                              </span>
+                            </div>
+                          </td>
+
+                          {/* עמודה 11: סימון תשלום - רק לאדמין */}
+                          {canEditInvoices && isAdmin && (
+                            <td className="px-2 py-4 text-center">
+                              <label className="relative inline-block cursor-pointer" title={
+                                invoice.paid === "כן" ? "לחץ להחזרה ללא שולם" :
+                                invoice.paid === "יצא לתשלום" ? "לחץ להחזרה ללא שולם" :
+                                "לחץ לסימון כשולם"
+                              }>
+                                <input
+                                  type="checkbox"
+                                  checked={invoice.paid === "כן"}
+                                  onChange={(e) => {
+                                    e.stopPropagation();
+                                    togglePaymentStatus(invoice);
+                                  }}
+                                  className="absolute opacity-0 cursor-pointer"
+                                />
+                                <span
+                                  className={`w-6 h-6 inline-block border-2 rounded-full transition-all ${
+                                    invoice.paid === "כן"
+                                      ? "bg-emerald-500 border-emerald-500"
+                                      : invoice.paid === "יצא לתשלום"
+                                      ? "bg-blue-500 border-blue-500"
+                                      : "bg-gray-200 border-gray-400"
+                                  } flex items-center justify-center`}
+                                >
+                                  {invoice.paid === "כן" && (
+                                    <svg
+                                      viewBox="0 0 24 24"
+                                      className="w-4 h-4"
+                                      stroke="white"
+                                      fill="none"
+                                      strokeWidth="2"
+                                      strokeLinecap="round"
+                                      strokeLinejoin="round"
+                                    >
+                                      <path d="M20 6L9 17l-5-5" />
+                                    </svg>
+                                  )}
+                                  {invoice.paid === "יצא לתשלום" && (
+                                    <svg
+                                      viewBox="0 0 24 24"
+                                      className="w-4 h-4"
+                                      stroke="white"
+                                      fill="white"
+                                      strokeWidth="2"
+                                    >
+                                      <path d="M12 2L15 8L22 9L17 14L18 21L12 18L6 21L7 14L2 9L9 8Z" />
+                                    </svg>
+                                  )}
+                                </span>
+                              </label>
+                            </td>
+                          )}
+
+                          {/* עמודה 12/11/10: פעולות */}
+                          {canEditInvoices && (
+                            <td className="px-2 py-4">
+                              <div className="flex justify-center gap-1">
+                                <button
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    handleEdit(invoice._id);
+                                  }}
+                                  className="p-1.5 text-orange-600 hover:bg-orange-100 rounded-lg transition-colors"
+                                  title="ערוך"
+                                >
+                                  <Edit2 className="w-4 h-4" />
+                                </button>
+                                {isAdmin && invoice.type != "salary" ? (
+                                  <>
+                                    <button
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        setMoveModal({ open: true, invoice });
+                                      }}
+                                      className="p-1.5 text-blue-600 hover:bg-blue-100 rounded-lg transition-colors"
+                                      title="העבר לפרויקט אחר"
+                                    >
+                                      <ArrowLeftRight className="w-4 h-4" />
+                                    </button>
+                                    <button
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        handleConfirmDelete(invoice);
+                                      }}
+                                      className="p-1.5 text-red-600 hover:bg-red-100 rounded-lg transition-colors"
+                                      title="מחק"
+                                    >
+                                      <Trash2 className="w-4 h-4" />
+                                    </button>
+                                  </>
+                                ) : <></>}
+                              </div>
+                            </td>
+                          )}
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            ))}
           </div>
         ) : (
           <div className="bg-white/90 backdrop-blur-xl rounded-2xl shadow-xl border border-white/50 p-12 text-center">
@@ -3833,3 +3888,4 @@ const InvoicesPage = () => {
 };
 
 export default InvoicesPage;
+     

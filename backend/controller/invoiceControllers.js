@@ -128,7 +128,7 @@ async getInvoiceById(req, res) {
   // ===============================================
   async moveInvoice(req, res) {
     try {
-      const { fromProjectId, toProjectId, fundedFromProjectId, targetProjects } = req.body;
+      const { fromProjectId, toProjectId, fundedFromProjectId, targetProjects, fundedFromProjectIds } = req.body;
 
       const updated = await invoiceService.moveInvoice(
         req.user,
@@ -136,7 +136,8 @@ async getInvoiceById(req, res) {
         fromProjectId,
         toProjectId,
         fundedFromProjectId,
-        targetProjects
+        targetProjects,
+        fundedFromProjectIds
       );
 
       res.json({ success: true, data: updated });
