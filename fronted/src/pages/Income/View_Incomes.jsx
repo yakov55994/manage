@@ -22,7 +22,7 @@ export default function ViewIncomes() {
   const [incomes, setIncomes] = useState([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
-  const [sortBy, setSortBy] = useState("date");
+  const [sortBy, setSortBy] = useState("createdAt");
   const [sortOrder, setSortOrder] = useState("desc");
   const [deleteModal, setDeleteModal] = useState({ open: false, incomeId: null });
   const [linkModal, setLinkModal] = useState({ open: false, incomeId: null });
@@ -59,7 +59,9 @@ export default function ViewIncomes() {
     .sort((a, b) => {
       let comparison = 0;
 
-      if (sortBy === "date") {
+      if (sortBy === "createdAt") {
+        comparison = new Date(b.createdAt) - new Date(a.createdAt);
+      } else if (sortBy === "date") {
         comparison = new Date(b.date) - new Date(a.date);
       } else if (sortBy === "amount") {
         comparison = parseFloat(a.amount || 0) - parseFloat(b.amount || 0);
@@ -72,9 +74,9 @@ export default function ViewIncomes() {
 
   const groupIncomesByMonth = (incomes) => {
     return incomes.reduce((acc, income) => {
-      if (!income.date) return acc;
+      if (!income.createdAt) return acc;
 
-      const date = new Date(income.date);
+      const date = new Date(income.createdAt);
       const key = `${date.getFullYear()}-${date.getMonth()}`;
 
       if (!acc[key]) {
@@ -104,12 +106,37 @@ export default function ViewIncomes() {
     "נובמבר",
     "דצמבר",
   ];
-
   const groupedIncomes = groupIncomesByMonth(filteredIncomes);
 
-  const groupedByMonthSorted = Object.values(groupedIncomes).sort(
-    (a, b) => new Date(b.year, b.month) - new Date(a.year, a.month)
-  );
+  const groupedByMonthSorted = Object.values(groupedIncomes)
+    .map(group => {
+      const sortedGroupIncomes = [...group.incomes].sort((a, b) => {
+        let comparison = 0;
+
+        if (sortBy === "createdAt") {
+          comparison = new Date(a.createdAt) - new Date(b.createdAt);
+        } else if (sortBy === "date") {
+          comparison = new Date(a.date) - new Date(b.date);
+        } else if (sortBy === "amount") {
+          comparison = parseFloat(a.amount || 0) - parseFloat(b.amount || 0);
+        } else if (sortBy === "description") {
+          comparison = (a.description || "").localeCompare(b.description || "");
+        }
+
+        return sortOrder === "asc" ? comparison : -comparison;
+
+      });
+
+      return {
+        ...group,
+        incomes: sortedGroupIncomes,
+      };
+    })
+    // מיון חודשים – תמיד מהחדש לישן
+    .sort(
+      (a, b) => new Date(b.year, b.month) - new Date(a.year, a.month)
+    );
+
 
   const toggleSort = (field) => {
     if (sortBy === field) {
@@ -338,25 +365,35 @@ export default function ViewIncomes() {
         <div className="mb-6 bg-white/90 backdrop-blur-xl rounded-2xl shadow-lg p-4 border border-white/50">
           <div className="flex flex-wrap gap-2">
             <button
-              onClick={() => toggleSort("date")}
-              className={`flex items-center gap-2 px-4 py-2 rounded-xl font-bold transition-all ${
-                sortBy === "date"
-                  ? "bg-gradient-to-r from-orange-500 to-amber-600 text-white shadow-lg"
-                  : "bg-orange-100 text-orange-700 hover:bg-orange-200"
-              }`}
+              onClick={() => toggleSort("createdAt")}
+              className={`flex items-center gap-2 px-4 py-2 rounded-xl font-bold transition-all ${sortBy === "createdAt"
+                ? "bg-gradient-to-r from-orange-500 to-amber-600 text-white shadow-lg"
+                : "bg-orange-100 text-orange-700 hover:bg-orange-200"
+                }`}
             >
               <Calendar className="w-4 h-4" />
-              תאריך
+              תאריך יצירה
+              <ArrowUpDown className="w-4 h-4" />
+            </button>
+
+            <button
+              onClick={() => toggleSort("date")}
+              className={`flex items-center gap-2 px-4 py-2 rounded-xl font-bold transition-all ${sortBy === "date"
+                ? "bg-gradient-to-r from-orange-500 to-amber-600 text-white shadow-lg"
+                : "bg-orange-100 text-orange-700 hover:bg-orange-200"
+                }`}
+            >
+              <Calendar className="w-4 h-4" />
+              תאריך חשבונית
               <ArrowUpDown className="w-4 h-4" />
             </button>
 
             <button
               onClick={() => toggleSort("amount")}
-              className={`flex items-center gap-2 px-4 py-2 rounded-xl font-bold transition-all ${
-                sortBy === "amount"
-                  ? "bg-gradient-to-r from-orange-500 to-amber-600 text-white shadow-lg"
-                  : "bg-orange-100 text-orange-700 hover:bg-orange-200"
-              }`}
+              className={`flex items-center gap-2 px-4 py-2 rounded-xl font-bold transition-all ${sortBy === "amount"
+                ? "bg-gradient-to-r from-orange-500 to-amber-600 text-white shadow-lg"
+                : "bg-orange-100 text-orange-700 hover:bg-orange-200"
+                }`}
             >
               <DollarSign className="w-4 h-4" />
               סכום
@@ -365,11 +402,10 @@ export default function ViewIncomes() {
 
             <button
               onClick={() => toggleSort("description")}
-              className={`flex items-center gap-2 px-4 py-2 rounded-xl font-bold transition-all ${
-                sortBy === "description"
-                  ? "bg-gradient-to-r from-orange-500 to-amber-600 text-white shadow-lg"
-                  : "bg-orange-100 text-orange-700 hover:bg-orange-200"
-              }`}
+              className={`flex items-center gap-2 px-4 py-2 rounded-xl font-bold transition-all ${sortBy === "description"
+                ? "bg-gradient-to-r from-orange-500 to-amber-600 text-white shadow-lg"
+                : "bg-orange-100 text-orange-700 hover:bg-orange-200"
+                }`}
             >
               <FileText className="w-4 h-4" />
               תיאור
@@ -384,7 +420,7 @@ export default function ViewIncomes() {
             {groupedByMonthSorted.map((group) => (
               <div key={`${group.year}-${group.month}`} className="bg-white/80 backdrop-blur-xl rounded-2xl shadow-lg p-6 border border-white/50">
                 {/* כותרת חודש ושנה */}
-               <h2 className="text-xl font-bold text-slate-900 mb-6 ">
+                <h2 className="text-xl font-bold text-slate-900 mb-6 ">
                   {HEBREW_MONTHS[group.month]} {group.year} <span className="text-sm"> ({group.incomes.length})</span>
                 </h2>
 
@@ -420,9 +456,8 @@ export default function ViewIncomes() {
                       {group.incomes.map((income, index) => (
                         <tr
                           key={income._id}
-                          className={`hover:bg-orange-50/50 transition-colors cursor-pointer ${
-                            index % 2 === 0 ? "bg-white" : "bg-orange-50/30"
-                          }`}
+                          className={`hover:bg-orange-50/50 transition-colors cursor-pointer ${index % 2 === 0 ? "bg-white" : "bg-orange-50/30"
+                            }`}
                           onClick={() => navigate(`/incomes/${income._id}`)}
                         >
                           <td className="px-6 py-4 whitespace-nowrap text-sm text-slate-700">

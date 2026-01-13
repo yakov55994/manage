@@ -53,12 +53,8 @@ const incomeSchema = new mongoose.Schema({
     type: String,
     required: true,
   },
-
-  // תאריך יצירה
-  createdAt: {
-    type: Date,
-    default: Date.now,
-  },
+}, {
+  timestamps: true  // Mongoose will automatically manage createdAt and updatedAt
 });
 
 const Income = mongoose.model("Income", incomeSchema);

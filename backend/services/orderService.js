@@ -66,7 +66,8 @@ export default {
       .populate({
         path: "projectId",
         select: "name invitingName"
-      });
+      })
+      .sort({ createdAt: -1 });
   },
 
 

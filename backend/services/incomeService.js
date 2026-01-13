@@ -14,7 +14,7 @@ export default {
 
     const incomes = await Income.find(query)
       .populate("orderId", "orderNumber projectName sum")
-      .sort({ date: -1 });
+      .sort({ createdAt: -1 });
 
     return incomes;
   },
@@ -120,7 +120,7 @@ export default {
       ],
     })
       .populate("orderId", "orderNumber projectName sum")
-      .sort({ date: -1 })
+      .sort({ createdAt: -1 })
       .limit(100);
 
     return incomes;

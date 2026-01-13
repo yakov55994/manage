@@ -1,119 +1,182 @@
 import fs from "fs";
 import path from "path";
-import PDFDocument from "pdfkit";
+import puppeteer from "puppeteer";
 
 export async function generateMasavPDF({ payments, companyInfo, executionDate }) {
-  return new Promise((resolve, reject) => {
-    try {
-      // יצירת PDF עם PDFKit (ללא Puppeteer)
-      const doc = new PDFDocument({
-        size: 'A4',
-        layout: 'landscape',
-        margin: 40
-      });
+  try {
+    const totalSum = payments.reduce((sum, p) => sum + p.amount / 100, 0);
 
-      // שמירה
-      const tmpDir = path.join(process.cwd(), "tmp");
-      if (!fs.existsSync(tmpDir)) fs.mkdirSync(tmpDir);
-
-      const pdfPath = path.join(tmpDir, `masav-summary-${Date.now()}.pdf`);
-      const stream = fs.createWriteStream(pdfPath);
-      doc.pipe(stream);
-
-      // כותרת
-      doc.fontSize(20).text('דוח סיכום מס"ב', { align: 'center' });
-      doc.moveDown();
-
-      // פרטי חברה
-      doc.fontSize(12);
-      doc.text(`שם חברה: ${companyInfo.companyName}`);
-      doc.text(`מספר מוסד: ${companyInfo.instituteId}`);
-      doc.text(`מספר שולח: ${companyInfo.senderId}`);
-      doc.text(`תאריך ביצוע: ${executionDate}`);
-      doc.text(`תאריך יצירה: ${new Date().toLocaleString("he-IL")}`);
-      doc.moveDown();
-
-      // כותרות טבלה
-      doc.fontSize(10).fillColor('#2980b9');
-      const startY = doc.y;
-      const colWidths = [30, 120, 70, 40, 40, 70, 80, 100, 180];
-      const headers = ['#', 'שם ספק', 'ת.ז/ע.מ', 'בנק', 'סניף', 'חשבון', 'סכום', 'חשבוניות', 'פרויקטים'];
-
-      let x = 40;
-      headers.forEach((header, i) => {
-        doc.text(header, x, startY, { width: colWidths[i], align: 'center' });
-        x += colWidths[i];
-      });
-
-      doc.moveDown();
-      doc.strokeColor('#2980b9').lineWidth(1)
-         .moveTo(40, doc.y).lineTo(800, doc.y).stroke();
-      doc.moveDown(0.5);
-
-      // שורות טבלה
-      doc.fontSize(9).fillColor('black');
-      payments.forEach((p, i) => {
-        const rowY = doc.y;
-
-        // בדיקה אם צריך עמוד חדש
-        if (rowY > 500) {
-          doc.addPage({ size: 'A4', layout: 'landscape', margin: 40 });
-        }
-
-        const rowData = [
-          String(i + 1),
-          p.supplierName || '',
-          p.internalId || '',
-          p.bankNumber || '',
-          p.branchNumber || '',
-          p.accountNumber || '',
-          (p.amount / 100).toLocaleString("he-IL") + ' ₪',
-          p.invoiceNumbers || '-',
-          p.projectNames || '-'
-        ];
-
-        x = 40;
-        rowData.forEach((data, j) => {
-          doc.text(data, x, rowY, { width: colWidths[j], align: 'center' });
-          x += colWidths[j];
-        });
-
-        doc.moveDown(0.8);
-
-        // קו מפריד
-        if (i % 2 === 0) {
-          doc.fillColor('#f5f5f5')
-             .rect(40, rowY - 5, 760, 20)
-             .fill();
-          doc.fillColor('black');
-        }
-      });
-
-      doc.moveDown();
-      doc.strokeColor('black').lineWidth(2)
-         .moveTo(40, doc.y).lineTo(800, doc.y).stroke();
-      doc.moveDown();
-
-      // סיכום
-      const totalAmount = payments.reduce((a, p) => a + p.amount, 0) / 100;
-      doc.fontSize(12).fillColor('black');
-      doc.text(`סה"כ תשלומים: ${payments.length}`, 40, doc.y);
-      doc.text(`סה"כ סכום: ${totalAmount.toLocaleString("he-IL")} ₪`, 40, doc.y, { align: 'right' });
-
-      // סיום
-      doc.end();
-
-      stream.on('finish', () => {
-        resolve(pdfPath);
-      });
-
-      stream.on('error', (err) => {
-        reject(err);
-      });
-
-    } catch (err) {
-      reject(err);
-    }
-  });
+    // יצירת HTML זהה למה שמוצג בדפדפן
+    const html = `<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+<meta charset="UTF-8" />
+<title>סיכום מס״ב</title>
+<style>
+@media print {
+  @page { size: A4; margin: 15mm; }
 }
+* { box-sizing: border-box; }
+body {
+  font-family: 'Segoe UI', Tahoma, sans-serif;
+  direction: rtl;
+  color: #1f2937;
+  padding: 20px;
+}
+.header {
+  text-align: center;
+  margin-bottom: 30px;
+  border-bottom: 3px solid #f97316;
+  padding-bottom: 15px;
+}
+.logo-text {
+  font-size: 32px;
+  font-weight: bold;
+  color: #6b7280;
+  margin-bottom: 10px;
+}
+.header h1 {
+  font-size: 22px;
+  margin-bottom: 6px;
+}
+.header .date {
+  font-size: 13px;
+  color: #6b7280;
+}
+table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-top: 25px;
+}
+thead {
+  background: linear-gradient(135deg, #f97316, #fb923c);
+  color: white;
+}
+th, td {
+  border: 1px solid #e5e7eb;
+  padding: 8px;
+  font-size: 12px;
+  text-align: center;
+}
+tbody tr:nth-child(even) {
+  background: #f9fafb;
+}
+.summary {
+  margin-top: 30px;
+  padding: 18px;
+  border: 2px solid #fdba74;
+  border-radius: 10px;
+  background: #fff7ed;
+}
+.summary h3 {
+  color: #f97316;
+  margin-bottom: 10px;
+}
+.summary-row {
+  display: flex;
+  justify-content: space-between;
+  font-size: 14px;
+  padding: 6px 0;
+}
+.summary-row.total {
+  font-weight: bold;
+  font-size: 16px;
+  color: #ea580c;
+}
+.footer {
+  margin-top: 40px;
+  text-align: center;
+  font-size: 11px;
+  color: #9ca3af;
+  border-top: 1px solid #e5e7eb;
+  padding-top: 15px;
+}
+</style>
+</head>
+<body>
 
+<div class="header">
+  <div class="logo-text">ניהולון</div>
+  <h1>📄 סיכום מס״ב</h1>
+  <div class="date">
+    תאריך ביצוע: ${executionDate}
+  </div>
+</div>
+
+<table>
+<thead>
+<tr>
+  <th>#</th>
+  <th>חשבונית</th>
+  <th>ספק</th>
+  <th>פרויקטים</th>
+  <th>סכום</th>
+</tr>
+</thead>
+<tbody>
+${payments.map((p, i) => `
+<tr>
+  <td>${i + 1}</td>
+  <td>${p.invoiceNumbers || "-"}</td>
+  <td>${p.supplierName || "-"}</td>
+  <td>${p.projectNames || "-"}</td>
+  <td><strong>${(p.amount / 100).toLocaleString()} ₪</strong></td>
+</tr>
+`).join("")}
+</tbody>
+</table>
+
+<div class="summary">
+  <h3>📊 סיכום</h3>
+  <div class="summary-row">
+    <span>סה״כ חשבוניות:</span>
+    <strong>${payments.length}</strong>
+  </div>
+  <div class="summary-row total">
+    <span>סה״כ סכום:</span>
+    <strong>${totalSum.toLocaleString()} ₪</strong>
+  </div>
+</div>
+
+<div class="footer">
+  מסמך זה הופק אוטומטית ממערכת ניהולון<br/>
+  © ${new Date().getFullYear()} כל הזכויות שמורות
+</div>
+
+</body>
+</html>`;
+
+    // יצירת תיקייה זמנית
+    const tmpDir = path.join(process.cwd(), "tmp");
+    if (!fs.existsSync(tmpDir)) fs.mkdirSync(tmpDir);
+
+    const pdfPath = path.join(tmpDir, `זיכויים-סיכום-${Date.now()}.pdf`);
+
+    // יצירת PDF באמצעות Puppeteer
+    const browser = await puppeteer.launch({
+      headless: true,
+      args: ['--no-sandbox', '--disable-setuid-sandbox']
+    });
+
+    const page = await browser.newPage();
+    await page.setContent(html, { waitUntil: 'networkidle0' });
+
+    await page.pdf({
+      path: pdfPath,
+      format: 'A4',
+      printBackground: true,
+      margin: {
+        top: '15mm',
+        right: '15mm',
+        bottom: '15mm',
+        left: '15mm'
+      }
+    });
+
+    await browser.close();
+
+    return pdfPath;
+  } catch (err) {
+    throw new Error(`שגיאה ביצירת PDF: ${err.message}`);
+  }
+}

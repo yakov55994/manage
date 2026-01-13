@@ -64,7 +64,7 @@ const hebrewSort = (strA, strB) => {
 
 
 // פונקציית עזר להצגת שמות פרויקטים ללא מילגה
-  
+
 const getProjectNamesWithoutMilga = (projects) => {
   return projects
     .filter((p) => p.projectName !== "מילגה")
@@ -76,8 +76,8 @@ const InvoicesPage = () => {
   const [invoices, setInvoices] = useState([]);
   const [allInvoices, setAllInvoices] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [sortBy, setSortBy] = useState("totalAmount");
-  const [sortOrder, setSortOrder] = useState("asc");
+  const [sortBy, setSortBy] = useState("createdAt");
+  const [sortOrder, setSortOrder] = useState("desc");
   const [showModal, setShowModal] = useState(false);
   const [showReportModal, setShowReportModal] = useState(false);
   const [invoiceToDelete, setInvoiceToDelete] = useState(null);
@@ -370,10 +370,10 @@ const InvoicesPage = () => {
     Array.isArray(res?.data?.data)
       ? res.data.data
       : Array.isArray(res?.data)
-      ? res.data
-      : Array.isArray(res)
-      ? res
-      : [];
+        ? res.data
+        : Array.isArray(res)
+          ? res
+          : [];
 
   useEffect(() => {
     const fetchProjectsAndSuppliers = async () => {
@@ -386,14 +386,14 @@ const InvoicesPage = () => {
         const projectsData = Array.isArray(projectsRes.data?.data)
           ? projectsRes.data.data
           : Array.isArray(projectsRes.data)
-          ? projectsRes.data
-          : [];
+            ? projectsRes.data
+            : [];
 
         const suppliersData = Array.isArray(suppliersRes.data?.data)
           ? suppliersRes.data.data
           : Array.isArray(suppliersRes.data)
-          ? suppliersRes.data
-          : [];
+            ? suppliersRes.data
+            : [];
 
         setProjectsForPrint(projectsData);
         setSuppliersForPrint(suppliersData);
@@ -782,13 +782,13 @@ const InvoicesPage = () => {
 
     const selectedProjectNames = selectedProjectForPrint.length > 0
       ? selectedProjectForPrint.map(id =>
-          projectsForPrint.find((p) => p._id === id)?.name
-        ).filter(Boolean).join(", ")
+        projectsForPrint.find((p) => p._id === id)?.name
+      ).filter(Boolean).join(", ")
       : "כל הפרויקטים";
     const selectedSupplierNames = selectedSupplierForPrint.length > 0
       ? selectedSupplierForPrint.map(id =>
-          suppliersForPrint.find((s) => s._id === id)?.name
-        ).filter(Boolean).join(", ")
+        suppliersForPrint.find((s) => s._id === id)?.name
+      ).filter(Boolean).join(", ")
       : "כל הספקים";
 
     const printWindow = window.open("", "_blank");
@@ -1026,53 +1026,48 @@ const InvoicesPage = () => {
             </div>
             <h1>📋 דוח חשבוניות</h1>
             <div class="date">תאריך הפקה: ${new Date().toLocaleDateString(
-              "he-IL",
-              {
-                year: "numeric",
-                month: "long",
-                day: "numeric",
-                hour: "2-digit",
-                minute: "2-digit",
-              }
-            )}</div>
+      "he-IL",
+      {
+        year: "numeric",
+        month: "long",
+        day: "numeric",
+        hour: "2-digit",
+        minute: "2-digit",
+      }
+    )}</div>
           </div>
 
-          ${
-            selectedProjectForPrint.length > 0 ||
-            selectedSupplierForPrint.length > 0 ||
-            fromDatePrint ||
-            toDatePrint
-              ? `
+          ${selectedProjectForPrint.length > 0 ||
+        selectedSupplierForPrint.length > 0 ||
+        fromDatePrint ||
+        toDatePrint
+        ? `
           <div class="filters">
             <h3>🔍 פילטרים</h3>
-            ${
-              selectedProjectForPrint.length > 0
-                ? `<p><strong>פרויקטים:</strong> ${selectedProjectNames}</p>`
-                : ""
-            }
-            ${
-              selectedSupplierForPrint.length > 0
-                ? `<p><strong>ספקים:</strong> ${selectedSupplierNames}</p>`
-                : ""
-            }
-            ${
-              fromDatePrint
-                ? `<p><strong>מתאריך:</strong> ${new Date(
-                    fromDatePrint
-                  ).toLocaleDateString("he-IL")}</p>`
-                : ""
-            }
-            ${
-              toDatePrint
-                ? `<p><strong>עד תאריך:</strong> ${new Date(
-                    toDatePrint
-                  ).toLocaleDateString("he-IL")}</p>`
-                : ""
-            }
+            ${selectedProjectForPrint.length > 0
+          ? `<p><strong>פרויקטים:</strong> ${selectedProjectNames}</p>`
+          : ""
+        }
+            ${selectedSupplierForPrint.length > 0
+          ? `<p><strong>ספקים:</strong> ${selectedSupplierNames}</p>`
+          : ""
+        }
+            ${fromDatePrint
+          ? `<p><strong>מתאריך:</strong> ${new Date(
+            fromDatePrint
+          ).toLocaleDateString("he-IL")}</p>`
+          : ""
+        }
+            ${toDatePrint
+          ? `<p><strong>עד תאריך:</strong> ${new Date(
+            toDatePrint
+          ).toLocaleDateString("he-IL")}</p>`
+          : ""
+        }
           </div>
           `
-              : ""
-          }
+        : ""
+      }
 
           <table>
             <thead>
@@ -1089,32 +1084,30 @@ const InvoicesPage = () => {
             </thead>
             <tbody>
               ${filteredForPrint
-                .map(
-                  (invoice, idx) => `
+        .map(
+          (invoice, idx) => `
                 <tr>
                   <td><strong>${idx + 1}</strong></td>
                   <td><strong>${invoice.invoiceNumber || "-"}</strong></td>
                   <td>${invoice.supplierId?.name || invoice.invitingName || "לא צוין"}</td>
-                  <td>${
-                    invoice.projects?.length
-                      ? getProjectNamesWithoutMilga(invoice.projects)
-                      : "-"
-                  }</td>
+                  <td>${invoice.projects?.length
+              ? getProjectNamesWithoutMilga(invoice.projects)
+              : "-"
+            }</td>
                   <td><strong>${formatNumber(
-                    invoice.totalAmount
-                  )} ₪</strong></td>
+              invoice.totalAmount
+            )} ₪</strong></td>
                   <td>${formatDate(invoice.createdAt)}</td>
                   <td>${invoice.status || "-"}</td>
                   <td>
-                    <span class="${
-                      invoice.paid === "כן" ? "status-paid" : "status-unpaid"
-                    }">
+                    <span class="${invoice.paid === "כן" ? "status-paid" : "status-unpaid"
+            }">
                       ${invoice.paid === "כן" ? "✓ שולם" : "✗ לא שולם"}
                     </span>
                   </td>
                 </tr>`
-                )
-                .join("")}
+        )
+        .join("")}
             </tbody>
           </table>
 
@@ -1515,9 +1508,9 @@ const InvoicesPage = () => {
           filteredData = allData.filter((invoice) => {
             const projectId = String(
               invoice.projectId?._id ||
-                invoice.projectId ||
-                invoice.project?._id ||
-                invoice.project
+              invoice.projectId ||
+              invoice.project?._id ||
+              invoice.project
             );
             return allowedProjectIds.includes(projectId);
           });
@@ -1525,7 +1518,7 @@ const InvoicesPage = () => {
 
         setAllInvoices(filteredData);
         // לא מגדירים setInvoices כאן - getFilteredInvoices() יסנן אוטומטית
-      }  catch (error) {
+      } catch (error) {
         console.error("Error fetching invoices:", error);
         toast.error("שגיאה בטעינת הנתונים. נסה שנית מאוחר יותר.", {
           className: "sonner-toast error rtl",
@@ -1777,13 +1770,13 @@ const InvoicesPage = () => {
         prev.map(inv =>
           invoiceIds.includes(inv._id)
             ? {
-                ...inv,
-                paid: "כן",
-                paymentDate: bulkPaymentDate,
-                paymentMethod: bulkPaymentMethod,
-                checkNumber: bulkPaymentMethod === "check" ? bulkCheckNumber : null,
-                checkDate: bulkPaymentMethod === "check" ? bulkCheckDate : null,
-              }
+              ...inv,
+              paid: "כן",
+              paymentDate: bulkPaymentDate,
+              paymentMethod: bulkPaymentMethod,
+              checkNumber: bulkPaymentMethod === "check" ? bulkCheckNumber : null,
+              checkDate: bulkPaymentMethod === "check" ? bulkCheckDate : null,
+            }
             : inv
         )
       );
@@ -1791,13 +1784,13 @@ const InvoicesPage = () => {
         prev.map(inv =>
           invoiceIds.includes(inv._id)
             ? {
-                ...inv,
-                paid: "כן",
-                paymentDate: bulkPaymentDate,
-                paymentMethod: bulkPaymentMethod,
-                checkNumber: bulkPaymentMethod === "check" ? bulkCheckNumber : null,
-                checkDate: bulkPaymentMethod === "check" ? bulkCheckDate : null,
-              }
+              ...inv,
+              paid: "כן",
+              paymentDate: bulkPaymentDate,
+              paymentMethod: bulkPaymentMethod,
+              checkNumber: bulkPaymentMethod === "check" ? bulkCheckNumber : null,
+              checkDate: bulkPaymentMethod === "check" ? bulkCheckDate : null,
+            }
             : inv
         )
       );
@@ -1890,9 +1883,9 @@ const InvoicesPage = () => {
     if (invoicesToExport.length === 0) {
       const statusText =
         exportPaymentStatusFilter === "unpaid" ? "שלא שולמו" :
-        exportPaymentStatusFilter === "paid" ? "ששולמו" :
-        exportPaymentStatusFilter === "sent_to_payment" ? "שיצאו לתשלום" :
-        "";
+          exportPaymentStatusFilter === "paid" ? "ששולמו" :
+            exportPaymentStatusFilter === "sent_to_payment" ? "שיצאו לתשלום" :
+              "";
       toast.error(`לא נמצאו חשבוניות ${statusText} לייצוא`, {
         className: "sonner-toast error rtl",
       });
@@ -2027,8 +2020,8 @@ const InvoicesPage = () => {
     salaryInvoices.forEach((invoice) => {
       // הפרויקט המקורי שממנו יורד התקציב
       const sourceProject = invoice.fundedFromProjectId?.name ||
-                           invoice.projects?.find(p => p.projectName !== "משכורות")?.projectName ||
-                           "לא ידוע";
+        invoice.projects?.find(p => p.projectName !== "משכורות")?.projectName ||
+        "לא ידוע";
 
       if (!groupedByProject[sourceProject]) {
         groupedByProject[sourceProject] = [];
@@ -2190,9 +2183,9 @@ const InvoicesPage = () => {
     if (invoicesToExport.length === 0) {
       const statusText =
         exportPaymentStatusFilter === "unpaid" ? "שלא שולמו" :
-        exportPaymentStatusFilter === "paid" ? "ששולמו" :
-        exportPaymentStatusFilter === "sent_to_payment" ? "שיצאו לתשלום" :
-        "";
+          exportPaymentStatusFilter === "paid" ? "ששולמו" :
+            exportPaymentStatusFilter === "sent_to_payment" ? "שיצאו לתשלום" :
+              "";
       toast.error(`לא נמצאו חשבוניות ${statusText} לייצוא`, {
         className: "sonner-toast error rtl",
       });
@@ -2290,47 +2283,54 @@ const InvoicesPage = () => {
   };
 
   const groupInvoicesByMonth = (invoices) => {
-  return invoices.reduce((acc, invoice) => {
-    if (!invoice.createdAt) return acc;
+    return invoices.reduce((acc, invoice) => {
+      if (!invoice.createdAt) return acc;
 
-    const date = new Date(invoice.createdAt);
-    const key = `${date.getFullYear()}-${date.getMonth()}`; // למשל: 2026-0
+      const date = new Date(invoice.createdAt);
+      const key = `${date.getFullYear()}-${date.getMonth()}`;
 
-    if (!acc[key]) {
-      acc[key] = {
-        year: date.getFullYear(),
-        month: date.getMonth(),
-        invoices: [],
-      };
-    }
+      if (!acc[key]) {
+        acc[key] = {
+          year: date.getFullYear(),
+          month: date.getMonth(),
+          invoices: [],
+        };
+      }
 
-    acc[key].invoices.push(invoice);
-    return acc;
-  }, {});
-};
+      acc[key].invoices.push(invoice);
+      return acc;
+    }, {});
+  };
 
-const HEBREW_MONTHS = [
-  "ינואר",
-  "פברואר",
-  "מרץ",
-  "אפריל",
-  "מאי",
-  "יוני",
-  "יולי",
-  "אוגוסט",
-  "ספטמבר",
-  "אוקטובר",
-  "נובמבר",
-  "דצמבר",
-];
-const groupedInvoices = groupInvoicesByMonth(sortedInvoices);
 
-// מיון חודשים – מהחדש לישן
-const groupedByMonthSorted = Object.values(groupedInvoices).sort(
-  (a, b) =>
-    new Date(b.year, b.month) - new Date(a.year, a.month)
-);
+  const HEBREW_MONTHS = [
+    "ינואר",
+    "פברואר",
+    "מרץ",
+    "אפריל",
+    "מאי",
+    "יוני",
+    "יולי",
+    "אוגוסט",
+    "ספטמבר",
+    "אוקטובר",
+    "נובמבר",
+    "דצמבר",
+  ];
+  const groupedInvoices = groupInvoicesByMonth(sortedInvoices);
 
+  // מיון חודשים – מהחדש לישן
+  const groupedByMonthSorted = Object.values(groupedInvoices)
+    .map(group => ({
+      ...group,
+      // 🔥 מיון חשבוניות בתוך החודש – מהחדש לישן
+      invoices: group.invoices.sort(
+        (a, b) => new Date(b.createdAt) - new Date(a.createdAt)
+      ),
+    }))
+    .sort(
+      (a, b) => new Date(b.year, b.month) - new Date(a.year, a.month)
+    );
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-orange-50 via-amber-50 to-yellow-50 relative overflow-hidden pt-20 sm:pt-24 md:pt-28 pb-8 sm:pb-12">
@@ -2475,13 +2475,13 @@ const groupedByMonthSorted = Object.values(groupedInvoices).sort(
                 statusFilter !== "all" ||
                 documentStatusFilter !== "all" ||
                 searchTerm) && (
-                <button
-                  onClick={resetFilters}
-                  className="px-4 py-2 bg-slate-200 text-slate-700 rounded-xl hover:bg-slate-300 transition-all font-bold"
-                >
-                  נקה סינון
-                </button>
-              )}
+                  <button
+                    onClick={resetFilters}
+                    className="px-4 py-2 bg-slate-200 text-slate-700 rounded-xl hover:bg-slate-300 transition-all font-bold"
+                  >
+                    נקה סינון
+                  </button>
+                )}
             </div>
 
             {/* Export Buttons */}
@@ -2554,9 +2554,12 @@ const groupedByMonthSorted = Object.values(groupedInvoices).sort(
           </div>
         </div>
 
+
         {/* Invoices Table */}
         {sortedInvoices.length > 0 ? (
+
           <div className="space-y-8">
+
             {groupedByMonthSorted.map((group) => (
               <div key={`${group.year}-${group.month}`} className="bg-white/80 backdrop-blur-xl rounded-2xl shadow-lg p-6 border border-white/50">
                 {/* כותרת חודש ושנה */}
@@ -2577,8 +2580,8 @@ const groupedByMonthSorted = Object.values(groupedInvoices).sort(
                             canEditInvoices && isAdmin
                               ? "0.4fr 0.9fr 1.1fr 0.9fr 0.9fr 0.9fr 0.9fr 1.3fr 0.9fr 0.7fr 0.9fr 1.1fr"
                               : canEditInvoices
-                              ? "0.9fr 1.1fr 0.9fr 0.9fr 0.9fr 0.9fr 1.3fr 0.9fr 0.7fr 1.1fr"
-                              : "0.9fr 1.1fr 0.9fr 0.9fr 0.9fr 0.9fr 1.3fr 0.9fr 0.7fr",
+                                ? "0.9fr 1.1fr 0.9fr 0.9fr 0.9fr 0.9fr 1.3fr 0.9fr 0.7fr 1.1fr"
+                                : "0.9fr 1.1fr 0.9fr 0.9fr 0.9fr 0.9fr 1.3fr 0.9fr 0.7fr",
                         }}
                       >
                         {/* עמודה 1: Checkbox - רק לאדמין */}
@@ -2664,11 +2667,10 @@ const groupedByMonthSorted = Object.values(groupedInvoices).sort(
                       {group.invoices.map((invoice) => (
                         <tr
                           key={invoice._id}
-                          className={`cursor-pointer border-t border-orange-100 hover:bg-orange-50 transition-colors ${
-                            selectedInvoices.some((inv) => inv._id === invoice._id)
+                          className={`cursor-pointer border-t border-orange-100 hover:bg-orange-50 transition-colors ${selectedInvoices.some((inv) => inv._id === invoice._id)
                               ? "bg-orange-100"
                               : ""
-                          }`}
+                            }`}
                           style={{
                             display: "grid",
                             gap: "2px",
@@ -2676,8 +2678,8 @@ const groupedByMonthSorted = Object.values(groupedInvoices).sort(
                               canEditInvoices && isAdmin
                                 ? "0.4fr 0.9fr 1.1fr 0.9fr 0.9fr 0.9fr 0.9fr 1.3fr 0.9fr 0.7fr 0.9fr 1.1fr"
                                 : canEditInvoices
-                                ? "0.9fr 1.1fr 0.9fr 0.9fr 0.9fr 0.9fr 1.3fr 0.9fr 0.7fr 1.1fr"
-                                : "0.9fr 1.1fr 0.9fr 0.9fr 0.9fr 0.9fr 1.3fr 0.9fr 0.7fr",
+                                  ? "0.9fr 1.1fr 0.9fr 0.9fr 0.9fr 0.9fr 1.3fr 0.9fr 0.7fr 1.1fr"
+                                  : "0.9fr 1.1fr 0.9fr 0.9fr 0.9fr 0.9fr 1.3fr 0.9fr 0.7fr",
                           }}
                           onClick={(e) => {
                             if (
@@ -2724,7 +2726,7 @@ const groupedByMonthSorted = Object.values(groupedInvoices).sort(
 
                           {/* עמודה 3/2: שם הספק */}
                           <td className="px-2 py-4 text-xs font-bold text-center text-slate-900">
-                            {invoice.type === "salary"  ? invoice.salaryEmployeeName : invoice.supplierId?.name || "-" } 
+                            {invoice.type === "salary" ? invoice.salaryEmployeeName : invoice.supplierId?.name || "-"}
                           </td>
 
                           {/* עמודה 4/3: מספר חשבונית */}
@@ -2775,11 +2777,11 @@ const groupedByMonthSorted = Object.values(groupedInvoices).sort(
                           <td className="px-2 py-4 text-xs text-center font-medium text-slate-900">
                             {invoice.projects?.length
                               ? invoice.projects
-                                  .map(
-                                    (p) =>
-                                      p.projectName || p.projectId?.name || "ללא שם"
-                                  )
-                                  .join(", ")
+                                .map(
+                                  (p) =>
+                                    p.projectName || p.projectId?.name || "ללא שם"
+                                )
+                                .join(", ")
                               : "—"}
                           </td>
 
@@ -2815,8 +2817,8 @@ const groupedByMonthSorted = Object.values(groupedInvoices).sort(
                             <td className="px-2 py-4 text-center">
                               <label className="relative inline-block cursor-pointer" title={
                                 invoice.paid === "כן" ? "לחץ להחזרה ללא שולם" :
-                                invoice.paid === "יצא לתשלום" ? "לחץ להחזרה ללא שולם" :
-                                "לחץ לסימון כשולם"
+                                  invoice.paid === "יצא לתשלום" ? "לחץ להחזרה ללא שולם" :
+                                    "לחץ לסימון כשולם"
                               }>
                                 <input
                                   type="checkbox"
@@ -2828,13 +2830,12 @@ const groupedByMonthSorted = Object.values(groupedInvoices).sort(
                                   className="absolute opacity-0 cursor-pointer"
                                 />
                                 <span
-                                  className={`w-6 h-6 inline-block border-2 rounded-full transition-all ${
-                                    invoice.paid === "כן"
+                                  className={`w-6 h-6 inline-block border-2 rounded-full transition-all ${invoice.paid === "כן"
                                       ? "bg-emerald-500 border-emerald-500"
                                       : invoice.paid === "יצא לתשלום"
-                                      ? "bg-blue-500 border-blue-500"
-                                      : "bg-gray-200 border-gray-400"
-                                  } flex items-center justify-center`}
+                                        ? "bg-blue-500 border-blue-500"
+                                        : "bg-gray-200 border-gray-400"
+                                    } flex items-center justify-center`}
                                 >
                                   {invoice.paid === "כן" && (
                                     <svg
@@ -3251,11 +3252,10 @@ const groupedByMonthSorted = Object.values(groupedInvoices).sort(
                       {availableColumns.map((column) => (
                         <label
                           key={column.key}
-                          className={`flex items-center gap-3 p-3 rounded-xl border-2 cursor-pointer transition-all ${
-                            exportColumns[column.key]
+                          className={`flex items-center gap-3 p-3 rounded-xl border-2 cursor-pointer transition-all ${exportColumns[column.key]
                               ? "bg-gradient-to-br from-orange-50 to-amber-50 border-orange-400"
                               : "bg-gray-50 border-gray-200 hover:border-gray-300"
-                          }`}
+                            }`}
                         >
                           <input
                             type="checkbox"
@@ -3264,11 +3264,10 @@ const groupedByMonthSorted = Object.values(groupedInvoices).sort(
                             className="w-5 h-5 text-orange-600 rounded focus:ring-2 focus:ring-orange-500"
                           />
                           <span
-                            className={`text-sm font-medium ${
-                              exportColumns[column.key]
+                            className={`text-sm font-medium ${exportColumns[column.key]
                                 ? "text-gray-900"
                                 : "text-gray-600"
-                            }`}
+                              }`}
                           >
                             {column.label}
                           </span>
@@ -3888,4 +3887,3 @@ const groupedByMonthSorted = Object.values(groupedInvoices).sort(
 };
 
 export default InvoicesPage;
-     

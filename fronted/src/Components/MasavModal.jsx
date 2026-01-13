@@ -91,6 +91,171 @@ export default function MasavModal({ open, onClose, invoices, onInvoicesUpdated 
     }
   };
 
+  const openMasavSummaryPDF = (invoices, executionDate) => {
+    if (!invoices || invoices.length === 0) return;
+
+    const totalSum = invoices.reduce(
+      (sum, inv) => sum + Number(inv.totalAmount || 0),
+      0
+    );
+
+    // מיון לפי שם ספק א'-ב'
+    const invoicesForPrint = [...invoices].sort((a, b) => {
+      const aName = a.supplierId?.name || "";
+      const bName = b.supplierId?.name || "";
+      return aName.localeCompare(bName, "he");
+    });
+
+    const w = window.open("", "_blank");
+
+    w.document.open();
+    w.document.write(`<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+<meta charset="UTF-8" />
+<title>סיכום מס״ב</title>
+<style>
+@media print {
+  @page { size: A4; margin: 15mm; }
+}
+* { box-sizing: border-box; }
+body {
+  font-family: 'Segoe UI', Tahoma, sans-serif;
+  direction: rtl;
+  color: #1f2937;
+  padding: 20px;
+}
+.header {
+  text-align: center;
+  margin-bottom: 30px;
+  border-bottom: 3px solid #f97316;
+  padding-bottom: 15px;
+}
+.logo-text {
+  font-size: 32px;
+  font-weight: bold;
+  color: #6b7280;
+  margin-bottom: 10px;
+}
+.header h1 {
+  font-size: 22px;
+  margin-bottom: 6px;
+}
+.header .date {
+  font-size: 13px;
+  color: #6b7280;
+}
+table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-top: 25px;
+}
+thead {
+  background: linear-gradient(135deg, #f97316, #fb923c);
+  color: white;
+}
+th, td {
+  border: 1px solid #e5e7eb;
+  padding: 8px;
+  font-size: 12px;
+  text-align: center;
+}
+tbody tr:nth-child(even) {
+  background: #f9fafb;
+}
+.summary {
+  margin-top: 30px;
+  padding: 18px;
+  border: 2px solid #fdba74;
+  border-radius: 10px;
+  background: #fff7ed;
+}
+.summary h3 {
+  color: #f97316;
+  margin-bottom: 10px;
+}
+.summary-row {
+  display: flex;
+  justify-content: space-between;
+  font-size: 14px;
+  padding: 6px 0;
+}
+.summary-row.total {
+  font-weight: bold;
+  font-size: 16px;
+  color: #ea580c;
+}
+.footer {
+  margin-top: 40px;
+  text-align: center;
+  font-size: 11px;
+  color: #9ca3af;
+  border-top: 1px solid #e5e7eb;
+  padding-top: 15px;
+}
+</style>
+</head>
+<body>
+
+<div class="header">
+  <div class="logo-text">ניהולון</div>
+  <h1>📄 סיכום מס״ב</h1>
+  <div class="date">
+    תאריך ביצוע: ${executionDate}
+  </div>
+</div>
+
+<table>
+<thead>
+<tr>
+  <th>#</th>
+  <th>חשבונית</th>
+  <th>ספק</th>
+  <th>פרויקטים</th>
+  <th>סכום</th>
+</tr>
+</thead>
+<tbody>
+${invoicesForPrint.map((inv, i) => `
+<tr>
+  <td>${i + 1}</td>
+  <td>${inv.invoiceNumber || "-"}</td>
+  <td>${inv.supplierId?.name || "-"}</td>
+  <td>${inv.projects?.map(p => p.projectName).join(", ") || "-"}</td>
+  <td><strong>${inv.totalAmount.toLocaleString()} ₪</strong></td>
+</tr>
+`).join("")}
+</tbody>
+</table>
+
+<div class="summary">
+  <h3>📊 סיכום</h3>
+  <div class="summary-row">
+    <span>סה״כ חשבוניות:</span>
+    <strong>${invoicesForPrint.length}</strong>
+  </div>
+  <div class="summary-row total">
+    <span>סה״כ סכום:</span>
+    <strong>${totalSum.toLocaleString()} ₪</strong>
+  </div>
+</div>
+
+<div class="footer">
+  מסמך זה הופק אוטומטית ממערכת ניהולון
+</div>
+
+<script>
+  window.onload = function () {
+    setTimeout(() => window.print(), 300);
+  }
+</script>
+
+</body>
+</html>`);
+
+    w.document.close();
+  };
+
   // ============================
   // GENERATE MASAV FILE
   // ============================
@@ -214,6 +379,7 @@ export default function MasavModal({ open, onClose, invoices, onInvoicesUpdated 
         if (onInvoicesUpdated) {
           onInvoicesUpdated(invoiceIdsToUpdate);
         }
+        openMasavSummaryPDF(withBankDetails, executionDate);
 
         toast.success(`קובץ מס"ב + סיכום PDF ירד בהצלחה! ${invoiceIdsToUpdate.length} חשבוניות עודכנו ל"יצא לתשלום"`);
       } catch (updateErr) {

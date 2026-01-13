@@ -8,8 +8,6 @@ const orderSchema = new mongoose.Schema({
 
   sum: { type: Number, required: true },
 
-  createdAt: { type: Date, required: true },
-
  status: {
     type: String,
     enum: ["הוגש", "לא הוגש", "בעיבוד", "הוגש חלקי"], // ✅ הוסף
@@ -89,6 +87,8 @@ const orderSchema = new mongoose.Schema({
   isCredited: { type: Boolean, default: false },
   creditDate: { type: Date, required: false }
 
+}, {
+  timestamps: true  // Mongoose will automatically manage createdAt and updatedAt
 });
 
 orderSchema.pre('deleteOne', { document: true, query: false }, async function(next) {

@@ -97,6 +97,7 @@ async function searchInvoices(query) {
   })
     .populate("supplierId")
     .populate("projects.projectId", "name")
+    .sort({ createdAt: -1 })
     .limit(100);
 
   // אם לא נמצאו תוצאות, חפש גם בשם ספק ובסכום
@@ -104,6 +105,7 @@ async function searchInvoices(query) {
     const allInvoices = await Invoice.find({})
       .populate("supplierId")
       .populate("projects.projectId", "name")
+      .sort({ createdAt: -1 })
       .limit(100);
 
     return allInvoices.filter(invoice => {
@@ -145,7 +147,8 @@ async function getInvoices(user) {
   const invoices = await Invoice.find(query)
     .populate("supplierId")
     .populate("projects.projectId", "name")
-    .populate("fundedFromProjectId", "name");
+    .populate("fundedFromProjectId", "name")
+    .sort({ createdAt: -1 });
 
   return invoices;
 }

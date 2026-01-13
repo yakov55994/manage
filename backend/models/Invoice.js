@@ -135,6 +135,8 @@ supplierId: {
     type: mongoose.Schema.Types.ObjectId,
     ref: "Project"
   }],
+}, {
+  timestamps: true  // Mongoose will automatically manage createdAt and updatedAt
 });
 
 // --------------------------------
