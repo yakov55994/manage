@@ -341,7 +341,7 @@ const InvoiceEditPage = () => {
     if (!globalFields.invoiceNumber) return toast.error("חסר מספר חשבונית");
     if (!globalFields.supplierId) return toast.error("יש לבחור ספק");
     if (!globalFields.documentType) return toast.error("יש לבחור סוג מסמך");
-    if (!rows.length) return toast.error("בחר לפחות פרויקט אחד");
+    if (!rows.length && !selectedProjects.length) return toast.error("בחר לפחות פרויקט אחד");
 
     if (
       globalFields.paid === "כן" &&
