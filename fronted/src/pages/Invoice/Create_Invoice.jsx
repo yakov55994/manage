@@ -57,7 +57,7 @@ const CreateInvoice = () => {
       supplierId: "",
       invitingName: "",
       documentType: "",
-      createdAt: "",
+      invoiceDate: "",
       detail: "",
       paid: "לא",
       paymentDate: "",
@@ -320,7 +320,7 @@ const CreateInvoice = () => {
         type: isSalary ? "salary" : "invoice",
 
         invitingName: form.invitingName,
-        createdAt: form.createdAt,
+        invoiceDate: form.invoiceDate,
         detail: form.detail,
 
         paid: form.paid,
@@ -635,7 +635,7 @@ const CreateInvoice = () => {
             />
           </div>
 
-          {/* תאריך יצירה */}
+          {/* תאריך החשבונית */}
           <div
             onClick={() => {
               try {
@@ -646,16 +646,16 @@ const CreateInvoice = () => {
             }}
             className="cursor-pointer"
           >
-            <label className="cursor-pointer">תאריך יצירה</label>
+            <label className="cursor-pointer">תאריך החשבונית</label>
             <input
               type="date"
               ref={dateInputRef}
               className="w-full p-3 border rounded-xl cursor-pointer"
-              value={form.createdAt}
+              value={form.invoiceDate}
               onChange={(e) =>
                 setForm((prev) => ({
                   ...prev,
-                  createdAt: e.target.value,
+                  invoiceDate: e.target.value,
                 }))
               }
             />

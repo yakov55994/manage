@@ -2,7 +2,7 @@ import { useState } from "react";
 import api from "../../api/api.js";
 import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
-import { validateForm, showValidationErrors } from "../../utils/validation.js";
+import { validateForm, showValidationErrors } from "../../utils/validation.jsx";
 import {
   FolderPlus,
   Building2,
