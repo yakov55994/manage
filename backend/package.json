@@ -5,7 +5,8 @@
   "type": "module",
   "scripts": {
     "start": "nodemon server.js",
-    "build": "echo 'Build completed'"
+    "build": "npx puppeteer browsers install chrome",
+    "postinstall": "npx puppeteer browsers install chrome"
   },
   "keywords": [],
   "author": "",
