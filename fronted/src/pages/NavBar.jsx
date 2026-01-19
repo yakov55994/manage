@@ -122,7 +122,7 @@ const Sidebar = () => {
     {
       id: "finance",
       icon: DollarSign,
-      text: "כספים",
+      text: "תנועות בנק",
       show: isAdmin || canViewModule(null, "invoices") || canEditModule(null, "invoices"),
       type: "dropdown",
       items: [

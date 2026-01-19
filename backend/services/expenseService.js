@@ -6,6 +6,8 @@ export default {
     let query = {};
 
     const expenses = await Expense.find(query)
+      .populate("linkedInvoices", "invoiceNumber supplierId totalAmount createdAt paid")
+      .populate("linkedSalaries", "employeeName totalAmount month year")
       .sort({ createdAt: -1 });
 
     return expenses;
@@ -13,7 +15,9 @@ export default {
 
   // קבלת הוצאה לפי ID
   async getExpenseById(user, expenseId) {
-    const expense = await Expense.findById(expenseId);
+    const expense = await Expense.findById(expenseId)
+      .populate("linkedInvoices", "invoiceNumber supplierId totalAmount createdAt paid")
+      .populate("linkedSalaries", "employeeName totalAmount month year");
 
     if (!expense) {
       throw new Error("הוצאה לא נמצאה");
@@ -102,5 +106,26 @@ export default {
       { $set: { notes: notes } }
     );
     return result;
+  },
+
+  // שיוך הוצאה לחשבוניות ומשכורות
+  async linkExpense(user, expenseId, invoiceIds, salaryIds) {
+    const expense = await Expense.findById(expenseId);
+
+    if (!expense) {
+      throw new Error("הוצאה לא נמצאה");
+    }
+
+    expense.linkedInvoices = invoiceIds;
+    expense.linkedSalaries = salaryIds;
+
+    await expense.save();
+
+    // החזר עם populate
+    const populatedExpense = await Expense.findById(expenseId)
+      .populate("linkedInvoices", "invoiceNumber supplierId totalAmount createdAt")
+      .populate("linkedSalaries", "employeeName totalAmount month year");
+
+    return populatedExpense;
   },
 };

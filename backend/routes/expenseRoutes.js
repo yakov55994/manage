@@ -19,6 +19,9 @@ router.post("/", protect, expenseController.createExpense);
 // עדכון הערות מרובה
 router.put("/bulk/notes", protect, expenseController.bulkUpdateNotes);
 
+// שיוך הוצאה לחשבוניות ומשכורות
+router.put("/:expenseId/link", protect, expenseController.linkExpense);
+
 // עדכון הוצאה
 router.put("/:expenseId", protect, expenseController.updateExpense);
 

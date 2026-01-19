@@ -49,6 +49,18 @@ const expenseSchema = new mongoose.Schema({
     default: "",
   },
 
+  // שיוך לחשבוניות
+  linkedInvoices: [{
+    type: mongoose.Schema.Types.ObjectId,
+    ref: "Invoice",
+  }],
+
+  // שיוך למשכורות
+  linkedSalaries: [{
+    type: mongoose.Schema.Types.ObjectId,
+    ref: "Salary",
+  }],
+
   // מי יצר
   createdBy: {
     type: mongoose.Schema.Types.ObjectId,

@@ -84,6 +84,22 @@ const expenseController = {
       sendError(res, e);
     }
   },
+
+  // שיוך הוצאה לחשבוניות ומשכורות
+  async linkExpense(req, res) {
+    try {
+      const { invoiceIds, salaryIds } = req.body;
+      const expense = await expenseService.linkExpense(
+        req.user,
+        req.params.expenseId,
+        invoiceIds || [],
+        salaryIds || []
+      );
+      res.json({ success: true, data: expense });
+    } catch (e) {
+      sendError(res, e);
+    }
+  },
 };
 
 export default expenseController;

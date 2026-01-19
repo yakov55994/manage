@@ -470,6 +470,26 @@ const InvoicesPage = () => {
       });
     }
 
+    // סינון לפי תאריך תשלום (תמיד פעיל)
+    if (advancedFilters.paymentDateFrom) {
+      const paidFrom = normalizeDate(advancedFilters.paymentDateFrom);
+      if (paidFrom) {
+        filtered = filtered.filter((inv) => {
+          const d = normalizeDate(inv.paymentDate);
+          return d && d >= paidFrom;
+        });
+      }
+    }
+    if (advancedFilters.paymentDateTo) {
+      const paidTo = normalizeDate(advancedFilters.paymentDateTo);
+      if (paidTo) {
+        filtered = filtered.filter((inv) => {
+          const d = normalizeDate(inv.paymentDate);
+          return d && d <= paidTo;
+        });
+      }
+    }
+
     if (showReportModal) {
       const createdFrom = normalizeDate(advancedFilters.dateFrom);
       const createdTo = normalizeDate(advancedFilters.dateTo);
