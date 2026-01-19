@@ -16,8 +16,6 @@ import {
   Menu,
   X,
   DollarSign,
-  CreditCard,
-  FileSpreadsheet,
 } from "lucide-react";
 import { useAuth } from "../context/AuthContext.jsx";
 
@@ -122,50 +120,28 @@ const Sidebar = () => {
       ],
     },
     {
-      id: "incomes",
+      id: "finance",
       icon: DollarSign,
-      text: "הכנסות",
+      text: "כספים",
       show: isAdmin || canViewModule(null, "invoices") || canEditModule(null, "invoices"),
       type: "dropdown",
       items: [
         {
-          text: "יצירת הכנסה",
-          path: "/create-income",
-          show: isAdmin || canEditModule(null, "invoices"),
-        },
-        {
-          text: "הצגת הכנסות",
+          text: "הכנסות",
           path: "/incomes",
           show: isAdmin || canViewModule(null, "invoices"),
         },
-      ],
-    },
-    {
-      id: "expenses",
-      icon: CreditCard,
-      text: "הוצאות",
-      show: isAdmin || canViewModule(null, "invoices") || canEditModule(null, "invoices"),
-      type: "dropdown",
-      items: [
         {
-          text: "יצירת הוצאה",
-          path: "/create-expense",
-          show: isAdmin || canEditModule(null, "invoices"),
-        },
-        {
-          text: "הצגת הוצאות",
+          text: "הוצאות",
           path: "/expenses",
           show: isAdmin || canViewModule(null, "invoices"),
         },
+        {
+          text: "העלאת אקסל",
+          path: "/excel-upload",
+          show: isAdmin || canEditModule(null, "invoices"),
+        },
       ],
-    },
-    {
-      id: "excel-upload",
-      icon: FileSpreadsheet,
-      text: "העלאת אקסל",
-      path: "/excel-upload",
-      show: isAdmin || canEditModule(null, "invoices"),
-      type: "single",
     },
     {
       id: "orders",

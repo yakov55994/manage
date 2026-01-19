@@ -27,7 +27,7 @@ export default function ViewExpenses() {
   const [sortOrder, setSortOrder] = useState("desc");
   const [deleteModal, setDeleteModal] = useState({ open: false, expenseId: null });
   const [selectedExpenses, setSelectedExpenses] = useState([]);
-  const [lastSelectedIndex, setLastSelectedIndex] = useState(null);
+  const lastSelectedIdRef = useRef(null);
   const [bulkNoteModal, setBulkNoteModal] = useState(false);
   const [bulkNote, setBulkNote] = useState("");
 
@@ -172,39 +172,46 @@ export default function ViewExpenses() {
 
   // פונקציות בחירה
   const toggleSelectExpense = (expense, event = null) => {
-    const currentIndex = filteredExpenses.findIndex(e => e._id === expense._id);
+    const currentId = expense._id;
+    const currentIndex = filteredExpenses.findIndex(e => e._id === currentId);
 
-    if (event?.shiftKey && lastSelectedIndex !== null && currentIndex !== -1) {
-      const start = Math.min(lastSelectedIndex, currentIndex);
-      const end = Math.max(lastSelectedIndex, currentIndex);
-      const rangeExpenses = filteredExpenses.slice(start, end + 1);
+    const lastId = lastSelectedIdRef.current;
+    const lastIndex = lastId
+      ? filteredExpenses.findIndex(e => e._id === lastId)
+      : -1;
 
+    // בחירה רגילה — מעגנים
+    if (!event?.shiftKey || lastIndex === -1) {
       setSelectedExpenses(prev => {
-        const newSelected = [...prev];
-        rangeExpenses.forEach(exp => {
-          if (!newSelected.some(s => s._id === exp._id)) {
-            newSelected.push(exp);
-          }
-        });
-        return newSelected;
+        const exists = prev.some(e => e._id === currentId);
+        return exists
+          ? prev.filter(e => e._id !== currentId)
+          : [...prev, expense];
       });
-    } else {
-      setSelectedExpenses((prev) => {
-        if (prev.some((e) => e._id === expense._id)) {
-          return prev.filter((e) => e._id !== expense._id);
-        } else {
-          return [...prev, expense];
-        }
-      });
+
+      // anchor נקבע רק פה
+      lastSelectedIdRef.current = currentId;
+      return;
     }
 
-    setLastSelectedIndex(currentIndex);
+    // Shift selection — טווח אמיתי
+    const start = Math.min(lastIndex, currentIndex);
+    const end = Math.max(lastIndex, currentIndex);
+    const range = filteredExpenses.slice(start, end + 1);
+
+    setSelectedExpenses(prev => {
+      const map = new Map(prev.map(e => [e._id, e]));
+      range.forEach(e => map.set(e._id, e));
+      return Array.from(map.values());
+    });
+
+    // לא מעדכנים anchor כאן
   };
 
   const toggleSelectAll = () => {
     if (selectedExpenses.length === filteredExpenses.length) {
       setSelectedExpenses([]);
-      setLastSelectedIndex(null);
+      lastSelectedIdRef.current = null;
     } else {
       setSelectedExpenses(filteredExpenses);
     }
@@ -212,7 +219,7 @@ export default function ViewExpenses() {
 
   const selectNone = () => {
     setSelectedExpenses([]);
-    setLastSelectedIndex(null);
+    lastSelectedIdRef.current = null;
   };
 
   // עדכון הערות מרוכז

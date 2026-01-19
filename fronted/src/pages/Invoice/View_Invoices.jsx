@@ -1,4 +1,4 @@
-import { useEffect, useState, useRef } from "react";
+import { useEffect, useState, useRef, useMemo } from "react";
 import { ClipLoader } from "react-spinners";
 import api from "../../api/api.js";
 import * as XLSX from "xlsx";
@@ -635,6 +635,22 @@ const InvoicesPage = () => {
     setSearchTerm("");
     setInvoices(allInvoices);
     setDocumentStatusFilter([]);
+    setAdvancedFilters({
+      dateFrom: "",
+      dateTo: "",
+      paymentDateFrom: "",
+      paymentDateTo: "",
+      amountMin: "",
+      amountMax: "",
+      projectName: "",
+      supplierName: "",
+      invoiceNumberFrom: "",
+      invoiceNumberTo: "",
+      hasSupplier: "all",
+      paymentStatus: "all",
+      submissionStatus: "all",
+      documentStatus: "all",
+    });
     // מחק את הסינון השמור
     localStorage.removeItem('invoiceFilters');
   };
@@ -697,9 +713,40 @@ const InvoicesPage = () => {
         ? aName.localeCompare(bName)
         : bName.localeCompare(aName);
     }
+    if (sortBy === "supplierName") {
+      const aName = a.supplierId?.name || "";
+      const bName = b.supplierId?.name || "";
+
+      return sortOrder === "asc"
+        ? hebrewSort(aName, bName)
+        : hebrewSort(bName, aName);
+    }
 
     return 0;
   });
+
+  // רשימה שטוחה של החשבוניות בסדר התצוגה בפועל (לשימוש ב-Shift selection)
+  const displayOrderInvoices = useMemo(() => {
+    const grouped = sortedInvoices.reduce((acc, invoice) => {
+      if (!invoice.createdAt) return acc;
+      const date = new Date(invoice.createdAt);
+      const key = `${date.getFullYear()}-${date.getMonth()}`;
+      if (!acc[key]) {
+        acc[key] = { year: date.getFullYear(), month: date.getMonth(), invoices: [] };
+      }
+      acc[key].invoices.push(invoice);
+      return acc;
+    }, {});
+
+    return Object.values(grouped)
+      .map(group => ({
+        ...group,
+        // שמור על סדר המיון שנבחר - לא למיין מחדש בתוך הקבוצה
+        invoices: group.invoices,
+      }))
+      .sort((a, b) => new Date(b.year, b.month) - new Date(a.year, a.month))
+      .flatMap(group => group.invoices);
+  }, [sortedInvoices]);
 
   const generateInvoicesPrint = () => {
     let filteredForPrint = [...allInvoices];
@@ -1530,13 +1577,13 @@ const InvoicesPage = () => {
   const toggleSelectInvoice = (invoice, event) => {
     const currentId = invoice._id;
 
-    const currentIndex = sortedInvoices.findIndex(
+    const currentIndex = displayOrderInvoices.findIndex(
       i => i._id === currentId
     );
 
     const lastId = lastSelectedIdRef.current;
     const lastIndex = lastId
-      ? sortedInvoices.findIndex(i => i._id === lastId)
+      ? displayOrderInvoices.findIndex(i => i._id === lastId)
       : -1;
 
     // 🔹 בחירה רגילה — מעגנים
@@ -1557,7 +1604,7 @@ const InvoicesPage = () => {
     const start = Math.min(lastIndex, currentIndex);
     const end = Math.max(lastIndex, currentIndex);
 
-    const range = sortedInvoices.slice(start, end + 1);
+    const range = displayOrderInvoices.slice(start, end + 1);
 
     setSelectedInvoices(prev => {
       const map = new Map(prev.map(i => [i._id, i]));
@@ -1628,16 +1675,16 @@ const InvoicesPage = () => {
         setInvoices(
           updatedInvoices.filter((invoice) => {
             let matchesPaymentFilter =
-              paymentFilter === "all" ||
-              (paymentFilter === "paid" && invoice.paid === "כן") ||
-              (paymentFilter === "sent_to_payment" && invoice.paid === "יצא לתשלום") ||
-              (paymentFilter === "unpaid" && invoice.paid === "לא");
+              paymentFilter.length === 0 ||
+              (paymentFilter.includes("paid") && invoice.paid === "כן") ||
+              (paymentFilter.includes("sent_to_payment") && invoice.paid === "יצא לתשלום") ||
+              (paymentFilter.includes("unpaid") && invoice.paid === "לא");
 
             let matchesStatusFilter =
-              statusFilter === "all" ||
-              (statusFilter === "submitted" && invoice.status === "הוגש") ||
-              (statusFilter === "inProgress" && invoice.status === "בעיבוד") ||
-              (statusFilter === "notSubmitted" && invoice.status === "לא הוגש");
+              statusFilter.length === 0 ||
+              (statusFilter.includes("submitted") && invoice.status === "הוגש") ||
+              (statusFilter.includes("inProgress") && invoice.status === "בעיבוד") ||
+              (statusFilter.includes("notSubmitted") && invoice.status === "לא הוגש");
 
             return matchesPaymentFilter && matchesStatusFilter;
           })
@@ -2358,10 +2405,8 @@ const InvoicesPage = () => {
   const groupedByMonthSorted = Object.values(groupedInvoices)
     .map(group => ({
       ...group,
-      // 🔥 מיון חשבוניות בתוך החודש – מהחדש לישן
-      invoices: group.invoices.sort(
-        (a, b) => new Date(b.createdAt) - new Date(a.createdAt)
-      ),
+      // שמור על סדר המיון שנבחר - לא למיין מחדש בתוך הקבוצה
+      invoices: group.invoices,
     }))
     .sort(
       (a, b) => new Date(b.year, b.month) - new Date(a.year, a.month)
@@ -2461,6 +2506,7 @@ const InvoicesPage = () => {
                 <option value="createdAt">תאריך יצירה</option>
                 <option value="invoiceNumber">מספר חשבונית</option>
                 <option value="projectName">שם פרוייקט</option>
+                <option value="supplierName">שם ספק (א-ב)</option>
               </select>
               <select
                 onChange={(e) => setSortOrder(e.target.value)}

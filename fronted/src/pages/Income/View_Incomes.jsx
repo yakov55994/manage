@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import api from "../../api/api";
 import { ClipLoader } from "react-spinners";
@@ -34,7 +34,7 @@ export default function ViewIncomes() {
 
   // Multi-select
   const [selectedIncomes, setSelectedIncomes] = useState([]);
-  const [lastSelectedIndex, setLastSelectedIndex] = useState(null);
+  const lastSelectedIdRef = useRef(null);
 
   // Bulk notes modal
   const [bulkNotesModal, setBulkNotesModal] = useState({ open: false });
@@ -306,42 +306,49 @@ export default function ViewIncomes() {
 
   // Multi-select functions
   const toggleSelectIncome = (income, event = null) => {
-    const currentIndex = filteredIncomes.findIndex(i => i._id === income._id);
+    const currentId = income._id;
+    const currentIndex = filteredIncomes.findIndex(i => i._id === currentId);
 
-    if (event?.shiftKey && lastSelectedIndex !== null && currentIndex !== -1) {
-      const start = Math.min(lastSelectedIndex, currentIndex);
-      const end = Math.max(lastSelectedIndex, currentIndex);
-      const rangeIncomes = filteredIncomes.slice(start, end + 1);
+    const lastId = lastSelectedIdRef.current;
+    const lastIndex = lastId
+      ? filteredIncomes.findIndex(i => i._id === lastId)
+      : -1;
 
+    // בחירה רגילה — מעגנים
+    if (!event?.shiftKey || lastIndex === -1) {
       setSelectedIncomes(prev => {
-        const newSelected = [...prev];
-        rangeIncomes.forEach(inc => {
-          if (!newSelected.some(s => s._id === inc._id)) {
-            newSelected.push(inc);
-          }
-        });
-        return newSelected;
+        const exists = prev.some(i => i._id === currentId);
+        return exists
+          ? prev.filter(i => i._id !== currentId)
+          : [...prev, income];
       });
-    } else {
-      setSelectedIncomes((prev) => {
-        if (prev.some((i) => i._id === income._id)) {
-          return prev.filter((i) => i._id !== income._id);
-        } else {
-          return [...prev, income];
-        }
-      });
+
+      // anchor נקבע רק פה
+      lastSelectedIdRef.current = currentId;
+      return;
     }
-    setLastSelectedIndex(currentIndex);
+
+    // Shift selection — טווח אמיתי
+    const start = Math.min(lastIndex, currentIndex);
+    const end = Math.max(lastIndex, currentIndex);
+    const range = filteredIncomes.slice(start, end + 1);
+
+    setSelectedIncomes(prev => {
+      const map = new Map(prev.map(i => [i._id, i]));
+      range.forEach(i => map.set(i._id, i));
+      return Array.from(map.values());
+    });
+
+    // לא מעדכנים anchor כאן
   };
 
   const selectAll = () => {
     setSelectedIncomes([...filteredIncomes]);
-    setLastSelectedIndex(filteredIncomes.length - 1);
   };
 
   const selectNone = () => {
     setSelectedIncomes([]);
-    setLastSelectedIndex(null);
+    lastSelectedIdRef.current = null;
   };
 
   const isSelected = (income) => selectedIncomes.some((i) => i._id === income._id);
@@ -553,12 +560,12 @@ export default function ViewIncomes() {
                   <table className="min-w-full">
                     <thead className="bg-gradient-to-r from-orange-500 via-amber-500 to-yellow-500">
                       <tr>
-                        <th className="px-4 py-4 text-center text-sm font-bold text-white w-12">
+                        <th className="px-4 py-4 text-center text-sm font-bold text-white w-14">
                           <input
                             type="checkbox"
                             checked={selectedIncomes.length === filteredIncomes.length && filteredIncomes.length > 0}
                             onChange={(e) => e.target.checked ? selectAll() : selectNone()}
-                            className="w-4 h-4 rounded border-2 border-white cursor-pointer"
+                            className="w-5 h-5 rounded border-2 border-white cursor-pointer accent-orange-500"
                           />
                         </th>
                         <th className="px-6 py-4 text-right text-sm font-bold text-white">
@@ -600,7 +607,7 @@ export default function ViewIncomes() {
                                 toggleSelectIncome(income, e.nativeEvent);
                               }}
                               onClick={(e) => e.stopPropagation()}
-                              className="w-4 h-4 rounded border-2 border-orange-300 cursor-pointer"
+                              className="w-5 h-5 rounded border-2 border-orange-300 cursor-pointer accent-orange-500"
                             />
                           </td>
                           <td className="px-6 py-4 whitespace-nowrap text-sm text-slate-700">
