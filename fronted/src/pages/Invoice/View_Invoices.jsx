@@ -26,6 +26,7 @@ import PaymentCaptureModal from "../../Components/PaymentCaptureModal.jsx";
 import { useAuth } from "../../context/AuthContext.jsx";
 import { FileText, Paperclip } from "lucide-react";
 import MasavModal from "../../Components/MasavModal.jsx";
+import MultiSelectDropdown from "../../Components/MultiSelectDropdown.jsx";
 
 
 // פונקציית עזר לסידור עברי נכון (א'-ב')
@@ -94,8 +95,8 @@ const InvoicesPage = () => {
   const [showPaymentExportModal, setShowPaymentExportModal] = useState(false);
   const [exportPaymentStatusFilter, setExportPaymentStatusFilter] = useState("unpaid"); // לא שולם, שולם, יצא לתשלום, הכל
 
-  const [paymentFilter, setPaymentFilter] = useState("all");
-  const [statusFilter, setStatusFilter] = useState("all");
+  const [paymentFilter, setPaymentFilter] = useState([]);
+  const [statusFilter, setStatusFilter] = useState([]);
 
   const [selectedProjectForPrint, setSelectedProjectForPrint] = useState([]);
   const [selectedSupplierForPrint, setSelectedSupplierForPrint] = useState([]);
@@ -153,7 +154,7 @@ const InvoicesPage = () => {
   const [bulkPaymentMethod, setBulkPaymentMethod] = useState("");
   const [bulkCheckNumber, setBulkCheckNumber] = useState("");
   const [bulkCheckDate, setBulkCheckDate] = useState("");
-  const [documentStatusFilter, setDocumentStatusFilter] = useState("all");
+  const [documentStatusFilter, setDocumentStatusFilter] = useState([]);
 
   const { user, isAdmin, canEditModule, canViewModule } = useAuth();
   const navigate = useNavigate();
@@ -449,22 +450,23 @@ const InvoicesPage = () => {
       });
     }
 
-    if (paymentFilter !== "all") {
+    // סינון לפי סטטוס תשלום (multi-select)
+    if (paymentFilter.length > 0) {
       filtered = filtered.filter((invoice) => {
-        if (paymentFilter === "paid") return invoice.paid === "כן";
-        if (paymentFilter === "sent_to_payment") return invoice.paid === "יצא לתשלום";
-        if (paymentFilter === "unpaid") return invoice.paid === "לא";
-        return true;
+        if (paymentFilter.includes("paid") && invoice.paid === "כן") return true;
+        if (paymentFilter.includes("sent_to_payment") && invoice.paid === "יצא לתשלום") return true;
+        if (paymentFilter.includes("unpaid") && invoice.paid === "לא") return true;
+        return false;
       });
     }
 
-    if (statusFilter !== "all") {
+    // סינון לפי סטטוס הגשה (multi-select)
+    if (statusFilter.length > 0) {
       filtered = filtered.filter((invoice) => {
-        if (statusFilter === "submitted") return invoice.status === "הוגש";
-        if (statusFilter === "inProgress") return invoice.status === "בעיבוד";
-        if (statusFilter === "notSubmitted")
-          return invoice.status === "לא הוגש";
-        return true;
+        if (statusFilter.includes("submitted") && invoice.status === "הוגש") return true;
+        if (statusFilter.includes("inProgress") && invoice.status === "בעיבוד") return true;
+        if (statusFilter.includes("notSubmitted") && invoice.status === "לא הוגש") return true;
+        return false;
       });
     }
 
@@ -587,16 +589,13 @@ const InvoicesPage = () => {
         });
       }
     }
-    // סינון לפי סטטוס מסמך (חסר/הושלם)
-
-    // ✅ סינון רגיל (תמיד פעיל)
-    if (documentStatusFilter !== "all") {
+    // סינון לפי סטטוס מסמך (חסר/הושלם) - multi-select
+    if (documentStatusFilter.length > 0) {
       filtered = filtered.filter((invoice) => {
         const state = getActionState(invoice);
-        if (documentStatusFilter === "completed")
-          return state.status === "הושלם";
-        if (documentStatusFilter === "missing") return state.status === "חסר";
-        return true;
+        if (documentStatusFilter.includes("completed") && state.status === "הושלם") return true;
+        if (documentStatusFilter.includes("missing") && state.status === "חסר") return true;
+        return false;
       });
     }
     return filtered;
@@ -607,40 +606,35 @@ const InvoicesPage = () => {
   const applyFilters = () => {
     let filteredResults = [...allInvoices];
 
-    if (paymentFilter !== "all") {
+    // סינון לפי סטטוס תשלום (multi-select)
+    if (paymentFilter.length > 0) {
       filteredResults = filteredResults.filter((invoice) => {
-        if (paymentFilter === "paid") return invoice.paid === "כן";
-        if (paymentFilter === "sent_to_payment") return invoice.paid === "יצא לתשלום";
-        if (paymentFilter === "unpaid") return invoice.paid === "לא";
-        return true;
+        if (paymentFilter.includes("paid") && invoice.paid === "כן") return true;
+        if (paymentFilter.includes("sent_to_payment") && invoice.paid === "יצא לתשלום") return true;
+        if (paymentFilter.includes("unpaid") && invoice.paid === "לא") return true;
+        return false;
       });
     }
 
-    if (statusFilter !== "all") {
-      if (statusFilter === "submitted") {
-        filteredResults = filteredResults.filter(
-          (invoice) => invoice.status === "הוגש"
-        );
-      } else if (statusFilter === "inProgress") {
-        filteredResults = filteredResults.filter(
-          (invoice) => invoice.status === "בעיבוד"
-        );
-      } else if (statusFilter === "notSubmitted") {
-        filteredResults = filteredResults.filter(
-          (invoice) => invoice.status === "לא הוגש"
-        );
-      }
+    // סינון לפי סטטוס הגשה (multi-select)
+    if (statusFilter.length > 0) {
+      filteredResults = filteredResults.filter((invoice) => {
+        if (statusFilter.includes("submitted") && invoice.status === "הוגש") return true;
+        if (statusFilter.includes("inProgress") && invoice.status === "בעיבוד") return true;
+        if (statusFilter.includes("notSubmitted") && invoice.status === "לא הוגש") return true;
+        return false;
+      });
     }
 
     setInvoices(filteredResults);
   };
 
   const resetFilters = () => {
-    setPaymentFilter("all");
-    setStatusFilter("all");
+    setPaymentFilter([]);
+    setStatusFilter([]);
     setSearchTerm("");
     setInvoices(allInvoices);
-    setDocumentStatusFilter("all");
+    setDocumentStatusFilter([]);
     // מחק את הסינון השמור
     localStorage.removeItem('invoiceFilters');
   };
@@ -1531,23 +1525,64 @@ const InvoicesPage = () => {
     fetchInvoices();
   }, []);
 
-  // הוסף את הפונקציות האלה:
-  const toggleSelectInvoice = (invoice) => {
-    setSelectedInvoices((prev) => {
-      if (prev.some((inv) => inv._id === invoice._id)) {
-        return prev.filter((inv) => inv._id !== invoice._id);
-      } else {
-        return [...prev, invoice];
-      }
+  const lastSelectedIdRef = useRef(null);
+
+  const toggleSelectInvoice = (invoice, event) => {
+    const currentId = invoice._id;
+
+    const currentIndex = sortedInvoices.findIndex(
+      i => i._id === currentId
+    );
+
+    const lastId = lastSelectedIdRef.current;
+    const lastIndex = lastId
+      ? sortedInvoices.findIndex(i => i._id === lastId)
+      : -1;
+
+    // 🔹 בחירה רגילה — מעגנים
+    if (!event.shiftKey || lastIndex === -1) {
+      setSelectedInvoices(prev => {
+        const exists = prev.some(i => i._id === currentId);
+        return exists
+          ? prev.filter(i => i._id !== currentId)
+          : [...prev, invoice];
+      });
+
+      // ⭐ anchor נקבע רק פה
+      lastSelectedIdRef.current = currentId;
+      return;
+    }
+
+    // 🔹 Shift selection — טווח אמיתי
+    const start = Math.min(lastIndex, currentIndex);
+    const end = Math.max(lastIndex, currentIndex);
+
+    const range = sortedInvoices.slice(start, end + 1);
+
+    setSelectedInvoices(prev => {
+      const map = new Map(prev.map(i => [i._id, i]));
+      range.forEach(i => map.set(i._id, i));
+      return Array.from(map.values());
     });
+
+    // ❌ לא מעדכנים anchor כאן
   };
+
 
   const toggleSelectAll = () => {
     if (selectedInvoices.length === sortedInvoices.length) {
       setSelectedInvoices([]);
+      lastSelectedIdRef.current = null;
+
     } else {
       setSelectedInvoices(sortedInvoices);
     }
+  };
+
+  const selectNone = () => {
+    setSelectedInvoices([]);
+    lastSelectedIdRef.current = null;
+
   };
 
   const handleBulkDelete = async () => {
@@ -2436,44 +2471,73 @@ const InvoicesPage = () => {
                 <option value="desc">יורד</option>
               </select>
 
-              <div className="flex items-center gap-2">
+              <div className="flex items-center gap-2 flex-wrap">
                 <Filter className="text-orange-600 w-5 h-5" />
                 <span className="font-bold text-slate-700">סינון:</span>
-                <select
-                  onChange={(e) => setPaymentFilter(e.target.value)}
-                  value={paymentFilter}
-                  className="px-4 py-2 border-2 border-orange-200 rounded-xl bg-white font-bold text-slate-900 focus:border-orange-500 focus:outline-none focus:ring-4 focus:ring-orange-500/20 transition-all"
-                >
-                  <option value="all">כל התשלומים</option>
-                  <option value="paid">שולמו</option>
-                  <option value="sent_to_payment">יצא לתשלום</option>
-                  <option value="unpaid">לא שולמו</option>
-                </select>
-                <select
-                  onChange={(e) => setStatusFilter(e.target.value)}
-                  value={statusFilter}
-                  className="px-4 py-2 border-2 border-orange-200 rounded-xl bg-white font-bold text-slate-900 focus:border-orange-500 focus:outline-none focus:ring-4 focus:ring-orange-500/20 transition-all"
-                >
-                  <option value="all">כל הסטטוסים</option>
-                  <option value="submitted">הוגשו</option>
-                  <option value="inProgress">בעיבוד</option>
-                  <option value="notSubmitted">לא הוגשו</option>
-                </select>
+                <MultiSelectDropdown
+                  label="תשלום"
+                  options={[
+                    { value: "paid", label: "שולמו" },
+                    { value: "sent_to_payment", label: "יצא לתשלום" },
+                    { value: "unpaid", label: "לא שולמו" },
+                  ]}
+                  selected={paymentFilter}
+                  onChange={setPaymentFilter}
+                />
+                <MultiSelectDropdown
+                  label="סטטוס הגשה"
+                  options={[
+                    { value: "submitted", label: "הוגשו" },
+                    { value: "inProgress", label: "בעיבוד" },
+                    { value: "notSubmitted", label: "לא הוגשו" },
+                  ]}
+                  selected={statusFilter}
+                  onChange={setStatusFilter}
+                />
+                <MultiSelectDropdown
+                  label="סטטוס מסמך"
+                  options={[
+                    { value: "completed", label: "הושלם" },
+                    { value: "missing", label: "חסר" },
+                  ]}
+                  selected={documentStatusFilter}
+                  onChange={setDocumentStatusFilter}
+                />
 
-                <select
-                  onChange={(e) => setDocumentStatusFilter(e.target.value)}
-                  value={documentStatusFilter}
-                  className="px-4 py-2 border-2 border-orange-200 rounded-xl bg-white font-bold text-slate-900 focus:border-orange-500 focus:outline-none focus:ring-4 focus:ring-orange-500/20 transition-all"
-                >
-                  <option value="all">כל המסמכים</option>
-                  <option value="completed">הושלם</option>
-                  <option value="missing">חסר</option>
-                </select>
+                {/* Payment Date Quick Filter */}
+                <div className="flex items-center gap-2">
+                  <span className="text-xs text-slate-600">תאריך תשלום:</span>
+                  <input
+                    type="date"
+                    value={advancedFilters.paymentDateFrom}
+                    onChange={(e) =>
+                      setAdvancedFilters((prev) => ({
+                        ...prev,
+                        paymentDateFrom: e.target.value,
+                      }))
+                    }
+                    className="px-2 py-1 border-2 border-orange-200 rounded-lg bg-white text-sm focus:border-orange-500 focus:outline-none transition-all"
+                  />
+                  <span className="text-xs text-slate-600">עד</span>
+                  <input
+                    type="date"
+                    value={advancedFilters.paymentDateTo}
+                    onChange={(e) =>
+                      setAdvancedFilters((prev) => ({
+                        ...prev,
+                        paymentDateTo: e.target.value,
+                      }))
+                    }
+                    className="px-2 py-1 border-2 border-orange-200 rounded-lg bg-white text-sm focus:border-orange-500 focus:outline-none transition-all"
+                  />
+                </div>
               </div>
 
-              {(paymentFilter !== "all" ||
-                statusFilter !== "all" ||
-                documentStatusFilter !== "all" ||
+              {(paymentFilter.length > 0 ||
+                statusFilter.length > 0 ||
+                documentStatusFilter.length > 0 ||
+                advancedFilters.paymentDateFrom ||
+                advancedFilters.paymentDateTo ||
                 searchTerm) && (
                   <button
                     onClick={resetFilters}
@@ -2539,7 +2603,7 @@ const InvoicesPage = () => {
             </div>
           </div>
           {/* Results Count */}
-          <div className="text-sm text-slate-600 font-medium flex items-center gap-4">
+          <div className="text-sm text-slate-600 font-medium flex items-center gap-4 flex-wrap">
             <span>
               מציג {sortedInvoices.length} חשבוניות מתוך {allInvoices.length}
             </span>
@@ -2550,6 +2614,29 @@ const InvoicesPage = () => {
                   {selectedInvoices.length} נבחרו
                 </span>
               </>
+            )}
+
+            {/* כפתורי סמן הכל / בטל הכל */}
+            {canEditInvoices && isAdmin && sortedInvoices.length > 0 && (
+              <div className="flex items-center gap-2 mr-auto">
+                <button
+                  onClick={toggleSelectAll}
+                  className="flex items-center gap-1 px-3 py-1.5 bg-orange-100 text-orange-700 rounded-lg hover:bg-orange-200 transition-all text-xs font-bold"
+                >
+                  <CheckSquare className="w-4 h-4" />
+                  סמן הכל
+                </button>
+                <button
+                  onClick={selectNone}
+                  className="flex items-center gap-1 px-3 py-1.5 bg-slate-100 text-slate-700 rounded-lg hover:bg-slate-200 transition-all text-xs font-bold"
+                >
+                  <Square className="w-4 h-4" />
+                  בטל הכל
+                </button>
+                <span className="text-xs text-slate-400">
+                  (לחץ Shift + לחיצה לבחירת טווח)
+                </span>
+              </div>
             )}
           </div>
         </div>
@@ -2668,8 +2755,8 @@ const InvoicesPage = () => {
                         <tr
                           key={invoice._id}
                           className={`cursor-pointer border-t border-orange-100 hover:bg-orange-50 transition-colors ${selectedInvoices.some((inv) => inv._id === invoice._id)
-                              ? "bg-orange-100"
-                              : ""
+                            ? "bg-orange-100"
+                            : ""
                             }`}
                           style={{
                             display: "grid",
@@ -2693,19 +2780,18 @@ const InvoicesPage = () => {
                         >
                           {/* עמודה 1: Checkbox - רק לאדמין */}
                           {canEditInvoices && isAdmin && (
-                            <td
-                              className="px-2 py-4 text-center"
-                              onClick={(e) => e.stopPropagation()}
-                            >
+                            <td className="px-2 py-4 text-center">
                               <input
                                 type="checkbox"
-                                checked={selectedInvoices.some(
-                                  (inv) => inv._id === invoice._id
-                                )}
-                                onChange={() => toggleSelectInvoice(invoice)}
-                                className="w-5 h-5 accent-orange-500 cursor-pointer"
+                                checked={selectedInvoices.some(inv => inv._id === invoice._id)}
+                                onClick={(e) => toggleSelectInvoice(invoice, e)}
+                                onChange={() => { }} // אופציונלי כדי למנוע אזהרות, לא חובה
+                                className="w-5 h-5 cursor-pointer"
                               />
+
+
                             </td>
+
                           )}
 
                           {/* עמודה 2/1: סטטוס מסמך */}
@@ -2831,10 +2917,10 @@ const InvoicesPage = () => {
                                 />
                                 <span
                                   className={`w-6 h-6 inline-block border-2 rounded-full transition-all ${invoice.paid === "כן"
-                                      ? "bg-emerald-500 border-emerald-500"
-                                      : invoice.paid === "יצא לתשלום"
-                                        ? "bg-blue-500 border-blue-500"
-                                        : "bg-gray-200 border-gray-400"
+                                    ? "bg-emerald-500 border-emerald-500"
+                                    : invoice.paid === "יצא לתשלום"
+                                      ? "bg-blue-500 border-blue-500"
+                                      : "bg-gray-200 border-gray-400"
                                     } flex items-center justify-center`}
                                 >
                                   {invoice.paid === "כן" && (
@@ -2919,7 +3005,7 @@ const InvoicesPage = () => {
           <div className="bg-white/90 backdrop-blur-xl rounded-2xl shadow-xl border border-white/50 p-12 text-center">
             <Receipt className="w-16 h-16 text-slate-300 mx-auto mb-4" />
             <h2 className="text-2xl font-bold text-slate-600">
-              {searchTerm || paymentFilter !== "all" || statusFilter !== "all"
+              {searchTerm || paymentFilter.length > 0 || statusFilter.length > 0 || documentStatusFilter.length > 0
                 ? "לא נמצאו תוצאות"
                 : "עדיין אין חשבוניות"}
             </h2>
@@ -3253,8 +3339,8 @@ const InvoicesPage = () => {
                         <label
                           key={column.key}
                           className={`flex items-center gap-3 p-3 rounded-xl border-2 cursor-pointer transition-all ${exportColumns[column.key]
-                              ? "bg-gradient-to-br from-orange-50 to-amber-50 border-orange-400"
-                              : "bg-gray-50 border-gray-200 hover:border-gray-300"
+                            ? "bg-gradient-to-br from-orange-50 to-amber-50 border-orange-400"
+                            : "bg-gray-50 border-gray-200 hover:border-gray-300"
                             }`}
                         >
                           <input
@@ -3265,8 +3351,8 @@ const InvoicesPage = () => {
                           />
                           <span
                             className={`text-sm font-medium ${exportColumns[column.key]
-                                ? "text-gray-900"
-                                : "text-gray-600"
+                              ? "text-gray-900"
+                              : "text-gray-600"
                               }`}
                           >
                             {column.label}

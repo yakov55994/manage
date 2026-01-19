@@ -14,6 +14,9 @@ export default {
 
     const incomes = await Income.find(query)
       .populate("orderId", "orderNumber projectName sum")
+      .populate("invoiceId", "invoiceNumber projectName")
+      .populate("supplierId", "name")
+      .populate("linkedIncomeId", "description amount date")
       .sort({ createdAt: -1 });
 
     return incomes;
@@ -21,7 +24,11 @@ export default {
 
   // קבלת הכנסה לפי ID
   async getIncomeById(user, incomeId) {
-    const income = await Income.findById(incomeId).populate("orderId", "orderNumber projectName sum");
+    const income = await Income.findById(incomeId)
+      .populate("orderId", "orderNumber projectName sum")
+      .populate("invoiceId", "invoiceNumber projectName")
+      .populate("supplierId", "name")
+      .populate("linkedIncomeId", "description amount date");
 
     if (!income) {
       throw new Error("הכנסה לא נמצאה");
@@ -86,7 +93,11 @@ export default {
 
     const updatedIncome = await Income.findByIdAndUpdate(incomeId, data, {
       new: true,
-    }).populate("orderId", "orderNumber projectName sum");
+    })
+      .populate("orderId", "orderNumber projectName sum")
+      .populate("invoiceId", "invoiceNumber projectName")
+      .populate("supplierId", "name")
+      .populate("linkedIncomeId", "description amount date");
 
     return updatedIncome;
   },
@@ -120,9 +131,21 @@ export default {
       ],
     })
       .populate("orderId", "orderNumber projectName sum")
+      .populate("invoiceId", "invoiceNumber projectName")
+      .populate("supplierId", "name")
+      .populate("linkedIncomeId", "description amount date")
       .sort({ createdAt: -1 })
       .limit(100);
 
     return incomes;
+  },
+
+  // עדכון הערות מרובה
+  async bulkUpdateNotes(user, incomeIds, notes) {
+    const result = await Income.updateMany(
+      { _id: { $in: incomeIds } },
+      { $set: { notes: notes } }
+    );
+    return result;
   },
 };

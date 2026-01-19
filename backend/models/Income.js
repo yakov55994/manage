@@ -36,7 +36,35 @@ const incomeSchema = new mongoose.Schema({
     default: null,
   },
 
-  // האם זוכה לאחר שיוך להזמנה
+  // חשבונית משויכת (אופציונלי)
+  invoiceId: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: "Invoice",
+    default: null,
+  },
+
+  // ספק/לקוח משויך (אופציונלי)
+  supplierId: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: "Supplier",
+    default: null,
+  },
+
+  // הכנסה אחרת משויכת (אופציונלי)
+  linkedIncomeId: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: "Income",
+    default: null,
+  },
+
+  // סוג השיוך
+  linkType: {
+    type: String,
+    enum: ["none", "order", "invoice", "supplier", "income"],
+    default: "none",
+  },
+
+  // האם שויך (כן/לא)
   isCredited: {
     type: String,
     enum: ["כן", "לא"],

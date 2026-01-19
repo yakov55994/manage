@@ -1,4 +1,5 @@
 import incomeService from "../services/incomeService.js";
+import expenseService from "../services/expenseService.js";
 import { sendError } from "../utils/sendError.js";
 import xlsx from "xlsx";
 
@@ -130,7 +131,10 @@ const incomeController = {
       };
 
       // המרת הנתונים לפורמט שלנו
-      const incomesData = jsonData.map((row, index) => {
+      const incomesData = [];
+      const expensesData = [];
+
+      jsonData.forEach((row, index) => {
         // נסה למצוא את השדות לפי שמות אפשריים (תומך בעברית ואנגלית)
         let dateRaw =
           row["תאריך"] ||
@@ -149,17 +153,15 @@ const incomeController = {
           date = new Date(dateRaw);
         }
 
-        // סכום - רק זכות (הכנסות), חובה נתעלם
-        let credit = row["זכות"] || row["סכום"] || row["Amount"] || row["amount"] || row["AMOUNT"] || row["סכום זכות"];
-        const debit = row["חובה"] || row["Debit"];
+        // ניקוי ופרסור סכומים
+        const parseVal = (val) => {
+          if (typeof val === 'number') return val;
+          if (!val) return 0;
+          return parseFloat(val.toString().replace(/[^\d.-]/g, '')) || 0;
+        };
 
-        // אם זכות היא רווח (' ') או null/undefined, דלג
-        if (!credit || credit === ' ' || credit === '') {
-          return null;
-        }
-
-        // אם יש חובה אבל אין זכות, דלג (זו הוצאה)
-        const amount = credit;
+        let credit = parseVal(row["זכות"] || row["סכום"] || row["Amount"] || row["amount"] || row["AMOUNT"] || row["סכום זכות"]);
+        let debit = parseVal(row["חובה"] || row["Debit"] || row["סכום חובה"]);
 
         const description =
           row["תאור"] ||
@@ -173,37 +175,53 @@ const incomeController = {
 
         const notes = req.body.notes || ""; // הערות כלליות מהטופס
 
-        // דלג על שורות ריקות או שורות עם חובה בלבד (הוצאות)
-        if (!date || !amount || !description) {
-          // console.log(`⚠️  שורה ${index + headerRowIndex + 2} דולגה (לא הכנסה או חסרים נתונים):`, { date, amount, description, row });
-          return null;
+        // דלג אם אין תאריך או תיאור
+        if (!date || !description) return;
+
+        // לוגיקה: זכות -> הכנסה
+        if (credit > 0) {
+          incomesData.push({
+            date: date,
+            amount: credit.toString(),
+            description: description.toString(),
+            notes: notes,
+            // כאן ניתן להוסיף לוגיקה לשיוך אוטומטי אם קיים מידע בתיאור
+          });
         }
+        // לוגיקה: חובה -> הוצאה
+        else if (debit > 0) {
+          expensesData.push({
+            date: date,
+            amount: debit.toString(),
+            description: description.toString(),
+            notes: notes,
+          });
+        }
+      });
 
-        return {
-          date: date,
-          amount: amount.toString(),
-          description: description.toString(),
-          notes: notes,
-        };
-      }).filter(item => item !== null); // סינון שורות ריקות
-
-      if (incomesData.length === 0) {
+      if (incomesData.length === 0 && expensesData.length === 0) {
         return res.status(400).json({
           success: false,
-          message: "לא נמצאו הכנסות תקינות בקובץ. וודאי שיש עמודות: תאריך, זכות, תיאור"
+          message: "לא נמצאו תנועות תקינות בקובץ (נדרש תאריך, תיאור וסכום בזכות או בחובה)"
         });
       }
 
-      // יצירת ההכנסות דרך ה-service (כדי שיעבור דרך הרשאות ויקבל userId)
-      const createdIncomes = await incomeService.createBulkIncomes(
-        req.user,
-        incomesData
-      );
+      const results = { incomes: [], expenses: [] };
+
+      // יצירת הכנסות
+      if (incomesData.length > 0) {
+        results.incomes = await incomeService.createBulkIncomes(req.user, incomesData);
+      }
+
+      // יצירת הוצאות
+      if (expensesData.length > 0) {
+        results.expenses = await expenseService.createBulkExpenses(req.user, expensesData);
+      }
 
       res.status(201).json({
         success: true,
-        message: `${createdIncomes.length} הכנסות נוצרו בהצלחה`,
-        data: createdIncomes,
+        message: `הועלו בהצלחה: ${results.incomes.length} הכנסות, ${results.expenses.length} הוצאות`,
+        data: results,
       });
     } catch (e) {
       console.error("Excel upload error:", e);
@@ -231,6 +249,20 @@ const incomeController = {
     try {
       await incomeService.deleteIncome(req.user, req.params.incomeId);
       res.json({ success: true, message: "הכנסה נמחקה בהצלחה" });
+    } catch (e) {
+      sendError(res, e);
+    }
+  },
+
+  // עדכון הערות מרובה
+  async bulkUpdateNotes(req, res) {
+    try {
+      const { incomeIds, notes } = req.body;
+      if (!incomeIds || !Array.isArray(incomeIds) || incomeIds.length === 0) {
+        return res.status(400).json({ success: false, message: "לא נבחרו הכנסות" });
+      }
+      const result = await incomeService.bulkUpdateNotes(req.user, incomeIds, notes);
+      res.json({ success: true, data: result, message: `עודכנו ${result.modifiedCount} הכנסות` });
     } catch (e) {
       sendError(res, e);
     }

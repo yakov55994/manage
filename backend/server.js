@@ -16,6 +16,7 @@ import suppliersRoutes from './routes/supplierRoutes.js';
 import documentsRoutes from './routes/documentRoutes.js';
 import masavRoutes from './routes/masavRoutes.js';
 import incomeRoutes from './routes/incomeRoutes.js';
+import expenseRoutes from './routes/expenseRoutes.js';
 import submissionRoutes from './routes/submissionRoutes.js';
 
 dotenv.config();
@@ -93,6 +94,9 @@ app.use('/api/masav', masavRoutes);
 
 // Incomes
 app.use('/api/incomes', incomeRoutes);
+
+// Expenses
+app.use('/api/expenses', expenseRoutes);
 
 // Submission routes
 app.use('/api/submissions', submissionRoutes);

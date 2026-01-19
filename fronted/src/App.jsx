@@ -37,6 +37,11 @@ import CreateIncome from "./pages/Income/Create_Income.jsx";
 import ViewIncomes from "./pages/Income/View_Incomes.jsx";
 import IncomeDetailsPage from "./pages/Income/IncomeDetailsPage.jsx";
 import UpdateIncome from "./pages/Income/UpdateIncome.jsx";
+import CreateExpense from "./pages/Expense/Create_Expense.jsx";
+import ViewExpenses from "./pages/Expense/View_Expenses.jsx";
+import ExpenseDetailsPage from "./pages/Expense/ExpenseDetailsPage.jsx";
+import UpdateExpense from "./pages/Expense/Update_Expense.jsx";
+import ExcelUpload from "./pages/ExcelUpload/ExcelUpload.jsx";
 import NoAccess from "./pages/NoAccess.jsx";
 import ResetPassword from "./pages/ResetPassword.jsx";
 import { AuthProvider, useAuth } from "./context/AuthContext.jsx";
@@ -320,6 +325,48 @@ const AppContent = () => {
               element={
                 <ProtectedRoute module="invoices" requireEdit={true}>
                   <UpdateIncome />
+                </ProtectedRoute>
+              }
+            />
+
+            <Route
+              path="/create-expense"
+              element={
+                <ProtectedRoute module="invoices" requireEdit={true}>
+                  <CreateExpense />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/expenses"
+              element={
+                <ProtectedRoute module="invoices">
+                  <ViewExpenses />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/expenses/:id"
+              element={
+                <ProtectedRoute module="invoices">
+                  <ExpenseDetailsPage />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/update-expense/:id"
+              element={
+                <ProtectedRoute module="invoices" requireEdit={true}>
+                  <UpdateExpense />
+                </ProtectedRoute>
+              }
+            />
+
+            <Route
+              path="/excel-upload"
+              element={
+                <ProtectedRoute module="invoices" requireEdit={true}>
+                  <ExcelUpload />
                 </ProtectedRoute>
               }
             />

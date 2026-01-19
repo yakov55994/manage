@@ -13,6 +13,10 @@ import {
   FileText,
   ArrowUpDown,
   Link,
+  CheckSquare,
+  Square,
+  MessageSquare,
+  X,
 } from "lucide-react";
 import { toast } from "sonner";
 import OrderSelector from "../../Components/OrderSelector";
@@ -27,6 +31,14 @@ export default function ViewIncomes() {
   const [deleteModal, setDeleteModal] = useState({ open: false, incomeId: null });
   const [linkModal, setLinkModal] = useState({ open: false, incomeId: null });
   const [linking, setLinking] = useState(false);
+
+  // Multi-select
+  const [selectedIncomes, setSelectedIncomes] = useState([]);
+  const [lastSelectedIndex, setLastSelectedIndex] = useState(null);
+
+  // Bulk notes modal
+  const [bulkNotesModal, setBulkNotesModal] = useState({ open: false });
+  const [bulkNotes, setBulkNotes] = useState("");
 
   useEffect(() => {
     fetchIncomes();
@@ -292,6 +304,86 @@ export default function ViewIncomes() {
     0
   );
 
+  // Multi-select functions
+  const toggleSelectIncome = (income, event = null) => {
+    const currentIndex = filteredIncomes.findIndex(i => i._id === income._id);
+
+    if (event?.shiftKey && lastSelectedIndex !== null && currentIndex !== -1) {
+      const start = Math.min(lastSelectedIndex, currentIndex);
+      const end = Math.max(lastSelectedIndex, currentIndex);
+      const rangeIncomes = filteredIncomes.slice(start, end + 1);
+
+      setSelectedIncomes(prev => {
+        const newSelected = [...prev];
+        rangeIncomes.forEach(inc => {
+          if (!newSelected.some(s => s._id === inc._id)) {
+            newSelected.push(inc);
+          }
+        });
+        return newSelected;
+      });
+    } else {
+      setSelectedIncomes((prev) => {
+        if (prev.some((i) => i._id === income._id)) {
+          return prev.filter((i) => i._id !== income._id);
+        } else {
+          return [...prev, income];
+        }
+      });
+    }
+    setLastSelectedIndex(currentIndex);
+  };
+
+  const selectAll = () => {
+    setSelectedIncomes([...filteredIncomes]);
+    setLastSelectedIndex(filteredIncomes.length - 1);
+  };
+
+  const selectNone = () => {
+    setSelectedIncomes([]);
+    setLastSelectedIndex(null);
+  };
+
+  const isSelected = (income) => selectedIncomes.some((i) => i._id === income._id);
+
+  // Bulk notes update
+  const handleBulkNotesUpdate = async () => {
+    if (selectedIncomes.length === 0) {
+      toast.error("לא נבחרו הכנסות");
+      return;
+    }
+
+    try {
+      const incomeIds = selectedIncomes.map((i) => i._id);
+      await api.put("/incomes/bulk/notes", { incomeIds, notes: bulkNotes });
+      toast.success(`עודכנו ${selectedIncomes.length} הכנסות`);
+      setBulkNotesModal({ open: false });
+      setBulkNotes("");
+      setSelectedIncomes([]);
+      await fetchIncomes();
+    } catch (err) {
+      console.error("Bulk notes error:", err);
+      toast.error("שגיאה בעדכון הערות");
+    }
+  };
+
+  // Get link display text
+  const getLinkDisplayText = (income) => {
+    if (income.orderId && income.orderNumber) {
+      return `הזמנה #${income.orderNumber}`;
+    }
+    if (income.invoiceId?.invoiceNumber) {
+      return `חשבונית #${income.invoiceId.invoiceNumber}`;
+    }
+    if (income.supplierId?.name) {
+      return income.supplierId.name;
+    }
+    if (income.linkedIncomeId?.description) {
+      return `הכנסה: ${income.linkedIncomeId.description.substring(0, 20)}...`;
+    }
+    return "—";
+  };
+
   if (loading) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-orange-50 via-amber-50 to-yellow-50 flex flex-col justify-center items-center">
@@ -342,6 +434,38 @@ export default function ViewIncomes() {
                   <Plus className="w-5 h-5" />
                   <span className="hidden sm:inline">הכנסה חדשה</span>
                 </button>
+              </div>
+
+              {/* Selection controls */}
+              <div className="flex flex-wrap items-center gap-2 mb-4">
+                <button
+                  onClick={selectAll}
+                  className="flex items-center gap-2 px-4 py-2 bg-blue-100 text-blue-700 font-bold rounded-xl hover:bg-blue-200 transition-all"
+                >
+                  <CheckSquare className="w-4 h-4" />
+                  סמן הכל
+                </button>
+                <button
+                  onClick={selectNone}
+                  className="flex items-center gap-2 px-4 py-2 bg-slate-100 text-slate-700 font-bold rounded-xl hover:bg-slate-200 transition-all"
+                >
+                  <Square className="w-4 h-4" />
+                  בטל הכל
+                </button>
+                {selectedIncomes.length > 0 && (
+                  <>
+                    <span className="px-3 py-2 bg-orange-100 text-orange-800 font-bold rounded-xl">
+                      {selectedIncomes.length} נבחרו
+                    </span>
+                    <button
+                      onClick={() => setBulkNotesModal({ open: true })}
+                      className="flex items-center gap-2 px-4 py-2 bg-purple-100 text-purple-700 font-bold rounded-xl hover:bg-purple-200 transition-all"
+                    >
+                      <MessageSquare className="w-4 h-4" />
+                      הוסף הערה לנבחרים
+                    </button>
+                  </>
+                )}
               </div>
 
               {/* Search */}
@@ -429,6 +553,14 @@ export default function ViewIncomes() {
                   <table className="min-w-full">
                     <thead className="bg-gradient-to-r from-orange-500 via-amber-500 to-yellow-500">
                       <tr>
+                        <th className="px-4 py-4 text-center text-sm font-bold text-white w-12">
+                          <input
+                            type="checkbox"
+                            checked={selectedIncomes.length === filteredIncomes.length && filteredIncomes.length > 0}
+                            onChange={(e) => e.target.checked ? selectAll() : selectNone()}
+                            className="w-4 h-4 rounded border-2 border-white cursor-pointer"
+                          />
+                        </th>
                         <th className="px-6 py-4 text-right text-sm font-bold text-white">
                           תאריך
                         </th>
@@ -439,10 +571,10 @@ export default function ViewIncomes() {
                           תיאור
                         </th>
                         <th className="px-6 py-4 text-right text-sm font-bold text-white">
-                          הזמנה
+                          שויך ל
                         </th>
                         <th className="px-6 py-4 text-right text-sm font-bold text-white">
-                          זוכה
+                          סטטוס
                         </th>
                         <th className="px-6 py-4 text-right text-sm font-bold text-white">
                           הערות
@@ -456,10 +588,21 @@ export default function ViewIncomes() {
                       {group.incomes.map((income, index) => (
                         <tr
                           key={income._id}
-                          className={`hover:bg-orange-50/50 transition-colors cursor-pointer ${index % 2 === 0 ? "bg-white" : "bg-orange-50/30"
-                            }`}
+                          className={`hover:bg-orange-50/50 transition-colors cursor-pointer ${index % 2 === 0 ? "bg-white" : "bg-orange-50/30"} ${isSelected(income) ? "bg-orange-100" : ""}`}
                           onClick={() => navigate(`/incomes/${income._id}`)}
                         >
+                          <td className="px-4 py-4 text-center">
+                            <input
+                              type="checkbox"
+                              checked={isSelected(income)}
+                              onChange={(e) => {
+                                e.stopPropagation();
+                                toggleSelectIncome(income, e.nativeEvent);
+                              }}
+                              onClick={(e) => e.stopPropagation()}
+                              className="w-4 h-4 rounded border-2 border-orange-300 cursor-pointer"
+                            />
+                          </td>
                           <td className="px-6 py-4 whitespace-nowrap text-sm text-slate-700">
                             {formatDate(income.date)}
                           </td>
@@ -472,16 +615,16 @@ export default function ViewIncomes() {
                             {income.description}
                           </td>
                           <td className="px-6 py-4 text-sm text-slate-600">
-                            {income.orderNumber ? `הזמנה #${income.orderNumber}` : "—"}
+                            {getLinkDisplayText(income)}
                           </td>
                           <td className="px-6 py-4 text-sm">
                             {income.isCredited === "כן" ? (
                               <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-bold bg-green-100 text-green-800 border border-green-300">
-                                זוכה ✓
+                                שויך ✓
                               </span>
                             ) : (
                               <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-bold bg-slate-100 text-slate-600">
-                                לא זוכה
+                                לא שויך
                               </span>
                             )}
                           </td>
@@ -573,24 +716,24 @@ export default function ViewIncomes() {
                         </div>
                       </div>
 
-                      {/* Invoice & Status */}
+                      {/* Link & Status */}
                       <div className="mb-3 flex items-center gap-3">
-                        {income.orderNumber && (
+                        {getLinkDisplayText(income) !== "—" && (
                           <div className="flex-1">
-                            <div className="text-xs text-slate-500 mb-1">הזמנה</div>
+                            <div className="text-xs text-slate-500 mb-1">שויך ל</div>
                             <div className="text-sm font-medium text-slate-700">
-                              הזמנה #{income.orderNumber}
+                              {getLinkDisplayText(income)}
                             </div>
                           </div>
                         )}
                         <div>
                           {income.isCredited === "כן" ? (
                             <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-bold bg-green-100 text-green-800 border border-green-300">
-                              זוכה ✓
+                              שויך ✓
                             </span>
                           ) : (
                             <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-bold bg-slate-100 text-slate-600">
-                              לא זוכה
+                              לא שויך
                             </span>
                           )}
                         </div>
@@ -756,6 +899,63 @@ export default function ViewIncomes() {
                   className="px-5 py-2 rounded-xl font-bold text-slate-700 bg-slate-100 hover:bg-slate-200 transition-all disabled:opacity-50"
                 >
                   סגור
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Bulk Notes Modal */}
+      {bulkNotesModal.open && (
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+          <div className="relative max-w-lg w-full">
+            <div className="absolute -inset-4 bg-gradient-to-r from-purple-500 to-violet-500 rounded-3xl opacity-20 blur-2xl"></div>
+
+            <div className="relative bg-white rounded-3xl shadow-2xl p-6">
+              <div className="flex items-center justify-between mb-4">
+                <div className="flex items-center gap-3">
+                  <div className="p-2 rounded-xl bg-gradient-to-br from-purple-500 to-violet-600 shadow-lg">
+                    <MessageSquare className="w-5 h-5 text-white" />
+                  </div>
+                  <div>
+                    <h3 className="text-xl font-bold text-slate-900">
+                      הוספת הערה ל-{selectedIncomes.length} הכנסות
+                    </h3>
+                    <p className="text-xs text-slate-600">
+                      ההערה תחליף את ההערות הקיימות
+                    </p>
+                  </div>
+                </div>
+                <button
+                  onClick={() => setBulkNotesModal({ open: false })}
+                  className="p-2 hover:bg-slate-100 rounded-lg transition-colors"
+                >
+                  <X className="w-5 h-5 text-slate-500" />
+                </button>
+              </div>
+
+              <textarea
+                value={bulkNotes}
+                onChange={(e) => setBulkNotes(e.target.value)}
+                placeholder="הכנס הערה..."
+                rows={4}
+                className="w-full px-4 py-3 border-2 border-purple-200 rounded-xl focus:border-purple-500 focus:outline-none transition-all mb-4"
+                autoFocus
+              />
+
+              <div className="flex gap-3">
+                <button
+                  onClick={handleBulkNotesUpdate}
+                  className="flex-1 px-6 py-3 rounded-xl font-bold text-white bg-gradient-to-r from-purple-500 to-violet-500 hover:from-purple-600 hover:to-violet-600 transition-all shadow-lg"
+                >
+                  עדכן הערות
+                </button>
+                <button
+                  onClick={() => setBulkNotesModal({ open: false })}
+                  className="flex-1 px-6 py-3 rounded-xl font-bold text-slate-700 bg-slate-100 hover:bg-slate-200 transition-all"
+                >
+                  ביטול
                 </button>
               </div>
             </div>

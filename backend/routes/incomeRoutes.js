@@ -43,6 +43,9 @@ router.post(
   incomeController.uploadExcelIncomes
 );
 
+// עדכון הערות מרובה
+router.put("/bulk/notes", protect, incomeController.bulkUpdateNotes);
+
 // עדכון הכנסה
 router.put("/:incomeId", protect, incomeController.updateIncome);
 

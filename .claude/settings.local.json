@@ -37,7 +37,8 @@
       "Bash(taskkill //F //PID 63368)",
       "Bash(timeout 8 tail:*)",
       "Bash(node scripts/fixMissingCreatedAt.js:*)",
-      "Bash(dir:*)"
+      "Bash(dir:*)",
+      "Bash(tree:*)"
     ]
   }
 }

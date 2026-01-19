@@ -27,12 +27,24 @@ const invoiceControllers = {
   // ===============================================
   async getInvoices(req, res) {
     try {
+      const { paymentDate } = req.query;
+
       // ================================
       //  Accountant → רואה את כל החשבוניות (read-only)
       // ================================
       if (req.user.role === "accountant") {
+        let query = {};
+
+        if (paymentDate) {
+          const start = new Date(paymentDate);
+          start.setHours(0, 0, 0, 0);
+          const end = new Date(paymentDate);
+          end.setHours(23, 59, 59, 999);
+          query.paymentDate = { $gte: start, $lte: end };
+        }
+
         // רואת חשבון רואה את כל החשבוניות במערכת
-        const invoices = await Invoice.find({})
+        const invoices = await Invoice.find(query)
           .populate("supplierId", "name phone bankDetails business_tax")
           .populate("fundedFromProjectId")
           .sort({ createdAt: -1 });
@@ -43,7 +55,16 @@ const invoiceControllers = {
       // ================================
       //  שאר המשתמשים → רגיל
       // ================================
-      const invoices = await invoiceService.getInvoices(req.user);
+      let invoices = await invoiceService.getInvoices(req.user);
+
+      // סינון ידני אם הסרוויס מחזיר הכל (Fallback)
+      if (paymentDate) {
+        const checkDate = new Date(paymentDate).toISOString().split('T')[0];
+        invoices = invoices.filter(inv =>
+          inv.paymentDate && new Date(inv.paymentDate).toISOString().split('T')[0] === checkDate
+        );
+      }
+
       return res.json({ success: true, data: invoices });
 
     } catch (err) {
@@ -53,10 +74,10 @@ const invoiceControllers = {
   },
 
 
-// ===============================================
-// קבלת חשבונית לפי ID
-// ===============================================
-async getInvoiceById(req, res) {
+  // ===============================================
+  // קבלת חשבונית לפי ID
+  // ===============================================
+  async getInvoiceById(req, res) {
     try {
       const invoice = await invoiceService.getInvoiceById(req.user, req.params.id);
       if (!invoice) {

@@ -19,6 +19,7 @@ import {
   Square,
   Paperclip,
   FileText,
+  MessageSquare,
 } from "lucide-react";
 import api from "../../api/api.js";
 import { toast } from "sonner";
@@ -63,6 +64,10 @@ const OrdersPage = () => {
     status: "",
     detail: "",
   });
+
+  // Multi-select states
+  const [selectedOrders, setSelectedOrders] = useState([]);
+  const [lastSelectedIndex, setLastSelectedIndex] = useState(null);
 
   const [exportColumns, setExportColumns] = useState({
     orderNumber: true,
@@ -857,6 +862,44 @@ const OrdersPage = () => {
     return 0;
   });
 
+  // Multi-select functions
+  const toggleSelectOrder = (order, event = null) => {
+    const currentIndex = sortedOrders.findIndex(o => o._id === order._id);
+
+    if (event?.shiftKey && lastSelectedIndex !== null && currentIndex !== -1) {
+      const start = Math.min(lastSelectedIndex, currentIndex);
+      const end = Math.max(lastSelectedIndex, currentIndex);
+      const range = sortedOrders.slice(start, end + 1);
+
+      setSelectedOrders(prev => {
+        const map = new Map(prev.map(o => [o._id, o]));
+        range.forEach(o => map.set(o._id, o));
+        return Array.from(map.values());
+      });
+    } else {
+      setSelectedOrders((prev) => {
+        if (prev.some((o) => o._id === order._id)) {
+          return prev.filter((o) => o._id !== order._id);
+        } else {
+          return [...prev, order];
+        }
+      });
+    }
+    setLastSelectedIndex(currentIndex);
+  };
+
+  const selectAllOrders = () => {
+    setSelectedOrders([...sortedOrders]);
+    setLastSelectedIndex(sortedOrders.length - 1);
+  };
+
+  const selectNoneOrders = () => {
+    setSelectedOrders([]);
+    setLastSelectedIndex(null);
+  };
+
+  const isOrderSelected = (order) => selectedOrders.some((o) => o._id === order._id);
+
   const exportToExcel = () => {
     const ordersWithHeaders = sortedOrders.map((order) => ({
       "מספר הזמנה": order.orderNumber,
@@ -1426,8 +1469,31 @@ const OrdersPage = () => {
             </div>
           </div>
 
+          {/* Selection Controls */}
+          <div className="flex flex-wrap items-center gap-3 mt-4 pt-4 border-t border-orange-100">
+            <button
+              onClick={selectAllOrders}
+              className="flex items-center gap-2 px-3 py-2 bg-orange-100 text-orange-700 rounded-lg hover:bg-orange-200 transition-all text-sm font-medium"
+            >
+              <CheckSquare className="w-4 h-4" />
+              סמן הכל
+            </button>
+            <button
+              onClick={selectNoneOrders}
+              className="flex items-center gap-2 px-3 py-2 bg-slate-100 text-slate-700 rounded-lg hover:bg-slate-200 transition-all text-sm font-medium"
+            >
+              <Square className="w-4 h-4" />
+              בטל הכל
+            </button>
+            {selectedOrders.length > 0 && (
+              <span className="text-sm font-bold text-orange-600">
+                נבחרו {selectedOrders.length} הזמנות
+              </span>
+            )}
+          </div>
+
           {/* Results Count */}
-          <div className="text-sm text-slate-600 font-medium">
+          <div className="text-sm text-slate-600 font-medium mt-3">
             מציג {sortedOrders.length} הזמנות מתוך {allOrders.length}
           </div>
         </div>
@@ -1441,6 +1507,21 @@ const OrdersPage = () => {
                 <table className="w-full">
                 <thead>
                   <tr className="bg-gradient-to-r from-orange-500 via-amber-500 to-yellow-500">
+                    <th className="px-4 py-4 text-sm font-bold text-center text-white w-12">
+                      <input
+                        type="checkbox"
+                        checked={selectedOrders.length === sortedOrders.length && sortedOrders.length > 0}
+                        onChange={(e) => {
+                          e.stopPropagation();
+                          if (selectedOrders.length === sortedOrders.length) {
+                            selectNoneOrders();
+                          } else {
+                            selectAllOrders();
+                          }
+                        }}
+                        className="w-4 h-4 rounded border-white/50 text-orange-600 focus:ring-orange-500 cursor-pointer"
+                      />
+                    </th>
                     <th className="px-6 py-4 text-sm font-bold text-center text-white">
                       מספר הזמנה
                     </th>
@@ -1473,12 +1554,29 @@ const OrdersPage = () => {
                   </tr>
                 </thead>
                 <tbody>
-                  {sortedOrders.map((order) => (
+                  {sortedOrders.map((order, index) => (
                     <tr
                       key={order._id}
                       onClick={() => handleView(order._id)}
-                      className="cursor-pointer border-t border-orange-100 hover:bg-orange-50 transition-colors"
+                      className={`cursor-pointer border-t border-orange-100 hover:bg-orange-50 transition-colors ${
+                        isOrderSelected(order) ? "bg-orange-100" : ""
+                      }`}
                     >
+                      <td className="px-4 py-4 text-center" onClick={(e) => e.stopPropagation()}>
+                        <input
+                          type="checkbox"
+                          checked={isOrderSelected(order)}
+                          onChange={(e) => {
+                            e.stopPropagation();
+                            toggleSelectOrder(order, e);
+                          }}
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            toggleSelectOrder(order, e);
+                          }}
+                          className="w-4 h-4 rounded border-orange-300 text-orange-600 focus:ring-orange-500 cursor-pointer"
+                        />
+                      </td>
                       <td className="px-6 py-4 text-sm font-bold text-center text-slate-900">
                         {order.orderNumber}
                       </td>
@@ -1602,16 +1700,33 @@ const OrdersPage = () => {
 
           {/* Mobile Cards */}
           <div className="lg:hidden space-y-4">
-            {sortedOrders.map((order) => (
+            {sortedOrders.map((order, index) => (
               <div
                 key={order._id}
                 onClick={() => handleView(order._id)}
-                className="bg-white/90 backdrop-blur-xl rounded-xl shadow-lg border border-white/50 p-4 cursor-pointer hover:shadow-xl transition-all active:scale-[0.98]"
+                className={`bg-white/90 backdrop-blur-xl rounded-xl shadow-lg border border-white/50 p-4 cursor-pointer hover:shadow-xl transition-all active:scale-[0.98] ${
+                  isOrderSelected(order) ? "ring-2 ring-orange-500 bg-orange-50/50" : ""
+                }`}
               >
                 <div className="flex items-start justify-between mb-3">
-                  <div>
-                    <div className="text-xs text-slate-500 mb-1">מספר הזמנה</div>
-                    <div className="text-lg font-bold text-slate-900">{order.orderNumber}</div>
+                  <div className="flex items-center gap-3">
+                    <input
+                      type="checkbox"
+                      checked={isOrderSelected(order)}
+                      onChange={(e) => {
+                        e.stopPropagation();
+                        toggleSelectOrder(order, e);
+                      }}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        toggleSelectOrder(order, e);
+                      }}
+                      className="w-5 h-5 rounded border-orange-300 text-orange-600 focus:ring-orange-500 cursor-pointer"
+                    />
+                    <div>
+                      <div className="text-xs text-slate-500 mb-1">מספר הזמנה</div>
+                      <div className="text-lg font-bold text-slate-900">{order.orderNumber}</div>
+                    </div>
                   </div>
                   <div className="text-left">
                     <div className="text-xs text-slate-500 mb-1">סכום</div>
