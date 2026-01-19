@@ -58,7 +58,9 @@ const invoiceSchema = new mongoose.Schema({
   salaryFinalAmount: { type: Number, default: null },
   salaryDepartment: { type: String, default: null }, // מחלקה - לא חובה
 
-  createdAt: { type: Date, required: false },
+  // 📅 תאריך החשבונית (מה שהמשתמש ממלא)
+  invoiceDate: { type: Date, required: false },
+
   status: { type: String, enum: ['הוגש', 'לא הוגש', 'בעיבוד'], default: 'לא הוגש', required: false },
 
   // ✅ פרויקט שאליו הוגשה החשבונית (אם הוגשה)

@@ -45,7 +45,7 @@ const InvoiceEditPage = () => {
     invitingName: "",
     supplierId: "",
     documentType: "",
-    createdAt: "",
+    invoiceDate: "",
     detail: "",
     paid: "לא",
     paymentDate: "",
@@ -117,8 +117,8 @@ const InvoiceEditPage = () => {
               invitingName: invoice.invitingName || "",
               supplierId: invoice.supplierId?._id || invoice.supplierId || "",
               documentType: invoice.documentType || "",
-              createdAt: invoice.createdAt
-                ? invoice.createdAt.split("T")[0]
+              invoiceDate: invoice.invoiceDate
+                ? invoice.invoiceDate.split("T")[0]
                 : new Date().toISOString().split("T")[0],
               detail: invoice.detail || "",
               paid: invoice.paid || "לא",
@@ -341,7 +341,7 @@ const InvoiceEditPage = () => {
     if (!globalFields.invoiceNumber) return toast.error("חסר מספר חשבונית");
     if (!globalFields.supplierId) return toast.error("יש לבחור ספק");
     if (!globalFields.documentType) return toast.error("יש לבחור סוג מסמך");
-    if (!rows.length) return toast.error("בחר לפחות פרויקט אחד");
+    if (!rows.length && !selectedProjects.length) return toast.error("בחר לפחות פרויקט אחד");
 
     if (
       globalFields.paid === "כן" &&
@@ -558,9 +558,9 @@ const InvoiceEditPage = () => {
 
           <DateField
             type="date"
-            label="תאריך יצירה"
-            value={globalFields.createdAt}
-            onChange={(v) => updateGlobal("createdAt", v)}
+            label="תאריך החשבונית"
+            value={globalFields.invoiceDate}
+            onChange={(v) => updateGlobal("invoiceDate", v)}
           />
 
           <div>
@@ -878,7 +878,6 @@ const InvoiceEditPage = () => {
               <button
                 onClick={() => {
                   setShowSubmissionModal(false);
-                  updateGlobal("submittedToProjectId", null);
                 }}
                 className="flex-1 py-3 bg-gray-300 text-gray-700 font-bold rounded-xl hover:bg-gray-400 transition-colors"
               >

@@ -236,7 +236,13 @@ const InvoiceDetailsPage = () => {
           />
 
           <DetailCard
-            label="תאריך יצירה"
+            label="תאריך החשבונית"
+            icon={<Calendar />}
+            value={formatDate(invoice.invoiceDate || invoice.createdAt)}
+          />
+
+          <DetailCard
+            label="תאריך הזנה למערכת"
             icon={<Calendar />}
             value={formatDate(invoice.createdAt)}
           />
