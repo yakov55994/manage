@@ -40,7 +40,9 @@
       "Bash(dir:*)",
       "Bash(tree:*)",
       "Bash(git commit -m \"$\\(cat <<''EOF''\nfix: תיקון התקנת Chrome עבור Puppeteer ב-Render\n\n- הוספת .puppeteerrc.cjs להגדרת cache directory\n- הוספת scripts להתקנת Chrome ב-build ו-postinstall\n- הוספת args נוספים ל-puppeteer.launch לתמיכה בסביבת שרת\n\nCo-Authored-By: Claude Opus 4.5 <noreply@anthropic.com>\nEOF\n\\)\")",
-      "Bash(git push:*)"
+      "Bash(git push:*)",
+      "Bash(npx puppeteer:*)",
+      "Bash(node --input-type=module -e:*)"
     ]
   }
 }

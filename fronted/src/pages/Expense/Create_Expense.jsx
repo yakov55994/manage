@@ -117,7 +117,7 @@ export default function CreateExpense() {
                 סכום (חובה) *
               </label>
               <input
-                type="number"
+                type="text"
                 name="amount"
                 value={formData.amount}
                 onChange={handleChange}

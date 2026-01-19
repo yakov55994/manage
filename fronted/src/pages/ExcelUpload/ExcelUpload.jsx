@@ -80,7 +80,7 @@ export default function ExcelUpload() {
   };
 
   const downloadSampleFile = () => {
-    const csv = 'תאריך,זכות,חובה,תיאור\n01/01/2026,5000,,תשלום מלקוח א\n05/01/2026,,3500,תשלום לספק\n10/01/2026,2000,,העברה בנקאית\n15/01/2026,,1500,תשלום חשמל';
+    const csv = 'תאריך,זכות,חובה,תיאור,אסמכתא\n01/01/2026,5000,,תשלום מלקוח א,12345\n05/01/2026,,3500,תשלום לספק,67890\n10/01/2026,2000,,העברה בנקאית,11111\n15/01/2026,,1500,תשלום חשמל,22222';
     const blob = new Blob(['\ufeff' + csv], { type: 'text/csv;charset=utf-8;' });
     const link = document.createElement('a');
     link.href = URL.createObjectURL(blob);
@@ -145,12 +145,13 @@ export default function ExcelUpload() {
                 </button>
               </div>
               <ul className="text-sm text-blue-800 space-y-2">
-                <li>• <strong>חובה:</strong> הקובץ צריך להכיל 4 עמודות:
+                <li>• <strong>חובה:</strong> הקובץ צריך להכיל את העמודות הבאות:
                   <ul className="mr-4 mt-1 space-y-1">
                     <li>- <strong>תאריך</strong> (או Date/ת.ערך/תאריך ערך)</li>
                     <li>- <strong>זכות</strong> (סכום הכנסה - יילך להכנסות)</li>
                     <li>- <strong>חובה</strong> (סכום הוצאה - יילך להוצאות)</li>
                     <li>- <strong>תיאור</strong> (או Description/פרטים/הערות)</li>
+                    <li>- <strong>אסמכתא</strong> (אופציונלי - מספר אסמכתא/Reference)</li>
                   </ul>
                 </li>
                 <li>• לחצי על &quot;הורד קובץ דוגמה&quot; למעלה כדי לקבל תבנית מוכנה</li>

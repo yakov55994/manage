@@ -170,8 +170,30 @@ const incomeController = {
           row["description"] ||
           row["פרטים"] ||
           row["DESCRIPTION"] ||
-          row["אסמכתא"] ||
           row["הערות"];
+
+        // קריאת אסמכתא בנפרד
+        const reference =
+          row["אסמכתא"] ||
+          row["Reference"] ||
+          row["reference"] ||
+          row["מס' אסמכתא"] ||
+          "";
+
+        // קריאת יתרה
+        const balance =
+          row["יתרה"] ||
+          row["Balance"] ||
+          row["balance"] ||
+          "";
+
+        // קריאת סוג פעולה
+        const transactionType =
+          row["סוג פעולה"] ||
+          row["סוג"] ||
+          row["Type"] ||
+          row["type"] ||
+          "";
 
         const notes = req.body.notes || ""; // הערות כלליות מהטופס
 
@@ -185,7 +207,7 @@ const incomeController = {
             amount: credit.toString(),
             description: description.toString(),
             notes: notes,
-            // כאן ניתן להוסיף לוגיקה לשיוך אוטומטי אם קיים מידע בתיאור
+            reference: reference ? reference.toString() : "",
           });
         }
         // לוגיקה: חובה -> הוצאה
@@ -195,6 +217,9 @@ const incomeController = {
             amount: debit.toString(),
             description: description.toString(),
             notes: notes,
+            reference: reference ? reference.toString() : "",
+            balance: balance ? balance.toString() : "",
+            transactionType: transactionType ? transactionType.toString() : "",
           });
         }
       });
