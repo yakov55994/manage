@@ -91,23 +91,23 @@ function formatTime(date = new Date()) {
 // ------------------------------------------------
 
 /**
- * פורמט תאריך DDMMYY
+ * פורמט תאריך YYMMDD (לפי מפרט מס"ב)
  */
-function formatDateDDMMYY(date) {
+function formatDateYYMMDD(date) {
   const d = new Date(date);
-  const day = String(d.getDate()).padStart(2, '0');
-  const month = String(d.getMonth() + 1).padStart(2, '0');
   const year = String(d.getFullYear()).slice(-2);
-  return day + month + year;
+  const month = String(d.getMonth() + 1).padStart(2, '0');
+  const day = String(d.getDate()).padStart(2, '0');
+  return year + month + day;
 }
 
 export function generateMasavFile(companyInfo, payments, executionDate) {
   const { instituteId, senderId, companyName } = companyInfo;
 
-  // תאריך ביצוע התשלום (שהמשתמש בחר)
-  const execDate = formatDateDDMMYY(executionDate);
-  // תאריך יצירת הקובץ (היום)
-  const creationDate = formatDateDDMMYY(new Date());
+  // תאריך ביצוע התשלום (שהמשתמש בחר) - פורמט YYMMDD
+  const execDate = formatDateYYMMDD(executionDate);
+  // תאריך יצירת הקובץ (היום) - פורמט YYMMDD
+  const creationDate = formatDateYYMMDD(new Date());
 
   let lines = [];
   let totalAmount = 0;
@@ -127,8 +127,8 @@ export function generateMasavFile(companyInfo, payments, executionDate) {
   rowK += creationDate;                           // 23-28: תאריך יצירה DDMMYY (6)
   rowK += padLeft(senderId, 5, '0');             // 29-33: מוסד שולח (5)
   rowK += '000000';                               // 34-39: FILLER (6)
-  // שם החברה צריך להיות מיושר לימין (רווחים משמאל)
-  rowK += padLeft(companyName, 30, ' ');         // 40-69: שם המוסד (30)
+  // שם החברה צמוד לימין (רווחים משמאל בעברית = padRight)
+  rowK += padRight(companyName, 30, ' ');        // 40-69: שם המוסד (30)
   rowK += padRight('', 56, ' ');                 // 70-125: FILLER (56)
   rowK += 'KOT';                                  // 126-128: זיהוי כותרת (3)
 
@@ -154,7 +154,8 @@ export function generateMasavFile(companyInfo, payments, executionDate) {
     row1 += padLeft(p.accountNumber, 9, '0');             // 27-35: מספר חשבון (9)
     row1 += '0';                                           // 36: FILLER (1)
     row1 += padLeft(p.internalId, 9, '0');                // 37-45: מס' זהות (9)
-    row1 += padLeft(p.supplierName, 16, ' ');
+    // שם הזוכאי צמוד לימין (רווחים משמאל בעברית = padRight)
+    row1 += padRight(p.supplierName, 16, ' ');           // 46-61: שם הזוכאי (16)
     row1 += padLeft(amountInAgorot, 13, '0');             // 62-74: סכום (13)
 
     // אסמכתא - מספר חשבונית או מזהה
@@ -225,11 +226,11 @@ export function testMasav() {
 
   const result = generateMasavFile(company, pay, "2018-12-25");
 
-  // קובץ תקין להשוואה
+  // קובץ תקין להשוואה (פורמט YYMMDD)
   const correctLines = [
-    "K92982289002512180001025121892982000000                 חינוך עם חיוך                                                        KOT",
+    "K92982289001812250001181225929820000000חינוך עם חיוך                                                                        KOT",
     "192982289000000002053900000004702120515754364שלוה מיזמי שילוב00000009698000000000000000000113300000000000006000000000000000000  ",
-    "59298228900251218000100000000096980000000000000000000000010000000                                                               "
+    "59298228900181225000100000000096980000000000000000000000010000000                                                               "
   ];
 
   const generatedLines = result.split("\r\n");

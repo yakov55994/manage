@@ -160,13 +160,12 @@ ${payments.map((p, i) => `
 
     // יצירת PDF באמצעות Puppeteer
     const browser = await puppeteer.launch({
-      headless: true,
+      headless: 'new',
       args: [
         '--no-sandbox',
         '--disable-setuid-sandbox',
         '--disable-dev-shm-usage',
-        '--disable-gpu',
-        '--single-process'
+        '--disable-gpu'
       ]
     });
 
