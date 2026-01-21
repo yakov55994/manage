@@ -24,7 +24,7 @@ import { toast } from "sonner";
 import MoveInvoiceModal from "../../Components/MoveInvoiceModal.jsx";
 import PaymentCaptureModal from "../../Components/PaymentCaptureModal.jsx";
 import { useAuth } from "../../context/AuthContext.jsx";
-import { FileText, Paperclip } from "lucide-react";
+import { FileText, Paperclip, Link } from "lucide-react";
 import MasavModal from "../../Components/MasavModal.jsx";
 import MultiSelectDropdown from "../../Components/MultiSelectDropdown.jsx";
 
@@ -148,6 +148,7 @@ const InvoicesPage = () => {
   });
   const [masavModal, setMasavModal] = useState(false);
   const [selectedInvoices, setSelectedInvoices] = useState([]);
+  const [allExpenses, setAllExpenses] = useState([]);
   const [showBulkDeleteModal, setShowBulkDeleteModal] = useState(false);
   const [showBulkPaymentModal, setShowBulkPaymentModal] = useState(false);
   const [bulkPaymentDate, setBulkPaymentDate] = useState(new Date().toISOString().slice(0, 10));
@@ -744,6 +745,23 @@ const InvoicesPage = () => {
 
     return 0;
   });
+
+  // מיפוי הוצאות לחשבוניות (reverse lookup)
+  const invoiceToExpenseMap = useMemo(() => {
+    const map = {};
+    allExpenses.forEach(expense => {
+      if (expense.linkedInvoices && expense.linkedInvoices.length > 0) {
+        expense.linkedInvoices.forEach(invoiceRef => {
+          const invoiceId = invoiceRef._id || invoiceRef;
+          if (!map[invoiceId]) {
+            map[invoiceId] = [];
+          }
+          map[invoiceId].push(expense);
+        });
+      }
+    });
+    return map;
+  }, [allExpenses]);
 
   // רשימה שטוחה של החשבוניות בסדר התצוגה בפועל (לשימוש ב-Shift selection)
   const displayOrderInvoices = useMemo(() => {
@@ -1558,8 +1576,12 @@ const InvoicesPage = () => {
   useEffect(() => {
     const fetchInvoices = async () => {
       try {
-        const res = await api.get("/invoices");
-        const allData = arr(res.data.data);
+        const [invoicesRes, expensesRes] = await Promise.all([
+          api.get("/invoices"),
+          api.get("/expenses")
+        ]);
+
+        const allData = arr(invoicesRes.data.data);
         // ✅ סנן חשבוניות לפי הרשאות
         const allowedProjectIds = getAllowedProjectIds();
 
@@ -1578,6 +1600,7 @@ const InvoicesPage = () => {
         }
 
         setAllInvoices(filteredData);
+        setAllExpenses(expensesRes.data?.data || []);
         // לא מגדירים setInvoices כאן - getFilteredInvoices() יסנן אוטומטית
       } catch (error) {
         console.error("Error fetching invoices:", error);
@@ -2731,10 +2754,10 @@ const InvoicesPage = () => {
                           gap: "2px",
                           gridTemplateColumns:
                             canEditInvoices && isAdmin
-                              ? "0.4fr 0.9fr 1.1fr 0.9fr 0.9fr 0.9fr 0.9fr 1.3fr 0.9fr 0.7fr 0.9fr 1.1fr"
+                              ? "0.4fr 0.9fr 1.1fr 0.9fr 0.9fr 0.9fr 0.9fr 1.3fr 0.9fr 0.7fr 0.7fr 0.9fr 1.1fr"
                               : canEditInvoices
-                                ? "0.9fr 1.1fr 0.9fr 0.9fr 0.9fr 0.9fr 1.3fr 0.9fr 0.7fr 1.1fr"
-                                : "0.9fr 1.1fr 0.9fr 0.9fr 0.9fr 0.9fr 1.3fr 0.9fr 0.7fr",
+                                ? "0.9fr 1.1fr 0.9fr 0.9fr 0.9fr 0.9fr 1.3fr 0.9fr 0.7fr 0.7fr 1.1fr"
+                                : "0.9fr 1.1fr 0.9fr 0.9fr 0.9fr 0.9fr 1.3fr 0.9fr 0.7fr 0.7fr",
                         }}
                       >
                         {/* עמודה 1: Checkbox - רק לאדמין */}
@@ -2800,6 +2823,11 @@ const InvoicesPage = () => {
                           קבצים
                         </th>
 
+                        {/* עמודה: שויך */}
+                        <th className="px-4 py-4 text-sm font-bold text-center text-white">
+                          שויך
+                        </th>
+
                         {/* עמודה 11: סימון תשלום - רק לאדמין */}
                         {canEditInvoices && isAdmin && (
                           <th className="px-4 py-4 text-sm font-bold text-center text-white">
@@ -2829,10 +2857,10 @@ const InvoicesPage = () => {
                             gap: "2px",
                             gridTemplateColumns:
                               canEditInvoices && isAdmin
-                                ? "0.4fr 0.9fr 1.1fr 0.9fr 0.9fr 0.9fr 0.9fr 1.3fr 0.9fr 0.7fr 0.9fr 1.1fr"
+                                ? "0.4fr 0.9fr 1.1fr 0.9fr 0.9fr 0.9fr 0.9fr 1.3fr 0.9fr 0.7fr 0.7fr 0.9fr 1.1fr"
                                 : canEditInvoices
-                                  ? "0.9fr 1.1fr 0.9fr 0.9fr 0.9fr 0.9fr 1.3fr 0.9fr 0.7fr 1.1fr"
-                                  : "0.9fr 1.1fr 0.9fr 0.9fr 0.9fr 0.9fr 1.3fr 0.9fr 0.7fr",
+                                  ? "0.9fr 1.1fr 0.9fr 0.9fr 0.9fr 0.9fr 1.3fr 0.9fr 0.7fr 0.7fr 1.1fr"
+                                  : "0.9fr 1.1fr 0.9fr 0.9fr 0.9fr 0.9fr 1.3fr 0.9fr 0.7fr 0.7fr",
                           }}
                           onClick={(e) => {
                             if (
@@ -2962,6 +2990,20 @@ const InvoicesPage = () => {
                                 {getInvoiceFilesCount(invoice)}
                               </span>
                             </div>
+                          </td>
+
+                          {/* עמודה: שויך */}
+                          <td className="px-2 py-4 text-center">
+                            {invoiceToExpenseMap[invoice._id]?.length > 0 ? (
+                              <div className="flex items-center justify-center gap-1 text-green-600">
+                                <Link className="w-3 h-3" />
+                                <span className="text-xs font-bold">
+                                  {invoiceToExpenseMap[invoice._id].length} הוצאות
+                                </span>
+                              </div>
+                            ) : (
+                              <span className="text-slate-400 text-xs">לא שויך</span>
+                            )}
                           </td>
 
                           {/* עמודה 11: סימון תשלום - רק לאדמין */}

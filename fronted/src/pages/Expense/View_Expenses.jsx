@@ -434,6 +434,7 @@ export default function ViewExpenses() {
                         <th className="px-6 py-4 text-right text-sm font-bold text-white">תיאור</th>
                         <th className="px-6 py-4 text-right text-sm font-bold text-white">אסמכתא</th>
                         <th className="px-6 py-4 text-right text-sm font-bold text-white">הערות</th>
+                        <th className="px-6 py-4 text-right text-sm font-bold text-white">שויך</th>
                         <th className="px-6 py-4 text-center text-sm font-bold text-white">פעולות</th>
                       </tr>
                     </thead>
@@ -475,6 +476,30 @@ export default function ViewExpenses() {
                             {expense.notes ? (
                               <span className="truncate max-w-xs block">{expense.notes}</span>
                             ) : "—"}
+                          </td>
+                          <td className="px-6 py-4 text-sm">
+                            {(expense.linkedInvoices?.length > 0 || expense.linkedSalaries?.length > 0) ? (
+                              <div className="space-y-1">
+                                {expense.linkedInvoices?.length > 0 && (
+                                  <div className="flex items-center gap-1 text-blue-600">
+                                    <Link className="w-3 h-3" />
+                                    <span className="text-xs">
+                                      {expense.linkedInvoices.length} חשבוניות
+                                    </span>
+                                  </div>
+                                )}
+                                {expense.linkedSalaries?.length > 0 && (
+                                  <div className="flex items-center gap-1 text-purple-600">
+                                    <Link className="w-3 h-3" />
+                                    <span className="text-xs">
+                                      {expense.linkedSalaries.length} משכורות
+                                    </span>
+                                  </div>
+                                )}
+                              </div>
+                            ) : (
+                              <span className="text-slate-400 text-xs">לא שויך</span>
+                            )}
                           </td>
                           <td className="px-6 py-4 text-center">
                             <div className="flex justify-center gap-2">
@@ -581,6 +606,29 @@ export default function ViewExpenses() {
                           <div className="text-sm text-slate-600">{expense.notes}</div>
                         </div>
                       )}
+
+                      {/* שיוך */}
+                      <div className="mb-3">
+                        <div className="text-xs text-slate-500 mb-1">שויך</div>
+                        {(expense.linkedInvoices?.length > 0 || expense.linkedSalaries?.length > 0) ? (
+                          <div className="flex flex-wrap gap-2">
+                            {expense.linkedInvoices?.length > 0 && (
+                              <span className="inline-flex items-center gap-1 px-2 py-1 bg-blue-100 text-blue-700 rounded-lg text-xs">
+                                <Link className="w-3 h-3" />
+                                {expense.linkedInvoices.length} חשבוניות
+                              </span>
+                            )}
+                            {expense.linkedSalaries?.length > 0 && (
+                              <span className="inline-flex items-center gap-1 px-2 py-1 bg-purple-100 text-purple-700 rounded-lg text-xs">
+                                <Link className="w-3 h-3" />
+                                {expense.linkedSalaries.length} משכורות
+                              </span>
+                            )}
+                          </div>
+                        ) : (
+                          <span className="text-slate-400 text-sm">לא שויך</span>
+                        )}
+                      </div>
 
                       {/* Action Buttons */}
                       <div className="flex gap-2">

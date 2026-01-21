@@ -15,6 +15,7 @@ import {
   Edit2,
   Trash2,
   Download,
+  Link,
 } from "lucide-react";
 import { toast } from "sonner";
 import ProjectSelector from "../../Components/ProjectSelector";
@@ -30,6 +31,7 @@ export default function View_Salaries() {
   const [selectedProjectIds, setSelectedProjectIds] = useState([]);
   const [exportLoading, setExportLoading] = useState(false);
   const [deleteModal, setDeleteModal] = useState({ open: false, salaryId: null, salaryName: "" });
+  const [allExpenses, setAllExpenses] = useState([]);
 
   useEffect(() => {
     fetchSalaries();
@@ -39,8 +41,12 @@ export default function View_Salaries() {
   const fetchSalaries = async () => {
     try {
       setLoading(true);
-      const response = await api.get("/salaries");
-      setSalaries(response.data?.data || []);
+      const [salariesRes, expensesRes] = await Promise.all([
+        api.get("/salaries"),
+        api.get("/expenses")
+      ]);
+      setSalaries(salariesRes.data?.data || []);
+      setAllExpenses(expensesRes.data?.data || []);
     } catch (err) {
       console.error("Error fetching salaries:", err);
       toast.error("שגיאה בטעינת המשכורות");
@@ -48,6 +54,20 @@ export default function View_Salaries() {
       setLoading(false);
     }
   };
+
+  // מיפוי הוצאות למשכורות (reverse lookup)
+  const salaryToExpenseMap = {};
+  allExpenses.forEach(expense => {
+    if (expense.linkedSalaries && expense.linkedSalaries.length > 0) {
+      expense.linkedSalaries.forEach(salaryRef => {
+        const salaryId = salaryRef._id || salaryRef;
+        if (!salaryToExpenseMap[salaryId]) {
+          salaryToExpenseMap[salaryId] = [];
+        }
+        salaryToExpenseMap[salaryId].push(expense);
+      });
+    }
+  });
 
   const fetchProjects = async () => {
     try {
@@ -392,6 +412,9 @@ export default function View_Salaries() {
                           נוצר ע"י
                         </th>
                         <th className="px-3 py-3 text-center text-xs font-bold text-white uppercase">
+                          שויך
+                        </th>
+                        <th className="px-3 py-3 text-center text-xs font-bold text-white uppercase">
                           פעולות
                         </th>
                       </tr>
@@ -449,6 +472,18 @@ export default function View_Salaries() {
                           </td>
                           <td className="px-3 py-2 whitespace-nowrap text-xs text-slate-600">
                             {salary.createdByName || "—"}
+                          </td>
+                          <td className="px-3 py-2 text-center">
+                            {salaryToExpenseMap[salary._id]?.length > 0 ? (
+                              <div className="flex items-center justify-center gap-1 text-green-600">
+                                <Link className="w-3 h-3" />
+                                <span className="text-xs font-bold">
+                                  {salaryToExpenseMap[salary._id].length} הוצאות
+                                </span>
+                              </div>
+                            ) : (
+                              <span className="text-slate-400 text-xs">לא שויך</span>
+                            )}
                           </td>
                           <td className="px-3 py-2 text-center">
                             <div className="flex justify-center gap-1">
@@ -566,6 +601,19 @@ export default function View_Salaries() {
                       {/* Created By */}
                       <div className="mb-3 text-xs text-slate-500">
                         נוצר ע"י: <span className="font-medium text-slate-700">{salary.createdByName || "—"}</span>
+                      </div>
+
+                      {/* שיוך */}
+                      <div className="mb-3">
+                        <div className="text-xs text-slate-500 mb-1">שויך</div>
+                        {salaryToExpenseMap[salary._id]?.length > 0 ? (
+                          <span className="inline-flex items-center gap-1 px-2 py-1 bg-green-100 text-green-700 rounded-lg text-xs">
+                            <Link className="w-3 h-3" />
+                            {salaryToExpenseMap[salary._id].length} הוצאות
+                          </span>
+                        ) : (
+                          <span className="text-slate-400 text-sm">לא שויך</span>
+                        )}
                       </div>
 
                       {/* Action Buttons */}
