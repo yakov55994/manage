@@ -157,7 +157,7 @@ const InvoicesPage = () => {
   const [bulkCheckDate, setBulkCheckDate] = useState("");
   const [documentStatusFilter, setDocumentStatusFilter] = useState([]);
 
-  const { user, isAdmin, canEditModule, canViewModule } = useAuth();
+  const { user, isAdmin, isLimited, canEditModule, canViewModule } = useAuth();
   const navigate = useNavigate();
 
   // קבל את הפרויקט הנוכחי
@@ -168,6 +168,7 @@ const InvoicesPage = () => {
   const canViewInvoices = () => {
     if (isAdmin) return true;
     if (user?.role === "accountant") return true; // רואת חשבון יכולה לצפות
+    if (user?.role === "limited") return true; // משתמש מוגבל יכול לצפות בחשבוניות (מוגבל ל-20)
     if (!user?.permissions) return false;
 
     // בדוק אם יש לו הרשאת view או edit לחשבוניות באיזשהו פרויקט
@@ -619,6 +620,14 @@ const InvoicesPage = () => {
         return false;
       });
     }
+
+    // הגבלת 20 חשבוניות אחרונות למשתמש limited
+    if (isLimited) {
+      filtered = filtered
+        .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))
+        .slice(0, 20);
+    }
+
     return filtered;
   };
 

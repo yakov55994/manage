@@ -30,7 +30,7 @@ const ProjectDetailsPage = () => {
   const { id } = useParams();
   const navigate = useNavigate();
 
-  const { isAdmin, canViewProject, canEditProject, loading, user } = useAuth();
+  const { isAdmin, isLimited, canViewProject, canEditProject, loading, user } = useAuth();
 
   // ✅ פונקציות עזר לבדיקת הרשאות מודולים
   const canViewOrders = () => {
@@ -85,6 +85,8 @@ const ProjectDetailsPage = () => {
     notes: "",
   });
   const [deducting, setDeducting] = useState(false);
+  const [editDeductionIndex, setEditDeductionIndex] = useState(null); // אינדקס הפחתה לעריכה
+  const [deleteDeductionModal, setDeleteDeductionModal] = useState({ open: false, index: null });
 
   const [statusFilter, setStatusFilter] = useState("");
   const [orders, setOrders] = useState([]);
@@ -379,7 +381,7 @@ const ProjectDetailsPage = () => {
     navigate(`/create-invoice?projectId=${project._id}`);
   };
 
-  // הפחתת תקציב
+  // הפחתת תקציב (יצירה או עריכה)
   const handleBudgetDeduction = async () => {
     const { reason, amount, date, notes } = budgetDeductionData;
 
@@ -395,45 +397,53 @@ const ProjectDetailsPage = () => {
     try {
       setDeducting(true);
 
-      // עדכון התקציב הנותר
-      const newRemainingBudget = (project.remainingBudget || 0) - Number(amount);
+      let newDeductions = [...(project.budgetDeductions || [])];
+      let newRemainingBudget = project.remainingBudget || 0;
+
+      if (editDeductionIndex !== null) {
+        // עריכה - החזרת הסכום הישן ואז הורדת החדש
+        const oldAmount = newDeductions[editDeductionIndex].amount || 0;
+        newRemainingBudget = newRemainingBudget + oldAmount - Number(amount);
+
+        newDeductions[editDeductionIndex] = {
+          ...newDeductions[editDeductionIndex],
+          reason,
+          amount: Number(amount),
+          date,
+          notes,
+        };
+      } else {
+        // יצירה חדשה
+        newRemainingBudget = newRemainingBudget - Number(amount);
+        newDeductions.push({
+          reason,
+          amount: Number(amount),
+          date,
+          notes,
+          createdAt: new Date().toISOString(),
+          createdBy: user?.username || user?.name || "משתמש",
+        });
+      }
 
       await api.put(`/projects/${project._id}`, {
         ...project,
         remainingBudget: newRemainingBudget,
-        // שמירת היסטוריית הפחתות (אם יש)
-        budgetDeductions: [
-          ...(project.budgetDeductions || []),
-          {
-            reason,
-            amount: Number(amount),
-            date,
-            notes,
-            createdAt: new Date().toISOString(),
-            createdBy: user?.username || user?.name || "משתמש",
-          },
-        ],
+        budgetDeductions: newDeductions,
       });
 
       // עדכון הפרויקט המקומי
       setProject((prev) => ({
         ...prev,
         remainingBudget: newRemainingBudget,
-        budgetDeductions: [
-          ...(prev.budgetDeductions || []),
-          {
-            reason,
-            amount: Number(amount),
-            date,
-            notes,
-            createdAt: new Date().toISOString(),
-            createdBy: user?.username || user?.name || "משתמש",
-          },
-        ],
+        budgetDeductions: newDeductions,
       }));
 
-      toast.success(`הופחתו ${Number(amount).toLocaleString()} ₪ מהתקציב`);
+      toast.success(editDeductionIndex !== null
+        ? "הפחתת התקציב עודכנה בהצלחה"
+        : `הופחתו ${Number(amount).toLocaleString()} ₪ מהתקציב`
+      );
       setBudgetDeductionOpen(false);
+      setEditDeductionIndex(null);
       setBudgetDeductionData({
         reason: "",
         amount: "",
@@ -443,6 +453,56 @@ const ProjectDetailsPage = () => {
     } catch (error) {
       console.error("Error deducting budget:", error);
       toast.error("שגיאה בהפחתת תקציב");
+    } finally {
+      setDeducting(false);
+    }
+  };
+
+  // פתיחת מודל עריכה להפחתה
+  const openEditDeduction = (index) => {
+    const deduction = project.budgetDeductions[index];
+    setBudgetDeductionData({
+      reason: deduction.reason || "",
+      amount: deduction.amount?.toString() || "",
+      date: deduction.date ? new Date(deduction.date).toISOString().split("T")[0] : new Date().toISOString().split("T")[0],
+      notes: deduction.notes || "",
+    });
+    setEditDeductionIndex(index);
+    setBudgetDeductionOpen(true);
+  };
+
+  // מחיקת הפחתה
+  const handleDeleteDeduction = async () => {
+    const index = deleteDeductionModal.index;
+    if (index === null) return;
+
+    try {
+      setDeducting(true);
+
+      const deductionToDelete = project.budgetDeductions[index];
+      const amountToReturn = deductionToDelete.amount || 0;
+
+      // החזרת הסכום לתקציב
+      const newRemainingBudget = (project.remainingBudget || 0) + amountToReturn;
+      const newDeductions = project.budgetDeductions.filter((_, i) => i !== index);
+
+      await api.put(`/projects/${project._id}`, {
+        ...project,
+        remainingBudget: newRemainingBudget,
+        budgetDeductions: newDeductions,
+      });
+
+      setProject((prev) => ({
+        ...prev,
+        remainingBudget: newRemainingBudget,
+        budgetDeductions: newDeductions,
+      }));
+
+      toast.success(`הפחתת התקציב נמחקה והוחזרו ${amountToReturn.toLocaleString()} ₪ לתקציב`);
+      setDeleteDeductionModal({ open: false, index: null });
+    } catch (error) {
+      console.error("Error deleting deduction:", error);
+      toast.error("שגיאה במחיקת הפחתה");
     } finally {
       setDeducting(false);
     }
@@ -620,7 +680,7 @@ const ProjectDetailsPage = () => {
 
                     <button
                       onClick={() => setBudgetDeductionOpen(true)}
-                      className="flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-red-500 to-rose-500 text-white font-bold rounded-xl hover:from-red-600 hover:to-rose-600 transition-all shadow-xl shadow-red-500/30"
+                      className="flex items-center gap-2 px-6 py-3 bg-orange-600 gradient-to-r from-orange-600 to-amber-600from-red-500 text-white font-bold rounded-xl hover:from-red-600 hover:to-rose-600 transition-all shadow-xl shadow-red-500/30"
                     >
                       <TrendingDown className="w-4 h-4" />
                       <span>הפחתת תקציב</span>
@@ -688,7 +748,8 @@ const ProjectDetailsPage = () => {
                   </div>
                 </div>
 
-                {!isSalaryProject && (
+                {/* תקציב - לא מוצג למשתמש מוגבל */}
+                {!isSalaryProject && !isLimited && (
                   <>
                     {/* Budget */}
                     <div className="group p-4 rounded-xl bg-gradient-to-br from-orange-50 to-amber-50 border-2 border-orange-200 hover:border-orange-400 transition-all">
@@ -817,10 +878,27 @@ const ProjectDetailsPage = () => {
                             הופחת על ידי: {deduction.createdBy || "לא ידוע"}
                           </p>
                         </div>
-                        <div className="text-left">
+                        <div className="flex items-center gap-3">
                           <span className="text-lg font-bold text-red-600">
                             -{Number(deduction.amount).toLocaleString()} ₪
                           </span>
+                          {/* כפתורי עריכה ומחיקה */}
+                          <div className="flex gap-1">
+                            <button
+                              onClick={() => openEditDeduction(index)}
+                              className="p-1.5 hover:bg-orange-100 rounded-lg transition-colors"
+                              title="עריכה"
+                            >
+                              <Edit2 className="w-4 h-4 text-orange-600" />
+                            </button>
+                            <button
+                              onClick={() => setDeleteDeductionModal({ open: true, index })}
+                              className="p-1.5 hover:bg-red-100 rounded-lg transition-colors"
+                              title="מחיקה"
+                            >
+                              <Trash2 className="w-4 h-4 text-red-600" />
+                            </button>
+                          </div>
                         </div>
                       </div>
                     </div>
@@ -980,7 +1058,7 @@ const ProjectDetailsPage = () => {
                   <span>טוען חשבוניות…</span>
                 </div>
 
-) : filteredInvoices.length > 0 ? (
+              ) : filteredInvoices.length > 0 ? (
                 <div className="overflow-x-auto rounded-xl border-2 border-orange-200">
                   <table className="min-w-full text-right">
                     <thead className="bg-gradient-to-r from-orange-100 to-amber-100">
@@ -1034,11 +1112,10 @@ const ProjectDetailsPage = () => {
                           <tr
                             key={invoice._id}
                             onClick={() => moveToInvoiceDetails(invoice)}
-                            className={`cursor-pointer border-t transition-colors ${
-                              invoice.type === "salary"
-                                ? "bg-gradient-to-r from-orange-50 via-amber-50 to-yellow-50 border-orange-200 hover:from-orange-100 hover:via-amber-100 hover:to-yellow-100"
-                                : "border-emerald-100 hover:bg-emerald-50/50"
-                            }`}
+                            className={`cursor-pointer border-t transition-colors ${invoice.type === "salary"
+                              ? "bg-gradient-to-r from-orange-50 via-amber-50 to-yellow-50 border-orange-200 hover:from-orange-100 hover:via-amber-100 hover:to-yellow-100"
+                              : "border-emerald-100 hover:bg-emerald-50/50"
+                              }`}
                           >
                             <td className="px-4 py-3 text-sm font-bold text-center">
                               <div className="flex items-center justify-center gap-2">
@@ -1237,7 +1314,7 @@ const ProjectDetailsPage = () => {
                       <button
                         onClick={handleExportSalaries}
                         disabled={exportLoading}
-                className="flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-orange-500 to-amber-500 text-white font-bold rounded-full hover:from-orange-600 hover:to-amber-600 transition-all shadow-lg whitespace-nowrap disabled:opacity-60 disabled:cursor-not-allowed"
+                        className="flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-orange-500 to-amber-500 text-white font-bold rounded-full hover:from-orange-600 hover:to-amber-600 transition-all shadow-lg whitespace-nowrap disabled:opacity-60 disabled:cursor-not-allowed"
                       >
                         <Download className="w-4 h-4" />
                         <span>{exportLoading ? 'מוריד...' : 'ייצוא סיכום משכורות'}</span>
@@ -1306,10 +1383,19 @@ const ProjectDetailsPage = () => {
                 <div className="bg-gradient-to-r from-red-500 to-rose-500 px-5 py-3 flex items-center justify-between">
                   <h3 className="text-lg font-bold text-white flex items-center gap-2">
                     <TrendingDown className="w-5 h-5" />
-                    הפחתת תקציב
+                    {editDeductionIndex !== null ? "עריכת הפחתת תקציב" : "הפחתת תקציב"}
                   </h3>
                   <button
-                    onClick={() => setBudgetDeductionOpen(false)}
+                    onClick={() => {
+                      setBudgetDeductionOpen(false);
+                      setEditDeductionIndex(null);
+                      setBudgetDeductionData({
+                        reason: "",
+                        amount: "",
+                        date: new Date().toISOString().split("T")[0],
+                        notes: "",
+                      });
+                    }}
                     className="p-1.5 hover:bg-white/20 rounded-full transition-colors"
                   >
                     <X className="w-5 h-5 text-white" />
@@ -1409,12 +1495,66 @@ const ProjectDetailsPage = () => {
                     disabled={deducting}
                     className="flex-1 px-4 py-2.5 bg-gradient-to-r from-red-500 to-rose-500 text-white font-bold rounded-lg hover:from-red-600 hover:to-rose-600 transition-all shadow-lg disabled:opacity-50 text-sm"
                   >
-                    {deducting ? "מעדכן..." : "הפחת תקציב"}
+                    {deducting ? "מעדכן..." : editDeductionIndex !== null ? "שמור שינויים" : "הפחת תקציב"}
                   </button>
                   <button
-                    onClick={() => setBudgetDeductionOpen(false)}
+                    onClick={() => {
+                      setBudgetDeductionOpen(false);
+                      setEditDeductionIndex(null);
+                      setBudgetDeductionData({
+                        reason: "",
+                        amount: "",
+                        date: new Date().toISOString().split("T")[0],
+                        notes: "",
+                      });
+                    }}
                     disabled={deducting}
                     className="flex-1 px-4 py-2.5 bg-slate-100 text-slate-700 font-bold rounded-lg hover:bg-slate-200 transition-all text-sm"
+                  >
+                    ביטול
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Delete Deduction Confirmation Modal */}
+        {deleteDeductionModal.open && (
+          <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4" dir="rtl">
+            <div className="relative w-full max-w-sm mx-auto">
+              <div className="absolute -inset-4 bg-gradient-to-r from-red-500 to-rose-500 rounded-3xl opacity-20 blur-2xl"></div>
+
+              <div className="relative bg-white rounded-2xl shadow-2xl p-6">
+                <div className="text-center mb-4">
+                  <div className="mx-auto w-14 h-14 rounded-full bg-gradient-to-br from-red-500 to-rose-500 flex items-center justify-center mb-3">
+                    <Trash2 className="w-7 h-7 text-white" />
+                  </div>
+                  <h3 className="text-xl font-bold text-slate-900 mb-2">
+                    מחיקת הפחתת תקציב
+                  </h3>
+                  <p className="text-slate-600 text-sm">
+                    האם למחוק את ההפחתה? הסכום יוחזר לתקציב הפרויקט.
+                  </p>
+                  {deleteDeductionModal.index !== null && project?.budgetDeductions?.[deleteDeductionModal.index] && (
+                    <p className="mt-2 text-lg font-bold text-red-600">
+                      {Number(project.budgetDeductions[deleteDeductionModal.index].amount).toLocaleString()} ₪
+                    </p>
+                  )}
+                </div>
+
+                <div className="flex gap-2">
+                  <button
+                    onClick={handleDeleteDeduction}
+                    disabled={deducting}
+                    className="flex-1 px-4 py-2.5 bg-gradient-to-r from-red-500 to-rose-500 text-white font-bold rounded-lg hover:from-red-600 hover:to-rose-600 transition-all shadow-lg disabled:opacity-50"
+                  >
+                    {deducting ? "מוחק..." : "מחק"}
+                  </button>
+                  <button
+                    onClick={() => setDeleteDeductionModal({ open: false, index: null })}
+                    disabled={deducting}
+                    className="flex-1 px-4 py-2.5 bg-slate-100 text-slate-700 font-bold rounded-lg hover:bg-slate-200 transition-all"
                   >
                     ביטול
                   </button>

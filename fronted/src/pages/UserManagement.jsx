@@ -568,11 +568,17 @@ const saveUser = async (e) => {
                   <span
                     className={`px-3 py-1 rounded-full text-sm font-semibold ${
                       u.role === "admin"
-                        ? "bg-gradient-to-r from-orange-400 to-amber-400 "
+                        ? "bg-gradient-to-r from-orange-400 to-amber-400"
+                        : u.role === "accountant"
+                        ? "bg-blue-100 text-blue-800"
+                        : u.role === "limited"
+                        ? "bg-purple-100 text-purple-800"
                         : "bg-orange-100 text-black"
                     }`}
                   >
-                    {u.role === "admin" ? "מנהל מערכת" : "משתמש רגיל"}
+                    {u.role === "admin" ? "מנהל מערכת" :
+                     u.role === "accountant" ? "רואה חשבון" :
+                     u.role === "limited" ? "מוגבל" : "משתמש רגיל"}
                   </span>
                 </div>
 
@@ -585,6 +591,10 @@ const saveUser = async (e) => {
                   <span className="text-black font-semibold">
                     {u.role === "admin"
                       ? "גישה מלאה"
+                      : u.role === "accountant"
+                      ? "צפייה בחשבוניות"
+                      : u.role === "limited"
+                      ? `${u.permissions?.length || 0} פרויקטים (20 חשבוניות)`
                       : `${u.permissions?.length || 0} פרויקטים`}
                   </span>
                 </div>
@@ -724,6 +734,8 @@ const saveUser = async (e) => {
                     >
                       <option value="user">משתמש רגיל</option>
                       <option value="admin">מנהל מערכת</option>
+                      <option value="accountant">רואה חשבון</option>
+                      <option value="limited">מוגבל ( 20 חשבוניות בלבד )</option>
                     </select>
                   </div>
                 </div>

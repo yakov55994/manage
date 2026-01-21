@@ -94,6 +94,16 @@ const canAccessModule = (user, projectId, moduleName, required = "view") => {
     return false; // אין הרשאת עריכה או גישה למודולים אחרים
   }
 
+  // משתמש מוגבל - יכול ליצור ולצפות בחשבוניות בפרויקט שלו (לא הזמנות, לא תקציב)
+  if (user.role === "limited") {
+    if (moduleName === "invoices") {
+      // בדוק אם יש לו הרשאה לפרויקט
+      const perm = getProjectPerm(user, projectId);
+      if (perm) return true; // יכול לצפות וליצור חשבוניות
+    }
+    return false; // אין גישה למודולים אחרים
+  }
+
   // אם אין projectId – נבדוק האם יש פרויקט כלשהו עם הרשאה
   if (!projectId) {
     return user.permissions.some(
@@ -178,6 +188,7 @@ export const AuthProvider = ({ children }) => {
   // FLAGS
   // =========================
   const isAdmin = user?.role === "admin";
+  const isLimited = user?.role === "limited";
   const isAuthenticated = !!user;
 
   // EXPORT TO CONTEXT
@@ -189,6 +200,7 @@ export const AuthProvider = ({ children }) => {
         login,
         logout,
         isAdmin,
+        isLimited,
         isAuthenticated,
         loading,
 
