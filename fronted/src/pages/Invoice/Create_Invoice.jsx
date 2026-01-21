@@ -235,20 +235,29 @@ const CreateInvoice = () => {
   // ============================
 
   const handleSubmit = async () => {
-    if (!form.invoiceNumber) return toast.error("מספר חשבונית חובה");
-    if (!isSalary && !form.supplierId) return toast.error("יש לבחור ספק");
-    if (!isSalary && rows.length === 0)
-      return toast.error("בחר לפחות פרויקט אחד");
-    // if (!form.createdAt) return toast.error("יש לבחור תאריך יצירה");
-    if (!isSalary && rows.length === 0)
-      return toast.error("בחר לפחות פרויקט אחד");
+    // ולידציות עם הודעות ברורות
+    if (!form.invoiceNumber?.trim()) {
+      return toast.error("יש להזין מספר חשבונית");
+    }
 
-    if (
-      form.paid === "כן" &&
-      form.paymentMethod === "check" &&
-      !form.checkNumber
-    ) {
-      return toast.error("יש למלא מספר צ'ק");
+    if (!isSalary && !form.supplierId) {
+      return toast.error("יש לבחור ספק");
+    }
+
+    if (!isSalary && rows.length === 0) {
+      return toast.error("יש לבחור לפחות פרויקט אחד");
+    }
+
+    if (!form.documentType) {
+      return toast.error("יש לבחור סוג מסמך");
+    }
+
+    if (form.paid === "כן" && !form.paymentMethod) {
+      return toast.error("יש לבחור אמצעי תשלום");
+    }
+
+    if (form.paid === "כן" && form.paymentMethod === "check" && !form.checkNumber?.trim()) {
+      return toast.error("יש להזין מספר צ'ק");
     }
 
     // ✅ בדיקה עבור הגשה
@@ -259,15 +268,23 @@ const CreateInvoice = () => {
     if (isSalary && !fundedFromProjectId) {
       return toast.error("יש לבחור פרויקט ממנו יורד התקציב למשכורות");
     }
+
+    if (isSalary && !salaryEmployeeName?.trim()) {
+      return toast.error("יש להזין שם מקבל השכר");
+    }
+
+    if (isSalary && (!salaryBaseAmount || Number(salaryBaseAmount) <= 0)) {
+      return toast.error("יש להזין סכום בסיס תקין");
+    }
+
     if (selectedProjects.some((p) => p._id === MILGA_ID) && fundedFromProjectIds.length === 0) {
       return toast.error("יש לבחור לפחות פרויקט אחד ממנו יורד התקציב למילגה");
     }
 
     if (!isSalary) {
-      if (rows.length === 0) return toast.error("בחר לפחות פרויקט אחד");
       for (const row of rows) {
         if (!row.sum || Number(row.sum) <= 0) {
-          return toast.error(`סכום לא תקין לפרויקט ${row.projectName}`);
+          return toast.error(`יש להזין סכום תקין לפרויקט "${row.projectName}"`);
         }
       }
     }
@@ -402,7 +419,8 @@ const CreateInvoice = () => {
       navigate("/invoices");
     } catch (err) {
       console.error(err);
-      toast.error("שגיאה ביצירת חשבונית");
+      const errorMessage = err.response?.data?.message || "שגיאה ביצירת חשבונית";
+      toast.error(errorMessage);
     } finally {
       setLoading(false);
     }
@@ -729,7 +747,7 @@ const CreateInvoice = () => {
               <button
                 type="button"
                 onClick={() => setShowSubmissionModal(true)}
-                className="w-full p-3 bg-gradient-to-r from-blue-600 to-indigo-600 text-white font-bold rounded-xl hover:from-blue-700 hover:to-indigo-700 transition-all shadow-lg"
+                className="w-full p-3 bg-orange-600 text-white font-bold rounded-xl transition-all shadow-lg"
               >
                 סמן כהוגש לפרויקט
               </button>
@@ -1020,7 +1038,7 @@ const CreateInvoice = () => {
                   setShowSubmissionModal(false);
                   toast.success("החשבונית תסומן כהוגשה");
                 }}
-                className="flex-1 py-3 bg-gradient-to-r from-blue-600 to-indigo-600 text-white font-bold rounded-xl hover:from-blue-700 hover:to-indigo-700 transition-all"
+                className="flex-1 py-3 bg-orange-600 text-white font-bold rounded-xl transition-all"
               >
                 אישור
               </button>

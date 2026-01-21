@@ -15,6 +15,8 @@ import {
   AlertCircle,
   Users,
   CreativeCommons,
+  Link2,
+  TrendingDown,
 } from "lucide-react";
 
 export default function SalaryDetailsPage() {
@@ -24,6 +26,7 @@ export default function SalaryDetailsPage() {
   const [loading, setLoading] = useState(true);
   const [confirmOpen, setConfirmOpen] = useState(false);
   const [deleting, setDeleting] = useState(false);
+  const [linkedExpenses, setLinkedExpenses] = useState([]);
 
   useEffect(() => {
     fetchSalary();
@@ -34,6 +37,20 @@ export default function SalaryDetailsPage() {
       setLoading(true);
       const res = await api.get(`/salaries/${id}`);
       setSalary(res.data.data);
+
+      // טען הוצאות משויכות למשכורת זו
+      try {
+        const expensesRes = await api.get("/expenses");
+        const allExpenses = expensesRes.data?.data || [];
+        const linked = allExpenses.filter(exp =>
+          exp.linkedSalaries?.some(sal =>
+            (sal._id || sal) === id
+          )
+        );
+        setLinkedExpenses(linked);
+      } catch (expErr) {
+        console.error("שגיאה בטעינת הוצאות משויכות:", expErr);
+      }
     } catch (err) {
       console.error(err);
       toast.error("שגיאה בטעינת משכורת");
@@ -251,8 +268,41 @@ export default function SalaryDetailsPage() {
               </div>
             </div>
 
-    
-  
+            {/* הוצאות משויכות */}
+            {linkedExpenses.length > 0 && (
+              <div className="mt-6 p-4 rounded-xl bg-gradient-to-br from-blue-50 to-cyan-50 border-2 border-blue-200">
+                <div className="flex items-center gap-3 mb-4">
+                  <Link2 className="w-5 h-5 text-blue-600" />
+                  <span className="text-lg font-bold text-blue-800">הוצאות משויכות</span>
+                </div>
+                <div className="space-y-2">
+                  {linkedExpenses.map((expense) => (
+                    <div
+                      key={expense._id}
+                      className="p-3 bg-white rounded-xl border border-blue-200 cursor-pointer hover:bg-blue-50 transition-colors"
+                      onClick={() => navigate(`/expense/${expense._id}`)}
+                    >
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-3">
+                          <TrendingDown className="w-4 h-4 text-blue-600" />
+                          <div>
+                            <span className="font-bold text-slate-900">
+                              {expense.description}
+                            </span>
+                            <span className="text-slate-600 mr-2 text-sm">
+                              ({formatDate(expense.date)})
+                            </span>
+                          </div>
+                        </div>
+                        <span className="font-bold text-blue-600">
+                          {formatCurrency(expense.amount)}
+                        </span>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
           </div>
         </div>
       </div>

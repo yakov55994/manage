@@ -315,6 +315,7 @@ ${invoicesForPrint.map((inv, i) => `
           .replace(/\D/g, "")         // מסיר כל תו לא ספרתי
           .slice(-2)                  // לוקח רק 2 ספרות אחרונות לתקן מס״ב
           .padStart(2, "0"),
+        bankName: bd.bankName || "",  // ✅ שם הבנק לסיכום PDF
         branchNumber: String(bd.branchNumber).padStart(3, "0"),
         accountNumber: account9.padStart(9, "0"),
         amount,

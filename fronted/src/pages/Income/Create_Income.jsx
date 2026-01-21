@@ -72,8 +72,18 @@ export default function CreateIncome() {
   const handleSubmitSingle = async (e) => {
     e.preventDefault();
 
-    if (!singleIncome.date || !singleIncome.amount || !singleIncome.description) {
-      toast.error("נא למלא את כל השדות החובה");
+    if (!singleIncome.date) {
+      toast.error("יש לבחור תאריך");
+      return;
+    }
+
+    if (!singleIncome.amount?.trim()) {
+      toast.error("יש להזין סכום");
+      return;
+    }
+
+    if (!singleIncome.description?.trim()) {
+      toast.error("יש להזין תיאור");
       return;
     }
 

@@ -1,4 +1,6 @@
 import Expense from "../models/Expense.js";
+import Invoice from "../models/Invoice.js";
+import Salary from "../models/Salary.js";
 
 export default {
   // קבלת כל ההוצאות
@@ -6,8 +8,12 @@ export default {
     let query = {};
 
     const expenses = await Expense.find(query)
-      .populate("linkedInvoices", "invoiceNumber supplierId totalAmount createdAt paid")
-      .populate("linkedSalaries", "employeeName totalAmount month year")
+      .populate({
+        path: "linkedInvoices",
+        select: "invoiceNumber supplierId totalAmount createdAt paid paymentDate",
+        populate: { path: "supplierId", select: "name" }
+      })
+      .populate("linkedSalaries", "employeeName totalAmount finalAmount month year")
       .sort({ createdAt: -1 });
 
     return expenses;
@@ -16,8 +22,12 @@ export default {
   // קבלת הוצאה לפי ID
   async getExpenseById(user, expenseId) {
     const expense = await Expense.findById(expenseId)
-      .populate("linkedInvoices", "invoiceNumber supplierId totalAmount createdAt paid")
-      .populate("linkedSalaries", "employeeName totalAmount month year");
+      .populate({
+        path: "linkedInvoices",
+        select: "invoiceNumber supplierId totalAmount createdAt paid paymentDate",
+        populate: { path: "supplierId", select: "name" }
+      })
+      .populate("linkedSalaries", "employeeName totalAmount finalAmount month year");
 
     if (!expense) {
       throw new Error("הוצאה לא נמצאה");
@@ -116,6 +126,27 @@ export default {
       throw new Error("הוצאה לא נמצאה");
     }
 
+    // חישוב סכום כולל של חשבוניות ומשכורות משויכות
+    let totalLinkedAmount = 0;
+
+    if (invoiceIds && invoiceIds.length > 0) {
+      const invoices = await Invoice.find({ _id: { $in: invoiceIds } });
+      totalLinkedAmount += invoices.reduce((sum, inv) => sum + (Number(inv.totalAmount) || 0), 0);
+    }
+
+    if (salaryIds && salaryIds.length > 0) {
+      const salaries = await Salary.find({ _id: { $in: salaryIds } });
+      totalLinkedAmount += salaries.reduce((sum, sal) => sum + (Number(sal.finalAmount) || Number(sal.totalAmount) || 0), 0);
+    }
+
+    // אימות שהסכום זהה (עם סטייה קטנה לסיכום שקלים)
+    const expenseAmount = Math.abs(Number(expense.amount) || 0);
+    const tolerance = 0.01; // סטייה מותרת של 1 אגורה
+
+    if (totalLinkedAmount > 0 && Math.abs(expenseAmount - totalLinkedAmount) > tolerance) {
+      throw new Error(`סכום ההוצאה (${expenseAmount.toLocaleString()} ₪) חייב להיות זהה לסכום החשבוניות/משכורות המשויכות (${totalLinkedAmount.toLocaleString()} ₪)`);
+    }
+
     expense.linkedInvoices = invoiceIds;
     expense.linkedSalaries = salaryIds;
 
@@ -123,8 +154,12 @@ export default {
 
     // החזר עם populate
     const populatedExpense = await Expense.findById(expenseId)
-      .populate("linkedInvoices", "invoiceNumber supplierId totalAmount createdAt")
-      .populate("linkedSalaries", "employeeName totalAmount month year");
+      .populate({
+        path: "linkedInvoices",
+        select: "invoiceNumber supplierId totalAmount createdAt paid paymentDate",
+        populate: { path: "supplierId", select: "name" }
+      })
+      .populate("linkedSalaries", "employeeName totalAmount finalAmount month year");
 
     return populatedExpense;
   },

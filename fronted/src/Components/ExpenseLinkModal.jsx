@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { X, Search, FileText, Users, Filter, CheckSquare, Square, Calendar, DollarSign } from "lucide-react";
+import { X, Search, FileText, Users, Filter, CheckSquare, Square } from "lucide-react";
 import api from "../api/api.js";
 import { toast } from "sonner";
 
@@ -85,14 +85,14 @@ export default function ExpenseLinkModal({
       filtered = filtered.filter(inv => inv.paid !== "כן");
     }
 
-    // סינון לפי תאריך
+    // סינון לפי תאריך תשלום (paymentDate)
     if (invoiceFilters.dateFrom) {
       const from = new Date(invoiceFilters.dateFrom);
-      filtered = filtered.filter(inv => new Date(inv.createdAt) >= from);
+      filtered = filtered.filter(inv => inv.paymentDate && new Date(inv.paymentDate) >= from);
     }
     if (invoiceFilters.dateTo) {
       const to = new Date(invoiceFilters.dateTo);
-      filtered = filtered.filter(inv => new Date(inv.createdAt) <= to);
+      filtered = filtered.filter(inv => inv.paymentDate && new Date(inv.paymentDate) <= to);
     }
 
     return filtered;
@@ -192,7 +192,9 @@ export default function ExpenseLinkModal({
       onClose();
     } catch (err) {
       console.error(err);
-      toast.error("שגיאה בשמירת השיוך");
+      // הצג את הודעת השגיאה מהשרת אם קיימת
+      const errorMessage = err.response?.data?.message || "שגיאה בשמירת השיוך";
+      toast.error(errorMessage);
     } finally {
       setLoading(false);
     }
@@ -320,7 +322,7 @@ export default function ExpenseLinkModal({
                       </select>
                     </div>
                     <div className="flex items-center gap-2">
-                      <label className="text-sm font-bold text-slate-600">מתאריך:</label>
+                      <label className="text-sm font-bold text-slate-600">תאריך תשלום מ:</label>
                       <input
                         type="date"
                         value={invoiceFilters.dateFrom}
@@ -329,7 +331,7 @@ export default function ExpenseLinkModal({
                       />
                     </div>
                     <div className="flex items-center gap-2">
-                      <label className="text-sm font-bold text-slate-600">עד תאריך:</label>
+                      <label className="text-sm font-bold text-slate-600">תאריך תשלום עד:</label>
                       <input
                         type="date"
                         value={invoiceFilters.dateTo}
@@ -383,7 +385,7 @@ export default function ExpenseLinkModal({
                           {formatCurrency(invoice.totalAmount)}
                         </div>
                         <div className="text-sm text-slate-500">
-                          {formatDate(invoice.createdAt)}
+                          {invoice.paymentDate ? formatDate(invoice.paymentDate) : "לא שולם"}
                         </div>
                       </div>
                       <div>
@@ -509,7 +511,7 @@ export default function ExpenseLinkModal({
                       </div>
                       <div className="text-right">
                         <div className="font-bold text-orange-600">
-                          {formatCurrency(salary.totalAmount)}
+                          {formatCurrency(salary.finalAmount || salary.totalAmount)}
                         </div>
                       </div>
                     </div>

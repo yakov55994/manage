@@ -27,8 +27,18 @@ export default function CreateExpense() {
   const handleSubmit = async (e) => {
     e.preventDefault();
 
-    if (!formData.date || !formData.amount || !formData.description) {
-      toast.error("יש למלא תאריך, סכום ותיאור");
+    if (!formData.date) {
+      toast.error("יש לבחור תאריך");
+      return;
+    }
+
+    if (!formData.amount?.trim()) {
+      toast.error("יש להזין סכום");
+      return;
+    }
+
+    if (!formData.description?.trim()) {
+      toast.error("יש להזין תיאור");
       return;
     }
 
@@ -39,7 +49,8 @@ export default function CreateExpense() {
       navigate("/expenses");
     } catch (err) {
       console.error("Create expense error:", err);
-      toast.error("שגיאה ביצירת הוצאה");
+      const errorMessage = err.response?.data?.message || "שגיאה ביצירת הוצאה";
+      toast.error(errorMessage);
     } finally {
       setLoading(false);
     }

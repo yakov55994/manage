@@ -16,6 +16,11 @@ export const sendError = (res, err) => {
     return res.status(400).json({ success: false, message: msg });
   }
 
+  // 🟡 שגיאות ולידציה נוספות - סכום לא זהה, חובה לבחור וכו'
+  if (msg.includes("סכום") || msg.includes("חובה") || msg.includes("חייב")) {
+    return res.status(400).json({ success: false, message: msg });
+  }
+
   // 🔴 שגיאת DB או אחרת
   console.error("❌ SERVER ERROR:", err);
   return res.status(500).json({ success: false, message: "שגיאת שרת" });

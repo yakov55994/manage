@@ -21,6 +21,10 @@ import {
   ArrowRight,
   ExternalLink,
   Paperclip,
+  Download,
+  Printer,
+  Eye,
+  Link2,
 } from "lucide-react";
 
 import { useAuth } from "../../context/AuthContext.jsx";
@@ -33,6 +37,7 @@ const InvoiceDetailsPage = () => {
   const [loading, setLoading] = useState(true);
   const [confirmOpen, setConfirmOpen] = useState(false);
   const [deleting, setDeleting] = useState(false);
+  const [linkedExpenses, setLinkedExpenses] = useState([]);
 
   const { user, isAdmin } = useAuth();
 
@@ -80,6 +85,20 @@ const InvoiceDetailsPage = () => {
         }));
 
         setInvoice(data);
+
+        // טען הוצאות משויכות לחשבונית זו
+        try {
+          const expensesRes = await api.get("/expenses");
+          const allExpenses = expensesRes.data?.data || [];
+          const linked = allExpenses.filter(exp =>
+            exp.linkedInvoices?.some(inv =>
+              (inv._id || inv) === id
+            )
+          );
+          setLinkedExpenses(linked);
+        } catch (expErr) {
+          console.error("שגיאה בטעינת הוצאות משויכות:", expErr);
+        }
       } catch (err) {
         console.error(err);
         toast.error("שגיאה בטעינת החשבונית");
@@ -395,6 +414,38 @@ const InvoiceDetailsPage = () => {
           </div>
         </div>
 
+        {/* LINKED EXPENSES */}
+        {linkedExpenses.length > 0 && (
+          <div className="mb-6 sm:mb-8 md:mb-10">
+            <h2 className="text-2xl font-bold flex items-center gap-2 mb-4">
+              <Link2 className="w-6 h-6 text-blue-600" />
+              הוצאות משויכות
+            </h2>
+
+            <div className="space-y-3">
+              {linkedExpenses.map((expense) => (
+                <div
+                  key={expense._id}
+                  className="p-4 rounded-xl border-2 border-blue-200 bg-blue-50 flex justify-between items-center cursor-pointer hover:bg-blue-100 transition-colors"
+                  onClick={() => navigate(`/expense/${expense._id}`)}
+                >
+                  <div>
+                    <p className="font-bold text-lg">{expense.description}</p>
+                    <p className="text-sm text-slate-600">
+                      {formatDate(expense.date)}
+                      {expense.reference && ` • אסמכתא: ${expense.reference}`}
+                    </p>
+                  </div>
+
+                  <div className="text-right font-bold text-blue-700">
+                    {Number(expense.amount || 0).toLocaleString()} ₪
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
         {/* FILES */}
         <div>
           <h2 className="text-2xl font-bold flex items-center gap-2 mb-4">
@@ -464,22 +515,75 @@ const FileItem = ({ file }) => {
   const url = file.url;
   const name = file.name;
 
+  // הורדת הקובץ
+  const handleDownload = async () => {
+    try {
+      const response = await fetch(url);
+      const blob = await response.blob();
+      const downloadUrl = window.URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.href = downloadUrl;
+      link.download = name || "file";
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      window.URL.revokeObjectURL(downloadUrl);
+    } catch (error) {
+      console.error("Error downloading file:", error);
+      toast.error("שגיאה בהורדת הקובץ");
+    }
+  };
+
+  // הדפסת הקובץ
+  const handlePrint = () => {
+    const printWindow = window.open(url, "_blank");
+    if (printWindow) {
+      printWindow.onload = () => {
+        printWindow.print();
+      };
+    }
+  };
+
   return (
     <div className="flex justify-between items-center p-3 border rounded-xl bg-white shadow-sm">
       <div className="flex items-center gap-2">
         <FileText className="w-5 h-5 text-slate-600" />
-        <span className="font-medium">{name}</span>
+        <span className="font-medium truncate max-w-[200px]">{name}</span>
       </div>
 
-      <a
-        href={url}
-        target="_blank"
-        rel="noopener noreferrer"
-        className="px-3 py-1 bg-slate-700 text-white rounded-lg hover:bg-slate-800 text-sm font-bold flex items-center gap-2"
-      >
-        <ExternalLink className="w-4 h-4" />
-        פתח
-      </a>
+      <div className="flex items-center gap-2">
+        {/* צפייה */}
+        <a
+          href={url}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="px-3 py-1.5 bg-slate-600 text-white rounded-lg hover:bg-slate-700 text-sm font-bold flex items-center gap-1.5 transition-colors"
+          title="צפייה"
+        >
+          <Eye className="w-4 h-4" />
+          <span className="hidden sm:inline">צפייה</span>
+        </a>
+
+        {/* הורדה */}
+        <button
+          onClick={handleDownload}
+          className="px-3 py-1.5 bg-blue-600 text-white rounded-lg hover:bg-blue-700 text-sm font-bold flex items-center gap-1.5 transition-colors"
+          title="הורדה"
+        >
+          <Download className="w-4 h-4" />
+          <span className="hidden sm:inline">הורדה</span>
+        </button>
+
+        {/* הדפסה */}
+        <button
+          onClick={handlePrint}
+          className="px-3 py-1.5 bg-purple-600 text-white rounded-lg hover:bg-purple-700 text-sm font-bold flex items-center gap-1.5 transition-colors"
+          title="הדפסה"
+        >
+          <Printer className="w-4 h-4" />
+          <span className="hidden sm:inline">הדפסה</span>
+        </button>
+      </div>
     </div>
   );
 };

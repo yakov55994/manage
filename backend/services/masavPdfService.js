@@ -109,6 +109,9 @@ tbody tr:nth-child(even) {
   <th>#</th>
   <th>חשבונית</th>
   <th>ספק</th>
+  <th>בנק</th>
+  <th>סניף</th>
+  <th>חשבון</th>
   <th>פרויקטים</th>
   <th>סכום</th>
 </tr>
@@ -119,6 +122,9 @@ ${payments.map((p, i) => `
   <td>${i + 1}</td>
   <td>${p.invoiceNumbers || "-"}</td>
   <td>${p.supplierName || "-"}</td>
+  <td>${p.bankName || p.bankNumber || "-"}</td>
+  <td>${p.branchNumber || "-"}</td>
+  <td>${p.accountNumber || "-"}</td>
   <td>${p.projectNames || "-"}</td>
   <td><strong>${(p.amount / 100).toLocaleString()} ₪</strong></td>
 </tr>

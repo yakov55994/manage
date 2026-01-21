@@ -27,11 +27,19 @@ const projectSchema = new mongoose.Schema({
     required: false
   },
   type: {
-  type: String,
-  enum: ["regular", "milga", "salary"],
-  default: "regular"
-}
-
+    type: String,
+    enum: ["regular", "milga", "salary"],
+    default: "regular"
+  },
+  // היסטוריית הפחתות תקציב
+  budgetDeductions: [{
+    reason: { type: String, required: true },
+    amount: { type: Number, required: true },
+    date: { type: Date, default: Date.now },
+    notes: { type: String },
+    createdAt: { type: Date, default: Date.now },
+    createdBy: { type: String }
+  }]
 });
 
 // 🔄 עדכון אוטומטי של שם הפרויקט בכל המסמכים המשוייכים

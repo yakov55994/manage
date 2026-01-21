@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import api from "../../api/api";
-import { TrendingDown, Edit2, Trash2, ArrowRight, Calendar, FileText, Hash, StickyNote } from "lucide-react";
+import { TrendingDown, Edit2, Trash2, ArrowRight, Calendar, FileText, Hash, StickyNote, Link2, Users } from "lucide-react";
 import { toast } from "sonner";
 import { ClipLoader } from "react-spinners";
 
@@ -259,6 +259,102 @@ export default function ExpenseDetailsPage() {
             </div>
           </div>
         )}
+
+        {/* שיוך לחשבוניות ומשכורות */}
+        <div className="bg-white/90 backdrop-blur-xl rounded-2xl shadow-lg p-6 border border-white/50 mb-6">
+          <div className="flex items-start gap-4">
+            <div className="p-3 rounded-xl bg-gradient-to-br from-cyan-500 to-cyan-600 shadow-md">
+              <Link2 className="w-6 h-6 text-white" />
+            </div>
+            <div className="flex-1">
+              <div className="text-sm font-bold text-slate-600 mb-3">
+                שיוך
+              </div>
+
+              {/* חשבוניות מקושרות */}
+              {expense.linkedInvoices && expense.linkedInvoices.length > 0 ? (
+                <div className="mb-4">
+                  <div className="flex items-center gap-2 mb-2">
+                    <FileText className="w-4 h-4 text-orange-500" />
+                    <span className="text-sm font-bold text-slate-700">חשבוניות מקושרות:</span>
+                  </div>
+                  <div className="space-y-2">
+                    {expense.linkedInvoices.map((invoice, idx) => (
+                      <div
+                        key={invoice._id || idx}
+                        className="p-3 bg-orange-50 rounded-xl border border-orange-200 cursor-pointer hover:bg-orange-100 transition-colors"
+                        onClick={() => invoice._id && navigate(`/invoice/${invoice._id}`)}
+                      >
+                        <div className="flex items-center justify-between">
+                          <div>
+                            <span className="font-bold text-slate-900">
+                              חשבונית #{invoice.invoiceNumber || "—"}
+                            </span>
+                            {invoice.supplierId?.name && (
+                              <span className="text-slate-600 mr-2">
+                                - {invoice.supplierId.name}
+                              </span>
+                            )}
+                          </div>
+                          <span className="font-bold text-orange-600">
+                            {formatCurrency(invoice.totalAmount)}
+                          </span>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              ) : (
+                <div className="mb-4 text-slate-500 text-sm">
+                  <div className="flex items-center gap-2">
+                    <FileText className="w-4 h-4" />
+                    <span>לא שויך לחשבוניות</span>
+                  </div>
+                </div>
+              )}
+
+              {/* משכורות מקושרות */}
+              {expense.linkedSalaries && expense.linkedSalaries.length > 0 ? (
+                <div>
+                  <div className="flex items-center gap-2 mb-2">
+                    <Users className="w-4 h-4 text-blue-500" />
+                    <span className="text-sm font-bold text-slate-700">משכורות מקושרות:</span>
+                  </div>
+                  <div className="space-y-2">
+                    {expense.linkedSalaries.map((salary, idx) => (
+                      <div
+                        key={salary._id || idx}
+                        className="p-3 bg-blue-50 rounded-xl border border-blue-200 cursor-pointer hover:bg-blue-100 transition-colors"
+                        onClick={() => salary._id && navigate(`/salary/${salary._id}`)}
+                      >
+                        <div className="flex items-center justify-between">
+                          <div>
+                            <span className="font-bold text-slate-900">
+                              {salary.employeeName || "—"}
+                            </span>
+                            <span className="text-slate-600 mr-2">
+                              ({salary.month}/{salary.year})
+                            </span>
+                          </div>
+                          <span className="font-bold text-blue-600">
+                            {formatCurrency(salary.finalAmount || salary.totalAmount)}
+                          </span>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              ) : (
+                <div className="text-slate-500 text-sm">
+                  <div className="flex items-center gap-2">
+                    <Users className="w-4 h-4" />
+                    <span>לא שויך למשכורות</span>
+                  </div>
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
 
         {/* פרטי יצירה */}
         <div className="bg-white/90 backdrop-blur-xl rounded-2xl shadow-lg p-6 border border-white/50 mb-6">

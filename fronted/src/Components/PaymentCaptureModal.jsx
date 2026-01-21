@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { Hash, Calendar } from "lucide-react";
+import { toast } from "sonner";
 
 const METHODS = [
   { value: "check", label: "צ׳ק" },
@@ -46,16 +47,23 @@ export default function PaymentCaptureModal({
   if (!open) return null;
 
   const submit = () => {
-    if (!method) return alert("בחר אמצעי תשלום");
-    if (!date) return alert("בחר תאריך תשלום");
-    
+    if (!method) {
+      toast.error("יש לבחור אמצעי תשלום");
+      return;
+    }
+    if (!date) {
+      toast.error("יש לבחור תאריך תשלום");
+      return;
+    }
+
     // ✅ ולידציה - אם צ'ק חייב מספר צ'ק
     if (method === "check" && !checkNumber.trim()) {
-      return alert("יש למלא מספר צ'ק");
+      toast.error("יש להזין מספר צ'ק");
+      return;
     }
-    
-    onSave?.({ 
-      paymentDate: date, 
+
+    onSave?.({
+      paymentDate: date,
       paymentMethod: method,
       checkNumber: method === "check" ? checkNumber : undefined,
       checkDate: method === "check" ? checkDate : undefined,
