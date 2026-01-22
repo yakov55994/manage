@@ -43,6 +43,24 @@ const incomeSchema = new mongoose.Schema({
     default: null,
   },
 
+  // שיוך לחשבוניות (מרובה)
+  linkedInvoices: [{
+    type: mongoose.Schema.Types.ObjectId,
+    ref: "Invoice",
+  }],
+
+  // שיוך למשכורות (מרובה)
+  linkedSalaries: [{
+    type: mongoose.Schema.Types.ObjectId,
+    ref: "Salary",
+  }],
+
+  // שיוך להזמנות (מרובה)
+  linkedOrders: [{
+    type: mongoose.Schema.Types.ObjectId,
+    ref: "Order",
+  }],
+
   // ספק/לקוח משויך (אופציונלי)
   supplierId: {
     type: mongoose.Schema.Types.ObjectId,

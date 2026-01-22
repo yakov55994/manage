@@ -235,31 +235,31 @@ const SummaryPage = () => {
     <div className="min-h-screen bg-gradient-to-br from-orange-50 via-amber-50 to-orange-50 py-8 px-4">
       <div className="max-w-7xl mx-auto">
         {/* Header */}
-        <div className="bg-white rounded-2xl shadow-xl p-4 sm:p-5 md:p-6 mb-8 border border-orange-100">
+        <div className="bg-white rounded-2xl shadow-xl p-4 sm:p-6 md:p-8 mb-8 border border-orange-100">
           <div className="flex items-center justify-center gap-3 mb-2">
             <div className="bg-gradient-to-br from-orange-400 to-amber-400 p-3 rounded-xl shadow-lg">
               <BarChart3 className="text-white w-6 h-6 sm:w-7 sm:h-7 md:w-8 md:h-8" />
             </div>
-            <h1 className="text-2xl sm:text-xl sm:text-2xl md:text-3xl md:text-4xl font-bold text-gray-900">סיכום כללי</h1>
+            <h1 className="text-xl sm:text-2xl md:text-3xl lg:text-4xl font-bold text-gray-900">סיכום כללי</h1>
           </div>
           <div className="h-1 w-32 bg-gradient-to-r from-orange-400 to-amber-400 rounded-full mx-auto"></div>
         </div>
 
         {/* כרטיסים סטטיסטיים */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 sm:p-5 md:p-6 mb-8">
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 mb-8">
           {/* פרויקטים */}
           <div
             onClick={() => navigate("/projects")}
-            className="group bg-white rounded-2xl shadow-lg hover:shadow-2xl transition-all duration-300 p-4 sm:p-5 md:p-6 cursor-pointer border-2 border-transparent hover:border-orange-300"
+            className="group bg-white rounded-2xl shadow-lg hover:shadow-2xl transition-all duration-300 p-3 sm:p-4 md:p-6 cursor-pointer border-2 border-transparent hover:border-orange-300"
           >
-            <div className="flex items-center justify-between mb-4">
-              <div className="bg-gradient-to-br from-orange-400 to-amber-400 p-3 rounded-xl shadow-md group-hover:scale-110 transition-transform">
-                <FolderKanban className="text-white w-6 h-6 sm:w-7 sm:h-7 md:w-8 md:h-8" />
+            <div className="flex items-center justify-between mb-3 sm:mb-4">
+              <div className="bg-gradient-to-br from-orange-400 to-amber-400 p-2 sm:p-3 rounded-xl shadow-md group-hover:scale-110 transition-transform">
+                <FolderKanban className="text-white w-5 h-5 sm:w-6 sm:h-6 md:w-7 md:h-7" />
               </div>
-              <Eye className="w-5 h-5 text-gray-400 group-hover:text-orange-500 transition-colors" />
+              <Eye className="w-4 h-4 sm:w-5 sm:h-5 text-gray-400 group-hover:text-orange-500 transition-colors" />
             </div>
-            <h3 className="text-lg font-bold text-gray-700 mb-2">פרויקטים</h3>
-            <p className="text-2xl sm:text-xl sm:text-2xl md:text-3xl md:text-4xl font-bold bg-gradient-to-r from-orange-500 to-amber-500 bg-clip-text text-transparent">
+            <h3 className="text-sm sm:text-base md:text-lg font-bold text-gray-700 mb-1 sm:mb-2">פרויקטים</h3>
+            <p className="text-xl sm:text-2xl md:text-3xl lg:text-4xl font-bold bg-gradient-to-r from-orange-500 to-amber-500 bg-clip-text text-transparent">
               {projects.length}
             </p>
           </div>
@@ -267,16 +267,16 @@ const SummaryPage = () => {
           {/* הזמנות */}
           <div
             onClick={() => navigate("/orders")}
-            className="group bg-white rounded-2xl shadow-lg hover:shadow-2xl transition-all duration-300 p-4 sm:p-5 md:p-6 cursor-pointer border-2 border-transparent hover:border-orange-300"
+            className="group bg-white rounded-2xl shadow-lg hover:shadow-2xl transition-all duration-300 p-3 sm:p-4 md:p-6 cursor-pointer border-2 border-transparent hover:border-orange-300"
           >
-            <div className="flex items-center justify-between mb-4">
-              <div className="bg-gradient-to-br from-orange-400 to-amber-400 p-3 rounded-xl shadow-md group-hover:scale-110 transition-transform">
-                <ShoppingCart className="text-white w-6 h-6 sm:w-7 sm:h-7 md:w-8 md:h-8" />
+            <div className="flex items-center justify-between mb-3 sm:mb-4">
+              <div className="bg-gradient-to-br from-orange-400 to-amber-400 p-2 sm:p-3 rounded-xl shadow-md group-hover:scale-110 transition-transform">
+                <ShoppingCart className="text-white w-5 h-5 sm:w-6 sm:h-6 md:w-7 md:h-7" />
               </div>
-              <Eye className="w-5 h-5 text-gray-400 group-hover:text-orange-500 transition-colors" />
+              <Eye className="w-4 h-4 sm:w-5 sm:h-5 text-gray-400 group-hover:text-orange-500 transition-colors" />
             </div>
-            <h3 className="text-lg font-bold text-gray-700 mb-2">הזמנות</h3>
-            <p className="text-2xl sm:text-xl sm:text-2xl md:text-3xl md:text-4xl font-bold bg-gradient-to-r from-orange-500 to-amber-500 bg-clip-text text-transparent">
+            <h3 className="text-sm sm:text-base md:text-lg font-bold text-gray-700 mb-1 sm:mb-2">הזמנות</h3>
+            <p className="text-xl sm:text-2xl md:text-3xl lg:text-4xl font-bold bg-gradient-to-r from-orange-500 to-amber-500 bg-clip-text text-transparent">
               {orders.length}
             </p>
           </div>
@@ -284,16 +284,16 @@ const SummaryPage = () => {
           {/* חשבוניות */}
           <div
             onClick={() => navigate("/invoices")}
-            className="group bg-white rounded-2xl shadow-lg hover:shadow-2xl transition-all duration-300 p-4 sm:p-5 md:p-6 cursor-pointer border-2 border-transparent hover:border-orange-300"
+            className="group bg-white rounded-2xl shadow-lg hover:shadow-2xl transition-all duration-300 p-3 sm:p-4 md:p-6 cursor-pointer border-2 border-transparent hover:border-orange-300"
           >
-            <div className="flex items-center justify-between mb-4">
-              <div className="bg-gradient-to-br from-orange-400 to-amber-400 p-3 rounded-xl shadow-md group-hover:scale-110 transition-transform">
-                <FileText className="text-white w-6 h-6 sm:w-7 sm:h-7 md:w-8 md:h-8" />
+            <div className="flex items-center justify-between mb-3 sm:mb-4">
+              <div className="bg-gradient-to-br from-orange-400 to-amber-400 p-2 sm:p-3 rounded-xl shadow-md group-hover:scale-110 transition-transform">
+                <FileText className="text-white w-5 h-5 sm:w-6 sm:h-6 md:w-7 md:h-7" />
               </div>
-              <Eye className="w-5 h-5 text-gray-400 group-hover:text-orange-500 transition-colors" />
+              <Eye className="w-4 h-4 sm:w-5 sm:h-5 text-gray-400 group-hover:text-orange-500 transition-colors" />
             </div>
-            <h3 className="text-lg font-bold text-gray-700 mb-2">חשבוניות</h3>
-            <p className="text-2xl sm:text-xl sm:text-2xl md:text-3xl md:text-4xl font-bold bg-gradient-to-r from-orange-500 to-amber-500 bg-clip-text text-transparent">
+            <h3 className="text-sm sm:text-base md:text-lg font-bold text-gray-700 mb-1 sm:mb-2">חשבוניות</h3>
+            <p className="text-xl sm:text-2xl md:text-3xl lg:text-4xl font-bold bg-gradient-to-r from-orange-500 to-amber-500 bg-clip-text text-transparent">
               {invoices.length}
             </p>
           </div>
@@ -301,24 +301,24 @@ const SummaryPage = () => {
           {/* ספקים */}
           <div
             onClick={() => navigate("/suppliers")}
-            className="group bg-white rounded-2xl shadow-lg hover:shadow-2xl transition-all duration-300 p-4 sm:p-5 md:p-6 cursor-pointer border-2 border-transparent hover:border-orange-300"
+            className="group bg-white rounded-2xl shadow-lg hover:shadow-2xl transition-all duration-300 p-3 sm:p-4 md:p-6 cursor-pointer border-2 border-transparent hover:border-orange-300"
           >
-            <div className="flex items-center justify-between mb-4">
-              <div className="bg-gradient-to-br from-orange-400 to-amber-400 p-3 rounded-xl shadow-md group-hover:scale-110 transition-transform">
-                <Users className="text-white w-6 h-6 sm:w-7 sm:h-7 md:w-8 md:h-8" />
+            <div className="flex items-center justify-between mb-3 sm:mb-4">
+              <div className="bg-gradient-to-br from-orange-400 to-amber-400 p-2 sm:p-3 rounded-xl shadow-md group-hover:scale-110 transition-transform">
+                <Users className="text-white w-5 h-5 sm:w-6 sm:h-6 md:w-7 md:h-7" />
               </div>
-              <Eye className="w-5 h-5 text-gray-400 group-hover:text-orange-500 transition-colors" />
+              <Eye className="w-4 h-4 sm:w-5 sm:h-5 text-gray-400 group-hover:text-orange-500 transition-colors" />
             </div>
-            <h3 className="text-lg font-bold text-gray-700 mb-2">ספקים</h3>
-            <p className="text-2xl sm:text-xl sm:text-2xl md:text-3xl md:text-4xl font-bold bg-gradient-to-r from-orange-500 to-amber-500 bg-clip-text text-transparent">
+            <h3 className="text-sm sm:text-base md:text-lg font-bold text-gray-700 mb-1 sm:mb-2">ספקים</h3>
+            <p className="text-xl sm:text-2xl md:text-3xl lg:text-4xl font-bold bg-gradient-to-r from-orange-500 to-amber-500 bg-clip-text text-transparent">
               {suppliers.length}
             </p>
           </div>
         </div>
 
         {/* סרגל כלים */}
-        <div className="bg-white rounded-2xl shadow-xl p-4 sm:p-5 md:p-6 mb-8 border border-orange-100">
-          <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-3 sm:gap-4 sm:p-5 md:p-6">
+        <div className="bg-white rounded-2xl shadow-xl p-4 sm:p-6 md:p-8 mb-8 border border-orange-100">
+          <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-4">
             {/* פילטרים ומיונים */}
             <div className="flex flex-wrap items-end gap-3 sm:gap-4">
               <div>
@@ -384,25 +384,23 @@ const SummaryPage = () => {
 
         {/* טבלת פרויקטים */}
         <div className="bg-white rounded-2xl shadow-xl overflow-hidden mb-8 border border-orange-100">
-          <div className="bg-gradient-to-r from-orange-300 to-amber-300 p-4 sm:p-5 md:p-6">
+          <div className="bg-gradient-to-r from-orange-300 to-amber-300 p-4 sm:p-6">
             <div className="flex items-center gap-3">
-              <FolderKanban className="text-white w-7 h-7" />
-              <h2 className="text-2xl font-bold text-white">פרויקטים</h2>
+              <FolderKanban className="text-white w-6 h-6 sm:w-7 sm:h-7" />
+              <h2 className="text-xl sm:text-2xl font-bold text-white">פרויקטים</h2>
             </div>
           </div>
-          <div className="overflow-x-auto">
+
+          {/* Desktop Table */}
+          <div className="hidden lg:block overflow-x-auto">
             <table className="w-full">
               <thead>
                 <tr className="bg-gradient-to-r from-orange-100 to-amber-100 text-orange-900">
                   <th className="px-6 py-4 text-right font-bold">שם פרויקט</th>
                   <th className="px-6 py-4 text-right font-bold">תקציב</th>
-                  <th className="px-6 py-4 text-right font-bold">
-                    תקציב שנותר
-                  </th>
+                  <th className="px-6 py-4 text-right font-bold">תקציב שנותר</th>
                   <th className="px-6 py-4 text-right font-bold">שם המזמין</th>
-                  <th className="px-6 py-4 text-right font-bold">
-                    תאריך יצירה
-                  </th>
+                  <th className="px-6 py-4 text-right font-bold">תאריך יצירה</th>
                 </tr>
               </thead>
               <tbody>
@@ -417,59 +415,76 @@ const SummaryPage = () => {
                           : "bg-white hover:bg-gradient-to-r hover:from-orange-50 hover:to-amber-50"
                       }`}
                     >
-                      <td className="px-6 py-4 font-semibold text-gray-900">
-                        {project.name}
+                      <td className="px-6 py-4 font-semibold text-gray-900">{project.name}</td>
+                      <td className="px-6 py-4 font-medium">
+                        {project.budget ? formatCurrency(project.budget) : <span className="text-gray-500 italic">אין תקציב</span>}
                       </td>
                       <td className="px-6 py-4 font-medium">
-                        {project.budget ? (
-                          formatCurrency(project.budget)
-                        ) : (
-                          <span className="text-gray-500 italic">
-                            אין תקציב
-                          </span>
-                        )}
+                        {project.remainingBudget ? formatCurrency(project.remainingBudget) : <span className="text-gray-500 italic">אין תקציב</span>}
                       </td>
-                      <td className="px-6 py-4 font-medium">
-                        {project.remainingBudget ? (
-                          formatCurrency(project.remainingBudget)
-                        ) : (
-                          <span className="text-gray-500 italic">
-                            אין תקציב
-                          </span>
-                        )}
-                      </td>
-                      <td className="px-6 py-4 font-medium text-gray-700">
-                        {project.invitingName}
-                      </td>
-                      <td className="px-6 py-4 font-medium text-gray-700">
-                        {formatDate(project.createdAt)}
-                      </td>
+                      <td className="px-6 py-4 font-medium text-gray-700">{project.invitingName}</td>
+                      <td className="px-6 py-4 font-medium text-gray-700">{formatDate(project.createdAt)}</td>
                     </tr>
                   ))
                 ) : (
                   <tr>
-                    <td
-                      colSpan="5"
-                      className="text-center font-bold text-lg text-red-500 py-8"
-                    >
-                      לא נמצאו פרויקטים
-                    </td>
+                    <td colSpan="5" className="text-center font-bold text-lg text-red-500 py-8">לא נמצאו פרויקטים</td>
                   </tr>
                 )}
               </tbody>
             </table>
           </div>
+
+          {/* Mobile Cards */}
+          <div className="lg:hidden p-4 space-y-3">
+            {sortedProjects.length > 0 ? (
+              sortedProjects.map((project) => (
+                <div
+                  key={project._id}
+                  onClick={() => moveToProjectDetails(project)}
+                  className="bg-gradient-to-br from-orange-50 to-amber-50 rounded-xl p-4 border border-orange-200 cursor-pointer hover:shadow-md transition-all"
+                >
+                  <div className="flex justify-between items-start mb-3">
+                    <h3 className="font-bold text-gray-900 text-lg">{project.name}</h3>
+                    <Eye className="w-5 h-5 text-orange-400" />
+                  </div>
+                  <div className="space-y-2 text-sm">
+                    <div className="flex justify-between">
+                      <span className="text-gray-600">תקציב:</span>
+                      <span className="font-medium">{project.budget ? formatCurrency(project.budget) : <span className="text-gray-500 italic">אין</span>}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-gray-600">נותר:</span>
+                      <span className="font-medium">{project.remainingBudget ? formatCurrency(project.remainingBudget) : <span className="text-gray-500 italic">אין</span>}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-gray-600">מזמין:</span>
+                      <span className="font-medium text-gray-700">{project.invitingName || "-"}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-gray-600">תאריך:</span>
+                      <span className="font-medium text-gray-700">{formatDate(project.createdAt)}</span>
+                    </div>
+                  </div>
+                </div>
+              ))
+            ) : (
+              <div className="text-center font-bold text-lg text-red-500 py-8">לא נמצאו פרויקטים</div>
+            )}
+          </div>
         </div>
 
         {/* טבלת הזמנות */}
         <div className="bg-white rounded-2xl shadow-xl overflow-hidden mb-8 border border-orange-100">
-          <div className="bg-gradient-to-r from-orange-300 to-amber-300 p-4 sm:p-5 md:p-6">
+          <div className="bg-gradient-to-r from-orange-300 to-amber-300 p-4 sm:p-6">
             <div className="flex items-center gap-3">
-              <ShoppingCart className="text-white w-7 h-7" />
-              <h2 className="text-2xl font-bold text-white">הזמנות</h2>
+              <ShoppingCart className="text-white w-6 h-6 sm:w-7 sm:h-7" />
+              <h2 className="text-xl sm:text-2xl font-bold text-white">הזמנות</h2>
             </div>
           </div>
-          <div className="overflow-x-auto">
+
+          {/* Desktop Table */}
+          <div className="hidden lg:block overflow-x-auto">
             <table className="w-full">
               <thead>
                 <tr className="bg-gradient-to-r from-orange-100 to-amber-100 text-orange-900">
@@ -492,63 +507,80 @@ const SummaryPage = () => {
                           : "bg-white hover:bg-gradient-to-r hover:from-orange-50 hover:to-amber-50"
                       }`}
                     >
-                      <td className="px-6 py-4 font-semibold text-gray-900">
-                        {order.orderNumber}
-                      </td>
-                      <td className="px-6 py-4 font-medium text-gray-700">
-                        {order.projectName}
-                      </td>
-                      <td className="px-6 py-4 font-medium">
-                        {formatCurrency(order.sum)}
-                      </td>
-                      <td className="px-6 py-4 font-medium text-gray-700">
-                        {order.invitingName}
-                      </td>
+                      <td className="px-6 py-4 font-semibold text-gray-900">{order.orderNumber}</td>
+                      <td className="px-6 py-4 font-medium text-gray-700">{order.projectName}</td>
+                      <td className="px-6 py-4 font-medium">{formatCurrency(order.sum)}</td>
+                      <td className="px-6 py-4 font-medium text-gray-700">{order.invitingName}</td>
                       <td className="px-6 py-4">
-                        <span
-                          className={`px-3 py-1 rounded-full text-xs font-bold ${
-                            order.status === "הוגש"
-                              ? "bg-green-100 text-green-700"
-                              : order.status === "בעיבוד"
-                              ? "bg-yellow-100 text-yellow-700"
-                              : "bg-red-100 text-red-700"
-                          }`}
-                        >
-                          {order.status}
-                        </span>
+                        <span className={`px-3 py-1 rounded-full text-xs font-bold ${
+                          order.status === "הוגש" ? "bg-green-100 text-green-700" :
+                          order.status === "בעיבוד" ? "bg-yellow-100 text-yellow-700" : "bg-red-100 text-red-700"
+                        }`}>{order.status}</span>
                       </td>
                     </tr>
                   ))
                 ) : (
                   <tr>
-                    <td
-                      colSpan="5"
-                      className="text-center font-bold text-lg text-red-500 py-8"
-                    >
-                      לא נמצאו הזמנות
-                    </td>
+                    <td colSpan="5" className="text-center font-bold text-lg text-red-500 py-8">לא נמצאו הזמנות</td>
                   </tr>
                 )}
               </tbody>
             </table>
           </div>
+
+          {/* Mobile Cards */}
+          <div className="lg:hidden p-4 space-y-3">
+            {sortedOrders.length > 0 ? (
+              sortedOrders.map((order) => (
+                <div
+                  key={order._id}
+                  onClick={() => moveToOrderDetails(order)}
+                  className="bg-gradient-to-br from-orange-50 to-amber-50 rounded-xl p-4 border border-orange-200 cursor-pointer hover:shadow-md transition-all"
+                >
+                  <div className="flex justify-between items-start mb-3">
+                    <h3 className="font-bold text-gray-900">הזמנה #{order.orderNumber}</h3>
+                    <span className={`px-2 py-1 rounded-full text-xs font-bold ${
+                      order.status === "הוגש" ? "bg-green-100 text-green-700" :
+                      order.status === "בעיבוד" ? "bg-yellow-100 text-yellow-700" : "bg-red-100 text-red-700"
+                    }`}>{order.status}</span>
+                  </div>
+                  <div className="space-y-2 text-sm">
+                    <div className="flex justify-between">
+                      <span className="text-gray-600">פרויקט:</span>
+                      <span className="font-medium text-gray-700">{order.projectName || "-"}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-gray-600">סכום:</span>
+                      <span className="font-medium">{formatCurrency(order.sum)}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-gray-600">מזמין:</span>
+                      <span className="font-medium text-gray-700">{order.invitingName || "-"}</span>
+                    </div>
+                  </div>
+                </div>
+              ))
+            ) : (
+              <div className="text-center font-bold text-lg text-red-500 py-8">לא נמצאו הזמנות</div>
+            )}
+          </div>
         </div>
 
         {/* טבלת חשבוניות */}
         <div className="bg-white rounded-2xl shadow-xl overflow-hidden mb-8 border border-orange-100">
-          <div className="bg-gradient-to-r from-orange-300 to-amber-300 p-4 sm:p-5 md:p-6">
+          <div className="bg-gradient-to-r from-orange-300 to-amber-300 p-4 sm:p-6">
             <div className="flex items-center gap-3">
-              <FileText className="text-white w-7 h-7" />
-              <h2 className="text-2xl font-bold text-white">חשבוניות</h2>
+              <FileText className="text-white w-6 h-6 sm:w-7 sm:h-7" />
+              <h2 className="text-xl sm:text-2xl font-bold text-white">חשבוניות</h2>
             </div>
           </div>
-          <div className="overflow-x-auto">
+
+          {/* Desktop Table */}
+          <div className="hidden lg:block overflow-x-auto">
             <table className="w-full">
               <thead>
                 <tr className="bg-gradient-to-r from-orange-100 to-amber-100 text-orange-900">
-                  <th className="px-6 py-4 text-right font-bold">
-                    מספר חשבונית
-                  </th>
+                  <th className="px-6 py-4 text-right font-bold">מספר חשבונית</th>
                   <th className="px-6 py-4 text-right font-bold">פרויקט</th>
                   <th className="px-6 py-4 text-right font-bold">סכום</th>
                   <th className="px-6 py-4 text-right font-bold">שם המזמין</th>
@@ -567,57 +599,76 @@ const SummaryPage = () => {
                           : "bg-white hover:bg-gradient-to-r hover:from-orange-50 hover:to-amber-50"
                       }`}
                     >
-                      <td className="px-6 py-4 font-semibold text-gray-900">
-                        {invoice.invoiceNumber}
-                      </td>
-                      <td className="px-6 py-4 font-medium text-gray-700">
-                        {invoice.projectName}
-                      </td>
-                      <td className="px-6 py-4 font-medium">
-                        {formatCurrency(invoice.totalAmount)}
-                      </td>
-                      <td className="px-6 py-4 font-medium text-gray-700">
-                        {invoice.invitingName}
-                      </td>
+                      <td className="px-6 py-4 font-semibold text-gray-900">{invoice.invoiceNumber}</td>
+                      <td className="px-6 py-4 font-medium text-gray-700">{invoice.projectName}</td>
+                      <td className="px-6 py-4 font-medium">{formatCurrency(invoice.totalAmount)}</td>
+                      <td className="px-6 py-4 font-medium text-gray-700">{invoice.invitingName}</td>
                       <td className="px-6 py-4">
-                        <span
-                          className={`px-3 py-1 rounded-full text-xs font-bold ${
-                            invoice.status === "הוגש"
-                              ? "bg-green-100 text-green-700"
-                              : invoice.status === "בעיבוד"
-                              ? "bg-yellow-100 text-yellow-700"
-                              : "bg-red-100 text-red-700"
-                          }`}
-                        >
-                          {invoice.status}
-                        </span>
+                        <span className={`px-3 py-1 rounded-full text-xs font-bold ${
+                          invoice.status === "הוגש" ? "bg-green-100 text-green-700" :
+                          invoice.status === "בעיבוד" ? "bg-yellow-100 text-yellow-700" : "bg-red-100 text-red-700"
+                        }`}>{invoice.status}</span>
                       </td>
                     </tr>
                   ))
                 ) : (
                   <tr>
-                    <td
-                      colSpan="5"
-                      className="text-center font-bold text-lg text-red-500 py-8"
-                    >
-                      לא נמצאו חשבוניות
-                    </td>
+                    <td colSpan="5" className="text-center font-bold text-lg text-red-500 py-8">לא נמצאו חשבוניות</td>
                   </tr>
                 )}
               </tbody>
             </table>
           </div>
+
+          {/* Mobile Cards */}
+          <div className="lg:hidden p-4 space-y-3">
+            {sortedInvoices.length > 0 ? (
+              sortedInvoices.map((invoice) => (
+                <div
+                  key={invoice._id}
+                  onClick={() => moveToInvoiceDetails(invoice)}
+                  className="bg-gradient-to-br from-orange-50 to-amber-50 rounded-xl p-4 border border-orange-200 cursor-pointer hover:shadow-md transition-all"
+                >
+                  <div className="flex justify-between items-start mb-3">
+                    <h3 className="font-bold text-gray-900">חשבונית #{invoice.invoiceNumber}</h3>
+                    <span className={`px-2 py-1 rounded-full text-xs font-bold ${
+                      invoice.status === "הוגש" ? "bg-green-100 text-green-700" :
+                      invoice.status === "בעיבוד" ? "bg-yellow-100 text-yellow-700" : "bg-red-100 text-red-700"
+                    }`}>{invoice.status}</span>
+                  </div>
+                  <div className="space-y-2 text-sm">
+                    <div className="flex justify-between">
+                      <span className="text-gray-600">פרויקט:</span>
+                      <span className="font-medium text-gray-700">{invoice.projectName || "-"}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-gray-600">סכום:</span>
+                      <span className="font-medium">{formatCurrency(invoice.totalAmount)}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-gray-600">מזמין:</span>
+                      <span className="font-medium text-gray-700">{invoice.invitingName || "-"}</span>
+                    </div>
+                  </div>
+                </div>
+              ))
+            ) : (
+              <div className="text-center font-bold text-lg text-red-500 py-8">לא נמצאו חשבוניות</div>
+            )}
+          </div>
         </div>
 
         {/* טבלת ספקים */}
         <div className="bg-white rounded-2xl shadow-xl overflow-hidden mb-8 border border-orange-100">
-          <div className="bg-gradient-to-r from-orange-300 to-amber-300 p-4 sm:p-5 md:p-6">
+          <div className="bg-gradient-to-r from-orange-300 to-amber-300 p-4 sm:p-6">
             <div className="flex items-center gap-3">
-              <Users className="text-white w-7 h-7" />
-              <h2 className="text-2xl font-bold text-white">ספקים</h2>
+              <Users className="text-white w-6 h-6 sm:w-7 sm:h-7" />
+              <h2 className="text-xl sm:text-2xl font-bold text-white">ספקים</h2>
             </div>
           </div>
-          <div className="overflow-x-auto">
+
+          {/* Desktop Table */}
+          <div className="hidden lg:block overflow-x-auto">
             <table className="w-full">
               <thead>
                 <tr className="bg-gradient-to-r from-orange-100 to-amber-100 text-orange-900">
@@ -626,9 +677,7 @@ const SummaryPage = () => {
                   <th className="px-6 py-4 text-right font-bold">טלפון</th>
                   <th className="px-6 py-4 text-right font-bold">אימייל</th>
                   <th className="px-6 py-4 text-right font-bold">שם בנק</th>
-                  <th className="px-6 py-4 text-right font-bold">
-                    תאריך יצירה
-                  </th>
+                  <th className="px-6 py-4 text-right font-bold">תאריך יצירה</th>
                 </tr>
               </thead>
               <tbody>
@@ -643,50 +692,63 @@ const SummaryPage = () => {
                           : "bg-white hover:bg-gradient-to-r hover:from-orange-50 hover:to-amber-50"
                       }`}
                     >
-                      <td className="px-6 py-4 font-semibold text-gray-900">
-                        {supplier.name}
-                      </td>
-                      <td className="px-6 py-4 font-medium text-gray-700">
-                        {formatNumber(supplier.business_tax)}
-                      </td>
-                      <td className="px-6 py-4 font-medium text-gray-700">
-                        {supplier.phone}
+                      <td className="px-6 py-4 font-semibold text-gray-900">{supplier.name}</td>
+                      <td className="px-6 py-4 font-medium text-gray-700">{formatNumber(supplier.business_tax)}</td>
+                      <td className="px-6 py-4 font-medium text-gray-700">{supplier.phone}</td>
+                      <td className="px-6 py-4 font-medium">
+                        {supplier.email ? <span className="text-orange-600">{supplier.email}</span> : <span className="text-gray-400 italic">לא זמין</span>}
                       </td>
                       <td className="px-6 py-4 font-medium">
-                        {supplier.email ? (
-                          <span className="text-orange-600">
-                            {supplier.email}
-                          </span>
-                        ) : (
-                          <span className="text-gray-400 italic">לא זמין</span>
-                        )}
+                        {supplier.bankDetails?.bankName ? <span className="text-orange-600">{supplier.bankDetails.bankName}</span> : <span className="text-gray-400 italic">לא זמין</span>}
                       </td>
-                      <td className="px-6 py-4 font-medium">
-                        {supplier.bankDetails?.bankName ? (
-                          <span className="text-orange-600">
-                            {supplier.bankDetails.bankName}
-                          </span>
-                        ) : (
-                          <span className="text-gray-400 italic">לא זמין</span>
-                        )}
-                      </td>
-                      <td className="px-6 py-4 font-medium text-gray-700">
-                        {formatDate(supplier.createdAt)}
-                      </td>
+                      <td className="px-6 py-4 font-medium text-gray-700">{formatDate(supplier.createdAt)}</td>
                     </tr>
                   ))
                 ) : (
                   <tr>
-                    <td
-                      colSpan="6"
-                      className="text-center font-bold text-lg text-red-500 py-8"
-                    >
-                      לא נמצאו ספקים
-                    </td>
+                    <td colSpan="6" className="text-center font-bold text-lg text-red-500 py-8">לא נמצאו ספקים</td>
                   </tr>
                 )}
               </tbody>
             </table>
+          </div>
+
+          {/* Mobile Cards */}
+          <div className="lg:hidden p-4 space-y-3">
+            {sortedSuppliers.length > 0 ? (
+              sortedSuppliers.map((supplier) => (
+                <div
+                  key={supplier._id}
+                  onClick={() => moveToSupplierDetails(supplier)}
+                  className="bg-gradient-to-br from-orange-50 to-amber-50 rounded-xl p-4 border border-orange-200 cursor-pointer hover:shadow-md transition-all"
+                >
+                  <div className="flex justify-between items-start mb-3">
+                    <h3 className="font-bold text-gray-900 text-lg">{supplier.name}</h3>
+                    <Eye className="w-5 h-5 text-orange-400" />
+                  </div>
+                  <div className="space-y-2 text-sm">
+                    <div className="flex justify-between">
+                      <span className="text-gray-600">מספר עוסק:</span>
+                      <span className="font-medium text-gray-700">{formatNumber(supplier.business_tax) || "-"}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-gray-600">טלפון:</span>
+                      <span className="font-medium text-gray-700">{supplier.phone || "-"}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-gray-600">אימייל:</span>
+                      <span className="font-medium text-orange-600 truncate max-w-[150px]">{supplier.email || <span className="text-gray-400 italic">לא זמין</span>}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-gray-600">בנק:</span>
+                      <span className="font-medium text-orange-600">{supplier.bankDetails?.bankName || <span className="text-gray-400 italic">לא זמין</span>}</span>
+                    </div>
+                  </div>
+                </div>
+              ))
+            ) : (
+              <div className="text-center font-bold text-lg text-red-500 py-8">לא נמצאו ספקים</div>
+            )}
           </div>
         </div>
       </div>

@@ -292,6 +292,23 @@ const incomeController = {
       sendError(res, e);
     }
   },
+
+  // שיוך הכנסה לחשבוניות, משכורות והזמנות
+  async linkIncome(req, res) {
+    try {
+      const { invoiceIds, salaryIds, orderIds } = req.body;
+      const income = await incomeService.linkIncome(
+        req.user,
+        req.params.incomeId,
+        invoiceIds || [],
+        salaryIds || [],
+        orderIds || []
+      );
+      res.json({ success: true, data: income });
+    } catch (e) {
+      sendError(res, e);
+    }
+  },
 };
 
 export default incomeController;

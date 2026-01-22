@@ -89,28 +89,28 @@ const Home = () => {
         <div className={`transform transition-all duration-1000 ${
           isLoaded ? 'translate-y-0 opacity-100' : 'translate-y-10 opacity-0'
         }`}>
-          <div className="backdrop-blur-xl bg-white/10 p-12 rounded-2xl sm:rounded-3xl shadow-2xl text-center border border-white/20 max-w-4xl">
+          <div className="backdrop-blur-xl bg-white/10 p-6 sm:p-8 md:p-12 rounded-2xl sm:rounded-3xl shadow-2xl text-center border border-white/20 max-w-4xl mx-4 sm:mx-auto">
             
             {/* Header with Logo */}
             <div className="flex items-center justify-center gap-3 sm:gap-4 mb-8">
               <Settings
-                className="mr-28 transition-all duration-700 hover:rotate-180 cursor-pointer size-16 text-orange-400 drop-shadow-lg animate-pulse"
+                className="mr-0 sm:mr-8 md:mr-16 lg:mr-28 transition-all duration-700 hover:rotate-180 cursor-pointer w-10 h-10 sm:w-12 sm:h-12 md:w-16 md:h-16 text-orange-400 drop-shadow-lg animate-pulse"
               />
-              <h1 className="ml-48 mx-auto text-7xl md:text-8xl font-extralight text-white drop-shadow-2xl bg-gradient-to-r from-cyan-400 via-purple-400 to-pink-400 bg-clip-text text-transparent animate-pulse">
+              <h1 className="ml-0 sm:ml-16 md:ml-32 lg:ml-48 text-4xl sm:text-5xl md:text-6xl lg:text-7xl xl:text-8xl font-extralight text-white drop-shadow-2xl bg-gradient-to-r from-cyan-400 via-purple-400 to-pink-400 bg-clip-text text-transparent animate-pulse">
                 ניהולון
               </h1>
             </div>
 
             {/* Subtitle with Typing Effect */}
-            <div className="mb-12">
-              <p className="text-2xl md:text-xl sm:text-2xl md:text-3xl text-gray-200 font-light leading-relaxed">
+            <div className="mb-8 sm:mb-12">
+              <p className="text-lg sm:text-xl md:text-2xl lg:text-3xl text-gray-200 font-light leading-relaxed">
                 האתר שינהל לך מה שצריך בצורה 
                 <span className="bg-gradient-to-r from-orange-400 via-orange-500 to-orange-600 bg-clip-text text-transparent font-semibold"> איכותית ונוחה!</span>
               </p>
             </div>
 
             {/* Feature Icons */}
-            <div className="flex justify-center gap-3 sm:gap-4 sm:p-4 sm:p-5 md:p-6 md:p-8 mb-12">
+            <div className="flex justify-center gap-2 sm:gap-3 md:gap-4 p-2 sm:p-4 md:p-6 mb-8 sm:mb-12">
               {features.map((feature, index) => (
                 <div
                   key={index}
@@ -119,8 +119,8 @@ const Home = () => {
                   }`}
                   style={{ transitionDelay: `${index * 200}ms` }}
                 >
-                  <div className="p-4 bg-gradient-to-br from-purple-500/20 to-cyan-500/20 rounded-full border border-white/20 backdrop-blur-sm hover:from-purple-500/30 hover:to-cyan-500/30 transition-all duration-300">
-                    <feature.icon className="size-8 text-white" />
+                  <div className="p-2 sm:p-3 md:p-4 bg-gradient-to-br from-purple-500/20 to-cyan-500/20 rounded-full border border-white/20 backdrop-blur-sm hover:from-purple-500/30 hover:to-cyan-500/30 transition-all duration-300">
+                    <feature.icon className="w-5 h-5 sm:w-6 sm:h-6 md:w-8 md:h-8 text-white" />
                   </div>
                   <span className="text-gray-300 text-sm font-medium">{feature.text}</span>
                 </div>
@@ -130,7 +130,7 @@ const Home = () => {
             {/* Call to Action Button */}
            <button
               onClick={handleMove}
-              className="group relative px-12 py-5 bg-gradient-to-r from-orange-400 via-orange-500 to-orange-600 text-white rounded-2xl shadow-2xl transform transition-all duration-300 hover:scale-105 hover:shadow-orange-500/25 active:scale-95 font-bold text-xl overflow-hidden"
+              className="group relative px-8 sm:px-10 md:px-12 py-3 sm:py-4 md:py-5 bg-gradient-to-r from-orange-400 via-orange-500 to-orange-600 text-white rounded-xl sm:rounded-2xl shadow-2xl transform transition-all duration-300 hover:scale-105 hover:shadow-orange-500/25 active:scale-95 font-bold text-base sm:text-lg md:text-xl overflow-hidden"
             >
               {/* Button Background Animation */}
               <div className="absolute inset-0 bg-gradient-to-r from-orange-500 via-orange-600 to-orange-700 opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
@@ -138,7 +138,7 @@ const Home = () => {
               {/* Button Content */}
               <div className="relative flex items-center gap-3">
                 <span>בוא נתחיל</span>
-                <ArrowRightCircle className="size-6 transform group-hover:translate-x-1 transition-transform duration-300" />
+                <ArrowRightCircle className="w-5 h-5 sm:w-6 sm:h-6 transform group-hover:translate-x-1 transition-transform duration-300" />
               </div>
 
               {/* Shine Effect */}

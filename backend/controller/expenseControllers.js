@@ -85,15 +85,16 @@ const expenseController = {
     }
   },
 
-  // שיוך הוצאה לחשבוניות ומשכורות
+  // שיוך הוצאה לחשבוניות, משכורות והזמנות
   async linkExpense(req, res) {
     try {
-      const { invoiceIds, salaryIds } = req.body;
+      const { invoiceIds, salaryIds, orderIds } = req.body;
       const expense = await expenseService.linkExpense(
         req.user,
         req.params.expenseId,
         invoiceIds || [],
-        salaryIds || []
+        salaryIds || [],
+        orderIds || []
       );
       res.json({ success: true, data: expense });
     } catch (e) {

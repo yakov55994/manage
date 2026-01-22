@@ -61,6 +61,12 @@ const expenseSchema = new mongoose.Schema({
     ref: "Salary",
   }],
 
+  // שיוך להזמנות
+  linkedOrders: [{
+    type: mongoose.Schema.Types.ObjectId,
+    ref: "Order",
+  }],
+
   // מי יצר
   createdBy: {
     type: mongoose.Schema.Types.ObjectId,
