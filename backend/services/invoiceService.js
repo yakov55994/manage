@@ -346,6 +346,7 @@ async function createInvoice(user, data) {
             totalAmount: invoice.totalAmount,
             paymentDate: invoice.paymentDate || new Date(),
             documentType: invoice.documentType,
+            detail: invoice.detail,
           }
         );
       } catch (emailError) {
@@ -419,50 +420,50 @@ async function updateInvoice(user, invoiceId, data) {
   );
 
   // ✅ טיפול בסטטוס הגשה – מאפשר ביטול
-let updateFields = {
-  ...basic,
-  projects: projectsWithNames,
-  totalAmount: projectsWithNames.reduce(
-    (sum, p) => sum + Number(p.sum),
-    0
-  ),
-  files: finalFiles,
-};
+  let updateFields = {
+    ...basic,
+    projects: projectsWithNames,
+    totalAmount: projectsWithNames.reduce(
+      (sum, p) => sum + Number(p.sum),
+      0
+    ),
+    files: finalFiles,
+  };
 
-let unsetFields = {};
+  let unsetFields = {};
 
-if (status === "הוגש") {
-  if (!submittedToProjectId) {
-    throw new Error("חובה לבחור פרויקט להגשה");
+  if (status === "הוגש") {
+    if (!submittedToProjectId) {
+      throw new Error("חובה לבחור פרויקט להגשה");
+    }
+
+    updateFields.status = "הוגש";
+    updateFields.submittedToProjectId = submittedToProjectId;
+    updateFields.submittedAt = submittedAt || new Date();
   }
 
-  updateFields.status = "הוגש";
-  updateFields.submittedToProjectId = submittedToProjectId;
-  updateFields.submittedAt = submittedAt || new Date();
-}
+  if (status === "לא הוגש") {
+    updateFields.status = "לא הוגש";
+    unsetFields.submittedToProjectId = "";
+    unsetFields.submittedAt = "";
+  }
 
-if (status === "לא הוגש") {
-  updateFields.status = "לא הוגש";
-  unsetFields.submittedToProjectId = "";
-  unsetFields.submittedAt = "";
-}
+  if (fundedFromProjectId !== undefined) {
+    updateFields.fundedFromProjectId = fundedFromProjectId;
+  }
 
-if (fundedFromProjectId !== undefined) {
-  updateFields.fundedFromProjectId = fundedFromProjectId;
-}
+  if (fundedFromProjectIds !== undefined) {
+    updateFields.fundedFromProjectIds = fundedFromProjectIds;
+  }
 
-if (fundedFromProjectIds !== undefined) {
-  updateFields.fundedFromProjectIds = fundedFromProjectIds;
-}
-
-const updated = await Invoice.findByIdAndUpdate(
-  invoiceId,
-  {
-    $set: updateFields,
-    ...(Object.keys(unsetFields).length ? { $unset: unsetFields } : {}),
-  },
-  { new: true }
-);
+  const updated = await Invoice.findByIdAndUpdate(
+    invoiceId,
+    {
+      $set: updateFields,
+      ...(Object.keys(unsetFields).length ? { $unset: unsetFields } : {}),
+    },
+    { new: true }
+  );
 
 
 
@@ -512,6 +513,7 @@ const updated = await Invoice.findByIdAndUpdate(
           totalAmount: updated.totalAmount,
           paymentDate: updated.paymentDate || new Date(),
           documentType: updated.documentType,
+          detail: updated.detail,
         }
       );
     } catch (emailError) {
@@ -883,6 +885,7 @@ async function updatePaymentStatus(
           totalAmount: updatedInvoice.totalAmount,
           paymentDate: date || new Date(),
           documentType: updatedInvoice.documentType,
+          detail: updatedInvoice.detail,
         }
       );
     } catch (emailError) {

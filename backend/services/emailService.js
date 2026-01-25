@@ -287,15 +287,11 @@ export const sendPaymentConfirmationEmail = async (supplierEmail, supplierName, 
           <td>${invoiceNumber}</td>
         </tr>
 
-        ${detail
-        ? `
+       
             <tr>
               <td style="padding:10px 0; font-weight:bold;">פירוט:</td>
               <td>${detail}</td>
             </tr>
-            `
-        : ''
-      }
 
         <tr>
           <td style="padding:10px 0; font-weight:bold;">תאריך תשלום:</td>
