@@ -184,7 +184,7 @@ export const sendWelcomeEmail = async (user) => {
   }
 };
 
-// ✅ אישור זיכוי לספק
+// ✅ אישור תשלום לספק
 export const sendPaymentConfirmationEmail = async (supplierEmail, supplierName, invoiceData) => {
   try {
     if (!apiInstance) {
@@ -197,7 +197,7 @@ export const sendPaymentConfirmationEmail = async (supplierEmail, supplierName, 
       return { success: false, message: 'Supplier email not provided' };
     }
 
-    const { invoiceNumber, totalAmount, paymentDate, documentType } = invoiceData;
+    const { invoiceNumber, totalAmount, paymentDate } = invoiceData;
 
     // פורמט תאריך
     const formattedDate = paymentDate
@@ -207,56 +207,39 @@ export const sendPaymentConfirmationEmail = async (supplierEmail, supplierName, 
     // פורמט סכום
     const formattedAmount = Number(totalAmount).toLocaleString('he-IL');
 
-    // בדיקה אם חסר מסמך חשבונית מס / קבלה
-    const validDocTypes = ['חשבונית מס / קבלה', 'חשבונית מס/קבלה', 'חשבונית מס'];
-    const isMissingDocument = !documentType || !validDocTypes.includes(documentType);
-
-    const documentRequestHtml = isMissingDocument ? `
-      <div style="background: #fef2f2; border-right: 4px solid #ef4444; padding: 15px; border-radius: 8px; margin: 20px 0;">
-        <strong style="color: #dc2626;">⚠ בקשה דחופה:</strong>
-        <p style="margin: 10px 0 0; color: #7f1d1d;">
-          יש לשלוח <strong>חשבונית מס / קבלה</strong> בהקדם האפשרי.
-        </p>
-      </div>
-    ` : '';
-
     const sendSmtpEmail = new brevo.SendSmtpEmail();
 
-    sendSmtpEmail.subject = `✅ אישור זיכוי - חשבונית מספר ${invoiceNumber}`;
+    sendSmtpEmail.subject = `✅ אישור תשלום - חשבונית מספר ${invoiceNumber}`;
     sendSmtpEmail.to = [{ email: supplierEmail, name: supplierName || 'ספק יקר' }];
+    sendSmtpEmail.replyTo = { email: 'AN089921117@GMAIL.COM', name: 'עמותת חינוך עם חיוך' };
     sendSmtpEmail.htmlContent = `
       <div dir="rtl" style="font-family: Arial; max-width: 600px; margin: 0 auto; background: white; border-radius: 16px; overflow: hidden; box-shadow: 0 4px 6px rgba(0,0,0,0.1);">
 
-        <div style="background: linear-gradient(135deg, #10b981, #34d399); color: white; padding: 40px; text-align: center;">
-          <h1 style="margin: 0; font-size: 28px;">✅ אישור זיכוי</h1>
+        <div style="background: linear-gradient(135deg, #dc2626, #ef4444); color: white; padding: 40px; text-align: center;">
+          <h1 style="margin: 0; font-size: 28px;">✅ אישור תשלום</h1>
           <p style="margin: 10px 0 0;">עמותת חינוך עם חיוך</p>
         </div>
 
         <div style="padding: 40px; color: #333; line-height: 1.8;">
           <p style="font-size: 16px;">שלום <strong>${supplierName || 'ספק יקר'}</strong>,</p>
 
-          <p style="font-size: 18px; margin: 20px 0;">
-            <strong>בוצע זיכוי לחשבונך מעמותת חינוך עם חיוך</strong>
-          </p>
-
-          <div style="background: #f0fdf4; border-right: 4px solid #22c55e; padding: 20px; border-radius: 8px; margin: 20px 0;">
+          <div style="background: #fef2f2; border-right: 4px solid #dc2626; padding: 20px; border-radius: 8px; margin: 20px 0;">
+            <h2 style="margin: 0 0 15px 0; color: #991b1b; font-size: 18px;">פרטי התשלום:</h2>
             <table style="width: 100%; border-collapse: collapse;">
               <tr>
-                <td style="padding: 8px 0; font-weight: bold; color: #166534;">תאריך:</td>
-                <td style="padding: 8px 0; color: #166534;">${formattedDate}</td>
+                <td style="padding: 8px 0; font-weight: bold; color: #991b1b;">תאריך:</td>
+                <td style="padding: 8px 0; color: #991b1b;">${formattedDate}</td>
               </tr>
               <tr>
-                <td style="padding: 8px 0; font-weight: bold; color: #166534;">מספר חשבונית:</td>
-                <td style="padding: 8px 0; color: #166534;">${invoiceNumber}</td>
+                <td style="padding: 8px 0; font-weight: bold; color: #991b1b;">מספר חשבונית:</td>
+                <td style="padding: 8px 0; color: #991b1b;">${invoiceNumber}</td>
               </tr>
               <tr>
-                <td style="padding: 8px 0; font-weight: bold; color: #166534;">סכום:</td>
-                <td style="padding: 8px 0; color: #166534; font-size: 18px; font-weight: bold;">₪${formattedAmount}</td>
+                <td style="padding: 8px 0; font-weight: bold; color: #991b1b;">סכום:</td>
+                <td style="padding: 8px 0; color: #991b1b; font-size: 18px; font-weight: bold;">₪${formattedAmount}</td>
               </tr>
             </table>
           </div>
-
-          ${documentRequestHtml}
 
           <p style="margin-top: 30px; color: #666;">
             בברכה,<br>
@@ -285,6 +268,6 @@ export const sendPaymentConfirmationEmail = async (supplierEmail, supplierName, 
     console.error('❌ Error sending payment confirmation email:', error);
     console.error('❌ Error body:', error.body);
     // לא זורקים שגיאה - רק מחזירים false כדי לא לעצור את התהליך
-    return { success: false, message: 'שגיאה בשליחת מייל אישור זיכוי' };
+    return { success: false, message: 'שגיאה בשליחת מייל אישור תשלום' };
   }
 };
