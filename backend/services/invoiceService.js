@@ -333,6 +333,27 @@ async function createInvoice(user, data) {
     await recalculateRemainingBudget(invoice.fundedFromProjectId);
   }
 
+  // 📧 שליחת מייל אם החשבונית נוצרה עם סטטוס תשלום = כן
+  if (basic.paid === "כן") {
+    const supplier = await Supplier.findById(supplierId).select("name email");
+    if (supplier?.email) {
+      try {
+        await sendPaymentConfirmationEmail(
+          supplier.email,
+          supplier.name,
+          {
+            invoiceNumber: invoice.invoiceNumber,
+            totalAmount: invoice.totalAmount,
+            paymentDate: invoice.paymentDate || new Date(),
+            documentType: invoice.documentType,
+          }
+        );
+      } catch (emailError) {
+        console.error("❌ Failed to send payment confirmation email on create:", emailError);
+      }
+    }
+  }
+
   return invoice;
 }
 
@@ -340,13 +361,16 @@ async function createInvoice(user, data) {
 // UPDATE INVOICE
 // ===============================================
 async function updateInvoice(user, invoiceId, data) {
-  const invoice = await Invoice.findById(invoiceId);
+  const invoice = await Invoice.findById(invoiceId).populate("supplierId", "name email");
   if (!invoice) throw new Error("חשבונית לא נמצאה");
 
   // לא תומכים בעריכת סוג משכורות פה (בשלב ראשון)
   if (invoice.type === "salary") {
     throw new Error("לא ניתן לערוך חשבונית משכורות כרגע");
   }
+
+  // שמור את מצב התשלום הישן לבדיקה אם השתנה
+  const oldPaidStatus = invoice.paid;
 
   // שמור את fundedFromProjectId הישן לפני שמשנים אותו
   const oldFundedFromProjectId = invoice.fundedFromProjectId ? String(invoice.fundedFromProjectId) : null;
@@ -475,6 +499,24 @@ const updated = await Invoice.findByIdAndUpdate(
   // חשב מחדש תקציב עבור הפרויקט הישן שממומן (אם היה ושונה)
   if (oldFundedFromProjectId && oldFundedFromProjectId !== String(fundedFromProjectId)) {
     await recalculateRemainingBudget(oldFundedFromProjectId);
+  }
+
+  // 📧 שליחת מייל אם סטטוס התשלום השתנה ל-"כן"
+  if (basic.paid === "כן" && oldPaidStatus !== "כן" && invoice.supplierId?.email) {
+    try {
+      await sendPaymentConfirmationEmail(
+        invoice.supplierId.email,
+        invoice.supplierId.name,
+        {
+          invoiceNumber: updated.invoiceNumber,
+          totalAmount: updated.totalAmount,
+          paymentDate: updated.paymentDate || new Date(),
+          documentType: updated.documentType,
+        }
+      );
+    } catch (emailError) {
+      console.error("❌ Failed to send payment confirmation email on update:", emailError);
+    }
   }
 
   return updated;

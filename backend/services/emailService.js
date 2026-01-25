@@ -197,7 +197,11 @@ export const sendPaymentConfirmationEmail = async (supplierEmail, supplierName, 
       return { success: false, message: 'Supplier email not provided' };
     }
 
-    const { invoiceNumber, totalAmount, paymentDate } = invoiceData;
+    const { invoiceNumber, totalAmount, paymentDate, documentType } = invoiceData;
+
+    // בדיקה אם חסר מסמך מס/קבלה
+    const isMissingDocument = !documentType ||
+      !['חשבונית מס / קבלה', 'אין צורך'].includes(documentType);
 
     // פורמט תאריך
     const formattedDate = paymentDate
@@ -209,13 +213,22 @@ export const sendPaymentConfirmationEmail = async (supplierEmail, supplierName, 
 
     const sendSmtpEmail = new brevo.SendSmtpEmail();
 
+    // צבעים מותנים - אדום אם חסר מסמך, ירוק אם לא חסר
+    const headerGradient = isMissingDocument
+      ? 'linear-gradient(135deg, #dc2626, #ef4444)'  // אדום
+      : 'linear-gradient(135deg, #16a34a, #22c55e)'; // ירוק
+    const boxBg = isMissingDocument ? '#fef2f2' : '#f0fdf4';
+    const boxBorder = isMissingDocument ? '#dc2626' : '#16a34a';
+    const textColor = isMissingDocument ? '#991b1b' : '#166534';
+    const dividerColor = isMissingDocument ? '#fca5a5' : '#86efac';
+
     sendSmtpEmail.subject = `✅ אישור תשלום - חשבונית מספר ${invoiceNumber}`;
     sendSmtpEmail.to = [{ email: supplierEmail, name: supplierName || 'ספק יקר' }];
     sendSmtpEmail.replyTo = { email: 'AN089921117@GMAIL.COM', name: 'עמותת חינוך עם חיוך' };
     sendSmtpEmail.htmlContent = `
       <div dir="rtl" style="font-family: Arial; max-width: 600px; margin: 0 auto; background: white; border-radius: 16px; overflow: hidden; box-shadow: 0 4px 6px rgba(0,0,0,0.1);">
 
-        <div style="background: linear-gradient(135deg, #dc2626, #ef4444); color: white; padding: 40px; text-align: center;">
+        <div style="background: ${headerGradient}; color: white; padding: 40px; text-align: center;">
           <h1 style="margin: 0; font-size: 28px;">✅ אישור תשלום</h1>
           <p style="margin: 10px 0 0;">עמותת חינוך עם חיוך</p>
         </div>
@@ -223,22 +236,27 @@ export const sendPaymentConfirmationEmail = async (supplierEmail, supplierName, 
         <div style="padding: 40px; color: #333; line-height: 1.8;">
           <p style="font-size: 16px;">שלום <strong>${supplierName || 'ספק יקר'}</strong>,</p>
 
-          <div style="background: #fef2f2; border-right: 4px solid #dc2626; padding: 20px; border-radius: 8px; margin: 20px 0;">
-            <h2 style="margin: 0 0 15px 0; color: #991b1b; font-size: 18px;">פרטי התשלום:</h2>
+          <div style="background: ${boxBg}; border-right: 4px solid ${boxBorder}; padding: 20px; border-radius: 8px; margin: 20px 0;">
+            <h2 style="margin: 0 0 15px 0; color: ${textColor}; font-size: 18px;">פרטי התשלום:</h2>
             <table style="width: 100%; border-collapse: collapse;">
               <tr>
-                <td style="padding: 8px 0; font-weight: bold; color: #991b1b;">תאריך:</td>
-                <td style="padding: 8px 0; color: #991b1b;">${formattedDate}</td>
+                <td style="padding: 8px 0; font-weight: bold; color: ${textColor};">תאריך:</td>
+                <td style="padding: 8px 0; color: ${textColor};">${formattedDate}</td>
               </tr>
               <tr>
-                <td style="padding: 8px 0; font-weight: bold; color: #991b1b;">מספר חשבונית:</td>
-                <td style="padding: 8px 0; color: #991b1b;">${invoiceNumber}</td>
+                <td style="padding: 8px 0; font-weight: bold; color: ${textColor};">מספר חשבונית:</td>
+                <td style="padding: 8px 0; color: ${textColor};">${invoiceNumber}</td>
               </tr>
               <tr>
-                <td style="padding: 8px 0; font-weight: bold; color: #991b1b;">סכום:</td>
-                <td style="padding: 8px 0; color: #991b1b; font-size: 18px; font-weight: bold;">₪${formattedAmount}</td>
+                <td style="padding: 8px 0; font-weight: bold; color: ${textColor};">סכום:</td>
+                <td style="padding: 8px 0; color: ${textColor}; font-size: 18px; font-weight: bold;">₪${formattedAmount}</td>
               </tr>
             </table>
+            ${isMissingDocument ? `
+            <p style="margin: 15px 0 0 0; padding-top: 15px; border-top: 1px solid ${dividerColor}; color: ${textColor}; font-weight: bold;">
+              יש לשלוח חשבונית מס/קבלה
+            </p>
+            ` : ''}
           </div>
 
           <p style="margin-top: 30px; color: #666;">
