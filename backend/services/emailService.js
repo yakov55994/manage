@@ -203,6 +203,8 @@ export const sendPaymentConfirmationEmail = async (supplierEmail, supplierName, 
     const isMissingDocument = !documentType ||
       !['חשבונית מס / קבלה', 'אין צורך'].includes(documentType);
 
+    console.log(`📧 Email debug - documentType: "${documentType}", isMissingDocument: ${isMissingDocument}`);
+
     // פורמט תאריך
     const formattedDate = paymentDate
       ? new Date(paymentDate).toLocaleDateString('he-IL')
@@ -252,11 +254,7 @@ export const sendPaymentConfirmationEmail = async (supplierEmail, supplierName, 
                 <td style="padding: 8px 0; color: ${textColor}; font-size: 18px; font-weight: bold;">₪${formattedAmount}</td>
               </tr>
             </table>
-            ${isMissingDocument ? `
-            <p style="margin: 15px 0 0 0; padding-top: 15px; border-top: 1px solid ${dividerColor}; color: ${textColor}; font-weight: bold;">
-              יש לשלוח חשבונית מס/קבלה
-            </p>
-            ` : ''}
+            ${isMissingDocument ? `<p style="margin: 15px 0 0 0; padding-top: 15px; border-top: 1px solid ${dividerColor}; color: ${textColor}; font-weight: bold;">יש לשלוח חשבונית מס/קבלה</p>` : ''}
           </div>
 
           <p style="margin-top: 30px; color: #666;">
