@@ -90,9 +90,9 @@ export const sendPasswordResetEmail = async (user) => {
         
       </div>
     `;
-    sendSmtpEmail.sender = { 
-      name: 'ניהולון', 
-      email: process.env.BREVO_SENDER_EMAIL || 'noreply@nihulon.com' 
+    sendSmtpEmail.sender = {
+      name: 'ניהולון',
+      email: process.env.BREVO_SENDER_EMAIL || 'noreply@nihulon.com'
     };
 
     const data = await apiInstance.sendTransacEmail(sendSmtpEmail);
@@ -168,9 +168,9 @@ export const sendWelcomeEmail = async (user) => {
         
       </div>
     `;
-    sendSmtpEmail.sender = { 
-      name: 'ניהולון', 
-      email: process.env.BREVO_SENDER_EMAIL || 'noreply@nihulon.com' 
+    sendSmtpEmail.sender = {
+      name: 'ניהולון',
+      email: process.env.BREVO_SENDER_EMAIL || 'noreply@nihulon.com'
     };
 
     const data = await apiInstance.sendTransacEmail(sendSmtpEmail);
@@ -197,7 +197,7 @@ export const sendPaymentConfirmationEmail = async (supplierEmail, supplierName, 
       return { success: false, message: 'Supplier email not provided' };
     }
 
-    const { invoiceNumber, totalAmount, paymentDate, documentType } = invoiceData;
+    const { invoiceNumber, totalAmount, paymentDate, documentType, detail } = invoiceData;
 
     // בדיקה אם חסר מסמך מס/קבלה
     const isMissingDocument = !documentType ||
@@ -228,48 +228,102 @@ export const sendPaymentConfirmationEmail = async (supplierEmail, supplierName, 
     sendSmtpEmail.to = [{ email: supplierEmail, name: supplierName || 'ספק יקר' }];
     sendSmtpEmail.replyTo = { email: 'AN089921117@GMAIL.COM', name: 'עמותת חינוך עם חיוך' };
     sendSmtpEmail.htmlContent = `
-      <div dir="rtl" style="font-family: Arial; max-width: 600px; margin: 0 auto; background: white; border-radius: 16px; overflow: hidden; box-shadow: 0 4px 6px rgba(0,0,0,0.1);">
+<div dir="rtl" style="font-family: Arial; max-width: 650px; margin: 0 auto; background: white; border-radius: 18px; overflow: hidden; box-shadow: 0 6px 12px rgba(0,0,0,0.12);">
 
-        <div style="background: ${headerGradient}; color: white; padding: 40px; text-align: center;">
-          <h1 style="margin: 0; font-size: 28px;">✅ אישור תשלום</h1>
-          <p style="margin: 10px 0 0;">עמותת חינוך עם חיוך</p>
-        </div>
-
-        <div style="padding: 40px; color: #333; line-height: 1.8;">
-          <p style="font-size: 16px;">שלום <strong>${supplierName || 'ספק יקר'}</strong>,</p>
-
-          <div style="background: ${boxBg}; border-right: 4px solid ${boxBorder}; padding: 20px; border-radius: 8px; margin: 20px 0;">
-            <h2 style="margin: 0 0 15px 0; color: ${textColor}; font-size: 18px;">פרטי התשלום:</h2>
-            <table style="width: 100%; border-collapse: collapse;">
-              <tr>
-                <td style="padding: 8px 0; font-weight: bold; color: ${textColor};">תאריך:</td>
-                <td style="padding: 8px 0; color: ${textColor};">${formattedDate}</td>
-              </tr>
-              <tr>
-                <td style="padding: 8px 0; font-weight: bold; color: ${textColor};">מספר חשבונית:</td>
-                <td style="padding: 8px 0; color: ${textColor};">${invoiceNumber}</td>
-              </tr>
-              <tr>
-                <td style="padding: 8px 0; font-weight: bold; color: ${textColor};">סכום:</td>
-                <td style="padding: 8px 0; color: ${textColor}; font-size: 18px; font-weight: bold;">₪${formattedAmount}</td>
-              </tr>
-            </table>
-            ${isMissingDocument ? `<p style="margin: 15px 0 0 0; padding-top: 15px; border-top: 1px solid ${dividerColor}; color: ${textColor}; font-weight: bold;">יש לשלוח חשבונית מס/קבלה</p>` : ''}
-          </div>
-
-          <p style="margin-top: 30px; color: #666;">
-            בברכה,<br>
-            <strong>עמותת חינוך עם חיוך</strong>
-          </p>
-        </div>
-
-        <div style="background: #f5f5f5; padding: 20px; text-align: center; color: #666; font-size: 14px; border-top: 2px solid #e5e5e5;">
-          <p style="margin: 0;">מייל זה נשלח אוטומטית ממערכת ניהולון</p>
-          <p style="margin: 5px 0 0;">© 2025 כל הזכויות שמורות</p>
-        </div>
-
+  ${isMissingDocument
+        ? `
+      <div style="background:#7f1d1d; color:white; padding:35px; text-align:center;">
+        <h1 style="margin:0; font-size:34px; font-weight:900;">
+          ⚠️ נדרש לשלוח חשבונית מס / קבלה
+        </h1>
+        <p style="margin-top:12px; font-size:18px;">
+          התשלום בוצע — אך טרם התקבל מסמך חשבונאי
+        </p>
       </div>
-    `;
+      `
+        : `
+      <div style="background:#15803d; color:white; padding:35px; text-align:center;">
+        <h1 style="margin:0; font-size:30px;">✅ אישור תשלום</h1>
+        <p style="margin-top:10px;">עמותת חינוך עם חיוך</p>
+      </div>
+      `
+      }
+
+  <div style="padding:40px; color:#1f2937; line-height:1.9;">
+
+    <p style="font-size:17px;">
+      שלום <strong>${supplierName || 'ספק יקר'}</strong>,
+    </p>
+
+    ${isMissingDocument
+        ? `
+        <div style="background:#fef2f2; border-right:6px solid #dc2626; padding:22px; border-radius:10px; margin:25px 0;">
+          <h2 style="margin:0 0 12px 0; color:#991b1b; font-size:20px;">
+            🔴 טרם התקבלה חשבונית מס / קבלה
+          </h2>
+
+          <p style="margin:0 0 10px 0;">
+            עבור התשלום המפורט להלן, נבקש לשלוח:
+          </p>
+
+          <ul style="margin:10px 0 0; padding-right:20px;">
+            <li><strong>חשבונית מס / קבלה</strong></li>
+            <li>על שם: <strong>עמותת חינוך עם חיוך</strong></li>
+            <li>בציון מספר החשבונית שלהלן</li>
+          </ul>
+        </div>
+        `
+        : ''
+      }
+
+    <div style="background:${boxBg}; border-right:5px solid ${boxBorder}; padding:24px; border-radius:10px; margin:30px 0;">
+      <h2 style="margin:0 0 18px 0; color:${textColor}; font-size:20px;">
+        📄 פרטי החשבונית
+      </h2>
+
+      <table style="width:100%; border-collapse:collapse;">
+        <tr>
+          <td style="padding:10px 0; font-weight:bold;">מספר חשבונית:</td>
+          <td>${invoiceNumber}</td>
+        </tr>
+
+        ${detail
+        ? `
+            <tr>
+              <td style="padding:10px 0; font-weight:bold;">פירוט:</td>
+              <td>${detail}</td>
+            </tr>
+            `
+        : ''
+      }
+
+        <tr>
+          <td style="padding:10px 0; font-weight:bold;">תאריך תשלום:</td>
+          <td>${formattedDate}</td>
+        </tr>
+
+        <tr>
+          <td style="padding:10px 0; font-weight:bold;">סכום ששולם:</td>
+          <td style="font-size:20px; font-weight:bold;">₪${formattedAmount}</td>
+        </tr>
+      </table>
+    </div>
+
+    <p style="margin-top:30px;">
+      בברכה,<br>
+      <strong>עמותת חינוך עם חיוך</strong>
+    </p>
+
+  </div>
+
+  <div style="background:#f3f4f6; padding:20px; text-align:center; font-size:14px; color:#6b7280;">
+    מייל זה נשלח אוטומטית ממערכת ניהולון<br/>
+    © 2025
+  </div>
+
+</div>
+`;
+
     sendSmtpEmail.sender = {
       name: 'עמותת חינוך עם חיוך',
       email: process.env.BREVO_SENDER_EMAIL || 'noreply@nihulon.com'
