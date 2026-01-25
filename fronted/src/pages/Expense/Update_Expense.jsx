@@ -1,15 +1,18 @@
 import { useState, useEffect } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import api from "../../api/api";
-import { TrendingDown, Save, ArrowRight, Calendar, FileText } from "lucide-react";
+import { TrendingDown, Save, ArrowRight, Calendar, FileText, Link2, Receipt, Briefcase, ShoppingCart } from "lucide-react";
 import { toast } from "sonner";
 import { ClipLoader } from "react-spinners";
+import ExpenseLinkModal from "../../Components/ExpenseLinkModal";
 
 export default function UpdateExpense() {
   const navigate = useNavigate();
   const { id } = useParams();
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [expense, setExpense] = useState(null);
+  const [isLinkModalOpen, setIsLinkModalOpen] = useState(false);
   const [formData, setFormData] = useState({
     date: "",
     amount: "",
@@ -26,15 +29,16 @@ export default function UpdateExpense() {
   const fetchExpense = async () => {
     try {
       const response = await api.get(`/expenses/${id}`);
-      const expense = response.data?.data;
-      if (expense) {
+      const expenseData = response.data?.data;
+      if (expenseData) {
+        setExpense(expenseData);
         setFormData({
-          date: expense.date ? new Date(expense.date).toISOString().slice(0, 10) : "",
-          amount: expense.amount || "",
-          description: expense.description || "",
-          notes: expense.notes || "",
-          reference: expense.reference || "",
-          transactionType: expense.transactionType || "",
+          date: expenseData.date ? new Date(expenseData.date).toISOString().slice(0, 10) : "",
+          amount: expenseData.amount || "",
+          description: expenseData.description || "",
+          notes: expenseData.notes || "",
+          reference: expenseData.reference || "",
+          transactionType: expenseData.transactionType || "",
         });
       }
     } catch (err) {
@@ -44,6 +48,20 @@ export default function UpdateExpense() {
     } finally {
       setLoading(false);
     }
+  };
+
+  // טיפול בשמירה מהמודל שיוך
+  const handleLinked = (updatedExpense) => {
+    setExpense(updatedExpense);
+    toast.success("השיוך עודכן בהצלחה!");
+  };
+
+  // חישוב מספר השיוכים
+  const getLinkCount = () => {
+    if (!expense) return 0;
+    return (expense.linkedInvoices?.length || 0) +
+           (expense.linkedSalaries?.length || 0) +
+           (expense.linkedOrders?.length || 0);
   };
 
   const handleChange = (e) => {
@@ -230,6 +248,56 @@ export default function UpdateExpense() {
                 className="w-full px-4 py-3 border-2 border-orange-200 rounded-xl focus:border-orange-500 focus:outline-none transition-all resize-none"
                 rows={3}
               />
+            </div>
+
+            {/* שיוך לחשבוניות/משכורות/הזמנות */}
+            <div>
+              <label className="block text-sm font-bold text-slate-700 mb-2">
+                <Link2 className="w-4 h-4 inline ml-2" />
+                שיוך לחשבוניות / משכורות / הזמנות
+              </label>
+
+              <button
+                type="button"
+                onClick={() => setIsLinkModalOpen(true)}
+                className="w-full py-4 border-2 border-dashed border-orange-300 rounded-xl text-orange-600 font-bold hover:border-orange-500 hover:bg-orange-50 transition-all flex items-center justify-center gap-2"
+              >
+                <Link2 className="w-5 h-5" />
+                {getLinkCount() > 0 ? `${getLinkCount()} פריטים משויכים - לחץ לעריכה` : "לחץ לשיוך"}
+              </button>
+
+              {/* הצגת שיוכים קיימים */}
+              {expense && getLinkCount() > 0 && (
+                <div className="mt-3 flex flex-wrap gap-2">
+                  {expense.linkedInvoices?.length > 0 && (
+                    <span className="inline-flex items-center gap-1 px-3 py-1 bg-blue-100 text-blue-700 rounded-full text-sm font-medium">
+                      <Receipt className="w-4 h-4" />
+                      {expense.linkedInvoices.length} חשבוניות
+                    </span>
+                  )}
+                  {expense.linkedSalaries?.length > 0 && (
+                    <span className="inline-flex items-center gap-1 px-3 py-1 bg-purple-100 text-purple-700 rounded-full text-sm font-medium">
+                      <Briefcase className="w-4 h-4" />
+                      {expense.linkedSalaries.length} משכורות
+                    </span>
+                  )}
+                  {expense.linkedOrders?.length > 0 && (
+                    <span className="inline-flex items-center gap-1 px-3 py-1 bg-orange-100 text-orange-700 rounded-full text-sm font-medium">
+                      <ShoppingCart className="w-4 h-4" />
+                      {expense.linkedOrders.length} הזמנות
+                    </span>
+                  )}
+                </div>
+              )}
+
+              {expense && (
+                <ExpenseLinkModal
+                  isOpen={isLinkModalOpen}
+                  onClose={() => setIsLinkModalOpen(false)}
+                  expense={expense}
+                  onLinked={handleLinked}
+                />
+              )}
             </div>
 
             {/* כפתור שמירה */}

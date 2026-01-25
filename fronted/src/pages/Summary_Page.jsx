@@ -13,6 +13,10 @@ import {
   TrendingDown,
   BarChart3,
   Eye,
+  DollarSign,
+  Briefcase,
+  ArrowDownCircle,
+  ArrowUpCircle,
 } from "lucide-react";
 import api from "../api/api.js";
 import { useNavigate } from "react-router-dom";
@@ -23,6 +27,9 @@ const SummaryPage = () => {
   const [orders, setOrders] = useState([]);
   const [invoices, setInvoices] = useState([]);
   const [suppliers, setSuppliers] = useState([]);
+  const [salaries, setSalaries] = useState([]);
+  const [incomes, setIncomes] = useState([]);
+  const [expenses, setExpenses] = useState([]);
   const [loading, setLoading] = useState(true);
   const [statusFilter, setStatusFilter] = useState("");
   const [sortOrder, setSortOrder] = useState("desc");
@@ -33,12 +40,15 @@ const SummaryPage = () => {
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const [projectsRes, ordersRes, invoicesRes, suppliersRes] =
+        const [projectsRes, ordersRes, invoicesRes, suppliersRes, salariesRes, incomesRes, expensesRes] =
           await Promise.all([
             api.get("/projects"),
             api.get("/orders"),
             api.get("/invoices"),
             api.get("/suppliers"),
+            api.get("/salaries"),
+            api.get("/incomes"),
+            api.get("/expenses"),
           ]);
 
         // פרויקטים — החלק הקריטי!!!
@@ -68,6 +78,30 @@ const SummaryPage = () => {
             ? suppliersRes.data.data
             : []
         );
+
+        // משכורות
+        const salariesArr = Array.isArray(salariesRes.data?.data)
+          ? salariesRes.data.data
+          : Array.isArray(salariesRes.data)
+          ? salariesRes.data
+          : [];
+        setSalaries(salariesArr);
+
+        // הכנסות
+        const incomesArr = Array.isArray(incomesRes.data?.data)
+          ? incomesRes.data.data
+          : Array.isArray(incomesRes.data)
+          ? incomesRes.data
+          : [];
+        setIncomes(incomesArr);
+
+        // הוצאות
+        const expensesArr = Array.isArray(expensesRes.data?.data)
+          ? expensesRes.data.data
+          : Array.isArray(expensesRes.data)
+          ? expensesRes.data
+          : [];
+        setExpenses(expensesArr);
       } catch (error) {
         console.error("Error fetching data:", error);
         toast.error("שגיאה בטעינת הנתונים", {
@@ -185,6 +219,41 @@ const SummaryPage = () => {
       "ספקים"
     );
 
+    createSheet(
+      sortedSalaries.map((s) => ({
+        "שם עובד": s.employeeName,
+        "פרויקט": s.projectId?.name || "",
+        "סכום בסיס": s.baseAmount,
+        "אחוז תקורה": s.overheadPercent,
+        "סכום סופי": s.finalAmount,
+        "תאריך יצירה": formatDate(s.createdAt),
+      })),
+      "משכורות"
+    );
+
+    createSheet(
+      sortedIncomes.map((i) => ({
+        "תיאור": i.description,
+        "סכום": i.amount,
+        "תאריך": formatDate(i.date),
+        "שויך": i.isCredited,
+        "הערות": i.notes || "",
+      })),
+      "הכנסות"
+    );
+
+    createSheet(
+      sortedExpenses.map((e) => ({
+        "תיאור": e.description,
+        "סכום": e.amount,
+        "תאריך": formatDate(e.date),
+        "אסמכתא": e.reference || "",
+        "סוג פעולה": e.transactionType || "",
+        "הערות": e.notes || "",
+      })),
+      "הוצאות"
+    );
+
     saveAs(
       new Blob([XLSX.write(wb, { bookType: "xlsx", type: "array" })], {
         type: "application/octet-stream",
@@ -204,6 +273,19 @@ const SummaryPage = () => {
   const moveToOrderDetails = (order) => navigate(`/orders/${order._id}`);
   const moveToSupplierDetails = (supplier) =>
     navigate(`/suppliers/${supplier._id}`);
+  const moveToSalaryDetails = (salary) => navigate(`/salaries/${salary._id}`);
+  const moveToIncomeDetails = (income) => navigate(`/incomes/${income._id}`);
+  const moveToExpenseDetails = (expense) => navigate(`/expenses/${expense._id}`);
+
+  // Sorted salaries, incomes, expenses
+  const sortedSalaries = sortData(salaries, sortBy === "budget" ? "finalAmount" : "employeeName", sortOrder);
+  const sortedIncomes = sortData(incomes, sortBy === "budget" ? "amount" : "description", sortOrder);
+  const sortedExpenses = sortData(expenses, sortBy === "budget" ? "amount" : "description", sortOrder);
+
+  // חישוב סכומים כולל
+  const totalIncomes = incomes.reduce((sum, inc) => sum + (Number(inc.amount) || 0), 0);
+  const totalExpenses = expenses.reduce((sum, exp) => sum + (Number(exp.amount) || 0), 0);
+  const totalSalaries = salaries.reduce((sum, sal) => sum + (Number(sal.finalAmount) || 0), 0);
 
   if (loading) {
     return (
@@ -312,6 +394,66 @@ const SummaryPage = () => {
             <h3 className="text-sm sm:text-base md:text-lg font-bold text-gray-700 mb-1 sm:mb-2">ספקים</h3>
             <p className="text-xl sm:text-2xl md:text-3xl lg:text-4xl font-bold bg-gradient-to-r from-orange-500 to-amber-500 bg-clip-text text-transparent">
               {suppliers.length}
+            </p>
+          </div>
+
+          {/* משכורות */}
+          <div
+            onClick={() => navigate("/salaries")}
+            className="group bg-white rounded-2xl shadow-lg hover:shadow-2xl transition-all duration-300 p-3 sm:p-4 md:p-6 cursor-pointer border-2 border-transparent hover:border-purple-300"
+          >
+            <div className="flex items-center justify-between mb-3 sm:mb-4">
+              <div className="bg-gradient-to-br from-purple-400 to-violet-400 p-2 sm:p-3 rounded-xl shadow-md group-hover:scale-110 transition-transform">
+                <Briefcase className="text-white w-5 h-5 sm:w-6 sm:h-6 md:w-7 md:h-7" />
+              </div>
+              <Eye className="w-4 h-4 sm:w-5 sm:h-5 text-gray-400 group-hover:text-purple-500 transition-colors" />
+            </div>
+            <h3 className="text-sm sm:text-base md:text-lg font-bold text-gray-700 mb-1 sm:mb-2">משכורות</h3>
+            <p className="text-xl sm:text-2xl md:text-3xl lg:text-4xl font-bold bg-gradient-to-r from-purple-500 to-violet-500 bg-clip-text text-transparent">
+              {salaries.length}
+            </p>
+            <p className="text-xs sm:text-sm text-gray-500 mt-1">
+              סה"כ: {formatCurrency(totalSalaries)}
+            </p>
+          </div>
+
+          {/* הכנסות */}
+          <div
+            onClick={() => navigate("/incomes")}
+            className="group bg-white rounded-2xl shadow-lg hover:shadow-2xl transition-all duration-300 p-3 sm:p-4 md:p-6 cursor-pointer border-2 border-transparent hover:border-green-300"
+          >
+            <div className="flex items-center justify-between mb-3 sm:mb-4">
+              <div className="bg-gradient-to-br from-green-400 to-emerald-400 p-2 sm:p-3 rounded-xl shadow-md group-hover:scale-110 transition-transform">
+                <ArrowUpCircle className="text-white w-5 h-5 sm:w-6 sm:h-6 md:w-7 md:h-7" />
+              </div>
+              <Eye className="w-4 h-4 sm:w-5 sm:h-5 text-gray-400 group-hover:text-green-500 transition-colors" />
+            </div>
+            <h3 className="text-sm sm:text-base md:text-lg font-bold text-gray-700 mb-1 sm:mb-2">הכנסות</h3>
+            <p className="text-xl sm:text-2xl md:text-3xl lg:text-4xl font-bold bg-gradient-to-r from-green-500 to-emerald-500 bg-clip-text text-transparent">
+              {incomes.length}
+            </p>
+            <p className="text-xs sm:text-sm text-gray-500 mt-1">
+              סה"כ: {formatCurrency(totalIncomes)}
+            </p>
+          </div>
+
+          {/* הוצאות */}
+          <div
+            onClick={() => navigate("/expenses")}
+            className="group bg-white rounded-2xl shadow-lg hover:shadow-2xl transition-all duration-300 p-3 sm:p-4 md:p-6 cursor-pointer border-2 border-transparent hover:border-red-300"
+          >
+            <div className="flex items-center justify-between mb-3 sm:mb-4">
+              <div className="bg-gradient-to-br from-red-400 to-rose-400 p-2 sm:p-3 rounded-xl shadow-md group-hover:scale-110 transition-transform">
+                <ArrowDownCircle className="text-white w-5 h-5 sm:w-6 sm:h-6 md:w-7 md:h-7" />
+              </div>
+              <Eye className="w-4 h-4 sm:w-5 sm:h-5 text-gray-400 group-hover:text-red-500 transition-colors" />
+            </div>
+            <h3 className="text-sm sm:text-base md:text-lg font-bold text-gray-700 mb-1 sm:mb-2">הוצאות</h3>
+            <p className="text-xl sm:text-2xl md:text-3xl lg:text-4xl font-bold bg-gradient-to-r from-red-500 to-rose-500 bg-clip-text text-transparent">
+              {expenses.length}
+            </p>
+            <p className="text-xs sm:text-sm text-gray-500 mt-1">
+              סה"כ: {formatCurrency(totalExpenses)}
             </p>
           </div>
         </div>
@@ -748,6 +890,256 @@ const SummaryPage = () => {
               ))
             ) : (
               <div className="text-center font-bold text-lg text-red-500 py-8">לא נמצאו ספקים</div>
+            )}
+          </div>
+        </div>
+
+        {/* טבלת משכורות */}
+        <div className="bg-white rounded-2xl shadow-xl overflow-hidden mb-8 border border-purple-100">
+          <div className="bg-gradient-to-r from-purple-300 to-violet-300 p-4 sm:p-6">
+            <div className="flex items-center gap-3">
+              <Briefcase className="text-white w-6 h-6 sm:w-7 sm:h-7" />
+              <h2 className="text-xl sm:text-2xl font-bold text-white">משכורות</h2>
+            </div>
+          </div>
+
+          {/* Desktop Table */}
+          <div className="hidden lg:block overflow-x-auto">
+            <table className="w-full">
+              <thead>
+                <tr className="bg-gradient-to-r from-purple-100 to-violet-100 text-purple-900">
+                  <th className="px-6 py-4 text-right font-bold">שם עובד</th>
+                  <th className="px-6 py-4 text-right font-bold">פרויקט</th>
+                  <th className="px-6 py-4 text-right font-bold">סכום בסיס</th>
+                  <th className="px-6 py-4 text-right font-bold">סכום סופי</th>
+                  <th className="px-6 py-4 text-right font-bold">תאריך</th>
+                </tr>
+              </thead>
+              <tbody>
+                {sortedSalaries.length > 0 ? (
+                  sortedSalaries.map((salary, index) => (
+                    <tr
+                      key={salary._id}
+                      onClick={() => moveToSalaryDetails(salary)}
+                      className={`cursor-pointer border-b border-gray-200 transition-all duration-200 ${
+                        index % 2 === 0
+                          ? "bg-gradient-to-r from-purple-50/30 to-violet-50/30 hover:from-purple-100 hover:to-violet-100"
+                          : "bg-white hover:bg-gradient-to-r hover:from-purple-50 hover:to-violet-50"
+                      }`}
+                    >
+                      <td className="px-6 py-4 font-semibold text-gray-900">{salary.employeeName}</td>
+                      <td className="px-6 py-4 font-medium text-gray-700">{salary.projectId?.name || "-"}</td>
+                      <td className="px-6 py-4 font-medium">{formatCurrency(salary.baseAmount)}</td>
+                      <td className="px-6 py-4 font-medium">{formatCurrency(salary.finalAmount)}</td>
+                      <td className="px-6 py-4 font-medium text-gray-700">{formatDate(salary.createdAt)}</td>
+                    </tr>
+                  ))
+                ) : (
+                  <tr>
+                    <td colSpan="5" className="text-center font-bold text-lg text-red-500 py-8">לא נמצאו משכורות</td>
+                  </tr>
+                )}
+              </tbody>
+            </table>
+          </div>
+
+          {/* Mobile Cards */}
+          <div className="lg:hidden p-4 space-y-3">
+            {sortedSalaries.length > 0 ? (
+              sortedSalaries.map((salary) => (
+                <div
+                  key={salary._id}
+                  onClick={() => moveToSalaryDetails(salary)}
+                  className="bg-gradient-to-br from-purple-50 to-violet-50 rounded-xl p-4 border border-purple-200 cursor-pointer hover:shadow-md transition-all"
+                >
+                  <div className="flex justify-between items-start mb-3">
+                    <h3 className="font-bold text-gray-900 text-lg">{salary.employeeName}</h3>
+                    <Eye className="w-5 h-5 text-purple-400" />
+                  </div>
+                  <div className="space-y-2 text-sm">
+                    <div className="flex justify-between">
+                      <span className="text-gray-600">פרויקט:</span>
+                      <span className="font-medium text-gray-700">{salary.projectId?.name || "-"}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-gray-600">סכום סופי:</span>
+                      <span className="font-medium">{formatCurrency(salary.finalAmount)}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-gray-600">תאריך:</span>
+                      <span className="font-medium text-gray-700">{formatDate(salary.createdAt)}</span>
+                    </div>
+                  </div>
+                </div>
+              ))
+            ) : (
+              <div className="text-center font-bold text-lg text-red-500 py-8">לא נמצאו משכורות</div>
+            )}
+          </div>
+        </div>
+
+        {/* טבלת הכנסות */}
+        <div className="bg-white rounded-2xl shadow-xl overflow-hidden mb-8 border border-green-100">
+          <div className="bg-gradient-to-r from-green-300 to-emerald-300 p-4 sm:p-6">
+            <div className="flex items-center gap-3">
+              <ArrowUpCircle className="text-white w-6 h-6 sm:w-7 sm:h-7" />
+              <h2 className="text-xl sm:text-2xl font-bold text-white">הכנסות</h2>
+            </div>
+          </div>
+
+          {/* Desktop Table */}
+          <div className="hidden lg:block overflow-x-auto">
+            <table className="w-full">
+              <thead>
+                <tr className="bg-gradient-to-r from-green-100 to-emerald-100 text-green-900">
+                  <th className="px-6 py-4 text-right font-bold">תיאור</th>
+                  <th className="px-6 py-4 text-right font-bold">סכום</th>
+                  <th className="px-6 py-4 text-right font-bold">תאריך</th>
+                  <th className="px-6 py-4 text-right font-bold">שויך</th>
+                </tr>
+              </thead>
+              <tbody>
+                {sortedIncomes.length > 0 ? (
+                  sortedIncomes.map((income, index) => (
+                    <tr
+                      key={income._id}
+                      onClick={() => moveToIncomeDetails(income)}
+                      className={`cursor-pointer border-b border-gray-200 transition-all duration-200 ${
+                        index % 2 === 0
+                          ? "bg-gradient-to-r from-green-50/30 to-emerald-50/30 hover:from-green-100 hover:to-emerald-100"
+                          : "bg-white hover:bg-gradient-to-r hover:from-green-50 hover:to-emerald-50"
+                      }`}
+                    >
+                      <td className="px-6 py-4 font-semibold text-gray-900">{income.description}</td>
+                      <td className="px-6 py-4 font-medium">{formatCurrency(income.amount)}</td>
+                      <td className="px-6 py-4 font-medium text-gray-700">{formatDate(income.date)}</td>
+                      <td className="px-6 py-4">
+                        <span className={`px-3 py-1 rounded-full text-xs font-bold ${
+                          income.isCredited === "כן" ? "bg-green-100 text-green-700" : "bg-gray-100 text-gray-700"
+                        }`}>{income.isCredited}</span>
+                      </td>
+                    </tr>
+                  ))
+                ) : (
+                  <tr>
+                    <td colSpan="4" className="text-center font-bold text-lg text-red-500 py-8">לא נמצאו הכנסות</td>
+                  </tr>
+                )}
+              </tbody>
+            </table>
+          </div>
+
+          {/* Mobile Cards */}
+          <div className="lg:hidden p-4 space-y-3">
+            {sortedIncomes.length > 0 ? (
+              sortedIncomes.map((income) => (
+                <div
+                  key={income._id}
+                  onClick={() => moveToIncomeDetails(income)}
+                  className="bg-gradient-to-br from-green-50 to-emerald-50 rounded-xl p-4 border border-green-200 cursor-pointer hover:shadow-md transition-all"
+                >
+                  <div className="flex justify-between items-start mb-3">
+                    <h3 className="font-bold text-gray-900 truncate max-w-[200px]">{income.description}</h3>
+                    <span className={`px-2 py-1 rounded-full text-xs font-bold ${
+                      income.isCredited === "כן" ? "bg-green-100 text-green-700" : "bg-gray-100 text-gray-700"
+                    }`}>{income.isCredited}</span>
+                  </div>
+                  <div className="space-y-2 text-sm">
+                    <div className="flex justify-between">
+                      <span className="text-gray-600">סכום:</span>
+                      <span className="font-medium">{formatCurrency(income.amount)}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-gray-600">תאריך:</span>
+                      <span className="font-medium text-gray-700">{formatDate(income.date)}</span>
+                    </div>
+                  </div>
+                </div>
+              ))
+            ) : (
+              <div className="text-center font-bold text-lg text-red-500 py-8">לא נמצאו הכנסות</div>
+            )}
+          </div>
+        </div>
+
+        {/* טבלת הוצאות */}
+        <div className="bg-white rounded-2xl shadow-xl overflow-hidden mb-8 border border-red-100">
+          <div className="bg-gradient-to-r from-red-300 to-rose-300 p-4 sm:p-6">
+            <div className="flex items-center gap-3">
+              <ArrowDownCircle className="text-white w-6 h-6 sm:w-7 sm:h-7" />
+              <h2 className="text-xl sm:text-2xl font-bold text-white">הוצאות</h2>
+            </div>
+          </div>
+
+          {/* Desktop Table */}
+          <div className="hidden lg:block overflow-x-auto">
+            <table className="w-full">
+              <thead>
+                <tr className="bg-gradient-to-r from-red-100 to-rose-100 text-red-900">
+                  <th className="px-6 py-4 text-right font-bold">תיאור</th>
+                  <th className="px-6 py-4 text-right font-bold">סכום</th>
+                  <th className="px-6 py-4 text-right font-bold">תאריך</th>
+                  <th className="px-6 py-4 text-right font-bold">אסמכתא</th>
+                </tr>
+              </thead>
+              <tbody>
+                {sortedExpenses.length > 0 ? (
+                  sortedExpenses.map((expense, index) => (
+                    <tr
+                      key={expense._id}
+                      onClick={() => moveToExpenseDetails(expense)}
+                      className={`cursor-pointer border-b border-gray-200 transition-all duration-200 ${
+                        index % 2 === 0
+                          ? "bg-gradient-to-r from-red-50/30 to-rose-50/30 hover:from-red-100 hover:to-rose-100"
+                          : "bg-white hover:bg-gradient-to-r hover:from-red-50 hover:to-rose-50"
+                      }`}
+                    >
+                      <td className="px-6 py-4 font-semibold text-gray-900">{expense.description}</td>
+                      <td className="px-6 py-4 font-medium">{formatCurrency(expense.amount)}</td>
+                      <td className="px-6 py-4 font-medium text-gray-700">{formatDate(expense.date)}</td>
+                      <td className="px-6 py-4 font-medium text-gray-700">{expense.reference || "-"}</td>
+                    </tr>
+                  ))
+                ) : (
+                  <tr>
+                    <td colSpan="4" className="text-center font-bold text-lg text-red-500 py-8">לא נמצאו הוצאות</td>
+                  </tr>
+                )}
+              </tbody>
+            </table>
+          </div>
+
+          {/* Mobile Cards */}
+          <div className="lg:hidden p-4 space-y-3">
+            {sortedExpenses.length > 0 ? (
+              sortedExpenses.map((expense) => (
+                <div
+                  key={expense._id}
+                  onClick={() => moveToExpenseDetails(expense)}
+                  className="bg-gradient-to-br from-red-50 to-rose-50 rounded-xl p-4 border border-red-200 cursor-pointer hover:shadow-md transition-all"
+                >
+                  <div className="flex justify-between items-start mb-3">
+                    <h3 className="font-bold text-gray-900 truncate max-w-[200px]">{expense.description}</h3>
+                    <Eye className="w-5 h-5 text-red-400" />
+                  </div>
+                  <div className="space-y-2 text-sm">
+                    <div className="flex justify-between">
+                      <span className="text-gray-600">סכום:</span>
+                      <span className="font-medium">{formatCurrency(expense.amount)}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-gray-600">תאריך:</span>
+                      <span className="font-medium text-gray-700">{formatDate(expense.date)}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-gray-600">אסמכתא:</span>
+                      <span className="font-medium text-gray-700">{expense.reference || "-"}</span>
+                    </div>
+                  </div>
+                </div>
+              ))
+            ) : (
+              <div className="text-center font-bold text-lg text-red-500 py-8">לא נמצאו הוצאות</div>
             )}
           </div>
         </div>

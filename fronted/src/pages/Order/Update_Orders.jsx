@@ -5,6 +5,7 @@ import { ClipLoader } from "react-spinners";
 import { toast } from "sonner";
 import FileUploader from "../../Components/FileUploader";
 import SupplierSelector from "../../Components/SupplierSelector.jsx";
+import OrderLinkModal from "../../Components/OrderLinkModal.jsx";
 import {
   ShoppingCart,
   Hash,
@@ -18,6 +19,7 @@ import {
   CheckCircle,
   AlertCircle,
   Calendar,
+  Link,
 } from "lucide-react";
 import DateField from "../../Components/DateField";
 import { useAuth } from "../../context/AuthContext.jsx";
@@ -54,6 +56,9 @@ const OrderEditPage = () => {
   const [isScholarship, setIsScholarship] = useState(false);
   const [scholarshipProjectId, setScholarshipProjectId] = useState("");
   const [projects, setProjects] = useState([]);
+
+  // ✅ מודל שיוך
+  const [isLinkModalOpen, setIsLinkModalOpen] = useState(false);
 
   const { id } = useParams();
   const navigate = useNavigate();
@@ -203,6 +208,20 @@ const OrderEditPage = () => {
 
     fetchProjects();
   }, []);
+
+  // ✅ פונקציה לטיפול בשיוך
+  const handleLinked = (updatedOrder) => {
+    setOrder(updatedOrder);
+    setIsCredited(updatedOrder.isCredited);
+  };
+
+  // ✅ פונקציה לחישוב מספר השיוכים
+  const getLinkCount = () => {
+    if (!order) return 0;
+    return (order.linkedInvoices?.length || 0) +
+           (order.linkedSalaries?.length || 0) +
+           (order.linkedOrders?.length || 0);
+  };
 
   const extractPublicIdFromUrl = (url) => {
     if (!url) {
@@ -990,25 +1009,42 @@ const OrderEditPage = () => {
               </div>
             </div>
 
-            {/* זיכוי */}
+            {/* זיכוי ושיוך */}
             <div className="mt-6 p-4 bg-purple-50 border-2 border-purple-200 rounded-xl space-y-4">
-              <label className="flex items-center gap-3 cursor-pointer">
-                <input
-                  type="checkbox"
-                  checked={isCredited}
-                  onChange={(e) => {
-                    setIsCredited(e.target.checked);
-                    if (!e.target.checked) {
-                      setCreditDate("");
-                    }
-                  }}
-                  disabled={!canEdit}
-                  className="w-5 h-5 text-purple-600 border-2 border-purple-300 rounded focus:ring-2 focus:ring-purple-400 disabled:cursor-not-allowed"
-                />
-                <span className="text-sm font-bold text-purple-900">
-                  ההזמנה זוכתה
-                </span>
-              </label>
+              <div className="flex items-center justify-between">
+                <label className="flex items-center gap-3 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={isCredited}
+                    onChange={(e) => {
+                      setIsCredited(e.target.checked);
+                      if (!e.target.checked) {
+                        setCreditDate("");
+                      }
+                    }}
+                    disabled={!canEdit}
+                    className="w-5 h-5 text-purple-600 border-2 border-purple-300 rounded focus:ring-2 focus:ring-purple-400 disabled:cursor-not-allowed"
+                  />
+                  <span className="text-sm font-bold text-purple-900">
+                    ההזמנה זוכתה
+                  </span>
+                </label>
+
+                {/* כפתור שיוך */}
+                <button
+                  type="button"
+                  onClick={() => setIsLinkModalOpen(true)}
+                  className="px-4 py-2 bg-gradient-to-r from-blue-500 to-indigo-500 text-white rounded-xl font-bold hover:from-blue-600 hover:to-indigo-600 transition-all shadow-lg flex items-center gap-2"
+                >
+                  <Link className="w-4 h-4" />
+                  שיוך
+                  {getLinkCount() > 0 && (
+                    <span className="px-2 py-0.5 bg-white/20 rounded-full text-xs">
+                      {getLinkCount()}
+                    </span>
+                  )}
+                </button>
+              </div>
 
               {isCredited && (
                 <div>
@@ -1023,6 +1059,30 @@ const OrderEditPage = () => {
                     disabled={!canEdit}
                     className="w-full px-4 py-3 border-2 border-purple-200 rounded-xl focus:border-purple-400 focus:outline-none disabled:bg-gray-100 disabled:cursor-not-allowed"
                   />
+                </div>
+              )}
+
+              {/* תצוגת שיוכים */}
+              {getLinkCount() > 0 && (
+                <div className="pt-4 border-t border-purple-200">
+                  <p className="text-sm font-bold text-purple-900 mb-2">פריטים משויכים:</p>
+                  <div className="flex flex-wrap gap-2">
+                    {order.linkedInvoices?.length > 0 && (
+                      <span className="px-3 py-1 bg-blue-100 text-blue-700 rounded-full text-xs font-bold">
+                        {order.linkedInvoices.length} חשבוניות
+                      </span>
+                    )}
+                    {order.linkedSalaries?.length > 0 && (
+                      <span className="px-3 py-1 bg-green-100 text-green-700 rounded-full text-xs font-bold">
+                        {order.linkedSalaries.length} משכורות
+                      </span>
+                    )}
+                    {order.linkedOrders?.length > 0 && (
+                      <span className="px-3 py-1 bg-purple-100 text-purple-700 rounded-full text-xs font-bold">
+                        {order.linkedOrders.length} הזמנות
+                      </span>
+                    )}
+                  </div>
                 </div>
               )}
             </div>
@@ -1118,6 +1178,14 @@ const OrderEditPage = () => {
           </div>
         </form>
       </div>
+
+      {/* מודל שיוך הזמנה */}
+      <OrderLinkModal
+        open={isLinkModalOpen}
+        onClose={() => setIsLinkModalOpen(false)}
+        order={order}
+        onLinked={handleLinked}
+      />
     </div>
   );
 };

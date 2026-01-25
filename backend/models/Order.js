@@ -85,7 +85,12 @@ const orderSchema = new mongoose.Schema({
 
   // ✅ שדות זיכוי
   isCredited: { type: Boolean, default: false },
-  creditDate: { type: Date, required: false }
+  creditDate: { type: Date, required: false },
+
+  // ✅ שיוך לחשבוניות, משכורות והזמנות
+  linkedInvoices: [{ type: mongoose.Schema.Types.ObjectId, ref: "Invoice" }],
+  linkedSalaries: [{ type: mongoose.Schema.Types.ObjectId, ref: "Salary" }],
+  linkedOrders: [{ type: mongoose.Schema.Types.ObjectId, ref: "Order" }]
 
 }, {
   timestamps: true  // Mongoose will automatically manage createdAt and updatedAt

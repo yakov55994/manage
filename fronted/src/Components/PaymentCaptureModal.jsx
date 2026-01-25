@@ -128,7 +128,7 @@ export default function PaymentCaptureModal({
       {/* Modal with animation */}
       <div
         ref={dialogRef}
-        className={`relative bg-white w-full max-w-md mx-4 rounded-2xl shadow-2xl overflow-hidden transition-all duration-300 ease-out ${
+        className={`relative bg-white w-full max-w-md mx-4 rounded-2xl shadow-2xl max-h-[90vh] overflow-y-auto transition-all duration-300 ease-out ${
           isVisible
             ? "opacity-100 scale-100 translate-y-0"
             : "opacity-0 scale-95 translate-y-4"

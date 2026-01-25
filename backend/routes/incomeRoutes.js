@@ -46,6 +46,9 @@ router.post(
 // עדכון הערות מרובה
 router.put("/bulk/notes", protect, incomeController.bulkUpdateNotes);
 
+// שיוך הכנסה לחשבוניות, משכורות והזמנות
+router.put("/:incomeId/link", protect, incomeController.linkIncome);
+
 // עדכון הכנסה
 router.put("/:incomeId", protect, incomeController.updateIncome);
 

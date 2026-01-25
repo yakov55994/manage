@@ -1,25 +1,24 @@
 import { useState, useEffect } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { toast } from "sonner";
-import { Save, ArrowLeft, DollarSign, FileText, X } from "lucide-react";
+import { Save, ArrowLeft, DollarSign, FileText, Link2, Receipt, Briefcase, ShoppingCart } from "lucide-react";
 import { ClipLoader } from "react-spinners";
 import api from "../../api/api";
-import OrderSelectionModal from "../../Components/OrderSelectionModal";
+import IncomeLinkModal from "../../Components/IncomeLinkModal";
 
 export default function UpdateIncome() {
   const { id } = useParams();
   const navigate = useNavigate();
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
-  const [isOrderModalOpen, setIsOrderModalOpen] = useState(false);
-  const [selectedOrder, setSelectedOrder] = useState(null);
+  const [isLinkModalOpen, setIsLinkModalOpen] = useState(false);
+  const [income, setIncome] = useState(null);
 
   const [formData, setFormData] = useState({
     date: "",
     amount: "",
     description: "",
     notes: "",
-    orderId: null,
     isCredited: "לא",
   });
 
@@ -31,30 +30,27 @@ export default function UpdateIncome() {
     try {
       setLoading(true);
       const response = await api.get(`/incomes/${id}`);
-      const income = response.data?.data;
+      const incomeData = response.data?.data;
 
-      if (!income) {
+      if (!incomeData) {
         toast.error("הכנסה לא נמצאה");
         navigate("/incomes");
         return;
       }
 
       // המרת תאריך לפורמט שמתאים ל-input date
-      const dateObj = new Date(income.date);
+      const dateObj = new Date(incomeData.date);
       const formattedDate = dateObj.toISOString().split("T")[0];
 
       setFormData({
         date: formattedDate,
-        amount: income.amount || "",
-        description: income.description || "",
-        notes: income.notes || "",
-        orderId: income.orderId?._id || income.orderId || null,
-        isCredited: income.isCredited || "לא",
+        amount: incomeData.amount || "",
+        description: incomeData.description || "",
+        notes: incomeData.notes || "",
+        isCredited: incomeData.isCredited || "לא",
       });
 
-      if (income.orderId && typeof income.orderId === 'object') {
-        setSelectedOrder(income.orderId);
-      }
+      setIncome(incomeData);
     } catch (error) {
       console.error("Error loading income:", error);
       toast.error("שגיאה בטעינת ההכנסה");
@@ -68,27 +64,22 @@ export default function UpdateIncome() {
     setFormData((prev) => ({ ...prev, [field]: value }));
   };
 
-  // טיפול בבחירת הזמנה מהמודל
-  const handleOrderSelect = (order) => {
-    if (order) {
-      setSelectedOrder(order);
-      // שויכו להזמנה - עדכן שדות אוטומטית
-      setFormData(prev => ({
-        ...prev,
-        orderId: order._id,
-        isCredited: "כן",
-        // התאריך תשלום יהיה תאריך הזיכוי (תאריך ההכנסה הנוכחי או התאריך שהמשתמש בחר)
-        date: prev.date || new Date().toISOString().split("T")[0],
-      }));
-    } else {
-      // ביטול שיוך
-      setSelectedOrder(null);
-      setFormData(prev => ({
-        ...prev,
-        orderId: null,
-        isCredited: "לא",
-      }));
-    }
+  // טיפול בשמירה מהמודל שיוך
+  const handleLinked = (updatedIncome) => {
+    setIncome(updatedIncome);
+    setFormData(prev => ({
+      ...prev,
+      isCredited: updatedIncome.isCredited || "לא",
+    }));
+    toast.success("השיוך עודכן בהצלחה!");
+  };
+
+  // חישוב מספר השיוכים
+  const getLinkCount = () => {
+    if (!income) return 0;
+    return (income.linkedInvoices?.length || 0) +
+           (income.linkedSalaries?.length || 0) +
+           (income.linkedOrders?.length || 0);
   };
 
   const handleSubmit = async (e) => {
@@ -102,88 +93,8 @@ export default function UpdateIncome() {
     setSaving(true);
 
     try {
-      // קודם כל, טען את ההכנסה המקורית כדי לבדוק אם היה orderId קודם
-      const originalIncomeRes = await api.get(`/incomes/${id}`);
-      const originalIncome = originalIncomeRes.data?.data;
-      const oldOrderId = originalIncome?.orderId?._id || originalIncome?.orderId;
-      const newOrderId = formData.orderId;
-
-      console.log('📝 Update income - Old orderId:', oldOrderId, 'New orderId:', newOrderId);
-
-      // עדכן את ההכנסה
+      // עדכן את ההכנסה (בלי השיוכים - הם מטופלים דרך המודל נפרד)
       await api.put(`/incomes/${id}`, formData);
-
-      // אם היה orderId קודם ועכשיו אין (ביטול שיוך)
-      if (oldOrderId && !newOrderId) {
-        console.log('🔓 Unlinking order:', oldOrderId);
-        try {
-          const orderRes = await api.get(`/orders/${oldOrderId}`);
-          const orderData = orderRes.data?.data || orderRes.data;
-
-          await api.put(`/orders/${oldOrderId}`, {
-            ...orderData,
-            projectId: typeof orderData.projectId === 'object'
-              ? (orderData.projectId._id || orderData.projectId.$oid)
-              : orderData.projectId,
-            supplierId: typeof orderData.supplierId === 'object'
-              ? (orderData.supplierId?._id || orderData.supplierId?.$oid)
-              : orderData.supplierId,
-            isCredited: false,
-            creditDate: null,
-          });
-          console.log('✅ Order unmarked as credited');
-        } catch (err) {
-          console.error('Error updating old order:', err);
-        }
-      }
-
-      // אם יש orderId חדש (שיוך חדש או שינוי שיוך)
-      if (newOrderId) {
-        console.log('🔗 Linking to order:', newOrderId);
-        try {
-          const orderRes = await api.get(`/orders/${newOrderId}`);
-          const orderData = orderRes.data?.data || orderRes.data;
-
-          await api.put(`/orders/${newOrderId}`, {
-            ...orderData,
-            projectId: typeof orderData.projectId === 'object'
-              ? (orderData.projectId._id || orderData.projectId.$oid)
-              : orderData.projectId,
-            supplierId: typeof orderData.supplierId === 'object'
-              ? (orderData.supplierId?._id || orderData.supplierId?.$oid)
-              : orderData.supplierId,
-            isCredited: true,
-            creditDate: formData.date,
-          });
-          console.log('✅ Order marked as credited');
-        } catch (err) {
-          console.error('Error updating new order:', err);
-        }
-
-        // אם השתנה orderId (היה orderId אחר קודם)
-        if (oldOrderId && oldOrderId !== newOrderId) {
-          console.log('🔄 Changing order link - unlinking old order:', oldOrderId);
-          try {
-            const oldOrderRes = await api.get(`/orders/${oldOrderId}`);
-            const oldOrderData = oldOrderRes.data?.data || oldOrderRes.data;
-
-            await api.put(`/orders/${oldOrderId}`, {
-              ...oldOrderData,
-              projectId: typeof oldOrderData.projectId === 'object'
-                ? (oldOrderData.projectId._id || oldOrderData.projectId.$oid)
-                : oldOrderData.projectId,
-              supplierId: typeof oldOrderData.supplierId === 'object'
-                ? (oldOrderData.supplierId?._id || oldOrderData.supplierId?.$oid)
-                : oldOrderData.supplierId,
-              isCredited: false,
-              creditDate: null,
-            });
-            console.log('✅ Old order unmarked as credited');
-          } catch (err) {
-            console.error('Error updating old order:', err);
-          }
-        }
-      }
 
       toast.success("ההכנסה עודכנה בהצלחה!");
       navigate(`/incomes/${id}`);
@@ -298,66 +209,69 @@ export default function UpdateIncome() {
                 />
               </div>
 
-              {/* שיוך להזמנה */}
+              {/* שיוך לחשבוניות/משכורות/הזמנות */}
               <div className="md:col-span-2">
                 <label className="block text-sm font-bold text-slate-700 mb-2">
-                  שיוך להזמנה (אופציונלי)
+                  <Link2 className="w-4 h-4 inline ml-2" />
+                  שיוך לחשבוניות / משכורות / הזמנות
                 </label>
 
-                {selectedOrder ? (
-                  <div className="flex items-center justify-between p-4 bg-orange-50 border-2 border-orange-200 rounded-xl">
-                    <div className="flex items-center gap-3">
-                      <div className="p-2 bg-orange-100 rounded-lg text-orange-600">
-                        <FileText className="w-5 h-5" />
-                      </div>
-                      <div>
-                        <div className="font-bold text-slate-800">
-                          הזמנה #{selectedOrder.orderNumber}
-                        </div>
-                        <div className="text-sm text-slate-500">
-                          {selectedOrder.projectName} • {selectedOrder.invitingName}
-                        </div>
-                      </div>
-                    </div>
-                    <button
-                      type="button"
-                      onClick={() => setIsOrderModalOpen(true)}
-                      className="text-sm font-bold text-orange-600 hover:text-orange-700 hover:underline px-2"
-                    >
-                      החלף
-                    </button>
+                <button
+                  type="button"
+                  onClick={() => setIsLinkModalOpen(true)}
+                  className="w-full py-4 border-2 border-dashed border-orange-300 rounded-xl text-orange-600 font-bold hover:border-orange-500 hover:bg-orange-50 transition-all flex items-center justify-center gap-2"
+                >
+                  <Link2 className="w-5 h-5" />
+                  {getLinkCount() > 0 ? `${getLinkCount()} פריטים משויכים - לחץ לעריכה` : "לחץ לשיוך"}
+                </button>
+
+                {/* הצגת שיוכים קיימים */}
+                {income && getLinkCount() > 0 && (
+                  <div className="mt-3 flex flex-wrap gap-2">
+                    {income.linkedInvoices?.length > 0 && (
+                      <span className="inline-flex items-center gap-1 px-3 py-1 bg-blue-100 text-blue-700 rounded-full text-sm font-medium">
+                        <Receipt className="w-4 h-4" />
+                        {income.linkedInvoices.length} חשבוניות
+                      </span>
+                    )}
+                    {income.linkedSalaries?.length > 0 && (
+                      <span className="inline-flex items-center gap-1 px-3 py-1 bg-purple-100 text-purple-700 rounded-full text-sm font-medium">
+                        <Briefcase className="w-4 h-4" />
+                        {income.linkedSalaries.length} משכורות
+                      </span>
+                    )}
+                    {income.linkedOrders?.length > 0 && (
+                      <span className="inline-flex items-center gap-1 px-3 py-1 bg-orange-100 text-orange-700 rounded-full text-sm font-medium">
+                        <ShoppingCart className="w-4 h-4" />
+                        {income.linkedOrders.length} הזמנות
+                      </span>
+                    )}
                   </div>
-                ) : (
-                  <button
-                    type="button"
-                    onClick={() => setIsOrderModalOpen(true)}
-                    className="w-full py-3 border-2 border-dashed border-gray-300 rounded-xl text-gray-500 font-bold hover:border-orange-400 hover:text-orange-600 hover:bg-orange-50 transition-all"
-                  >
-                    + לחץ לשיוך הזמנה
-                  </button>
                 )}
 
-                <OrderSelectionModal
-                  isOpen={isOrderModalOpen}
-                  onClose={() => setIsOrderModalOpen(false)}
-                  onSelect={handleOrderSelect}
-                  selectedOrderId={formData.orderId}
-                />
+                {income && (
+                  <IncomeLinkModal
+                    isOpen={isLinkModalOpen}
+                    onClose={() => setIsLinkModalOpen(false)}
+                    income={income}
+                    onLinked={handleLinked}
+                  />
+                )}
               </div>
 
               {/* האם זוכה - לקריאה בלבד */}
               <div className="md:col-span-2">
                 <label className="block text-sm font-bold text-slate-700 mb-2">
-                  האם זוכה
+                  סטטוס שיוך
                 </label>
                 <div className={`px-4 py-3 border-2 rounded-xl ${formData.isCredited === "כן"
                   ? "border-green-300 bg-green-50 text-green-800 font-bold"
                   : "border-slate-200 bg-slate-50 text-slate-600"
                   }`}>
-                  {formData.isCredited}
-                  {formData.isCredited === "כן" && (
+                  {formData.isCredited === "כן" ? "משויך" : "לא משויך"}
+                  {getLinkCount() > 0 && (
                     <span className="text-xs text-green-600 mr-2">
-                      (משוייך להזמנה)
+                      ({getLinkCount()} פריטים)
                     </span>
                   )}
                 </div>

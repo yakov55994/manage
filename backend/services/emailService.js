@@ -183,3 +183,108 @@ export const sendWelcomeEmail = async (user) => {
     throw new Error('שגיאה בשליחת מייל ברוכים הבאים');
   }
 };
+
+// ✅ אישור זיכוי לספק
+export const sendPaymentConfirmationEmail = async (supplierEmail, supplierName, invoiceData) => {
+  try {
+    if (!apiInstance) {
+      console.warn('⚠ Brevo not configured - skipping email');
+      return { success: false, message: 'Email service not configured' };
+    }
+
+    if (!supplierEmail) {
+      console.warn('⚠ Supplier email not provided - skipping email');
+      return { success: false, message: 'Supplier email not provided' };
+    }
+
+    const { invoiceNumber, totalAmount, paymentDate, documentType } = invoiceData;
+
+    // פורמט תאריך
+    const formattedDate = paymentDate
+      ? new Date(paymentDate).toLocaleDateString('he-IL')
+      : new Date().toLocaleDateString('he-IL');
+
+    // פורמט סכום
+    const formattedAmount = Number(totalAmount).toLocaleString('he-IL');
+
+    // בדיקה אם חסר מסמך חשבונית מס / קבלה
+    const validDocTypes = ['חשבונית מס / קבלה', 'חשבונית מס/קבלה', 'חשבונית מס'];
+    const isMissingDocument = !documentType || !validDocTypes.includes(documentType);
+
+    const documentRequestHtml = isMissingDocument ? `
+      <div style="background: #fef2f2; border-right: 4px solid #ef4444; padding: 15px; border-radius: 8px; margin: 20px 0;">
+        <strong style="color: #dc2626;">⚠ בקשה דחופה:</strong>
+        <p style="margin: 10px 0 0; color: #7f1d1d;">
+          יש לשלוח <strong>חשבונית מס / קבלה</strong> בהקדם האפשרי.
+        </p>
+      </div>
+    ` : '';
+
+    const sendSmtpEmail = new brevo.SendSmtpEmail();
+
+    sendSmtpEmail.subject = `✅ אישור זיכוי - חשבונית מספר ${invoiceNumber}`;
+    sendSmtpEmail.to = [{ email: supplierEmail, name: supplierName || 'ספק יקר' }];
+    sendSmtpEmail.htmlContent = `
+      <div dir="rtl" style="font-family: Arial; max-width: 600px; margin: 0 auto; background: white; border-radius: 16px; overflow: hidden; box-shadow: 0 4px 6px rgba(0,0,0,0.1);">
+
+        <div style="background: linear-gradient(135deg, #10b981, #34d399); color: white; padding: 40px; text-align: center;">
+          <h1 style="margin: 0; font-size: 28px;">✅ אישור זיכוי</h1>
+          <p style="margin: 10px 0 0;">עמותת חינוך עם חיוך</p>
+        </div>
+
+        <div style="padding: 40px; color: #333; line-height: 1.8;">
+          <p style="font-size: 16px;">שלום <strong>${supplierName || 'ספק יקר'}</strong>,</p>
+
+          <p style="font-size: 18px; margin: 20px 0;">
+            <strong>בוצע זיכוי לחשבונך מעמותת חינוך עם חיוך</strong>
+          </p>
+
+          <div style="background: #f0fdf4; border-right: 4px solid #22c55e; padding: 20px; border-radius: 8px; margin: 20px 0;">
+            <table style="width: 100%; border-collapse: collapse;">
+              <tr>
+                <td style="padding: 8px 0; font-weight: bold; color: #166534;">תאריך:</td>
+                <td style="padding: 8px 0; color: #166534;">${formattedDate}</td>
+              </tr>
+              <tr>
+                <td style="padding: 8px 0; font-weight: bold; color: #166534;">מספר חשבונית:</td>
+                <td style="padding: 8px 0; color: #166534;">${invoiceNumber}</td>
+              </tr>
+              <tr>
+                <td style="padding: 8px 0; font-weight: bold; color: #166534;">סכום:</td>
+                <td style="padding: 8px 0; color: #166534; font-size: 18px; font-weight: bold;">₪${formattedAmount}</td>
+              </tr>
+            </table>
+          </div>
+
+          ${documentRequestHtml}
+
+          <p style="margin-top: 30px; color: #666;">
+            בברכה,<br>
+            <strong>עמותת חינוך עם חיוך</strong>
+          </p>
+        </div>
+
+        <div style="background: #f5f5f5; padding: 20px; text-align: center; color: #666; font-size: 14px; border-top: 2px solid #e5e5e5;">
+          <p style="margin: 0;">מייל זה נשלח אוטומטית ממערכת ניהולון</p>
+          <p style="margin: 5px 0 0;">© 2025 כל הזכויות שמורות</p>
+        </div>
+
+      </div>
+    `;
+    sendSmtpEmail.sender = {
+      name: 'עמותת חינוך עם חיוך',
+      email: process.env.BREVO_SENDER_EMAIL || 'noreply@nihulon.com'
+    };
+
+    const data = await apiInstance.sendTransacEmail(sendSmtpEmail);
+    console.log(`✅ Payment confirmation email sent to ${supplierEmail}`);
+
+    return { success: true, data };
+
+  } catch (error) {
+    console.error('❌ Error sending payment confirmation email:', error);
+    console.error('❌ Error body:', error.body);
+    // לא זורקים שגיאה - רק מחזירים false כדי לא לעצור את התהליך
+    return { success: false, message: 'שגיאה בשליחת מייל אישור זיכוי' };
+  }
+};

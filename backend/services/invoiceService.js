@@ -7,6 +7,7 @@ import Project from "../models/Project.js";
 import Order from "../models/Order.js";
 import Supplier from "../models/Supplier.js";
 import Salary from "../models/Salary.js";
+import { sendPaymentConfirmationEmail } from "./emailService.js";
 
 // ===================================================
 // עוזר לחישוב סכומים
@@ -825,9 +826,30 @@ async function updatePaymentStatus(
     updateData.checkDate = null;
   }
 
-  return Invoice.findByIdAndUpdate(invoiceId, updateData, {
+  const updatedInvoice = await Invoice.findByIdAndUpdate(invoiceId, updateData, {
     new: true,
   }).populate("supplierId", "name phone email bankDetails");
+
+  // שליחת מייל לספק כשמעדכנים לשולם
+  if (status === "כן" && updatedInvoice?.supplierId?.email) {
+    try {
+      await sendPaymentConfirmationEmail(
+        updatedInvoice.supplierId.email,
+        updatedInvoice.supplierId.name,
+        {
+          invoiceNumber: updatedInvoice.invoiceNumber,
+          totalAmount: updatedInvoice.totalAmount,
+          paymentDate: date || new Date(),
+          documentType: updatedInvoice.documentType,
+        }
+      );
+    } catch (emailError) {
+      console.error("❌ Failed to send payment confirmation email:", emailError);
+      // ממשיכים - לא עוצרים את התהליך בגלל שגיאת מייל
+    }
+  }
+
+  return updatedInvoice;
 }
 
 // ===============================================

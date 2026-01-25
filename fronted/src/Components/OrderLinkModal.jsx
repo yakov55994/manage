@@ -3,10 +3,10 @@ import { X, Search, FileText, Users, Filter, CheckSquare, Square, ShoppingCart }
 import api from "../api/api.js";
 import { toast } from "sonner";
 
-export default function ExpenseLinkModal({
+export default function OrderLinkModal({
   open,
   onClose,
-  expense,
+  order,
   onLinked,
 }) {
   const [loading, setLoading] = useState(false);
@@ -31,7 +31,7 @@ export default function ExpenseLinkModal({
     year: "",
   });
 
-  // הזמנות
+  // הזמנות אחרות
   const [orders, setOrders] = useState([]);
   const [selectedOrderIds, setSelectedOrderIds] = useState([]);
   const [orderSearch, setOrderSearch] = useState("");
@@ -57,7 +57,9 @@ export default function ExpenseLinkModal({
 
         setInvoices(invoicesRes.data?.data || invoicesRes.data || []);
         setSalaries(salariesRes.data?.data || salariesRes.data || []);
-        setOrders(ordersRes.data?.data || ordersRes.data || []);
+        // סנן את ההזמנה הנוכחית מהרשימה
+        const allOrders = ordersRes.data?.data || ordersRes.data || [];
+        setOrders(allOrders.filter(o => o._id !== order?._id));
       } catch (err) {
         console.error(err);
         toast.error("שגיאה בטעינת נתונים");
@@ -65,16 +67,16 @@ export default function ExpenseLinkModal({
     };
 
     fetchData();
-  }, [open]);
+  }, [open, order?._id]);
 
   // איפוס בחירות בעת פתיחה
   useEffect(() => {
-    if (open && expense) {
-      setSelectedInvoiceIds(expense.linkedInvoices?.map(inv => inv._id || inv) || []);
-      setSelectedSalaryIds(expense.linkedSalaries?.map(sal => sal._id || sal) || []);
-      setSelectedOrderIds(expense.linkedOrders?.map(ord => ord._id || ord) || []);
+    if (open && order) {
+      setSelectedInvoiceIds(order.linkedInvoices?.map(inv => inv._id || inv) || []);
+      setSelectedSalaryIds(order.linkedSalaries?.map(sal => sal._id || sal) || []);
+      setSelectedOrderIds(order.linkedOrders?.map(ord => ord._id || ord) || []);
     }
-  }, [open, expense]);
+  }, [open, order]);
 
   // סינון חשבוניות
   const filteredInvoices = useMemo(() => {
@@ -97,7 +99,7 @@ export default function ExpenseLinkModal({
       filtered = filtered.filter(inv => inv.paid !== "כן");
     }
 
-    // סינון לפי תאריך תשלום (paymentDate)
+    // סינון לפי תאריך תשלום
     if (invoiceFilters.dateFrom) {
       const from = new Date(invoiceFilters.dateFrom);
       filtered = filtered.filter(inv => inv.paymentDate && new Date(inv.paymentDate) >= from);
@@ -176,6 +178,15 @@ export default function ExpenseLinkModal({
     );
   };
 
+  // Toggle בחירת הזמנה
+  const toggleOrder = (orderId) => {
+    setSelectedOrderIds(prev =>
+      prev.includes(orderId)
+        ? prev.filter(id => id !== orderId)
+        : [...prev, orderId]
+    );
+  };
+
   // בחירת כל החשבוניות המסוננות
   const selectAllInvoices = () => {
     const allIds = filteredInvoices.map(inv => inv._id);
@@ -212,15 +223,6 @@ export default function ExpenseLinkModal({
     setSelectedSalaryIds(prev => prev.filter(id => !filteredIds.includes(id)));
   };
 
-  // Toggle בחירת הזמנה
-  const toggleOrder = (orderId) => {
-    setSelectedOrderIds(prev =>
-      prev.includes(orderId)
-        ? prev.filter(id => id !== orderId)
-        : [...prev, orderId]
-    );
-  };
-
   // בחירת כל ההזמנות המסוננות
   const selectAllOrders = () => {
     const allIds = filteredOrders.map(ord => ord._id);
@@ -243,7 +245,7 @@ export default function ExpenseLinkModal({
   const handleSave = async () => {
     setLoading(true);
     try {
-      const response = await api.put(`/expenses/${expense._id}/link`, {
+      const response = await api.put(`/orders/${order._id}/link`, {
         invoiceIds: selectedInvoiceIds,
         salaryIds: selectedSalaryIds,
         orderIds: selectedOrderIds,
@@ -254,7 +256,6 @@ export default function ExpenseLinkModal({
       onClose();
     } catch (err) {
       console.error(err);
-      // הצג את הודעת השגיאה מהשרת אם קיימת
       const errorMessage = err.response?.data?.message || "שגיאה בשמירת השיוך";
       toast.error(errorMessage);
     } finally {
@@ -280,10 +281,10 @@ export default function ExpenseLinkModal({
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50" dir="rtl">
       <div className="bg-white rounded-2xl shadow-2xl w-full max-w-4xl max-h-[90vh] overflow-hidden flex flex-col">
         {/* Header */}
-        <div className="bg-gradient-to-r from-orange-500 to-amber-500 px-6 py-4 flex items-center justify-between">
+        <div className="bg-gradient-to-r from-blue-500 to-indigo-500 px-6 py-4 flex items-center justify-between">
           <h2 className="text-xl font-bold text-white flex items-center gap-2">
-            <FileText className="w-6 h-6" />
-            שיוך הוצאה לחשבוניות / משכורות
+            <ShoppingCart className="w-6 h-6" />
+            שיוך הזמנה לחשבוניות / משכורות / הזמנות
           </h2>
           <button
             onClick={onClose}
@@ -293,13 +294,13 @@ export default function ExpenseLinkModal({
           </button>
         </div>
 
-        {/* Expense Info */}
-        <div className="bg-orange-50 px-6 py-3 border-b">
+        {/* Order Info */}
+        <div className="bg-blue-50 px-6 py-3 border-b">
           <div className="flex items-center gap-4 text-sm">
-            <span className="font-bold text-slate-700">הוצאה:</span>
-            <span>{expense?.description}</span>
-            <span className="font-bold text-orange-600">{formatCurrency(expense?.amount)}</span>
-            <span className="text-slate-500">{formatDate(expense?.date)}</span>
+            <span className="font-bold text-slate-700">הזמנה:</span>
+            <span>#{order?.orderNumber}</span>
+            <span className="text-slate-500">{order?.projectName}</span>
+            <span className="font-bold text-blue-600">{formatCurrency(order?.sum)}</span>
           </div>
         </div>
 
@@ -309,7 +310,7 @@ export default function ExpenseLinkModal({
             onClick={() => setActiveTab("invoices")}
             className={`flex-1 px-6 py-3 font-bold transition-colors flex items-center justify-center gap-2 ${
               activeTab === "invoices"
-                ? "bg-orange-100 text-orange-700 border-b-2 border-orange-500"
+                ? "bg-blue-100 text-blue-700 border-b-2 border-blue-500"
                 : "text-slate-600 hover:bg-slate-50"
             }`}
           >
@@ -320,7 +321,7 @@ export default function ExpenseLinkModal({
             onClick={() => setActiveTab("salaries")}
             className={`flex-1 px-6 py-3 font-bold transition-colors flex items-center justify-center gap-2 ${
               activeTab === "salaries"
-                ? "bg-orange-100 text-orange-700 border-b-2 border-orange-500"
+                ? "bg-blue-100 text-blue-700 border-b-2 border-blue-500"
                 : "text-slate-600 hover:bg-slate-50"
             }`}
           >
@@ -331,7 +332,7 @@ export default function ExpenseLinkModal({
             onClick={() => setActiveTab("orders")}
             className={`flex-1 px-6 py-3 font-bold transition-colors flex items-center justify-center gap-2 ${
               activeTab === "orders"
-                ? "bg-orange-100 text-orange-700 border-b-2 border-orange-500"
+                ? "bg-blue-100 text-blue-700 border-b-2 border-blue-500"
                 : "text-slate-600 hover:bg-slate-50"
             }`}
           >
@@ -354,13 +355,13 @@ export default function ExpenseLinkModal({
                       placeholder="חיפוש לפי ספק, מספר חשבונית, סכום..."
                       value={invoiceSearch}
                       onChange={(e) => setInvoiceSearch(e.target.value)}
-                      className="w-full pr-10 pl-4 py-2 border-2 border-slate-200 rounded-xl focus:border-orange-500 focus:outline-none"
+                      className="w-full pr-10 pl-4 py-2 border-2 border-slate-200 rounded-xl focus:border-blue-500 focus:outline-none"
                     />
                   </div>
                   <button
                     onClick={() => setShowInvoiceFilters(!showInvoiceFilters)}
                     className={`px-4 py-2 rounded-xl border-2 flex items-center gap-2 transition-colors ${
-                      showInvoiceFilters ? "bg-orange-100 border-orange-500 text-orange-700" : "border-slate-200 hover:border-orange-300"
+                      showInvoiceFilters ? "bg-blue-100 border-blue-500 text-blue-700" : "border-slate-200 hover:border-blue-300"
                     }`}
                   >
                     <Filter className="w-5 h-5" />
@@ -368,7 +369,7 @@ export default function ExpenseLinkModal({
                   </button>
                   <button
                     onClick={selectAllInvoices}
-                    className="px-4 py-2 bg-emerald-500 text-white rounded-xl hover:bg-emerald-600 transition-colors"
+                    className="px-4 py-2 bg-blue-500 text-white rounded-xl hover:bg-blue-600 transition-colors"
                   >
                     בחר הכל
                   </button>
@@ -387,7 +388,7 @@ export default function ExpenseLinkModal({
                       <select
                         value={invoiceFilters.paymentStatus}
                         onChange={(e) => setInvoiceFilters(prev => ({ ...prev, paymentStatus: e.target.value }))}
-                        className="px-3 py-1 border-2 border-slate-200 rounded-lg focus:border-orange-500 focus:outline-none"
+                        className="px-3 py-1 border-2 border-slate-200 rounded-lg focus:border-blue-500 focus:outline-none"
                       >
                         <option value="all">הכל</option>
                         <option value="paid">שולמו</option>
@@ -400,7 +401,7 @@ export default function ExpenseLinkModal({
                         type="date"
                         value={invoiceFilters.dateFrom}
                         onChange={(e) => setInvoiceFilters(prev => ({ ...prev, dateFrom: e.target.value }))}
-                        className="px-3 py-1 border-2 border-slate-200 rounded-lg focus:border-orange-500 focus:outline-none"
+                        className="px-3 py-1 border-2 border-slate-200 rounded-lg focus:border-blue-500 focus:outline-none"
                       />
                     </div>
                     <div className="flex items-center gap-2">
@@ -409,12 +410,12 @@ export default function ExpenseLinkModal({
                         type="date"
                         value={invoiceFilters.dateTo}
                         onChange={(e) => setInvoiceFilters(prev => ({ ...prev, dateTo: e.target.value }))}
-                        className="px-3 py-1 border-2 border-slate-200 rounded-lg focus:border-orange-500 focus:outline-none"
+                        className="px-3 py-1 border-2 border-slate-200 rounded-lg focus:border-blue-500 focus:outline-none"
                       />
                     </div>
                     <button
                       onClick={() => setInvoiceFilters({ paymentStatus: "all", dateFrom: "", dateTo: "" })}
-                      className="px-3 py-1 text-orange-600 hover:bg-orange-50 rounded-lg transition-colors"
+                      className="px-3 py-1 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
                     >
                       נקה סינון
                     </button>
@@ -434,13 +435,13 @@ export default function ExpenseLinkModal({
                       onClick={() => toggleInvoice(invoice._id)}
                       className={`p-3 border-2 rounded-xl cursor-pointer transition-all flex items-center gap-4 ${
                         selectedInvoiceIds.includes(invoice._id)
-                          ? "border-orange-500 bg-orange-50"
-                          : "border-slate-200 hover:border-orange-300 hover:bg-slate-50"
+                          ? "border-blue-500 bg-blue-50"
+                          : "border-slate-200 hover:border-blue-300 hover:bg-slate-50"
                       }`}
                     >
                       <div className="flex-shrink-0">
                         {selectedInvoiceIds.includes(invoice._id) ? (
-                          <CheckSquare className="w-6 h-6 text-orange-500" />
+                          <CheckSquare className="w-6 h-6 text-blue-500" />
                         ) : (
                           <Square className="w-6 h-6 text-slate-400" />
                         )}
@@ -454,7 +455,7 @@ export default function ExpenseLinkModal({
                         </div>
                       </div>
                       <div className="text-right">
-                        <div className="font-bold text-orange-600">
+                        <div className="font-bold text-blue-600">
                           {formatCurrency(invoice.totalAmount)}
                         </div>
                         <div className="text-sm text-slate-500">
@@ -464,7 +465,7 @@ export default function ExpenseLinkModal({
                       <div>
                         <span className={`px-2 py-1 rounded-full text-xs font-bold ${
                           invoice.paid === "כן"
-                            ? "bg-emerald-100 text-emerald-700"
+                            ? "bg-green-100 text-green-700"
                             : "bg-red-100 text-red-700"
                         }`}>
                           {invoice.paid === "כן" ? "שולם" : "לא שולם"}
@@ -489,13 +490,13 @@ export default function ExpenseLinkModal({
                       placeholder="חיפוש לפי שם עובד, סכום..."
                       value={salarySearch}
                       onChange={(e) => setSalarySearch(e.target.value)}
-                      className="w-full pr-10 pl-4 py-2 border-2 border-slate-200 rounded-xl focus:border-orange-500 focus:outline-none"
+                      className="w-full pr-10 pl-4 py-2 border-2 border-slate-200 rounded-xl focus:border-blue-500 focus:outline-none"
                     />
                   </div>
                   <button
                     onClick={() => setShowSalaryFilters(!showSalaryFilters)}
                     className={`px-4 py-2 rounded-xl border-2 flex items-center gap-2 transition-colors ${
-                      showSalaryFilters ? "bg-orange-100 border-orange-500 text-orange-700" : "border-slate-200 hover:border-orange-300"
+                      showSalaryFilters ? "bg-blue-100 border-blue-500 text-blue-700" : "border-slate-200 hover:border-blue-300"
                     }`}
                   >
                     <Filter className="w-5 h-5" />
@@ -503,7 +504,7 @@ export default function ExpenseLinkModal({
                   </button>
                   <button
                     onClick={selectAllSalaries}
-                    className="px-4 py-2 bg-emerald-500 text-white rounded-xl hover:bg-emerald-600 transition-colors"
+                    className="px-4 py-2 bg-blue-500 text-white rounded-xl hover:bg-blue-600 transition-colors"
                   >
                     בחר הכל
                   </button>
@@ -522,7 +523,7 @@ export default function ExpenseLinkModal({
                       <select
                         value={salaryFilters.month}
                         onChange={(e) => setSalaryFilters(prev => ({ ...prev, month: e.target.value }))}
-                        className="px-3 py-1 border-2 border-slate-200 rounded-lg focus:border-orange-500 focus:outline-none"
+                        className="px-3 py-1 border-2 border-slate-200 rounded-lg focus:border-blue-500 focus:outline-none"
                       >
                         <option value="">הכל</option>
                         {[1,2,3,4,5,6,7,8,9,10,11,12].map(m => (
@@ -535,7 +536,7 @@ export default function ExpenseLinkModal({
                       <select
                         value={salaryFilters.year}
                         onChange={(e) => setSalaryFilters(prev => ({ ...prev, year: e.target.value }))}
-                        className="px-3 py-1 border-2 border-slate-200 rounded-lg focus:border-orange-500 focus:outline-none"
+                        className="px-3 py-1 border-2 border-slate-200 rounded-lg focus:border-blue-500 focus:outline-none"
                       >
                         <option value="">הכל</option>
                         {[2023, 2024, 2025, 2026].map(y => (
@@ -545,7 +546,7 @@ export default function ExpenseLinkModal({
                     </div>
                     <button
                       onClick={() => setSalaryFilters({ month: "", year: "" })}
-                      className="px-3 py-1 text-orange-600 hover:bg-orange-50 rounded-lg transition-colors"
+                      className="px-3 py-1 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
                     >
                       נקה סינון
                     </button>
@@ -565,13 +566,13 @@ export default function ExpenseLinkModal({
                       onClick={() => toggleSalary(salary._id)}
                       className={`p-3 border-2 rounded-xl cursor-pointer transition-all flex items-center gap-4 ${
                         selectedSalaryIds.includes(salary._id)
-                          ? "border-orange-500 bg-orange-50"
-                          : "border-slate-200 hover:border-orange-300 hover:bg-slate-50"
+                          ? "border-blue-500 bg-blue-50"
+                          : "border-slate-200 hover:border-blue-300 hover:bg-slate-50"
                       }`}
                     >
                       <div className="flex-shrink-0">
                         {selectedSalaryIds.includes(salary._id) ? (
-                          <CheckSquare className="w-6 h-6 text-orange-500" />
+                          <CheckSquare className="w-6 h-6 text-blue-500" />
                         ) : (
                           <Square className="w-6 h-6 text-slate-400" />
                         )}
@@ -585,7 +586,7 @@ export default function ExpenseLinkModal({
                         </div>
                       </div>
                       <div className="text-right">
-                        <div className="font-bold text-orange-600">
+                        <div className="font-bold text-blue-600">
                           {formatCurrency(salary.finalAmount || salary.totalAmount)}
                         </div>
                       </div>
@@ -608,13 +609,13 @@ export default function ExpenseLinkModal({
                       placeholder="חיפוש לפי מספר הזמנה, פרויקט, סכום..."
                       value={orderSearch}
                       onChange={(e) => setOrderSearch(e.target.value)}
-                      className="w-full pr-10 pl-4 py-2 border-2 border-slate-200 rounded-xl focus:border-orange-500 focus:outline-none"
+                      className="w-full pr-10 pl-4 py-2 border-2 border-slate-200 rounded-xl focus:border-blue-500 focus:outline-none"
                     />
                   </div>
                   <button
                     onClick={() => setShowOrderFilters(!showOrderFilters)}
                     className={`px-4 py-2 rounded-xl border-2 flex items-center gap-2 transition-colors ${
-                      showOrderFilters ? "bg-orange-100 border-orange-500 text-orange-700" : "border-slate-200 hover:border-orange-300"
+                      showOrderFilters ? "bg-blue-100 border-blue-500 text-blue-700" : "border-slate-200 hover:border-blue-300"
                     }`}
                   >
                     <Filter className="w-5 h-5" />
@@ -622,7 +623,7 @@ export default function ExpenseLinkModal({
                   </button>
                   <button
                     onClick={selectAllOrders}
-                    className="px-4 py-2 bg-emerald-500 text-white rounded-xl hover:bg-emerald-600 transition-colors"
+                    className="px-4 py-2 bg-blue-500 text-white rounded-xl hover:bg-blue-600 transition-colors"
                   >
                     בחר הכל
                   </button>
@@ -641,7 +642,7 @@ export default function ExpenseLinkModal({
                       <select
                         value={orderFilters.status}
                         onChange={(e) => setOrderFilters(prev => ({ ...prev, status: e.target.value }))}
-                        className="px-3 py-1 border-2 border-slate-200 rounded-lg focus:border-orange-500 focus:outline-none"
+                        className="px-3 py-1 border-2 border-slate-200 rounded-lg focus:border-blue-500 focus:outline-none"
                       >
                         <option value="all">הכל</option>
                         <option value="הוגש">הוגש</option>
@@ -652,7 +653,7 @@ export default function ExpenseLinkModal({
                     </div>
                     <button
                       onClick={() => setOrderFilters({ status: "all" })}
-                      className="px-3 py-1 text-orange-600 hover:bg-orange-50 rounded-lg transition-colors"
+                      className="px-3 py-1 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
                     >
                       נקה סינון
                     </button>
@@ -666,45 +667,45 @@ export default function ExpenseLinkModal({
                   מציג {filteredOrders.length} הזמנות
                 </div>
                 <div className="space-y-2">
-                  {filteredOrders.map((order) => (
+                  {filteredOrders.map((ord) => (
                     <div
-                      key={order._id}
-                      onClick={() => toggleOrder(order._id)}
+                      key={ord._id}
+                      onClick={() => toggleOrder(ord._id)}
                       className={`p-3 border-2 rounded-xl cursor-pointer transition-all flex items-center gap-4 ${
-                        selectedOrderIds.includes(order._id)
-                          ? "border-orange-500 bg-orange-50"
-                          : "border-slate-200 hover:border-orange-300 hover:bg-slate-50"
+                        selectedOrderIds.includes(ord._id)
+                          ? "border-blue-500 bg-blue-50"
+                          : "border-slate-200 hover:border-blue-300 hover:bg-slate-50"
                       }`}
                     >
                       <div className="flex-shrink-0">
-                        {selectedOrderIds.includes(order._id) ? (
-                          <CheckSquare className="w-6 h-6 text-orange-500" />
+                        {selectedOrderIds.includes(ord._id) ? (
+                          <CheckSquare className="w-6 h-6 text-blue-500" />
                         ) : (
                           <Square className="w-6 h-6 text-slate-400" />
                         )}
                       </div>
                       <div className="flex-1 min-w-0">
                         <div className="font-bold text-slate-900">
-                          הזמנה #{order.orderNumber}
+                          הזמנה #{ord.orderNumber}
                         </div>
                         <div className="text-sm text-slate-500">
-                          {order.projectName}
+                          {ord.projectName}
                         </div>
                       </div>
                       <div className="text-right">
-                        <div className="font-bold text-orange-600">
-                          {formatCurrency(order.sum)}
+                        <div className="font-bold text-blue-600">
+                          {formatCurrency(ord.sum)}
                         </div>
                       </div>
                       <div>
                         <span className={`px-2 py-1 rounded-full text-xs font-bold ${
-                          order.status === "הוגש"
-                            ? "bg-emerald-100 text-emerald-700"
-                            : order.status === "בעיבוד"
+                          ord.status === "הוגש"
+                            ? "bg-green-100 text-green-700"
+                            : ord.status === "בעיבוד"
                             ? "bg-yellow-100 text-yellow-700"
                             : "bg-slate-100 text-slate-700"
                         }`}>
-                          {order.status}
+                          {ord.status}
                         </span>
                       </div>
                     </div>
@@ -730,7 +731,7 @@ export default function ExpenseLinkModal({
             <button
               onClick={handleSave}
               disabled={loading}
-              className="px-6 py-2 bg-gradient-to-r from-orange-500 to-amber-500 text-white rounded-xl font-bold hover:from-orange-600 hover:to-amber-600 transition-colors disabled:opacity-50"
+              className="px-6 py-2 bg-gradient-to-r from-blue-500 to-indigo-500 text-white rounded-xl font-bold hover:from-blue-600 hover:to-indigo-600 transition-colors disabled:opacity-50"
             >
               {loading ? "שומר..." : "שמור שיוך"}
             </button>

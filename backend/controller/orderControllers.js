@@ -168,6 +168,25 @@ const orderController = {
     } catch (e) {
       sendError(res, e);
     }
+  },
+
+  async linkOrder(req, res) {
+    try {
+      const { orderId } = req.params;
+      const { invoiceIds, salaryIds, orderIds } = req.body;
+
+      const result = await orderService.linkOrder(
+        req.user,
+        orderId,
+        invoiceIds,
+        salaryIds,
+        orderIds
+      );
+
+      res.json({ success: true, data: result });
+    } catch (e) {
+      sendError(res, e);
+    }
   }
 };
 

@@ -1,5 +1,7 @@
 import Order from "../models/Order.js";
 import Project from "../models/Project.js";
+import Invoice from "../models/Invoice.js";
+import Salary from "../models/Salary.js";
 import { recalculateRemainingBudget } from "./invoiceService.js";
 
 
@@ -220,6 +222,63 @@ export default {
     await recalcProjectBudget(projectId);
 
     return order;
+  },
+
+  // ======================================================
+  // שיוך הזמנה לחשבוניות, משכורות והזמנות
+  // ======================================================
+  async linkOrder(user, orderId, invoiceIds, salaryIds, orderIds) {
+    const order = await Order.findById(orderId);
+    if (!order) throw new Error("הזמנה לא נמצאה");
+
+    let totalLinkedAmount = 0;
+
+    // חישוב סכום חשבוניות
+    if (invoiceIds && invoiceIds.length > 0) {
+      const invoices = await Invoice.find({ _id: { $in: invoiceIds } });
+      totalLinkedAmount += invoices.reduce((sum, inv) => sum + (Number(inv.totalAmount) || 0), 0);
+    }
+
+    // חישוב סכום משכורות
+    if (salaryIds && salaryIds.length > 0) {
+      const salaries = await Salary.find({ _id: { $in: salaryIds } });
+      totalLinkedAmount += salaries.reduce((sum, sal) => sum + (Number(sal.finalAmount) || 0), 0);
+    }
+
+    // חישוב סכום הזמנות אחרות
+    if (orderIds && orderIds.length > 0) {
+      const otherOrders = await Order.find({ _id: { $in: orderIds } });
+      totalLinkedAmount += otherOrders.reduce((sum, ord) => sum + (Number(ord.sum) || 0), 0);
+    }
+
+    const orderAmount = Number(order.sum) || 0;
+    const tolerance = 0.01;
+    const hasLinks = (invoiceIds?.length > 0) || (salaryIds?.length > 0) || (orderIds?.length > 0);
+
+    // בדיקת סכומים (אם יש שיוכים)
+    if (hasLinks && totalLinkedAmount > 0 && Math.abs(orderAmount - totalLinkedAmount) > tolerance) {
+      throw new Error(
+        `סכום ההזמנה (${orderAmount.toLocaleString('he-IL')} ₪) חייב להיות זהה לסכום הפריטים המשויכים (${totalLinkedAmount.toLocaleString('he-IL')} ₪)`
+      );
+    }
+
+    // עדכון השיוכים
+    order.linkedInvoices = invoiceIds || [];
+    order.linkedSalaries = salaryIds || [];
+    order.linkedOrders = orderIds || [];
+    order.isCredited = hasLinks;
+
+    await order.save();
+
+    // החזרת ההזמנה עם populate
+    const populatedOrder = await Order.findById(orderId)
+      .populate("linkedInvoices", "invoiceNumber totalAmount")
+      .populate("linkedSalaries", "employeeName finalAmount")
+      .populate("linkedOrders", "orderNumber sum")
+      .populate("supplierId", "name phone email")
+      .populate("projectId", "name");
+
+    return populatedOrder;
   }
 
 };

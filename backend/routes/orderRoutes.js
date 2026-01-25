@@ -22,6 +22,9 @@ router.post("/bulk", protect, orderController.createBulkOrders);
 // 📌 עדכון הזמנה — כן checkAccess
 router.put("/:orderId", protect, checkAccess("orders", "edit"), orderController.updateOrder);
 
+// 📌 שיוך הזמנה לחשבוניות/משכורות/הזמנות
+router.put("/:orderId/link", protect, orderController.linkOrder);
+
 // 📌 עדכון סטטוס תשלום — כן
 router.put("/:orderId/status", protect, checkAccess("orders", "edit"), orderController.updatePaymentStatus);
 

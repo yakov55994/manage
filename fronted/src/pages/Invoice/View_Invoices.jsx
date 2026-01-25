@@ -3947,10 +3947,10 @@ const InvoicesPage = () => {
 
       {showBulkPaymentModal && (
         <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-          <div className="relative">
+          <div className="relative max-h-[90vh] flex flex-col">
             <div className="absolute -inset-4 bg-gradient-to-r from-green-500 to-emerald-500 rounded-3xl opacity-20 blur-2xl"></div>
 
-            <div className="relative bg-white rounded-3xl shadow-2xl p-8 max-w-md w-full">
+            <div className="relative bg-white rounded-3xl shadow-2xl p-8 max-w-md w-full max-h-[90vh] overflow-y-auto">
               <div className="text-center mb-6">
                 <div className="mx-auto w-16 h-16 rounded-full bg-gradient-to-br from-green-500 to-emerald-500 flex items-center justify-center mb-4">
                   <CheckSquare className="w-8 h-8 text-white" />

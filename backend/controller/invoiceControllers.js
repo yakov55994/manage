@@ -7,6 +7,7 @@ import Project from "../models/Project.js";
 import invoiceService, {
   recalculateRemainingBudget
 } from "../services/invoiceService.js";
+import { sendPaymentConfirmationEmail } from "../services/emailService.js";
 
 const invoiceControllers = {
   // ===============================================
@@ -242,6 +243,35 @@ const invoiceControllers = {
         { _id: { $in: invoiceIds } },
         { $set: updateObj }
       );
+
+      // שליחת מיילים לספקים כשמעדכנים לשולם
+      if (status === "כן") {
+        try {
+          const invoicesWithSuppliers = await Invoice.find({ _id: { $in: invoiceIds } })
+            .populate("supplierId", "name email");
+
+          for (const invoice of invoicesWithSuppliers) {
+            if (invoice.supplierId?.email) {
+              try {
+                await sendPaymentConfirmationEmail(
+                  invoice.supplierId.email,
+                  invoice.supplierId.name,
+                  {
+                    invoiceNumber: invoice.invoiceNumber,
+                    totalAmount: invoice.totalAmount,
+                    paymentDate: paymentDate || new Date(),
+                    documentType: invoice.documentType,
+                  }
+                );
+              } catch (emailError) {
+                console.error(`❌ Failed to send email for invoice ${invoice.invoiceNumber}:`, emailError);
+              }
+            }
+          }
+        } catch (emailBatchError) {
+          console.error("❌ Failed to send payment emails:", emailBatchError);
+        }
+      }
 
       res.json({
         success: true,

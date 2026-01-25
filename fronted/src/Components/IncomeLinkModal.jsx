@@ -3,10 +3,10 @@ import { X, Search, FileText, Users, Filter, CheckSquare, Square, ShoppingCart }
 import api from "../api/api.js";
 import { toast } from "sonner";
 
-export default function ExpenseLinkModal({
+export default function IncomeLinkModal({
   open,
   onClose,
-  expense,
+  income,
   onLinked,
 }) {
   const [loading, setLoading] = useState(false);
@@ -69,12 +69,12 @@ export default function ExpenseLinkModal({
 
   // איפוס בחירות בעת פתיחה
   useEffect(() => {
-    if (open && expense) {
-      setSelectedInvoiceIds(expense.linkedInvoices?.map(inv => inv._id || inv) || []);
-      setSelectedSalaryIds(expense.linkedSalaries?.map(sal => sal._id || sal) || []);
-      setSelectedOrderIds(expense.linkedOrders?.map(ord => ord._id || ord) || []);
+    if (open && income) {
+      setSelectedInvoiceIds(income.linkedInvoices?.map(inv => inv._id || inv) || []);
+      setSelectedSalaryIds(income.linkedSalaries?.map(sal => sal._id || sal) || []);
+      setSelectedOrderIds(income.linkedOrders?.map(ord => ord._id || ord) || []);
     }
-  }, [open, expense]);
+  }, [open, income]);
 
   // סינון חשבוניות
   const filteredInvoices = useMemo(() => {
@@ -176,6 +176,15 @@ export default function ExpenseLinkModal({
     );
   };
 
+  // Toggle בחירת הזמנה
+  const toggleOrder = (orderId) => {
+    setSelectedOrderIds(prev =>
+      prev.includes(orderId)
+        ? prev.filter(id => id !== orderId)
+        : [...prev, orderId]
+    );
+  };
+
   // בחירת כל החשבוניות המסוננות
   const selectAllInvoices = () => {
     const allIds = filteredInvoices.map(inv => inv._id);
@@ -212,15 +221,6 @@ export default function ExpenseLinkModal({
     setSelectedSalaryIds(prev => prev.filter(id => !filteredIds.includes(id)));
   };
 
-  // Toggle בחירת הזמנה
-  const toggleOrder = (orderId) => {
-    setSelectedOrderIds(prev =>
-      prev.includes(orderId)
-        ? prev.filter(id => id !== orderId)
-        : [...prev, orderId]
-    );
-  };
-
   // בחירת כל ההזמנות המסוננות
   const selectAllOrders = () => {
     const allIds = filteredOrders.map(ord => ord._id);
@@ -243,7 +243,7 @@ export default function ExpenseLinkModal({
   const handleSave = async () => {
     setLoading(true);
     try {
-      const response = await api.put(`/expenses/${expense._id}/link`, {
+      const response = await api.put(`/incomes/${income._id}/link`, {
         invoiceIds: selectedInvoiceIds,
         salaryIds: selectedSalaryIds,
         orderIds: selectedOrderIds,
@@ -283,7 +283,7 @@ export default function ExpenseLinkModal({
         <div className="bg-gradient-to-r from-orange-500 to-amber-500 px-6 py-4 flex items-center justify-between">
           <h2 className="text-xl font-bold text-white flex items-center gap-2">
             <FileText className="w-6 h-6" />
-            שיוך הוצאה לחשבוניות / משכורות
+            שיוך הכנסה לחשבוניות / משכורות / הזמנות
           </h2>
           <button
             onClick={onClose}
@@ -293,13 +293,13 @@ export default function ExpenseLinkModal({
           </button>
         </div>
 
-        {/* Expense Info */}
+        {/* Income Info */}
         <div className="bg-orange-50 px-6 py-3 border-b">
           <div className="flex items-center gap-4 text-sm">
-            <span className="font-bold text-slate-700">הוצאה:</span>
-            <span>{expense?.description}</span>
-            <span className="font-bold text-orange-600">{formatCurrency(expense?.amount)}</span>
-            <span className="text-slate-500">{formatDate(expense?.date)}</span>
+            <span className="font-bold text-slate-700">הכנסה:</span>
+            <span>{income?.description}</span>
+            <span className="font-bold text-orange-600">{formatCurrency(income?.amount)}</span>
+            <span className="text-slate-500">{formatDate(income?.date)}</span>
           </div>
         </div>
 
@@ -368,7 +368,7 @@ export default function ExpenseLinkModal({
                   </button>
                   <button
                     onClick={selectAllInvoices}
-                    className="px-4 py-2 bg-emerald-500 text-white rounded-xl hover:bg-emerald-600 transition-colors"
+                    className="px-4 py-2 bg-orange-500 text-white rounded-xl hover:bg-orange-600 transition-colors"
                   >
                     בחר הכל
                   </button>
@@ -464,7 +464,7 @@ export default function ExpenseLinkModal({
                       <div>
                         <span className={`px-2 py-1 rounded-full text-xs font-bold ${
                           invoice.paid === "כן"
-                            ? "bg-emerald-100 text-emerald-700"
+                            ? "bg-orange-100 text-orange-700"
                             : "bg-red-100 text-red-700"
                         }`}>
                           {invoice.paid === "כן" ? "שולם" : "לא שולם"}
@@ -503,7 +503,7 @@ export default function ExpenseLinkModal({
                   </button>
                   <button
                     onClick={selectAllSalaries}
-                    className="px-4 py-2 bg-emerald-500 text-white rounded-xl hover:bg-emerald-600 transition-colors"
+                    className="px-4 py-2 bg-orange-500 text-white rounded-xl hover:bg-orange-600 transition-colors"
                   >
                     בחר הכל
                   </button>
@@ -622,7 +622,7 @@ export default function ExpenseLinkModal({
                   </button>
                   <button
                     onClick={selectAllOrders}
-                    className="px-4 py-2 bg-emerald-500 text-white rounded-xl hover:bg-emerald-600 transition-colors"
+                    className="px-4 py-2 bg-orange-500 text-white rounded-xl hover:bg-orange-600 transition-colors"
                   >
                     בחר הכל
                   </button>
@@ -699,7 +699,7 @@ export default function ExpenseLinkModal({
                       <div>
                         <span className={`px-2 py-1 rounded-full text-xs font-bold ${
                           order.status === "הוגש"
-                            ? "bg-emerald-100 text-emerald-700"
+                            ? "bg-orange-100 text-orange-700"
                             : order.status === "בעיבוד"
                             ? "bg-yellow-100 text-yellow-700"
                             : "bg-slate-100 text-slate-700"

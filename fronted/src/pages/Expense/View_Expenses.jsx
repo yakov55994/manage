@@ -478,7 +478,7 @@ export default function ViewExpenses() {
                             ) : "—"}
                           </td>
                           <td className="px-6 py-4 text-sm">
-                            {(expense.linkedInvoices?.length > 0 || expense.linkedSalaries?.length > 0) ? (
+                            {(expense.linkedInvoices?.length > 0 || expense.linkedSalaries?.length > 0 || expense.linkedOrders?.length > 0) ? (
                               <div className="space-y-1">
                                 {expense.linkedInvoices?.length > 0 && (
                                   <div className="flex items-center gap-1 text-blue-600">
@@ -493,6 +493,14 @@ export default function ViewExpenses() {
                                     <Link className="w-3 h-3" />
                                     <span className="text-xs">
                                       {expense.linkedSalaries.length} משכורות
+                                    </span>
+                                  </div>
+                                )}
+                                {expense.linkedOrders?.length > 0 && (
+                                  <div className="flex items-center gap-1 text-orange-600">
+                                    <Link className="w-3 h-3" />
+                                    <span className="text-xs">
+                                      {expense.linkedOrders.length} הזמנות
                                     </span>
                                   </div>
                                 )}
@@ -610,7 +618,7 @@ export default function ViewExpenses() {
                       {/* שיוך */}
                       <div className="mb-3">
                         <div className="text-xs text-slate-500 mb-1">שויך</div>
-                        {(expense.linkedInvoices?.length > 0 || expense.linkedSalaries?.length > 0) ? (
+                        {(expense.linkedInvoices?.length > 0 || expense.linkedSalaries?.length > 0 || expense.linkedOrders?.length > 0) ? (
                           <div className="flex flex-wrap gap-2">
                             {expense.linkedInvoices?.length > 0 && (
                               <span className="inline-flex items-center gap-1 px-2 py-1 bg-blue-100 text-blue-700 rounded-lg text-xs">
@@ -622,6 +630,12 @@ export default function ViewExpenses() {
                               <span className="inline-flex items-center gap-1 px-2 py-1 bg-purple-100 text-purple-700 rounded-lg text-xs">
                                 <Link className="w-3 h-3" />
                                 {expense.linkedSalaries.length} משכורות
+                              </span>
+                            )}
+                            {expense.linkedOrders?.length > 0 && (
+                              <span className="inline-flex items-center gap-1 px-2 py-1 bg-orange-100 text-orange-700 rounded-lg text-xs">
+                                <Link className="w-3 h-3" />
+                                {expense.linkedOrders.length} הזמנות
                               </span>
                             )}
                           </div>

@@ -19,7 +19,7 @@ import {
   X,
 } from "lucide-react";
 import { toast } from "sonner";
-import OrderSelector from "../../Components/OrderSelector";
+import IncomeLinkModal from "../../Components/IncomeLinkModal";
 
 export default function ViewIncomes() {
   const navigate = useNavigate();
@@ -29,8 +29,7 @@ export default function ViewIncomes() {
   const [sortBy, setSortBy] = useState("createdAt");
   const [sortOrder, setSortOrder] = useState("desc");
   const [deleteModal, setDeleteModal] = useState({ open: false, incomeId: null });
-  const [linkModal, setLinkModal] = useState({ open: false, incomeId: null });
-  const [linking, setLinking] = useState(false);
+  const [linkModal, setLinkModal] = useState({ open: false, income: null });
 
   // Multi-select
   const [selectedIncomes, setSelectedIncomes] = useState([]);
@@ -181,121 +180,12 @@ export default function ViewIncomes() {
     }
   };
 
-  const handleLinkToInvoice = async (invoice) => {
-    try {
-      setLinking(true);
-      const currentIncome = incomes.find(i => i._id === linkModal.incomeId);
-      const oldOrderId = currentIncome.orderId?._id || currentIncome.orderId;
-
-      console.log('📝 Link from list - Old orderId:', oldOrderId, 'New orderId:', invoice?._id);
-
-      // אם אין הזמנה - ביטול שיוך
-      if (!invoice) {
-        // עדכן את ההכנסה
-        await api.put(`/incomes/${linkModal.incomeId}`, {
-          orderId: null,
-          isCredited: "לא",
-          date: currentIncome.date,
-          amount: currentIncome.amount,
-          description: currentIncome.description,
-          notes: currentIncome.notes,
-        });
-
-        // אם היה orderId קודם, בטל את הזיכוי מההזמנה
-        if (oldOrderId) {
-          console.log('🔓 Unlinking old order:', oldOrderId);
-          try {
-            const orderRes = await api.get(`/orders/${oldOrderId}`);
-            const orderData = orderRes.data?.data || orderRes.data;
-
-            await api.put(`/orders/${oldOrderId}`, {
-              ...orderData,
-              projectId: typeof orderData.projectId === 'object'
-                ? (orderData.projectId._id || orderData.projectId.$oid)
-                : orderData.projectId,
-              supplierId: typeof orderData.supplierId === 'object'
-                ? (orderData.supplierId?._id || orderData.supplierId?.$oid)
-                : orderData.supplierId,
-              isCredited: false,
-              creditDate: null,
-            });
-            console.log('✅ Order unmarked as credited');
-          } catch (err) {
-            console.error('Error updating old order:', err);
-          }
-        }
-
-        toast.success("השיוך בוטל בהצלחה!");
-      } else {
-        // שיוך להזמנה חדשה
-        await api.put(`/incomes/${linkModal.incomeId}`, {
-          orderId: invoice._id,
-          isCredited: "כן",
-          date: currentIncome.date,
-          amount: currentIncome.amount,
-          description: currentIncome.description,
-          notes: currentIncome.notes,
-        });
-
-        // עדכן את ההזמנה החדשה
-        console.log('🔗 Linking to new order:', invoice._id);
-        try {
-          const orderRes = await api.get(`/orders/${invoice._id}`);
-          const orderData = orderRes.data?.data || orderRes.data;
-
-          await api.put(`/orders/${invoice._id}`, {
-            ...orderData,
-            projectId: typeof orderData.projectId === 'object'
-              ? (orderData.projectId._id || orderData.projectId.$oid)
-              : orderData.projectId,
-            supplierId: typeof orderData.supplierId === 'object'
-              ? (orderData.supplierId?._id || orderData.supplierId?.$oid)
-              : orderData.supplierId,
-            isCredited: true,
-            creditDate: currentIncome.date,
-          });
-          console.log('✅ New order marked as credited');
-        } catch (err) {
-          console.error('Error updating new order:', err);
-        }
-
-        // אם היה orderId קודם שונה, בטל את הזיכוי ממנו
-        if (oldOrderId && oldOrderId !== invoice._id) {
-          console.log('🔄 Changing order - unlinking old order:', oldOrderId);
-          try {
-            const oldOrderRes = await api.get(`/orders/${oldOrderId}`);
-            const oldOrderData = oldOrderRes.data?.data || oldOrderRes.data;
-
-            await api.put(`/orders/${oldOrderId}`, {
-              ...oldOrderData,
-              projectId: typeof oldOrderData.projectId === 'object'
-                ? (oldOrderData.projectId._id || oldOrderData.projectId.$oid)
-                : oldOrderData.projectId,
-              supplierId: typeof oldOrderData.supplierId === 'object'
-                ? (oldOrderData.supplierId?._id || oldOrderData.supplierId?.$oid)
-                : oldOrderData.supplierId,
-              isCredited: false,
-              creditDate: null,
-            });
-            console.log('✅ Old order unmarked as credited');
-          } catch (err) {
-            console.error('Error updating old order:', err);
-          }
-        }
-
-        toast.success("ההכנסה שויכה להזמנה בהצלחה! ההזמנה סומנה כזוכה");
-      }
-
-      // Refresh the incomes list to show updated data
-      await fetchIncomes();
-
-      setLinkModal({ open: false, incomeId: null });
-    } catch (err) {
-      console.error("Link error:", err);
-      toast.error("שגיאה בעדכון השיוך");
-    } finally {
-      setLinking(false);
-    }
+  // טיפול בשיוך מוצלח
+  const handleLinked = (updatedIncome) => {
+    setIncomes(prev =>
+      prev.map(inc => inc._id === updatedIncome._id ? updatedIncome : inc)
+    );
+    setLinkModal({ open: false, income: null });
   };
 
   // חישוב סה"כ
@@ -374,21 +264,52 @@ export default function ViewIncomes() {
     }
   };
 
-  // Get link display text
-  const getLinkDisplayText = (income) => {
-    if (income.orderId && income.orderNumber) {
-      return `הזמנה #${income.orderNumber}`;
+  // Get link display - returns JSX for multiple links
+  const getLinkDisplay = (income) => {
+    const links = [];
+
+    // שיוכים מרובים חדשים
+    if (income.linkedInvoices?.length > 0) {
+      links.push(
+        <span key="invoices" className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-700 mr-1">
+          {income.linkedInvoices.length} חשבוניות
+        </span>
+      );
     }
-    if (income.invoiceId?.invoiceNumber) {
-      return `חשבונית #${income.invoiceId.invoiceNumber}`;
+    if (income.linkedSalaries?.length > 0) {
+      links.push(
+        <span key="salaries" className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-purple-100 text-purple-700 mr-1">
+          {income.linkedSalaries.length} משכורות
+        </span>
+      );
     }
-    if (income.supplierId?.name) {
-      return income.supplierId.name;
+    if (income.linkedOrders?.length > 0) {
+      links.push(
+        <span key="orders" className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-orange-100 text-orange-700 mr-1">
+          {income.linkedOrders.length} הזמנות
+        </span>
+      );
     }
-    if (income.linkedIncomeId?.description) {
-      return `הכנסה: ${income.linkedIncomeId.description.substring(0, 20)}...`;
+
+    // שיוך ישן (orderId בודד)
+    if (links.length === 0 && income.orderId && income.orderNumber) {
+      return <span>הזמנה #{income.orderNumber}</span>;
     }
-    return "—";
+    if (links.length === 0 && income.invoiceId?.invoiceNumber) {
+      return <span>חשבונית #{income.invoiceId.invoiceNumber}</span>;
+    }
+    if (links.length === 0 && income.supplierId?.name) {
+      return <span>{income.supplierId.name}</span>;
+    }
+    if (links.length === 0 && income.linkedIncomeId?.description) {
+      return <span>הכנסה: {income.linkedIncomeId.description.substring(0, 20)}...</span>;
+    }
+
+    if (links.length > 0) {
+      return <div className="flex flex-wrap gap-1">{links}</div>;
+    }
+
+    return <span className="text-slate-400">—</span>;
   };
 
   if (loading) {
@@ -622,7 +543,7 @@ export default function ViewIncomes() {
                             {income.description}
                           </td>
                           <td className="px-6 py-4 text-sm text-slate-600">
-                            {getLinkDisplayText(income)}
+                            {getLinkDisplay(income)}
                           </td>
                           <td className="px-6 py-4 text-sm">
                             {income.isCredited === "כן" ? (
@@ -669,7 +590,7 @@ export default function ViewIncomes() {
                               <button
                                 onClick={(e) => {
                                   e.stopPropagation();
-                                  setLinkModal({ open: true, incomeId: income._id });
+                                  setLinkModal({ open: true, income: income });
                                 }}
                                 className="p-2 hover:bg-purple-100 rounded-lg transition-colors"
                                 title="שייך להזמנה"
@@ -725,11 +646,11 @@ export default function ViewIncomes() {
 
                       {/* Link & Status */}
                       <div className="mb-3 flex items-center gap-3">
-                        {getLinkDisplayText(income) !== "—" && (
+                        {getLinkDisplay(income) !== "—" && (
                           <div className="flex-1">
                             <div className="text-xs text-slate-500 mb-1">שויך ל</div>
                             <div className="text-sm font-medium text-slate-700">
-                              {getLinkDisplayText(income)}
+                              {getLinkDisplay(income)}
                             </div>
                           </div>
                         )}
@@ -781,7 +702,7 @@ export default function ViewIncomes() {
                         <button
                           onClick={(e) => {
                             e.stopPropagation();
-                            setLinkModal({ open: true, incomeId: income._id });
+                            setLinkModal({ open: true, income: income });
                           }}
                           className="px-4 py-2 bg-purple-500 text-white rounded-lg hover:bg-purple-600 transition-colors"
                           title="שייך להזמנה"
@@ -868,50 +789,13 @@ export default function ViewIncomes() {
         </div>
       )}
 
-      {/* Link to Invoice Modal */}
-      {linkModal.open && (
-        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-          <div className="relative max-w-2xl w-full max-h-[85vh] overflow-y-auto">
-            <div className="absolute -inset-4 bg-gradient-to-r from-purple-500 to-violet-500 rounded-3xl opacity-20 blur-2xl"></div>
-
-            <div className="relative bg-white rounded-3xl shadow-2xl p-6">
-              <div className="mb-4">
-                <div className="flex items-center gap-3 mb-2">
-                  <div className="p-2 rounded-xl bg-gradient-to-br from-purple-500 to-violet-600 shadow-lg">
-                    <Link className="w-5 h-5 text-white" />
-                  </div>
-                  <div>
-                    <h3 className="text-xl font-bold text-slate-900">
-                      שייך הכנסה להזמנה
-                    </h3>
-                    <p className="text-xs text-slate-600">
-                      בחר הזמנה לשיוך או בטל שיוך קיים
-                    </p>
-                  </div>
-                </div>
-              </div>
-
-              <OrderSelector
-                value={incomes.find(i => i._id === linkModal.incomeId)?.orderId?._id || null}
-                onSelect={handleLinkToInvoice}
-                allowClear={true}
-                label="בחר הזמנה לשיוך"
-                placeholder="חפש הזמנה..."
-              />
-
-              <div className="mt-4 flex justify-end">
-                <button
-                  onClick={() => setLinkModal({ open: false, incomeId: null })}
-                  disabled={linking}
-                  className="px-5 py-2 rounded-xl font-bold text-slate-700 bg-slate-100 hover:bg-slate-200 transition-all disabled:opacity-50"
-                >
-                  סגור
-                </button>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
+      {/* Link Modal */}
+      <IncomeLinkModal
+        open={linkModal.open}
+        onClose={() => setLinkModal({ open: false, income: null })}
+        income={linkModal.income}
+        onLinked={handleLinked}
+      />
 
       {/* Bulk Notes Modal */}
       {bulkNotesModal.open && (
