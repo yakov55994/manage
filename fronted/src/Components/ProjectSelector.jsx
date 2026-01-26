@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { Search, Check, X } from "lucide-react";
 import api from "../api/api";
+import { useAuth } from "../context/AuthContext";
 
 /**
  * קומפוננטה אחידה לבחירת פרויקטים
@@ -31,6 +32,7 @@ export default function ProjectSelector({
   placeholder = "חפש פרויקט...",
   showSelectAll = false,
 }) {
+  const { isLimited } = useAuth();
   const [searchTerm, setSearchTerm] = useState("");
   const [projects, setProjects] = useState(projectsProp || []);
   const [loading, setLoading] = useState(!projectsProp);
@@ -290,8 +292,8 @@ export default function ProjectSelector({
                     )}
                   </div>
 
-                  {/* תקציב */}
-                  {project.budget && (
+                  {/* תקציב - לא מוצג למשתמש מוגבל */}
+                  {!isLimited && project.budget && (
                     <div className="text-left">
                       <span className="font-bold text-orange-700 text-sm">
                         ₪{project.budget?.toLocaleString()}

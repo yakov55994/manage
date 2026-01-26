@@ -25,7 +25,7 @@ import { toast } from "sonner";
 import JSZip from "jszip";
 
 const ProjectsPage = ({ initialProjects = [] }) => {
-  const { isAdmin } = useAuth();
+  const { isAdmin, isLimited } = useAuth();
 
   const [projects, setProjects] = useState(initialProjects);
   const [allProjects, setAllProjects] = useState([]);
@@ -1646,12 +1646,16 @@ const ProjectsPage = ({ initialProjects = [] }) => {
                       <th className="px-4 py-4 text-sm font-bold text-white">
                         שם הפרויקט
                       </th>
-                      <th className="px-4 py-4 text-sm font-bold text-white">
-                        תקציב
-                      </th>
-                      <th className="px-4 py-4 text-sm font-bold text-white">
-                        תקציב שנותר
-                      </th>
+                      {!isLimited && (
+                        <th className="px-4 py-4 text-sm font-bold text-white">
+                          תקציב
+                        </th>
+                      )}
+                      {!isLimited && (
+                        <th className="px-4 py-4 text-sm font-bold text-white">
+                          תקציב שנותר
+                        </th>
+                      )}
                       <th className="px-4 py-4 text-sm font-bold text-white">
                         שם המזמין
                       </th>
@@ -1688,20 +1692,24 @@ const ProjectsPage = ({ initialProjects = [] }) => {
                             )}
                           </div>
                         </td>
-                        <td className="px-4 py-4 text-sm font-bold text-center text-slate-900">
-                          {project.type !== "salary" ? (
-                            <td>{formatNumber(project.budget)} ₪</td>
-                          ) : (
-                            <td className="text-gray-400">פרוייקט ללא תקציב</td>
-                          )}
-                        </td>
-                        <td className="px-4 py-4 text-sm font-bold text-center text-slate-900">
-                          {project.name !== "salary" ? (
-                            <td>{formatNumber(project.remainingBudget)} ₪</td>
-                          ) : (
-                            <td className="text-gray-400">פרוייקט ללא תקציב</td>
-                          )}
-                        </td>
+                        {!isLimited && (
+                          <td className="px-4 py-4 text-sm font-bold text-center text-slate-900">
+                            {project.type !== "salary" ? (
+                              <span>{formatNumber(project.budget)} ₪</span>
+                            ) : (
+                              <span className="text-gray-400">פרוייקט ללא תקציב</span>
+                            )}
+                          </td>
+                        )}
+                        {!isLimited && (
+                          <td className="px-4 py-4 text-sm font-bold text-center text-slate-900">
+                            {project.type !== "salary" ? (
+                              <span>{formatNumber(project.remainingBudget)} ₪</span>
+                            ) : (
+                              <span className="text-gray-400">פרוייקט ללא תקציב</span>
+                            )}
+                          </td>
+                        )}
                         <td className="px-4 py-4 text-sm font-medium text-center text-slate-900">
                           {project.invitingName}
                         </td>
@@ -1818,20 +1826,22 @@ const ProjectsPage = ({ initialProjects = [] }) => {
                     </div>
                   </div>
 
-                  <div className="grid grid-cols-2 gap-3 mb-3">
-                    <div>
-                      <div className="text-xs text-slate-500 mb-1">תקציב</div>
-                      <div className="text-sm font-bold text-orange-600">
-                        {project.type !== "salary" ? `${formatNumber(project.budget)} ₪` : "ללא תקציב"}
+                  {!isLimited && (
+                    <div className="grid grid-cols-2 gap-3 mb-3">
+                      <div>
+                        <div className="text-xs text-slate-500 mb-1">תקציב</div>
+                        <div className="text-sm font-bold text-orange-600">
+                          {project.type !== "salary" ? `${formatNumber(project.budget)} ₪` : "ללא תקציב"}
+                        </div>
+                      </div>
+                      <div>
+                        <div className="text-xs text-slate-500 mb-1">תקציב שנותר</div>
+                        <div className="text-sm font-bold text-green-600">
+                          {project.type !== "salary" ? `${formatNumber(project.remainingBudget)} ₪` : "ללא תקציב"}
+                        </div>
                       </div>
                     </div>
-                    <div>
-                      <div className="text-xs text-slate-500 mb-1">תקציב שנותר</div>
-                      <div className="text-sm font-bold text-green-600">
-                        {project.type !== "salary" ? `${formatNumber(project.remainingBudget)} ₪` : "ללא תקציב"}
-                      </div>
-                    </div>
-                  </div>
+                  )}
 
                   <div className="grid grid-cols-2 gap-3 mb-3">
                     <div>

@@ -5,8 +5,10 @@ import { useNavigate } from "react-router-dom";
 import { Search, Package, FileText, ShoppingCart, Truck } from "lucide-react";
 import { ClipLoader } from "react-spinners";
 import { toast } from "sonner";
+import { useAuth } from "../../context/AuthContext";
 
 const SearchResults = () => {
+  const { isLimited } = useAuth();
   const [searchParams] = useSearchParams();
   const [results, setResults] = useState({
     projects: [],
@@ -181,10 +183,12 @@ const SearchResults = () => {
               <h3 className="text-xl font-bold truncate">
                 {item.name || "לא זמין"}
               </h3>
-              <p className="text-white/90">
-                תקציב:{" "}
-                {item.budget ? `₪${formatNumber(item.budget)}` : "לא הוגדר"}
-              </p>
+              {!isLimited && (
+                <p className="text-white/90">
+                  תקציב:{" "}
+                  {item.budget ? `₪${formatNumber(item.budget)}` : "לא הוגדר"}
+                </p>
+              )}
               <p className="text-white/80 text-sm">
                 מזמין: {item.invitingName || "לא זמין"}
               </p>

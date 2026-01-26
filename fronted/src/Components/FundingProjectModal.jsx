@@ -1,6 +1,7 @@
 import { useMemo, useState } from "react";
 import { X, Search, Wallet } from "lucide-react";
 import { toast } from "sonner";
+import { useAuth } from "../context/AuthContext";
 
 /**
  * מודל לבחירת פרויקט/ים ממומן/ים עבור פרויקטי מילגה
@@ -19,6 +20,7 @@ export default function FundingProjectModal({
   milgaProjectName = "",
   multiSelect = false,
 }) {
+  const { isAdmin } = useAuth();
   const [search, setSearch] = useState("");
   const [selectedProjectId, setSelectedProjectId] = useState("");
   const [selectedProjectIds, setSelectedProjectIds] = useState([]);
@@ -161,9 +163,11 @@ export default function FundingProjectModal({
                         <span className="font-medium text-sm block truncate">
                           {p.name}
                         </span>
-                        <span className="text-xs text-slate-500">
-                          תקציב זמין: ₪{p.remainingBudget?.toLocaleString() || 0}
-                        </span>
+                        {isAdmin && (
+                          <span className="text-xs text-slate-500">
+                            תקציב זמין: ₪{p.remainingBudget?.toLocaleString() || 0}
+                          </span>
+                        )}
                       </div>
                     </label>
                   </li>

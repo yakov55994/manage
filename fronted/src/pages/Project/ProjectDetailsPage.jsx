@@ -667,25 +667,26 @@ const ProjectDetailsPage = () => {
                   </>
                 )}
 
-                {/* אם זה לא משכורות – הוספת חשבונית והפחתת תקציב */}
+                {/* אם זה לא משכורות – הוספת חשבונית */}
                 {!isSalaryProject && canEditInvoices() && (
-                  <>
-                    <button
-                      onClick={handleAddInvoiceForProject}
-                      className="flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-orange-600 to-amber-600 text-white font-bold rounded-xl hover:from-orange-700 hover:to-amber-700 transition-all shadow-xl shadow-orange-500/30"
-                    >
-                      <Edit2 className="w-4 h-4" />
-                      <span>הוספת חשבונית</span>
-                    </button>
+                  <button
+                    onClick={handleAddInvoiceForProject}
+                    className="flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-orange-600 to-amber-600 text-white font-bold rounded-xl hover:from-orange-700 hover:to-amber-700 transition-all shadow-xl shadow-orange-500/30"
+                  >
+                    <Edit2 className="w-4 h-4" />
+                    <span>הוספת חשבונית</span>
+                  </button>
+                )}
 
-                    <button
-                      onClick={() => setBudgetDeductionOpen(true)}
-                      className="flex items-center gap-2 px-6 py-3 bg-orange-600 gradient-to-r from-orange-600 to-amber-600from-red-500 text-white font-bold rounded-xl hover:from-red-600 hover:to-rose-600 transition-all shadow-xl shadow-red-500/30"
-                    >
-                      <TrendingDown className="w-4 h-4" />
-                      <span>הפחתת תקציב</span>
-                    </button>
-                  </>
+                {/* הפחתת תקציב - לא למשתמש מוגבל */}
+                {!isSalaryProject && !isLimited && canEditInvoices() && (
+                  <button
+                    onClick={() => setBudgetDeductionOpen(true)}
+                    className="flex items-center gap-2 px-6 py-3 bg-orange-600 gradient-to-r from-orange-600 to-amber-600from-red-500 text-white font-bold rounded-xl hover:from-red-600 hover:to-rose-600 transition-all shadow-xl shadow-red-500/30"
+                  >
+                    <TrendingDown className="w-4 h-4" />
+                    <span>הפחתת תקציב</span>
+                  </button>
                 )}
               </div>
             </div>
@@ -832,8 +833,8 @@ const ProjectDetailsPage = () => {
           </div>
         )}
 
-        {/* היסטוריית הפחתות תקציב */}
-        {!isSalaryProject && project?.budgetDeductions && project.budgetDeductions.length > 0 && (
+        {/* היסטוריית הפחתות תקציב - לא מוצג למשתמש מוגבל */}
+        {!isSalaryProject && !isLimited && project?.budgetDeductions && project.budgetDeductions.length > 0 && (
           <div className="relative mb-4 sm:mb-5 md:mb-6">
             <div className="absolute -inset-2 bg-gradient-to-r from-red-500 via-rose-500 to-pink-500 rounded-2xl sm:rounded-3xl opacity-10 blur-xl"></div>
 

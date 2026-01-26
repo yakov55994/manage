@@ -374,7 +374,7 @@ const AppContent = () => {
             <Route
               path="/summary-page"
               element={
-                <ProtectedRoute>
+                <ProtectedRoute adminOnly>
                   <SummaryPage />
                 </ProtectedRoute>
               }

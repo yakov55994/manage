@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { ChevronDown, User } from "lucide-react";
+import { ChevronDown, User, Mail, X } from "lucide-react";
 import api from "../api/api.js";
 import { toast } from "sonner";
 import { useNavigate } from "react-router-dom";
@@ -23,6 +23,12 @@ const SupplierSelector = ({
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedSupplier, setSelectedSupplier] = useState(null);
   const navigate = useNavigate();
+
+  // State for email update modal
+  const [showEmailModal, setShowEmailModal] = useState(false);
+  const [emailInput, setEmailInput] = useState("");
+  const [pendingSupplier, setPendingSupplier] = useState(null);
+  const [updatingEmail, setUpdatingEmail] = useState(false);
 
   // 🔄 טעינת ספקים עם סינון לפי supplierType
   useEffect(() => {
@@ -104,6 +110,16 @@ useEffect(() => {
   });
 
   const handleSupplierSelect = (supplier) => {
+    // Check if supplier has email
+    if (!supplier.email || supplier.email.trim() === "") {
+      // Show email update modal
+      setPendingSupplier(supplier);
+      setEmailInput("");
+      setShowEmailModal(true);
+      setIsOpen(false);
+      return;
+    }
+
     setSelectedSupplier(supplier);
     setIsOpen(false);
     setSearchTerm("");
@@ -112,6 +128,80 @@ useEffect(() => {
     if (onSelect) {
       onSelect(supplier);
     }
+  };
+
+  // Handle email update
+  const handleEmailUpdate = async () => {
+    if (!pendingSupplier) return;
+
+    if (emailInput && emailInput.trim()) {
+      // Validate email format
+      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+      if (!emailRegex.test(emailInput.trim())) {
+        toast.error("כתובת אימייל לא תקינה", {
+          className: "sonner-toast error rtl",
+        });
+        return;
+      }
+
+      setUpdatingEmail(true);
+      try {
+        // Update supplier email via API
+        await api.put(`/suppliers/${pendingSupplier._id}`, {
+          email: emailInput.trim(),
+        });
+
+        // Update local suppliers list
+        const updatedSupplier = { ...pendingSupplier, email: emailInput.trim() };
+        setSuppliers((prev) =>
+          prev.map((s) =>
+            s._id === pendingSupplier._id ? updatedSupplier : s
+          )
+        );
+
+        toast.success("כתובת האימייל עודכנה בהצלחה", {
+          className: "sonner-toast success rtl",
+        });
+
+        // Select the supplier with updated email
+        setSelectedSupplier(updatedSupplier);
+        if (onSelect) {
+          onSelect(updatedSupplier);
+        }
+      } catch (error) {
+        console.error("Error updating supplier email:", error);
+        toast.error("שגיאה בעדכון כתובת האימייל", {
+          className: "sonner-toast error rtl",
+        });
+      } finally {
+        setUpdatingEmail(false);
+      }
+    } else {
+      // User chose to continue without email
+      setSelectedSupplier(pendingSupplier);
+      if (onSelect) {
+        onSelect(pendingSupplier);
+      }
+    }
+
+    setShowEmailModal(false);
+    setPendingSupplier(null);
+    setEmailInput("");
+    setSearchTerm("");
+  };
+
+  // Handle skip email update
+  const handleSkipEmail = () => {
+    if (pendingSupplier) {
+      setSelectedSupplier(pendingSupplier);
+      if (onSelect) {
+        onSelect(pendingSupplier);
+      }
+    }
+    setShowEmailModal(false);
+    setPendingSupplier(null);
+    setEmailInput("");
+    setSearchTerm("");
   };
 
   const formatSupplierDisplay = (supplier) => {
@@ -241,6 +331,75 @@ useEffect(() => {
       {/* רקע לסגירה */}
       {isOpen && (
         <div className="fixed inset-0 z-40" onClick={() => setIsOpen(false)} />
+      )}
+
+      {/* Email Update Modal */}
+      {showEmailModal && pendingSupplier && (
+        <div className="fixed inset-0 z-50 bg-black/50 flex items-center justify-center p-4">
+          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md">
+            {/* Header */}
+            <div className="flex items-center justify-between p-5 border-b border-slate-200">
+              <div className="flex items-center gap-2">
+                <Mail className="text-orange-600" size={20} />
+                <h3 className="text-xl font-bold text-slate-800">
+                  עדכון כתובת אימייל
+                </h3>
+              </div>
+              <button
+                onClick={handleSkipEmail}
+                className="text-slate-400 hover:text-slate-600 transition-colors"
+              >
+                <X size={20} />
+              </button>
+            </div>
+
+            {/* Content */}
+            <div className="p-5">
+              <div className="mb-4 text-sm text-slate-600 bg-amber-50 p-3 rounded-lg border border-amber-200">
+                <p className="font-medium text-amber-800 mb-1">
+                  לספק "{pendingSupplier.name}" אין כתובת אימייל
+                </p>
+                <p className="text-xs text-amber-700">
+                  האם ברצונך להוסיף כתובת אימייל עכשיו?
+                </p>
+              </div>
+
+              <div className="mb-4">
+                <label className="block text-sm font-bold text-slate-700 mb-2">
+                  כתובת אימייל
+                </label>
+                <input
+                  type="email"
+                  value={emailInput}
+                  onChange={(e) => setEmailInput(e.target.value)}
+                  placeholder="הזן כתובת אימייל..."
+                  className="w-full border border-slate-300 rounded-lg px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent"
+                  dir="ltr"
+                />
+              </div>
+            </div>
+
+            {/* Footer */}
+            <div className="border-t border-slate-200 p-4 bg-slate-50 rounded-b-2xl">
+              <div className="flex justify-end gap-2">
+                <button
+                  onClick={handleSkipEmail}
+                  disabled={updatingEmail}
+                  className="px-4 py-2 rounded-lg bg-white border border-slate-300 text-slate-700 hover:bg-slate-50 transition-colors text-sm font-medium disabled:opacity-50"
+                >
+                  המשך בלי אימייל
+                </button>
+                <button
+                  onClick={handleEmailUpdate}
+                  disabled={updatingEmail || !emailInput.trim()}
+                  className="px-5 py-2 rounded-lg bg-gradient-to-r from-orange-500 to-amber-500 text-white hover:from-orange-600 hover:to-amber-600 disabled:opacity-50 disabled:cursor-not-allowed transition-all text-sm font-bold shadow-sm"
+                >
+                  {updatingEmail ? "מעדכן..." : "עדכן ובחר"}
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
       )}
     </div>
   );

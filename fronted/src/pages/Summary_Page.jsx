@@ -23,6 +23,7 @@ import {
 import api from "../api/api.js";
 import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
+import { useAuth } from "../context/AuthContext";
 import {
   BudgetVsExpensesChart,
   IncomeVsExpensesChart,
@@ -31,6 +32,7 @@ import {
 } from "../Components/charts";
 
 const SummaryPage = () => {
+  const { isLimited } = useAuth();
   const [projects, setProjects] = useState([]);
   const [orders, setOrders] = useState([]);
   const [invoices, setInvoices] = useState([]);
@@ -500,17 +502,19 @@ const SummaryPage = () => {
         </div>
 
         {/* גרפים */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
-          {/* גרף תקציב מול הוצאות */}
-          <ChartCard
-            title="תקציב מול הוצאות"
-            subtitle="לפי פרויקט (10 המובילים)"
-            icon={BarChart3}
-            loading={analyticsLoading}
-            color="orange"
-          >
-            <BudgetVsExpensesChart data={analyticsData.budgetVsExpenses} />
-          </ChartCard>
+        <div className={`grid grid-cols-1 ${!isLimited ? 'lg:grid-cols-2' : ''} gap-6 mb-8`}>
+          {/* גרף תקציב מול הוצאות - לא מוצג למשתמש מוגבל */}
+          {!isLimited && (
+            <ChartCard
+              title="תקציב מול הוצאות"
+              subtitle="לפי פרויקט (10 המובילים)"
+              icon={BarChart3}
+              loading={analyticsLoading}
+              color="orange"
+            >
+              <BudgetVsExpensesChart data={analyticsData.budgetVsExpenses} />
+            </ChartCard>
+          )}
 
           {/* גרף סטטוס תשלומים */}
           <ChartCard
@@ -618,8 +622,8 @@ const SummaryPage = () => {
               <thead>
                 <tr className="bg-gradient-to-r from-orange-100 to-amber-100 text-orange-900">
                   <th className="px-6 py-4 text-right font-bold">שם פרויקט</th>
-                  <th className="px-6 py-4 text-right font-bold">תקציב</th>
-                  <th className="px-6 py-4 text-right font-bold">תקציב שנותר</th>
+                  {!isLimited && <th className="px-6 py-4 text-right font-bold">תקציב</th>}
+                  {!isLimited && <th className="px-6 py-4 text-right font-bold">תקציב שנותר</th>}
                   <th className="px-6 py-4 text-right font-bold">שם המזמין</th>
                   <th className="px-6 py-4 text-right font-bold">תאריך יצירה</th>
                 </tr>
@@ -637,19 +641,23 @@ const SummaryPage = () => {
                       }`}
                     >
                       <td className="px-6 py-4 font-semibold text-gray-900">{project.name}</td>
-                      <td className="px-6 py-4 font-medium">
-                        {project.budget ? formatCurrency(project.budget) : <span className="text-gray-500 italic">אין תקציב</span>}
-                      </td>
-                      <td className="px-6 py-4 font-medium">
-                        {project.remainingBudget ? formatCurrency(project.remainingBudget) : <span className="text-gray-500 italic">אין תקציב</span>}
-                      </td>
+                      {!isLimited && (
+                        <td className="px-6 py-4 font-medium">
+                          {project.budget ? formatCurrency(project.budget) : <span className="text-gray-500 italic">אין תקציב</span>}
+                        </td>
+                      )}
+                      {!isLimited && (
+                        <td className="px-6 py-4 font-medium">
+                          {project.remainingBudget ? formatCurrency(project.remainingBudget) : <span className="text-gray-500 italic">אין תקציב</span>}
+                        </td>
+                      )}
                       <td className="px-6 py-4 font-medium text-gray-700">{project.invitingName}</td>
                       <td className="px-6 py-4 font-medium text-gray-700">{formatDate(project.createdAt)}</td>
                     </tr>
                   ))
                 ) : (
                   <tr>
-                    <td colSpan="5" className="text-center font-bold text-lg text-red-500 py-8">לא נמצאו פרויקטים</td>
+                    <td colSpan={isLimited ? 3 : 5} className="text-center font-bold text-lg text-red-500 py-8">לא נמצאו פרויקטים</td>
                   </tr>
                 )}
               </tbody>
@@ -670,14 +678,18 @@ const SummaryPage = () => {
                     <Eye className="w-5 h-5 text-orange-400" />
                   </div>
                   <div className="space-y-2 text-sm">
-                    <div className="flex justify-between">
-                      <span className="text-gray-600">תקציב:</span>
-                      <span className="font-medium">{project.budget ? formatCurrency(project.budget) : <span className="text-gray-500 italic">אין</span>}</span>
-                    </div>
-                    <div className="flex justify-between">
-                      <span className="text-gray-600">נותר:</span>
-                      <span className="font-medium">{project.remainingBudget ? formatCurrency(project.remainingBudget) : <span className="text-gray-500 italic">אין</span>}</span>
-                    </div>
+                    {!isLimited && (
+                      <>
+                        <div className="flex justify-between">
+                          <span className="text-gray-600">תקציב:</span>
+                          <span className="font-medium">{project.budget ? formatCurrency(project.budget) : <span className="text-gray-500 italic">אין</span>}</span>
+                        </div>
+                        <div className="flex justify-between">
+                          <span className="text-gray-600">נותר:</span>
+                          <span className="font-medium">{project.remainingBudget ? formatCurrency(project.remainingBudget) : <span className="text-gray-500 italic">אין</span>}</span>
+                        </div>
+                      </>
+                    )}
                     <div className="flex justify-between">
                       <span className="text-gray-600">מזמין:</span>
                       <span className="font-medium text-gray-700">{project.invitingName || "-"}</span>

@@ -187,7 +187,7 @@ const Sidebar = () => {
       icon: ClipboardList,
       text: "דף סיכום",
       path: "/summary-page",
-      show: isAdmin || canViewAnyProject(),
+      show: isAdmin,
       type: "single",
     },
     {
