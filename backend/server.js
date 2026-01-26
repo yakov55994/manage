@@ -38,17 +38,40 @@ const allowedOrigins = [
   'https://management-server-owna.onrender.com'
 ];
 
+// const corsOptions = {
+//   origin(origin, callback) {
+//     // אפשר בקשות ללא origin (Postman, server-to-server)
+//     if (!origin) return callback(null, true);
+
+//     if (allowedOrigins.includes(origin)) {
+//       return callback(null, true);
+//     } else {
+//       // console.log("❌ BLOCKED ORIGIN:", origin);
+//       return callback(new Error("Not allowed by CORS"));
+//     }
+//   },
+//   credentials: true,
+//   methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
+//   allowedHeaders: [
+//     "Origin",
+//     "X-Requested-With",
+//     "Content-Type",
+//     "Accept",
+//     "Authorization",
+//     "Cache-Control",
+//   ],
+// };
+
 const corsOptions = {
   origin(origin, callback) {
-    // אפשר בקשות ללא origin (Postman, server-to-server)
     if (!origin) return callback(null, true);
 
     if (allowedOrigins.includes(origin)) {
       return callback(null, true);
-    } else {
-      // console.log("❌ BLOCKED ORIGIN:", origin);
-      return callback(new Error("Not allowed by CORS"));
     }
+
+    // ❗ לא זורקים שגיאה
+    return callback(null, false);
   },
   credentials: true,
   methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
@@ -58,9 +81,9 @@ const corsOptions = {
     "Content-Type",
     "Accept",
     "Authorization",
-    "Cache-Control",
   ],
 };
+
 
 app.use(cors(corsOptions));
 app.options('*', cors(corsOptions));
