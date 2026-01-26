@@ -18,6 +18,7 @@ import {
   DollarSign,
 } from "lucide-react";
 import { useAuth } from "../context/AuthContext.jsx";
+import NotificationCenter from "../Components/notifications/NotificationCenter";
 
 const Sidebar = () => {
   const [activeDropdown, setActiveDropdown] = useState(null);
@@ -308,8 +309,11 @@ const Sidebar = () => {
             })}
         </nav>
 
-        {/* חיפוש - responsive */}
+        {/* חיפוש והתראות - responsive */}
         <div className="flex items-center gap-2 md:gap-3">
+          {/* מרכז התראות */}
+          <NotificationCenter />
+
           <div className="relative">
             <input
               type="text"

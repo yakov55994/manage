@@ -8,6 +8,7 @@ import Order from "../models/Order.js";
 import Supplier from "../models/Supplier.js";
 import Salary from "../models/Salary.js";
 import { sendPaymentConfirmationEmail } from "./emailService.js";
+import notificationService from "./notificationService.js";
 
 // ===================================================
 // עוזר לחישוב סכומים
@@ -74,8 +75,18 @@ export const recalculateRemainingBudget = async (projectId) => {
   // ✅ סכום כולל: רק מה שהפרויקט באמת משלם
   const totalSpent = regularTotal + milgaTotal + salaryInvoicesTotal + totalSalaries;
 
-  project.remainingBudget = project.budget - totalSpent;
+  const oldRemaining = project.remainingBudget;
+  const newRemaining = project.budget - totalSpent;
+
+  project.remainingBudget = newRemaining;
   await project.save();
+
+  // בדיקת חריגת תקציב והתראה
+  try {
+    await notificationService.checkBudgetThreshold(project, oldRemaining, newRemaining);
+  } catch (notifError) {
+    console.error("❌ Failed to check budget threshold:", notifError);
+  }
 };
 
 // ===============================================
@@ -353,6 +364,13 @@ async function createInvoice(user, data) {
         console.error("❌ Failed to send payment confirmation email on create:", emailError);
       }
     }
+  }
+
+  // 🔔 שליחת התראה על חשבונית חדשה
+  try {
+    await notificationService.notifyNewInvoice(invoice, user._id);
+  } catch (notifError) {
+    console.error("❌ Failed to send new invoice notification:", notifError);
   }
 
   return invoice;
@@ -892,6 +910,13 @@ async function updatePaymentStatus(
       console.error("❌ Failed to send payment confirmation email:", emailError);
       // ממשיכים - לא עוצרים את התהליך בגלל שגיאת מייל
     }
+  }
+
+  // שליחת התראה על שינוי סטטוס תשלום
+  try {
+    await notificationService.notifyPaymentStatusChange(updatedInvoice, status, user._id);
+  } catch (notifError) {
+    console.error("❌ Failed to send payment notification:", notifError);
   }
 
   return updatedInvoice;

@@ -17,10 +17,18 @@ import {
   Briefcase,
   ArrowDownCircle,
   ArrowUpCircle,
+  PieChart,
+  LineChart,
 } from "lucide-react";
 import api from "../api/api.js";
 import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
+import {
+  BudgetVsExpensesChart,
+  IncomeVsExpensesChart,
+  PaymentStatusChart,
+  ChartCard
+} from "../Components/charts";
 
 const SummaryPage = () => {
   const [projects, setProjects] = useState([]);
@@ -34,6 +42,14 @@ const SummaryPage = () => {
   const [statusFilter, setStatusFilter] = useState("");
   const [sortOrder, setSortOrder] = useState("desc");
   const [sortBy, setSortBy] = useState("name");
+
+  // Analytics data
+  const [analyticsData, setAnalyticsData] = useState({
+    budgetVsExpenses: [],
+    incomeVsExpenses: [],
+    paymentStatus: null
+  });
+  const [analyticsLoading, setAnalyticsLoading] = useState(true);
 
   const navigate = useNavigate();
 
@@ -113,6 +129,31 @@ const SummaryPage = () => {
     };
 
     fetchData();
+  }, []);
+
+  // Fetch analytics data
+  useEffect(() => {
+    const fetchAnalytics = async () => {
+      try {
+        const [budgetRes, incomeExpenseRes, paymentRes] = await Promise.all([
+          api.get("/projects/analytics/budget-vs-expenses"),
+          api.get("/analytics/income-vs-expenses?months=6"),
+          api.get("/invoices/analytics/payment-status")
+        ]);
+
+        setAnalyticsData({
+          budgetVsExpenses: budgetRes.data?.data || [],
+          incomeVsExpenses: incomeExpenseRes.data?.data || [],
+          paymentStatus: paymentRes.data?.data || null
+        });
+      } catch (error) {
+        console.error("Error fetching analytics:", error);
+      } finally {
+        setAnalyticsLoading(false);
+      }
+    };
+
+    fetchAnalytics();
   }, []);
 
   const formatNumber = (num) => num?.toLocaleString("he-IL");
@@ -456,6 +497,44 @@ const SummaryPage = () => {
               סה"כ: {formatCurrency(totalExpenses)}
             </p>
           </div>
+        </div>
+
+        {/* גרפים */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
+          {/* גרף תקציב מול הוצאות */}
+          <ChartCard
+            title="תקציב מול הוצאות"
+            subtitle="לפי פרויקט (10 המובילים)"
+            icon={BarChart3}
+            loading={analyticsLoading}
+            color="orange"
+          >
+            <BudgetVsExpensesChart data={analyticsData.budgetVsExpenses} />
+          </ChartCard>
+
+          {/* גרף סטטוס תשלומים */}
+          <ChartCard
+            title="סטטוס תשלומים"
+            subtitle="התפלגות חשבוניות"
+            icon={PieChart}
+            loading={analyticsLoading}
+            color="purple"
+          >
+            <PaymentStatusChart data={analyticsData.paymentStatus} />
+          </ChartCard>
+        </div>
+
+        {/* גרף הכנסות מול הוצאות - רוחב מלא */}
+        <div className="mb-8">
+          <ChartCard
+            title="הכנסות מול הוצאות"
+            subtitle="6 חודשים אחרונים"
+            icon={LineChart}
+            loading={analyticsLoading}
+            color="green"
+          >
+            <IncomeVsExpensesChart data={analyticsData.incomeVsExpenses} />
+          </ChartCard>
         </div>
 
         {/* סרגל כלים */}

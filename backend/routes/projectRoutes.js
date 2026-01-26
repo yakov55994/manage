@@ -1,8 +1,12 @@
 import express from "express";
 import { protect, requireAdmin, checkAccess } from "../middleware/auth.js";
 import projectController from "../controller/projectControllers.js";
+import analyticsController from "../controller/analyticsControllers.js";
 
 const router = express.Router();
+
+// 📊 Analytics - תקציב מול הוצאות
+router.get("/analytics/budget-vs-expenses", protect, analyticsController.getBudgetVsExpenses);
 
 // 📌 רשימת פרויקטים — ללא checkAccess
 router.get("/", protect, projectController.getAllProjects);

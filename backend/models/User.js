@@ -49,6 +49,26 @@ const userSchema = new mongoose.Schema({
   ],
   resetPasswordToken: String,
   resetPasswordExpires: Date,
+
+  // Push subscriptions for web push notifications
+  pushSubscriptions: [{
+    endpoint: { type: String, required: true },
+    keys: {
+      p256dh: { type: String, required: true },
+      auth: { type: String, required: true }
+    }
+  }],
+
+  // Notification preferences
+  notificationPreferences: {
+    budget_threshold: { type: Boolean, default: true },
+    payment_status_change: { type: Boolean, default: true },
+    new_invoice: { type: Boolean, default: true },
+    new_order: { type: Boolean, default: true },
+    system_update: { type: Boolean, default: true },
+    emailNotifications: { type: Boolean, default: false },
+    pushNotifications: { type: Boolean, default: true }
+  }
 }, {
   timestamps: true,
 });

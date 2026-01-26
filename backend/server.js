@@ -1,7 +1,10 @@
 import express from 'express';
+import { createServer } from 'http';
+import { Server } from 'socket.io';
 import mongoose from 'mongoose';
 import dotenv from 'dotenv';
 import cors from 'cors';
+import { initializeSocket } from './config/socket.js';
 
 // Routers
 import authRoutes from './routes/Auth.js';
@@ -18,9 +21,12 @@ import masavRoutes from './routes/masavRoutes.js';
 import incomeRoutes from './routes/incomeRoutes.js';
 import expenseRoutes from './routes/expenseRoutes.js';
 import submissionRoutes from './routes/submissionRoutes.js';
+import analyticsRoutes from './routes/analyticsRoutes.js';
+import notificationRoutes from './routes/notificationRoutes.js';
 
 dotenv.config();
 const app = express();
+const httpServer = createServer(app);
 
 // ✅ CORS - עודכן
 const allowedOrigins = [
@@ -58,6 +64,17 @@ const corsOptions = {
 
 app.use(cors(corsOptions));
 app.options('*', cors(corsOptions));
+
+// Socket.IO
+const io = new Server(httpServer, {
+  cors: {
+    origin: allowedOrigins,
+    methods: ["GET", "POST"],
+    credentials: true
+  }
+});
+
+initializeSocket(io);
 
 // Parsers
 app.use(express.json());
@@ -101,7 +118,11 @@ app.use('/api/expenses', expenseRoutes);
 // Submission routes
 app.use('/api/submissions', submissionRoutes);
 
+// Analytics routes
+app.use('/api/analytics', analyticsRoutes);
 
+// Notification routes
+app.use('/api/notifications', notificationRoutes);
 
 // Error handler
 app.use((err, req, res, next) => {
@@ -115,8 +136,9 @@ const connectDB = async () => {
     await mongoose.connect(process.env.MONGO_URL);
     console.log('✅ Connected to MongoDB...');
     const port = process.env.PORT || 3000;
-    app.listen(port, () => {
+    httpServer.listen(port, () => {
       console.log(`🚀 Server running on port ${port}`);
+      console.log(`🔌 Socket.IO ready for connections`);
     });
   } catch (err) {
     console.error('❌ Error connecting to MongoDB', err);
@@ -125,4 +147,5 @@ const connectDB = async () => {
 
 connectDB();
 
+export { io };
 export default app;

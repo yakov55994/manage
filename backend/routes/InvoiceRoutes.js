@@ -36,11 +36,15 @@
 import express from "express";
 import { protect, checkAccess, requireAdmin } from "../middleware/auth.js";
 import invoiceController from "../controller/invoiceControllers.js";
+import analyticsController from "../controller/analyticsControllers.js";
 
 const router = express.Router();
 
 // 🔍 חיפוש — אין checkAccess
 router.get("/search", protect, invoiceController.searchInvoices);
+
+// 📊 Analytics - התפלגות סטטוס תשלומים
+router.get("/analytics/payment-status", protect, analyticsController.getPaymentStatusDistribution);
 
 // 📌 רשימת חשבוניות — אין checkAccess
 router.get("/", protect, invoiceController.getInvoices);
