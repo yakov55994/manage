@@ -29,6 +29,13 @@ const ProtectedRoute = ({
   // בדיקת הרשאה
   useEffect(() => {
     const checkPermission = async () => {
+
+      if (!isAuthenticated && module) {
+        setPermissionCheck({ loading: false, hasPermission: false });
+        return;
+      }
+
+
       // אם אין module - רק בדיקת authentication
       if (!module) {
         setPermissionCheck({ loading: false, hasPermission: true });
@@ -58,7 +65,8 @@ const ProtectedRoute = ({
       }
 
       // ✅ דפי עריכה/פרטים - צריך לטעון את ה-projectId
-      if (id && module) {
+      if (id && module && isAuthenticated) {
+
         try {
           // קבע את ה-endpoint לפי המודול
           let endpoint = "";
@@ -103,7 +111,7 @@ const ProtectedRoute = ({
     if (!authLoading) {
       checkPermission();
     }
-  }, [authLoading, isAdmin, id, projectId, module, requireEdit]);
+}, [authLoading, isAuthenticated, isAdmin, id, projectId, module, requireEdit]);
 
   // טוען...
   if (authLoading || permissionCheck.loading) {

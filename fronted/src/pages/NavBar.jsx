@@ -232,186 +232,67 @@ const Sidebar = () => {
 
           {/* תפריט ניווט - מוסתר במובייל */}
           <nav className="hidden md:flex items-center gap-1">
-          {menuGroups
-            .filter((group) => group.show)
-            .map((group) => {
-              if (group.type === "single") {
-                // פריט רגיל ללא dropdown
-                return (
-                  <Link
-                    key={group.id}
-                    to={group.path}
-                    className="group relative"
-                  >
-                    <div className="flex items-center gap-1.5 px-3 py-2.5 rounded-xl transition-all duration-300 hover:bg-gradient-to-b hover:from-orange-500 hover:to-orange-600 hover:shadow-xl hover:shadow-orange-500/40 hover:scale-105 transform whitespace-nowrap">
-                      <group.icon className="text-orange-400 group-hover:text-white transition-all" size={16} />
-                      <span className="text-xs font-medium text-gray-300 group-hover:text-white transition-all">
-                        {group.text}
-                      </span>
-                    </div>
-                  </Link>
-                );
-              } else {
-                // פריט עם dropdown
-                const visibleItems = group.items.filter((item) => item.show);
-                if (visibleItems.length === 0) return null;
-
-                return (
-                  <div
-                    key={group.id}
-                    className="relative"
-                    onMouseEnter={() => handleMouseEnter(group.id)}
-                    onMouseLeave={handleMouseLeave}
-                  >
-                    <div className={`flex items-center gap-1.5 px-3 py-2.5 rounded-xl transition-all duration-300 cursor-pointer whitespace-nowrap ${
-                      activeDropdown === group.id
-                        ? "bg-gradient-to-b from-orange-500 to-orange-600 shadow-xl shadow-orange-500/40 scale-105 transform"
-                        : "hover:bg-gray-700/60"
-                    }`}>
-                      <group.icon
-                        className={`transition-all ${
-                          activeDropdown === group.id ? "text-white" : "text-orange-400"
-                        }`}
-                        size={16}
-                      />
-                      <span
-                        className={`text-xs font-medium transition-all ${
-                          activeDropdown === group.id ? "text-white" : "text-gray-300"
-                        }`}
-                      >
-                        {group.text}
-                      </span>
-                      <ChevronDown
-                        className={`transition-all duration-300 ${
-                          activeDropdown === group.id ? "rotate-180 text-white" : "text-orange-400"
-                        }`}
-                        size={14}
-                      />
-                    </div>
-
-                    {/* Dropdown Menu */}
-                    {activeDropdown === group.id && (
-                      <div className="absolute top-full mt-2 right-0 bg-gray-800 border-2 border-orange-500/50 rounded-xl shadow-2xl shadow-orange-500/20 overflow-hidden w-max min-w-[200px] z-50 animate-fadeIn">
-                        {visibleItems.map((item, index) => (
-                          <Link
-                            key={index}
-                            to={item.path}
-                            className="block px-5 py-3 text-sm font-medium text-gray-300 hover:bg-orange-500 hover:text-white transition-all border-b border-gray-700 last:border-b-0 whitespace-nowrap"
-                          >
-                            {item.text}
-                          </Link>
-                        ))}
-                      </div>
-                    )}
-                  </div>
-                );
-              }
-            })}
-        </nav>
-
-        {/* חיפוש והתראות - responsive */}
-        <div className="flex items-center gap-2 md:gap-3">
-          {/* מרכז התראות */}
-          <NotificationCenter />
-
-          <div className="relative">
-            <input
-              type="text"
-              value={query}
-              onChange={(e) => setQuery(e.target.value)}
-              onKeyPress={(e) => e.key === "Enter" && handleSearch()}
-              placeholder="חיפוש..."
-              className="w-32 sm:w-48 md:w-64 px-3 md:px-4 py-1.5 md:py-2 pr-8 md:pr-10 bg-gray-700/50 border-2 border-gray-600 rounded-xl text-sm md:text-base text-white placeholder-gray-400 focus:outline-none focus:border-orange-500 transition-all"
-            />
-            <Search
-              className="absolute right-2 md:right-3 top-1/2 transform -translate-y-1/2 text-orange-400"
-              size={16}
-            />
-          </div>
-          <button
-            onClick={handleSearch}
-            className="px-3 md:px-4 py-1.5 md:py-2 bg-gradient-to-r from-orange-500 to-orange-600 text-white text-sm md:text-base font-bold rounded-xl hover:from-orange-600 hover:to-orange-700 transition-all shadow-lg hover:shadow-xl"
-          >
-            חפש
-          </button>
-        </div>
-      </div>
-    </div>
-
-    {/* תפריט מובייל */}
-    {mobileMenuOpen && (
-      <div className="fixed inset-0 bg-black/60 z-40 md:hidden" onClick={() => setMobileMenuOpen(false)}>
-        <div
-          dir="rtl"
-          className="fixed top-0 right-0 bottom-0 w-80 bg-gradient-to-b from-gray-900 via-slate-800 to-gray-900 shadow-2xl overflow-y-auto"
-          onClick={(e) => e.stopPropagation()}
-        >
-          {/* כותרת התפריט */}
-          <div className="p-4 border-b-2 border-orange-500/30 flex items-center justify-between">
-            <h2 className="text-xl font-bold text-white">תפריט</h2>
-            <button
-              onClick={() => setMobileMenuOpen(false)}
-              className="p-2 rounded-lg hover:bg-gray-700/50 transition-all"
-            >
-              <X className="w-6 h-6 text-orange-400" />
-            </button>
-          </div>
-
-          {/* פריטי התפריט */}
-          <div className="p-4 space-y-2">
             {menuGroups
               .filter((group) => group.show)
               .map((group) => {
                 if (group.type === "single") {
+                  // פריט רגיל ללא dropdown
                   return (
                     <Link
                       key={group.id}
                       to={group.path}
-                      onClick={() => setMobileMenuOpen(false)}
-                      className="flex items-center gap-3 px-4 py-3 rounded-xl bg-gray-800/50 hover:bg-gradient-to-r hover:from-orange-500 hover:to-orange-600 transition-all"
+                      className="group relative"
                     >
-                      <group.icon className="text-orange-400" size={20} />
-                      <span className="text-sm font-medium text-gray-300">
-                        {group.text}
-                      </span>
+                      <div className="flex items-center gap-1.5 px-3 py-2.5 rounded-xl transition-all duration-300 hover:bg-gradient-to-b hover:from-orange-500 hover:to-orange-600 hover:shadow-xl hover:shadow-orange-500/40 hover:scale-105 transform whitespace-nowrap">
+                        <group.icon className="text-orange-400 group-hover:text-white transition-all" size={16} />
+                        <span className="text-xs font-medium text-gray-300 group-hover:text-white transition-all">
+                          {group.text}
+                        </span>
+                      </div>
                     </Link>
                   );
                 } else {
+                  // פריט עם dropdown
                   const visibleItems = group.items.filter((item) => item.show);
                   if (visibleItems.length === 0) return null;
 
                   return (
-                    <div key={group.id} className="space-y-1">
-                      <button
-                        onClick={() =>
-                          setMobileActiveGroup(
-                            mobileActiveGroup === group.id ? null : group.id
-                          )
-                        }
-                        className="w-full flex items-center justify-between gap-3 px-4 py-3 rounded-xl bg-gray-800/50 hover:bg-gray-700/50 transition-all"
-                      >
-                        <div className="flex items-center gap-3">
-                          <group.icon className="text-orange-400" size={20} />
-                          <span className="text-sm font-medium text-gray-300">
-                            {group.text}
-                          </span>
-                        </div>
-                        <ChevronDown
-                          className={`text-orange-400 transition-transform ${
-                            mobileActiveGroup === group.id ? "rotate-180" : ""
-                          }`}
-                          size={18}
+                    <div
+                      key={group.id}
+                      className="relative"
+                      onMouseEnter={() => handleMouseEnter(group.id)}
+                      onMouseLeave={handleMouseLeave}
+                    >
+                      <div className={`flex items-center gap-1.5 px-3 py-2.5 rounded-xl transition-all duration-300 cursor-pointer whitespace-nowrap ${activeDropdown === group.id
+                        ? "bg-gradient-to-b from-orange-500 to-orange-600 shadow-xl shadow-orange-500/40 scale-105 transform"
+                        : "hover:bg-gray-700/60"
+                        }`}>
+                        <group.icon
+                          className={`transition-all ${activeDropdown === group.id ? "text-white" : "text-orange-400"
+                            }`}
+                          size={16}
                         />
-                      </button>
+                        <span
+                          className={`text-xs font-medium transition-all ${activeDropdown === group.id ? "text-white" : "text-gray-300"
+                            }`}
+                        >
+                          {group.text}
+                        </span>
+                        <ChevronDown
+                          className={`transition-all duration-300 ${activeDropdown === group.id ? "rotate-180 text-white" : "text-orange-400"
+                            }`}
+                          size={14}
+                        />
+                      </div>
 
-                      {mobileActiveGroup === group.id && (
-                        <div className="pr-4 space-y-1">
+                      {/* Dropdown Menu */}
+                      {activeDropdown === group.id && (
+                        <div className="absolute top-full mt-2 right-0 bg-gray-800 border-2 border-orange-500/50 rounded-xl shadow-2xl shadow-orange-500/20 overflow-hidden w-max min-w-[200px] z-50 animate-fadeIn">
                           {visibleItems.map((item, index) => (
                             <Link
                               key={index}
                               to={item.path}
-                              onClick={() => setMobileMenuOpen(false)}
-                              className="block px-4 py-2.5 rounded-lg text-sm text-gray-400 hover:bg-orange-500 hover:text-white transition-all"
+                              className="block px-5 py-3 text-sm font-medium text-gray-300 hover:bg-orange-500 hover:text-white transition-all border-b border-gray-700 last:border-b-0 whitespace-nowrap"
                             >
                               {item.text}
                             </Link>
@@ -422,10 +303,126 @@ const Sidebar = () => {
                   );
                 }
               })}
+          </nav>
+
+          {/* חיפוש והתראות - responsive */}
+          <div className="flex items-center gap-2 md:gap-3">
+            {isAdmin &&
+              < NotificationCenter />
+            }
+
+
+            <div className="relative">
+              <input
+                type="text"
+                value={query}
+                onChange={(e) => setQuery(e.target.value)}
+                onKeyPress={(e) => e.key === "Enter" && handleSearch()}
+                placeholder="חיפוש..."
+                className="w-32 sm:w-48 md:w-64 px-3 md:px-4 py-1.5 md:py-2 pr-8 md:pr-10 bg-gray-700/50 border-2 border-gray-600 rounded-xl text-sm md:text-base text-white placeholder-gray-400 focus:outline-none focus:border-orange-500 transition-all"
+              />
+              <Search
+                className="absolute right-2 md:right-3 top-1/2 transform -translate-y-1/2 text-orange-400"
+                size={16}
+              />
+            </div>
+            <button
+              onClick={handleSearch}
+              className="px-3 md:px-4 py-1.5 md:py-2 bg-gradient-to-r from-orange-500 to-orange-600 text-white text-sm md:text-base font-bold rounded-xl hover:from-orange-600 hover:to-orange-700 transition-all shadow-lg hover:shadow-xl"
+            >
+              חפש
+            </button>
           </div>
         </div>
       </div>
-    )}
+
+      {/* תפריט מובייל */}
+      {mobileMenuOpen && (
+        <div className="fixed inset-0 bg-black/60 z-40 md:hidden" onClick={() => setMobileMenuOpen(false)}>
+          <div
+            dir="rtl"
+            className="fixed top-0 right-0 bottom-0 w-80 bg-gradient-to-b from-gray-900 via-slate-800 to-gray-900 shadow-2xl overflow-y-auto"
+            onClick={(e) => e.stopPropagation()}
+          >
+            {/* כותרת התפריט */}
+            <div className="p-4 border-b-2 border-orange-500/30 flex items-center justify-between">
+              <h2 className="text-xl font-bold text-white">תפריט</h2>
+              <button
+                onClick={() => setMobileMenuOpen(false)}
+                className="p-2 rounded-lg hover:bg-gray-700/50 transition-all"
+              >
+                <X className="w-6 h-6 text-orange-400" />
+              </button>
+            </div>
+
+            {/* פריטי התפריט */}
+            <div className="p-4 space-y-2">
+              {menuGroups
+                .filter((group) => group.show)
+                .map((group) => {
+                  if (group.type === "single") {
+                    return (
+                      <Link
+                        key={group.id}
+                        to={group.path}
+                        onClick={() => setMobileMenuOpen(false)}
+                        className="flex items-center gap-3 px-4 py-3 rounded-xl bg-gray-800/50 hover:bg-gradient-to-r hover:from-orange-500 hover:to-orange-600 transition-all"
+                      >
+                        <group.icon className="text-orange-400" size={20} />
+                        <span className="text-sm font-medium text-gray-300">
+                          {group.text}
+                        </span>
+                      </Link>
+                    );
+                  } else {
+                    const visibleItems = group.items.filter((item) => item.show);
+                    if (visibleItems.length === 0) return null;
+
+                    return (
+                      <div key={group.id} className="space-y-1">
+                        <button
+                          onClick={() =>
+                            setMobileActiveGroup(
+                              mobileActiveGroup === group.id ? null : group.id
+                            )
+                          }
+                          className="w-full flex items-center justify-between gap-3 px-4 py-3 rounded-xl bg-gray-800/50 hover:bg-gray-700/50 transition-all"
+                        >
+                          <div className="flex items-center gap-3">
+                            <group.icon className="text-orange-400" size={20} />
+                            <span className="text-sm font-medium text-gray-300">
+                              {group.text}
+                            </span>
+                          </div>
+                          <ChevronDown
+                            className={`text-orange-400 transition-transform ${mobileActiveGroup === group.id ? "rotate-180" : ""
+                              }`}
+                            size={18}
+                          />
+                        </button>
+
+                        {mobileActiveGroup === group.id && (
+                          <div className="pr-4 space-y-1">
+                            {visibleItems.map((item, index) => (
+                              <Link
+                                key={index}
+                                to={item.path}
+                                onClick={() => setMobileMenuOpen(false)}
+                                className="block px-4 py-2.5 rounded-lg text-sm text-gray-400 hover:bg-orange-500 hover:text-white transition-all"
+                              >
+                                {item.text}
+                              </Link>
+                            ))}
+                          </div>
+                        )}
+                      </div>
+                    );
+                  }
+                })}
+            </div>
+          </div>
+        </div>
+      )}
     </>
   );
 };
