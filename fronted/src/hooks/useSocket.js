@@ -37,12 +37,14 @@ export const useSocket = () => {
 
     socketRef.current = io(SOCKET_URL, {
       auth: { token },
-      transports: ["polling", "websocket"], // polling first for better compatibility
+      transports: ["websocket"],   // ✅ חובה בפרודקשן
+      withCredentials: true,       // ✅ חשוב ל-cross domain
       reconnection: true,
       reconnectionAttempts: 5,
       reconnectionDelay: 1000,
       timeout: 20000
     });
+
 
     socketRef.current.on("connect", () => {
       console.log("Socket connected");
