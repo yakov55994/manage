@@ -1,5 +1,6 @@
 import jwt from "jsonwebtoken";
 import User from "../models/User.js";
+import Notification from "../models/Notification.js";
 
 let io = null;
 
@@ -38,25 +39,22 @@ export const initializeSocket = (socketIO) => {
   });
 
   // Connection handler
-  io.on("connection", (socket) => {
-    console.log(`User connected: ${socket.userName} (${socket.userId})`);
+io.on("connection", async (socket) => {
+  console.log(`User connected: ${socket.userName} (${socket.userId})`);
 
-    // Join user-specific room
-    socket.join(`user:${socket.userId}`);
+  socket.join(`user:${socket.userId}`);
 
-    // Join role-based room
-    socket.join(`role:${socket.userRole}`);
+  // 🔥 זה החלק החסר
+  const unreadNotifications = await Notification.find({
+    userId: socket.userId,
+    read: false
+  })
+    .sort({ createdAt: -1 })
+    .limit(20);
 
-    // Handle disconnection
-    socket.on("disconnect", (reason) => {
-      console.log(`User disconnected: ${socket.userName} - ${reason}`);
-    });
+  socket.emit("notification:sync", unreadNotifications);
+});
 
-    // Handle errors
-    socket.on("error", (error) => {
-      console.error(`Socket error for ${socket.userName}:`, error);
-    });
-  });
 
   console.log("Socket.IO initialized");
 };

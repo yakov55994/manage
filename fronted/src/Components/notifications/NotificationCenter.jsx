@@ -30,6 +30,20 @@ const NotificationCenter = () => {
       setLoading(false);
     }
   };
+  
+  useEffect(() => {
+    if (!socket) return;
+
+    socket.on("notification:sync", (list) => {
+      setNotifications(list);
+      setUnreadCount(list.length);
+    });
+
+    return () => {
+      socket.off("notification:sync");
+    };
+  }, [socket]);
+
 
   // Initial fetch
   useEffect(() => {
@@ -223,11 +237,10 @@ const NotificationCenter = () => {
                 <div
                   key={notification._id}
                   onClick={() => handleNotificationClick(notification)}
-                  className={`p-4 border-b border-gray-100 cursor-pointer transition-colors ${
-                    !notification.read
+                  className={`p-4 border-b border-gray-100 cursor-pointer transition-colors ${!notification.read
                       ? "bg-orange-50 hover:bg-orange-100"
                       : "hover:bg-gray-50"
-                  }`}
+                    }`}
                 >
                   <div className="flex gap-3">
                     {/* Icon */}
