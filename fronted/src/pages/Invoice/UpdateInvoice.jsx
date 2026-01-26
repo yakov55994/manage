@@ -62,14 +62,14 @@ const InvoiceEditPage = () => {
 
   const { id } = useParams();
   const navigate = useNavigate();
-  const { canViewInvoices, isAdmin } = useAuth();
+  const { canEditInvoices, isAdmin } = useAuth();
 
   // -----------------------------------------------
   // CHECK PERMISSIONS
   // -----------------------------------------------
   useEffect(() => {
-    if (!canViewInvoices) navigate("/no-access");
-  }, [canViewInvoices]);
+    if (!canEditInvoices()) navigate("/no-access");
+  }, [canEditInvoices]);
 
   // ===============================================================
   // CLEAN FILES FROM CLOUDINARY OR LOCAL OBJECTS
