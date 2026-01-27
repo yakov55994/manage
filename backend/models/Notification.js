@@ -41,6 +41,12 @@ const notificationSchema = new mongoose.Schema({
     type: mongoose.Schema.Types.ObjectId
   },
 
+  // מזהה קבוצה - לקישור התראות בין מנהלים (כשאחד מוחק, כולם מקבלים)
+  groupId: {
+    type: mongoose.Schema.Types.ObjectId,
+    index: true
+  },
+
   // סטטוס
   read: {
     type: Boolean,

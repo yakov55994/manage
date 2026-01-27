@@ -3,6 +3,7 @@ import Project from "../models/Project.js";
 import Invoice from "../models/Invoice.js";
 import Salary from "../models/Salary.js";
 import { recalculateRemainingBudget } from "./invoiceService.js";
+import notificationService from "./notificationService.js";
 
 
 // ======================================================
@@ -128,6 +129,9 @@ export default {
 
     // 🔥 חשב מחדש את התקציב מכל ההזמנות
     await recalcProjectBudget(data.projectId);
+
+    // 📢 שליחת התראה על הזמנה חדשה
+    await notificationService.notifyNewOrder(order, user._id);
 
     return order;
   },

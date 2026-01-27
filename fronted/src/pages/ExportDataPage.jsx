@@ -1,0 +1,269 @@
+import { useState } from "react";
+import { DownloadCloud, FileSpreadsheet, FileText, Loader2 } from "lucide-react";
+import { toast } from "sonner";
+import api from "../api/api";
+
+const ExportDataPage = () => {
+  const [loadingExcel, setLoadingExcel] = useState(false);
+  const [loadingPDF, setLoadingPDF] = useState(false);
+
+  // ייצוא לאקסל
+  const handleExportExcel = async () => {
+    try {
+      setLoadingExcel(true);
+
+      const response = await api.get("/export/excel", {
+        responseType: "blob",
+      });
+
+      // יצירת URL להורדה
+      const url = window.URL.createObjectURL(new Blob([response.data]));
+      const link = document.createElement("a");
+      link.href = url;
+
+      // שם הקובץ מה-header או ברירת מחדל
+      const contentDisposition = response.headers["content-disposition"];
+      let filename = `export_${new Date().toISOString().split("T")[0]}.xlsx`;
+      if (contentDisposition) {
+        const match = contentDisposition.match(/filename="(.+)"/);
+        if (match) filename = match[1];
+      }
+
+      link.setAttribute("download", filename);
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      window.URL.revokeObjectURL(url);
+
+      toast.success("הקובץ יוצא בהצלחה!", {
+        className: "sonner-toast success rtl",
+      });
+    } catch (error) {
+      console.error("Excel export error:", error);
+      toast.error("שגיאה בייצוא לאקסל", {
+        className: "sonner-toast error rtl",
+      });
+    } finally {
+      setLoadingExcel(false);
+    }
+  };
+
+  // ייצוא ל-PDF
+  const handleExportPDF = async () => {
+    try {
+      setLoadingPDF(true);
+
+      const response = await api.get("/export/pdf", {
+        responseType: "blob",
+      });
+
+      // יצירת URL להורדה
+      const url = window.URL.createObjectURL(new Blob([response.data]));
+      const link = document.createElement("a");
+      link.href = url;
+
+      // שם הקובץ מה-header או ברירת מחדל
+      const contentDisposition = response.headers["content-disposition"];
+      let filename = `export_${new Date().toISOString().split("T")[0]}.pdf`;
+      if (contentDisposition) {
+        const match = contentDisposition.match(/filename="(.+)"/);
+        if (match) filename = match[1];
+      }
+
+      link.setAttribute("download", filename);
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      window.URL.revokeObjectURL(url);
+
+      toast.success("הקובץ יוצא בהצלחה!", {
+        className: "sonner-toast success rtl",
+      });
+    } catch (error) {
+      console.error("PDF export error:", error);
+      toast.error("שגיאה בייצוא ל-PDF", {
+        className: "sonner-toast error rtl",
+      });
+    } finally {
+      setLoadingPDF(false);
+    }
+  };
+
+  return (
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-orange-50/30 to-amber-50/20 p-4 sm:p-6" dir="rtl">
+      <div className="max-w-4xl mx-auto">
+        {/* Header */}
+        <div className="bg-gradient-to-r from-slate-800 via-slate-700 to-slate-800 rounded-3xl p-6 sm:p-8 mb-8 shadow-2xl">
+          <div className="flex items-center gap-4">
+            <div className="p-3 bg-gradient-to-br from-orange-400 to-amber-500 rounded-2xl shadow-lg">
+              <DownloadCloud className="w-8 h-8 text-white" />
+            </div>
+            <div>
+              <h1 className="text-2xl sm:text-3xl font-bold text-white">
+                ייצוא נתונים
+              </h1>
+              <p className="text-slate-300 mt-1">
+                ייצוא כל הנתונים במערכת לקובץ Excel או PDF
+              </p>
+            </div>
+          </div>
+        </div>
+
+        {/* Export Cards */}
+        <div className="grid md:grid-cols-2 gap-6">
+          {/* Excel Card */}
+          <div className="bg-white rounded-3xl shadow-xl border-2 border-orange-100 overflow-hidden hover:shadow-2xl transition-all duration-300">
+            <div className="bg-gradient-to-r from-green-500 to-emerald-600 p-6">
+              <div className="flex items-center gap-3">
+                <div className="p-3 bg-white/20 rounded-xl">
+                  <FileSpreadsheet className="w-8 h-8 text-white" />
+                </div>
+                <div>
+                  <h2 className="text-xl font-bold text-white">ייצוא לאקסל</h2>
+                  <p className="text-green-100 text-sm">קובץ xlsx עם גיליונות</p>
+                </div>
+              </div>
+            </div>
+
+            <div className="p-6">
+              <div className="space-y-3 mb-6">
+                <p className="text-slate-600 text-sm">
+                  הקובץ יכלול את הגיליונות הבאים:
+                </p>
+                <ul className="text-sm text-slate-500 space-y-1 mr-4">
+                  <li className="flex items-center gap-2">
+                    <span className="w-2 h-2 bg-green-500 rounded-full"></span>
+                    פרויקטים
+                  </li>
+                  <li className="flex items-center gap-2">
+                    <span className="w-2 h-2 bg-green-500 rounded-full"></span>
+                    חשבוניות
+                  </li>
+                  <li className="flex items-center gap-2">
+                    <span className="w-2 h-2 bg-green-500 rounded-full"></span>
+                    הזמנות
+                  </li>
+                  <li className="flex items-center gap-2">
+                    <span className="w-2 h-2 bg-green-500 rounded-full"></span>
+                    ספקים
+                  </li>
+                  <li className="flex items-center gap-2">
+                    <span className="w-2 h-2 bg-green-500 rounded-full"></span>
+                    משכורות
+                  </li>
+                  <li className="flex items-center gap-2">
+                    <span className="w-2 h-2 bg-green-500 rounded-full"></span>
+                    הכנסות והוצאות
+                  </li>
+                </ul>
+              </div>
+
+              <button
+                onClick={handleExportExcel}
+                disabled={loadingExcel || loadingPDF}
+                className="w-full py-4 bg-gradient-to-r from-green-500 to-emerald-600 text-white rounded-2xl font-bold text-lg hover:from-green-600 hover:to-emerald-700 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-300 shadow-lg hover:shadow-xl flex items-center justify-center gap-3"
+              >
+                {loadingExcel ? (
+                  <>
+                    <Loader2 className="w-6 h-6 animate-spin" />
+                    מייצא...
+                  </>
+                ) : (
+                  <>
+                    <DownloadCloud className="w-6 h-6" />
+                    הורד קובץ Excel
+                  </>
+                )}
+              </button>
+            </div>
+          </div>
+
+          {/* PDF Card */}
+          <div className="bg-white rounded-3xl shadow-xl border-2 border-orange-100 overflow-hidden hover:shadow-2xl transition-all duration-300">
+            <div className="bg-gradient-to-r from-red-500 to-rose-600 p-6">
+              <div className="flex items-center gap-3">
+                <div className="p-3 bg-white/20 rounded-xl">
+                  <FileText className="w-8 h-8 text-white" />
+                </div>
+                <div>
+                  <h2 className="text-xl font-bold text-white">ייצוא ל-PDF</h2>
+                  <p className="text-red-100 text-sm">דוח סיכום להדפסה</p>
+                </div>
+              </div>
+            </div>
+
+            <div className="p-6">
+              <div className="space-y-3 mb-6">
+                <p className="text-slate-600 text-sm">
+                  הדוח יכלול:
+                </p>
+                <ul className="text-sm text-slate-500 space-y-1 mr-4">
+                  <li className="flex items-center gap-2">
+                    <span className="w-2 h-2 bg-red-500 rounded-full"></span>
+                    סיכום כמויות נתונים
+                  </li>
+                  <li className="flex items-center gap-2">
+                    <span className="w-2 h-2 bg-red-500 rounded-full"></span>
+                    סיכום פיננסי
+                  </li>
+                  <li className="flex items-center gap-2">
+                    <span className="w-2 h-2 bg-red-500 rounded-full"></span>
+                    סה"כ תקציבים
+                  </li>
+                  <li className="flex items-center gap-2">
+                    <span className="w-2 h-2 bg-red-500 rounded-full"></span>
+                    סה"כ חשבוניות
+                  </li>
+                  <li className="flex items-center gap-2">
+                    <span className="w-2 h-2 bg-red-500 rounded-full"></span>
+                    סה"כ הזמנות
+                  </li>
+                  <li className="flex items-center gap-2">
+                    <span className="w-2 h-2 bg-red-500 rounded-full"></span>
+                    סה"כ משכורות
+                  </li>
+                </ul>
+              </div>
+
+              <button
+                onClick={handleExportPDF}
+                disabled={loadingExcel || loadingPDF}
+                className="w-full py-4 bg-gradient-to-r from-red-500 to-rose-600 text-white rounded-2xl font-bold text-lg hover:from-red-600 hover:to-rose-700 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-300 shadow-lg hover:shadow-xl flex items-center justify-center gap-3"
+              >
+                {loadingPDF ? (
+                  <>
+                    <Loader2 className="w-6 h-6 animate-spin" />
+                    מייצא...
+                  </>
+                ) : (
+                  <>
+                    <DownloadCloud className="w-6 h-6" />
+                    הורד קובץ PDF
+                  </>
+                )}
+              </button>
+            </div>
+          </div>
+        </div>
+
+        {/* Info Box */}
+        <div className="mt-8 bg-amber-50 border-2 border-amber-200 rounded-2xl p-6">
+          <div className="flex items-start gap-3">
+            <div className="p-2 bg-amber-100 rounded-lg">
+              <FileSpreadsheet className="w-5 h-5 text-amber-600" />
+            </div>
+            <div>
+              <h3 className="font-bold text-amber-800 mb-1">טיפ</h3>
+              <p className="text-amber-700 text-sm">
+                קובץ האקסל מכיל את כל הנתונים המפורטים ומתאים לעבודה ועריכה.
+                קובץ ה-PDF מכיל סיכום כללי ומתאים לארכיון והדפסה.
+              </p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+export default ExportDataPage;

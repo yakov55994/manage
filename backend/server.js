@@ -23,6 +23,7 @@ import expenseRoutes from './routes/expenseRoutes.js';
 import submissionRoutes from './routes/submissionRoutes.js';
 import analyticsRoutes from './routes/analyticsRoutes.js';
 import notificationRoutes from './routes/notificationRoutes.js';
+import exportRoutes from './routes/exportRoutes.js';
 
 dotenv.config();
 const app = express();
@@ -155,6 +156,9 @@ app.use('/api/analytics', analyticsRoutes);
 
 // Notification routes
 app.use('/api/notifications', notificationRoutes);
+
+// Export routes
+app.use('/api/export', exportRoutes);
 
 // Error handler
 app.use((err, req, res, next) => {

@@ -44,6 +44,11 @@ io.on("connection", async (socket) => {
 
   socket.join(`user:${socket.userId}`);
 
+  // הוספת משתמש לחדר לפי תפקיד
+  if (socket.userRole) {
+    socket.join(`role:${socket.userRole}`);
+  }
+
   // 🔥 זה החלק החסר
   const unreadNotifications = await Notification.find({
     userId: socket.userId,

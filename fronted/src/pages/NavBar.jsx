@@ -16,6 +16,7 @@ import {
   Menu,
   X,
   DollarSign,
+  DownloadCloud,
 } from "lucide-react";
 import { useAuth } from "../context/AuthContext.jsx";
 import NotificationCenter from "../Components/notifications/NotificationCenter";
@@ -105,18 +106,18 @@ const Sidebar = () => {
       id: "salaries",
       icon: Users,
       text: "משכורות",
-      show: isAdmin || canViewModule(null, "invoices") || canEditModule(null, "invoices"),
+      show: isAdmin, // רק מנהלים
       type: "dropdown",
       items: [
         {
           text: "יצירת משכורת",
           path: "/create-salary",
-          show: isAdmin || canEditModule(null, "invoices"),
+          show: isAdmin,
         },
         {
           text: "הצגת משכורות",
           path: "/salaries",
-          show: isAdmin || canViewModule(null, "invoices"),
+          show: isAdmin,
         },
       ],
     },
@@ -124,23 +125,23 @@ const Sidebar = () => {
       id: "finance",
       icon: DollarSign,
       text: "תנועות בנק",
-      show: isAdmin || canViewModule(null, "invoices") || canEditModule(null, "invoices"),
+      show: isAdmin, // רק מנהלים
       type: "dropdown",
       items: [
         {
           text: "הכנסות",
           path: "/incomes",
-          show: isAdmin || canViewModule(null, "invoices"),
+          show: isAdmin,
         },
         {
           text: "הוצאות",
           path: "/expenses",
-          show: isAdmin || canViewModule(null, "invoices"),
+          show: isAdmin,
         },
         {
           text: "העלאת אקסל",
           path: "/excel-upload",
-          show: isAdmin || canEditModule(null, "invoices"),
+          show: isAdmin,
         },
       ],
     },
@@ -205,6 +206,11 @@ const Sidebar = () => {
         {
           text: "ניהול משתמשים",
           path: "/admin",
+          show: isAdmin,
+        },
+        {
+          text: "ייצוא נתונים",
+          path: "/export-data",
           show: isAdmin,
         },
       ],

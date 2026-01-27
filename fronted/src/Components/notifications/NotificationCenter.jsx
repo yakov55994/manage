@@ -1,11 +1,14 @@
 import { useState, useEffect, useRef } from "react";
 import { Bell, Check, CheckCheck, X, Wallet, FileText, ShoppingCart, Info, BellRing, BellOff, Trash2 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
+import { toast } from "sonner";
 import api from "../../api/api";
 import useSocket from "../../hooks/useSocket";
 import usePushNotifications from "../../hooks/usePushNotifications";
+import { useAuth } from "../../context/AuthContext";
 
 const NotificationCenter = () => {
+  const { isAdmin } = useAuth();
   const [isOpen, setIsOpen] = useState(false);
   const [notifications, setNotifications] = useState([]);
   const [unreadCount, setUnreadCount] = useState(0);
@@ -63,12 +66,26 @@ const NotificationCenter = () => {
       setUnreadCount(unreadCount);
     };
 
+    // כשמנהל אחר מוחק התראה מקבוצה - נמחק גם אצלנו
+    const handleGroupDeleted = ({ groupId, notificationId }) => {
+      setNotifications((prev) => {
+        const toRemove = prev.filter((n) => n.groupId === groupId || n._id === notificationId);
+        const newList = prev.filter((n) => n.groupId !== groupId && n._id !== notificationId);
+        // עדכון ספירת ההתראות שלא נקראו
+        const unreadRemoved = toRemove.filter((n) => !n.read).length;
+        setUnreadCount((prevCount) => Math.max(0, prevCount - unreadRemoved));
+        return newList;
+      });
+    };
+
     socket.on("notification:new", handleNewNotification);
     socket.on("notification:unread_count", handleUnreadCount);
+    socket.on("notification:group-deleted", handleGroupDeleted);
 
     return () => {
       socket.off("notification:new", handleNewNotification);
       socket.off("notification:unread_count", handleUnreadCount);
+      socket.off("notification:group-deleted", handleGroupDeleted);
     };
   }, [socket]);
 
@@ -115,8 +132,35 @@ const NotificationCenter = () => {
       await api.delete("/notifications/all");
       setNotifications([]);
       setUnreadCount(0);
+      toast.success("כל ההתראות נמחקו", {
+        className: "sonner-toast success rtl",
+      });
     } catch (error) {
       console.error("Error deleting all notifications:", error);
+      toast.error("שגיאה במחיקת ההתראות", {
+        className: "sonner-toast error rtl",
+      });
+    }
+  };
+
+  // Delete single notification
+  const deleteNotification = async (id, e) => {
+    e?.stopPropagation();
+    try {
+      await api.delete(`/notifications/${id}`);
+      const notification = notifications.find((n) => n._id === id);
+      setNotifications((prev) => prev.filter((n) => n._id !== id));
+      if (notification && !notification.read) {
+        setUnreadCount((prev) => Math.max(0, prev - 1));
+      }
+      toast.success("ההתראה נמחקה", {
+        className: "sonner-toast success rtl",
+      });
+    } catch (error) {
+      console.error("Error deleting notification:", error);
+      toast.error("שגיאה במחיקת ההתראה", {
+        className: "sonner-toast error rtl",
+      });
     }
   };
 
@@ -261,16 +305,29 @@ const NotificationCenter = () => {
                       </p>
                     </div>
 
-                    {/* Unread indicator / Mark as read */}
-                    {!notification.read && (
-                      <button
-                        onClick={(e) => markAsRead(notification._id, e)}
-                        className="flex-shrink-0 p-1 hover:bg-orange-200 rounded-full transition-colors"
-                        title="סמן כנקרא"
-                      >
-                        <div className="w-3 h-3 bg-orange-500 rounded-full"></div>
-                      </button>
-                    )}
+                    {/* Actions */}
+                    <div className="flex flex-col gap-1 flex-shrink-0">
+                      {/* Unread indicator / Mark as read */}
+                      {!notification.read && (
+                        <button
+                          onClick={(e) => markAsRead(notification._id, e)}
+                          className="p-1 hover:bg-orange-200 rounded-full transition-colors"
+                          title="סמן כנקרא"
+                        >
+                          <div className="w-3 h-3 bg-orange-500 rounded-full"></div>
+                        </button>
+                      )}
+                      {/* Delete button - admins only */}
+                      {isAdmin && (
+                        <button
+                          onClick={(e) => deleteNotification(notification._id, e)}
+                          className="p-1 hover:bg-red-100 rounded-full transition-colors"
+                          title="מחק התראה"
+                        >
+                          <Trash2 className="w-4 h-4 text-red-400 hover:text-red-600" />
+                        </button>
+                      )}
+                    </div>
                   </div>
                 </div>
               ))

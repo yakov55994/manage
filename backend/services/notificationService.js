@@ -1,3 +1,4 @@
+import mongoose from "mongoose";
 import Notification from "../models/Notification.js";
 import User from "../models/User.js";
 import { emitToUser, emitToAdmins } from "../config/socket.js";
@@ -153,6 +154,9 @@ const notificationService = {
         ]
       });
 
+      // יצירת groupId משותף לכל ההתראות
+      const groupId = new mongoose.Types.ObjectId();
+
       for (const user of users) {
         await this.createNotification(user._id, {
           type: "new_invoice",
@@ -160,6 +164,7 @@ const notificationService = {
           message: `נוצרה חשבונית חדשה על סך ${invoice.totalAmount?.toLocaleString("he-IL")} ש״ח`,
           entityType: "invoice",
           entityId: invoice._id,
+          groupId, // קישור לקבוצה
           metadata: {
             invoiceNumber: invoice.invoiceNumber,
             totalAmount: invoice.totalAmount,
@@ -169,6 +174,40 @@ const notificationService = {
       }
     } catch (error) {
       console.error("Error notifying new invoice:", error);
+    }
+  },
+
+  /**
+   * התראה על הזמנה חדשה
+   */
+  async notifyNewOrder(order, createdByUserId) {
+    try {
+      // שולחים לכל האדמינים
+      const users = await User.find({
+        isActive: true,
+        role: "admin"
+      });
+
+      // יצירת groupId משותף לכל ההתראות
+      const groupId = new mongoose.Types.ObjectId();
+
+      for (const user of users) {
+        await this.createNotification(user._id, {
+          type: "new_order",
+          title: `הזמנה חדשה - ${order.orderNumber}`,
+          message: `נוצרה הזמנה חדשה על סך ${order.sum?.toLocaleString("he-IL")} ש״ח`,
+          entityType: "order",
+          entityId: order._id,
+          groupId, // קישור לקבוצה
+          metadata: {
+            orderNumber: order.orderNumber,
+            sum: order.sum,
+            projectName: order.projectName
+          }
+        });
+      }
+    } catch (error) {
+      console.error("Error notifying new order:", error);
     }
   },
 
@@ -237,10 +276,30 @@ const notificationService = {
   },
 
   /**
-   * מחיקת התראה
+   * מחיקת התראה - מוחק גם לכל המנהלים אם יש groupId
    */
   async deleteNotification(userId, notificationId) {
-    await Notification.findOneAndDelete({ _id: notificationId, userId });
+    // קודם מחפשים את ההתראה כדי לבדוק אם יש לה groupId
+    const notification = await Notification.findOne({ _id: notificationId, userId });
+
+    if (!notification) return;
+
+    if (notification.groupId) {
+      // מוחקים את כל ההתראות בקבוצה
+      const result = await Notification.deleteMany({ groupId: notification.groupId });
+
+      // מעדכנים את כל המנהלים
+      emitToAdmins("notification:group-deleted", {
+        groupId: notification.groupId,
+        notificationId
+      });
+
+      return { deletedCount: result.deletedCount };
+    } else {
+      // מחיקה רגילה
+      await Notification.findOneAndDelete({ _id: notificationId, userId });
+      return { deletedCount: 1 };
+    }
   },
 
   /**

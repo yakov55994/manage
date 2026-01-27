@@ -44,6 +44,7 @@ import UpdateExpense from "./pages/Expense/Update_Expense.jsx";
 import ExcelUpload from "./pages/ExcelUpload/ExcelUpload.jsx";
 import NoAccess from "./pages/NoAccess.jsx";
 import ResetPassword from "./pages/ResetPassword.jsx";
+import ExportDataPage from "./pages/ExportDataPage.jsx";
 import { AuthProvider, useAuth } from "./context/AuthContext.jsx";
 import { Toaster } from "sonner";
 import { toast } from "sonner";
@@ -159,7 +160,7 @@ const AppContent = () => {
             <Route
               path="/create-salary"
               element={
-                <ProtectedRoute module="invoices" requireEdit={true}>
+                <ProtectedRoute adminOnly>
                   <CreateSalary />
                 </ProtectedRoute>
               }
@@ -167,7 +168,7 @@ const AppContent = () => {
             <Route
               path="/salaries"
               element={
-                <ProtectedRoute module="invoices">
+                <ProtectedRoute adminOnly>
                   <ViewSalaries />
                 </ProtectedRoute>
               }
@@ -175,7 +176,7 @@ const AppContent = () => {
             <Route
               path="/salaries/:id"
               element={
-                <ProtectedRoute module="invoices">
+                <ProtectedRoute adminOnly>
                   <SalaryDetailsPage />
                 </ProtectedRoute>
               }
@@ -183,7 +184,7 @@ const AppContent = () => {
             <Route
               path="/salaries/:id/edit"
               element={
-                <ProtectedRoute module="invoices" requireEdit={true}>
+                <ProtectedRoute adminOnly>
                   <UpdateSalary />
                 </ProtectedRoute>
               }
@@ -191,7 +192,7 @@ const AppContent = () => {
             <Route
               path="/update-salary/:id"
               element={
-                <ProtectedRoute module="invoices" requireEdit={true}>
+                <ProtectedRoute adminOnly>
                   <UpdateSalary />
                 </ProtectedRoute>
               }
@@ -299,7 +300,7 @@ const AppContent = () => {
             <Route
               path="/create-income"
               element={
-                <ProtectedRoute module="invoices" requireEdit={true}>
+                <ProtectedRoute adminOnly>
                   <CreateIncome />
                 </ProtectedRoute>
               }
@@ -307,7 +308,7 @@ const AppContent = () => {
             <Route
               path="/incomes"
               element={
-                <ProtectedRoute module="invoices">
+                <ProtectedRoute adminOnly>
                   <ViewIncomes />
                 </ProtectedRoute>
               }
@@ -315,7 +316,7 @@ const AppContent = () => {
             <Route
               path="/incomes/:id"
               element={
-                <ProtectedRoute module="invoices">
+                <ProtectedRoute adminOnly>
                   <IncomeDetailsPage />
                 </ProtectedRoute>
               }
@@ -323,7 +324,7 @@ const AppContent = () => {
             <Route
               path="/update-income/:id"
               element={
-                <ProtectedRoute module="invoices" requireEdit={true}>
+                <ProtectedRoute adminOnly>
                   <UpdateIncome />
                 </ProtectedRoute>
               }
@@ -332,7 +333,7 @@ const AppContent = () => {
             <Route
               path="/create-expense"
               element={
-                <ProtectedRoute module="invoices" requireEdit={true}>
+                <ProtectedRoute adminOnly>
                   <CreateExpense />
                 </ProtectedRoute>
               }
@@ -340,7 +341,7 @@ const AppContent = () => {
             <Route
               path="/expenses"
               element={
-                <ProtectedRoute module="invoices">
+                <ProtectedRoute adminOnly>
                   <ViewExpenses />
                 </ProtectedRoute>
               }
@@ -348,7 +349,7 @@ const AppContent = () => {
             <Route
               path="/expenses/:id"
               element={
-                <ProtectedRoute module="invoices">
+                <ProtectedRoute adminOnly>
                   <ExpenseDetailsPage />
                 </ProtectedRoute>
               }
@@ -356,7 +357,7 @@ const AppContent = () => {
             <Route
               path="/update-expense/:id"
               element={
-                <ProtectedRoute module="invoices" requireEdit={true}>
+                <ProtectedRoute adminOnly>
                   <UpdateExpense />
                 </ProtectedRoute>
               }
@@ -365,7 +366,7 @@ const AppContent = () => {
             <Route
               path="/excel-upload"
               element={
-                <ProtectedRoute module="invoices" requireEdit={true}>
+                <ProtectedRoute adminOnly>
                   <ExcelUpload />
                 </ProtectedRoute>
               }
@@ -392,6 +393,14 @@ const AppContent = () => {
               element={
                 <ProtectedRoute adminOnly>
                   <UserManagement />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/export-data"
+              element={
+                <ProtectedRoute adminOnly>
+                  <ExportDataPage />
                 </ProtectedRoute>
               }
             />
