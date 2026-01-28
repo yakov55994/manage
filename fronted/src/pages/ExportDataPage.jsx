@@ -1,18 +1,23 @@
 import { useState } from "react";
-import { DownloadCloud, FileSpreadsheet, FileText, Loader2 } from "lucide-react";
+import { DownloadCloud, FileSpreadsheet, FileText, Loader2, Calendar } from "lucide-react";
 import { toast } from "sonner";
 import api from "../api/api";
 
 const ExportDataPage = () => {
   const [loadingExcel, setLoadingExcel] = useState(false);
   const [loadingPDF, setLoadingPDF] = useState(false);
+  const currentYear = new Date().getFullYear();
+  const [selectedYear, setSelectedYear] = useState(currentYear);
+
+  // יצירת רשימת שנים (5 שנים אחורה)
+  const years = Array.from({ length: 6 }, (_, i) => currentYear - i);
 
   // ייצוא לאקסל
   const handleExportExcel = async () => {
     try {
       setLoadingExcel(true);
 
-      const response = await api.get("/export/excel", {
+      const response = await api.get(`/export/excel?year=${selectedYear}`, {
         responseType: "blob",
       });
 
@@ -21,13 +26,8 @@ const ExportDataPage = () => {
       const link = document.createElement("a");
       link.href = url;
 
-      // שם הקובץ מה-header או ברירת מחדל
-      const contentDisposition = response.headers["content-disposition"];
-      let filename = `export_${new Date().toISOString().split("T")[0]}.xlsx`;
-      if (contentDisposition) {
-        const match = contentDisposition.match(/filename="(.+)"/);
-        if (match) filename = match[1];
-      }
+      // שם הקובץ
+      const filename = `export_${selectedYear}.xlsx`;
 
       link.setAttribute("download", filename);
       document.body.appendChild(link);
@@ -35,7 +35,7 @@ const ExportDataPage = () => {
       link.remove();
       window.URL.revokeObjectURL(url);
 
-      toast.success("הקובץ יוצא בהצלחה!", {
+      toast.success(`הקובץ יוצא בהצלחה לשנת ${selectedYear}!`, {
         className: "sonner-toast success rtl",
       });
     } catch (error) {
@@ -53,7 +53,7 @@ const ExportDataPage = () => {
     try {
       setLoadingPDF(true);
 
-      const response = await api.get("/export/pdf", {
+      const response = await api.get(`/export/pdf?year=${selectedYear}`, {
         responseType: "blob",
       });
 
@@ -62,13 +62,8 @@ const ExportDataPage = () => {
       const link = document.createElement("a");
       link.href = url;
 
-      // שם הקובץ מה-header או ברירת מחדל
-      const contentDisposition = response.headers["content-disposition"];
-      let filename = `export_${new Date().toISOString().split("T")[0]}.pdf`;
-      if (contentDisposition) {
-        const match = contentDisposition.match(/filename="(.+)"/);
-        if (match) filename = match[1];
-      }
+      // שם הקובץ
+      const filename = `export_${selectedYear}.pdf`;
 
       link.setAttribute("download", filename);
       document.body.appendChild(link);
@@ -76,7 +71,7 @@ const ExportDataPage = () => {
       link.remove();
       window.URL.revokeObjectURL(url);
 
-      toast.success("הקובץ יוצא בהצלחה!", {
+      toast.success(`הקובץ יוצא בהצלחה לשנת ${selectedYear}!`, {
         className: "sonner-toast success rtl",
       });
     } catch (error) {
@@ -109,6 +104,30 @@ const ExportDataPage = () => {
           </div>
         </div>
 
+        {/* Year Selector */}
+        <div className="bg-white rounded-3xl shadow-xl border-2 border-orange-100 p-6 mb-6">
+          <div className="flex items-center gap-4">
+            <div className="p-3 bg-orange-100 rounded-xl">
+              <Calendar className="w-6 h-6 text-orange-600" />
+            </div>
+            <div className="flex-1">
+              <h3 className="font-bold text-slate-800 mb-1">בחר שנה לייצוא</h3>
+              <p className="text-sm text-slate-500">הנתונים יסוננו לפי השנה שתבחר</p>
+            </div>
+            <select
+              value={selectedYear}
+              onChange={(e) => setSelectedYear(Number(e.target.value))}
+              className="px-6 py-3 bg-gradient-to-r from-orange-50 to-amber-50 border-2 border-orange-200 rounded-xl text-lg font-bold text-slate-800 focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent cursor-pointer"
+            >
+              {years.map((year) => (
+                <option key={year} value={year}>
+                  {year}
+                </option>
+              ))}
+            </select>
+          </div>
+        </div>
+
         {/* Export Cards */}
         <div className="grid md:grid-cols-2 gap-6">
           {/* Excel Card */}
@@ -128,7 +147,7 @@ const ExportDataPage = () => {
             <div className="p-6">
               <div className="space-y-3 mb-6">
                 <p className="text-slate-600 text-sm">
-                  הקובץ יכלול את הגיליונות הבאים:
+                  הקובץ יכלול את הגיליונות הבאים לשנת <strong>{selectedYear}</strong>:
                 </p>
                 <ul className="text-sm text-slate-500 space-y-1 mr-4">
                   <li className="flex items-center gap-2">
@@ -171,7 +190,7 @@ const ExportDataPage = () => {
                 ) : (
                   <>
                     <DownloadCloud className="w-6 h-6" />
-                    הורד קובץ Excel
+                    הורד קובץ Excel לשנת {selectedYear}
                   </>
                 )}
               </button>
@@ -195,7 +214,7 @@ const ExportDataPage = () => {
             <div className="p-6">
               <div className="space-y-3 mb-6">
                 <p className="text-slate-600 text-sm">
-                  הדוח יכלול:
+                  הדוח יכלול סיכום לשנת <strong>{selectedYear}</strong>:
                 </p>
                 <ul className="text-sm text-slate-500 space-y-1 mr-4">
                   <li className="flex items-center gap-2">
@@ -238,7 +257,7 @@ const ExportDataPage = () => {
                 ) : (
                   <>
                     <DownloadCloud className="w-6 h-6" />
-                    הורד קובץ PDF
+                    הורד קובץ PDF לשנת {selectedYear}
                   </>
                 )}
               </button>

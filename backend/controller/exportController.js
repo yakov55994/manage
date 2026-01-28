@@ -1,5 +1,7 @@
 import xlsx from "xlsx";
-import PDFDocument from "pdfkit";
+import fs from "fs";
+import path from "path";
+import puppeteer from "puppeteer";
 import Project from "../models/Project.js";
 import Invoice from "../models/Invoice.js";
 import Order from "../models/Order.js";
@@ -23,27 +25,24 @@ const formatNumber = (num) => {
   return Number(num).toLocaleString("he-IL");
 };
 
-// Helper to reverse Hebrew text for PDFKit (Visual RTL)
-const formatHebrew = (text) => {
-  if (!text) return "";
-  text = String(text);
-  if (/[\u0590-\u05FF]/.test(text)) {
-    return text.split("").reverse().join("");
-  }
-  return text;
-};
+// שליפת כל הנתונים עם סינון לפי שנה
+const fetchAllData = async (year) => {
+  const startDate = new Date(year, 0, 1);
+  const endDate = new Date(year, 11, 31, 23, 59, 59);
 
-// שליפת כל הנתונים
-const fetchAllData = async () => {
+  const dateFilter = {
+    createdAt: { $gte: startDate, $lte: endDate }
+  };
+
   const [projects, invoices, orders, suppliers, salaries, incomes, expenses] =
     await Promise.all([
-      Project.find().lean(),
-      Invoice.find().populate("supplierId", "name").lean(),
-      Order.find().populate("supplierId", "name").lean(),
-      Supplier.find().lean(),
-      Salary.find().populate("projectId", "name").lean(),
-      Income.find().lean(),
-      Expense.find().lean(),
+      Project.find(dateFilter).lean(),
+      Invoice.find(dateFilter).populate("supplierId", "name").lean(),
+      Order.find(dateFilter).populate("supplierId", "name").lean(),
+      Supplier.find().lean(), // ספקים לא מסוננים לפי תאריך
+      Salary.find(dateFilter).populate("projectId", "name").lean(),
+      Income.find(dateFilter).lean(),
+      Expense.find(dateFilter).lean(),
     ]);
 
   return { projects, invoices, orders, suppliers, salaries, incomes, expenses };
@@ -138,7 +137,8 @@ const prepareExpensesData = (expenses) => {
 // ייצוא לאקסל
 export const exportToExcel = async (req, res) => {
   try {
-    const data = await fetchAllData();
+    const year = parseInt(req.query.year) || new Date().getFullYear();
+    const data = await fetchAllData(year);
 
     // יצירת workbook חדש
     const wb = xlsx.utils.book_new();
@@ -156,7 +156,7 @@ export const exportToExcel = async (req, res) => {
 
     // הוספת כל גיליון
     sheets.forEach((sheet) => {
-      const ws = xlsx.utils.json_to_sheet(sheet.data);
+      const ws = xlsx.utils.json_to_sheet(sheet.data.length > 0 ? sheet.data : [{}]);
 
       // הגדרת רוחב עמודות
       const colWidths = Object.keys(sheet.data[0] || {}).map(() => ({
@@ -171,7 +171,7 @@ export const exportToExcel = async (req, res) => {
     const buffer = xlsx.write(wb, { type: "buffer", bookType: "xlsx" });
 
     // שם הקובץ
-    const filename = `export_${new Date().toISOString().split("T")[0]}.xlsx`;
+    const filename = `export_${year}.xlsx`;
 
     // שליחת הקובץ
     res.setHeader(
@@ -186,98 +186,316 @@ export const exportToExcel = async (req, res) => {
   }
 };
 
-// ייצוא ל-PDF
+// ייצוא ל-PDF באמצעות Puppeteer (כמו MASAV)
 export const exportToPDF = async (req, res) => {
+  let pdfPath = null;
+
   try {
-    const data = await fetchAllData();
+    const year = parseInt(req.query.year) || new Date().getFullYear();
+    const data = await fetchAllData(year);
 
-    // יצירת PDF
-    const doc = new PDFDocument({ margin: 50, size: "A4" });
+    // חישובים
+    const totalBudget = data.projects.reduce((sum, p) => sum + (p.budget || 0), 0);
+    const totalRemaining = data.projects.reduce((sum, p) => sum + (p.remainingBudget || 0), 0);
+    const totalInvoices = data.invoices.reduce((sum, inv) => sum + (inv.totalAmount || 0), 0);
+    const totalOrders = data.orders.reduce((sum, ord) => sum + (ord.sum || 0), 0);
+    const totalSalaries = data.salaries.reduce((sum, sal) => sum + (sal.finalAmount || 0), 0);
+    const totalIncomes = data.incomes.reduce((sum, inc) => sum + (inc.amount || 0), 0);
+    const totalExpenses = data.expenses.reduce((sum, exp) => sum + (exp.amount || 0), 0);
 
-    // נסיון טעינת פונט עברי
-    try {
-      doc.font("C:\\Windows\\Fonts\\arial.ttf");
-    } catch (e) {
-      console.warn("Hebrew font not found, using default.");
-    }
+    const paidInvoices = data.invoices.filter(inv => inv.paid === "כן");
+    const unpaidInvoices = data.invoices.filter(inv => inv.paid !== "כן");
+    const totalPaid = paidInvoices.reduce((sum, inv) => sum + (inv.totalAmount || 0), 0);
+    const totalUnpaid = unpaidInvoices.reduce((sum, inv) => sum + (inv.totalAmount || 0), 0);
+
+    // יצירת HTML כמו ב-MASAV
+    const html = `<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+<meta charset="UTF-8" />
+<title>דוח ייצוא נתונים ${year}</title>
+<style>
+@media print {
+  @page { size: A4; margin: 15mm; }
+}
+* { box-sizing: border-box; }
+body {
+  font-family: 'Segoe UI', Tahoma, sans-serif;
+  direction: rtl;
+  color: #1f2937;
+  padding: 20px;
+}
+.header {
+  text-align: center;
+  margin-bottom: 30px;
+  border-bottom: 3px solid #f97316;
+  padding-bottom: 15px;
+}
+.logo-text {
+  font-size: 32px;
+  font-weight: bold;
+  color: #6b7280;
+  margin-bottom: 10px;
+}
+.header h1 {
+  font-size: 24px;
+  margin-bottom: 6px;
+  color: #1f2937;
+}
+.header .date {
+  font-size: 14px;
+  color: #6b7280;
+}
+.section {
+  margin-bottom: 30px;
+}
+.section-title {
+  background: linear-gradient(135deg, #f97316, #fb923c);
+  color: white;
+  padding: 12px 20px;
+  border-radius: 10px;
+  font-size: 18px;
+  font-weight: bold;
+  margin-bottom: 15px;
+}
+.stats-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 15px;
+}
+.stat-card {
+  background: #f9fafb;
+  border: 1px solid #e5e7eb;
+  border-radius: 10px;
+  padding: 15px;
+}
+.stat-card .label {
+  font-size: 14px;
+  color: #6b7280;
+  margin-bottom: 5px;
+}
+.stat-card .value {
+  font-size: 22px;
+  font-weight: bold;
+  color: #1f2937;
+}
+.stat-card.highlight {
+  background: #fff7ed;
+  border-color: #fdba74;
+}
+.stat-card.highlight .value {
+  color: #ea580c;
+}
+.stat-card.green {
+  background: #f0fdf4;
+  border-color: #86efac;
+}
+.stat-card.green .value {
+  color: #16a34a;
+}
+.stat-card.red {
+  background: #fef2f2;
+  border-color: #fca5a5;
+}
+.stat-card.red .value {
+  color: #dc2626;
+}
+.summary {
+  margin-top: 30px;
+  padding: 20px;
+  border: 2px solid #fdba74;
+  border-radius: 10px;
+  background: #fff7ed;
+}
+.summary h3 {
+  color: #f97316;
+  margin-bottom: 15px;
+  font-size: 18px;
+}
+.summary-row {
+  display: flex;
+  justify-content: space-between;
+  padding: 8px 0;
+  border-bottom: 1px solid #fed7aa;
+}
+.summary-row:last-child {
+  border-bottom: none;
+}
+.summary-row.total {
+  font-weight: bold;
+  font-size: 16px;
+  color: #ea580c;
+  padding-top: 12px;
+  border-top: 2px solid #f97316;
+  margin-top: 10px;
+}
+.footer {
+  margin-top: 40px;
+  text-align: center;
+  font-size: 11px;
+  color: #9ca3af;
+  border-top: 1px solid #e5e7eb;
+  padding-top: 15px;
+}
+</style>
+</head>
+<body>
+
+<div class="header">
+  <div class="logo-text">ניהולון</div>
+  <h1>📊 דוח ייצוא נתונים - שנת ${year}</h1>
+  <div class="date">
+    תאריך הפקה: ${new Date().toLocaleDateString("he-IL")}
+  </div>
+</div>
+
+<div class="section">
+  <div class="section-title">📈 סיכום כמויות</div>
+  <div class="stats-grid">
+    <div class="stat-card">
+      <div class="label">פרויקטים</div>
+      <div class="value">${data.projects.length}</div>
+    </div>
+    <div class="stat-card">
+      <div class="label">חשבוניות</div>
+      <div class="value">${data.invoices.length}</div>
+    </div>
+    <div class="stat-card">
+      <div class="label">הזמנות</div>
+      <div class="value">${data.orders.length}</div>
+    </div>
+    <div class="stat-card">
+      <div class="label">ספקים</div>
+      <div class="value">${data.suppliers.length}</div>
+    </div>
+    <div class="stat-card">
+      <div class="label">משכורות</div>
+      <div class="value">${data.salaries.length}</div>
+    </div>
+    <div class="stat-card">
+      <div class="label">הכנסות</div>
+      <div class="value">${data.incomes.length}</div>
+    </div>
+    <div class="stat-card">
+      <div class="label">הוצאות</div>
+      <div class="value">${data.expenses.length}</div>
+    </div>
+  </div>
+</div>
+
+<div class="section">
+  <div class="section-title">💰 סיכום פיננסי</div>
+  <div class="stats-grid">
+    <div class="stat-card highlight">
+      <div class="label">סה"כ תקציבים</div>
+      <div class="value">${formatNumber(totalBudget)} ₪</div>
+    </div>
+    <div class="stat-card highlight">
+      <div class="label">תקציב שנותר</div>
+      <div class="value">${formatNumber(totalRemaining)} ₪</div>
+    </div>
+    <div class="stat-card">
+      <div class="label">סה"כ חשבוניות</div>
+      <div class="value">${formatNumber(totalInvoices)} ₪</div>
+    </div>
+    <div class="stat-card">
+      <div class="label">סה"כ הזמנות</div>
+      <div class="value">${formatNumber(totalOrders)} ₪</div>
+    </div>
+    <div class="stat-card green">
+      <div class="label">חשבוניות ששולמו</div>
+      <div class="value">${formatNumber(totalPaid)} ₪</div>
+    </div>
+    <div class="stat-card red">
+      <div class="label">חשבוניות לא שולמו</div>
+      <div class="value">${formatNumber(totalUnpaid)} ₪</div>
+    </div>
+  </div>
+</div>
+
+<div class="summary">
+  <h3>📋 סיכום כללי</h3>
+  <div class="summary-row">
+    <span>סה"כ משכורות:</span>
+    <strong>${formatNumber(totalSalaries)} ₪</strong>
+  </div>
+  <div class="summary-row">
+    <span>סה"כ הכנסות:</span>
+    <strong>${formatNumber(totalIncomes)} ₪</strong>
+  </div>
+  <div class="summary-row">
+    <span>סה"כ הוצאות:</span>
+    <strong>${formatNumber(totalExpenses)} ₪</strong>
+  </div>
+  <div class="summary-row total">
+    <span>מאזן (הכנסות - הוצאות):</span>
+    <strong>${formatNumber(totalIncomes - totalExpenses)} ₪</strong>
+  </div>
+</div>
+
+<div class="footer">
+  מסמך זה הופק אוטומטית ממערכת ניהולון<br/>
+  © ${new Date().getFullYear()} כל הזכויות שמורות
+</div>
+
+</body>
+</html>`;
+
+    // יצירת תיקייה זמנית
+    const tmpDir = path.join(process.cwd(), "tmp");
+    if (!fs.existsSync(tmpDir)) fs.mkdirSync(tmpDir);
+
+    pdfPath = path.join(tmpDir, `export-${year}-${Date.now()}.pdf`);
+
+    // יצירת PDF באמצעות Puppeteer
+    const browser = await puppeteer.launch({
+      headless: 'new',
+      args: [
+        '--no-sandbox',
+        '--disable-setuid-sandbox',
+        '--disable-dev-shm-usage',
+        '--disable-gpu'
+      ]
+    });
+
+    const page = await browser.newPage();
+    await page.setContent(html, { waitUntil: 'networkidle0' });
+
+    await page.pdf({
+      path: pdfPath,
+      format: 'A4',
+      printBackground: true,
+      margin: {
+        top: '15mm',
+        right: '15mm',
+        bottom: '15mm',
+        left: '15mm'
+      }
+    });
+
+    await browser.close();
+
+    // קריאת הקובץ ושליחה
+    const pdfBuffer = fs.readFileSync(pdfPath);
 
     // שם הקובץ
-    const filename = `export_${new Date().toISOString().split("T")[0]}.pdf`;
+    const filename = `export_${year}.pdf`;
 
-    // הגדרת headers
     res.setHeader("Content-Type", "application/pdf");
     res.setHeader("Content-Disposition", `attachment; filename="${filename}"`);
+    res.send(pdfBuffer);
 
-    // pipe ל-response
-    doc.pipe(res);
-
-    // כותרת ראשית
-    doc.fontSize(24).text(formatHebrew("דוח ייצוא נתונים"), { align: "center" });
-    doc.moveDown();
-    doc.fontSize(12).text(formatHebrew(`תאריך: ${formatDate(new Date())}`), { align: "center" });
-    doc.moveDown(2);
-
-    // סיכום כמויות
-    doc.fontSize(18).text(formatHebrew("סיכום כמויות"), { underline: true });
-    doc.moveDown();
-    doc.fontSize(12);
-    doc.text(`${data.projects.length} :${formatHebrew("פרויקטים")}`);
-    doc.text(`${data.invoices.length} :${formatHebrew("חשבוניות")}`);
-    doc.text(`${data.orders.length} :${formatHebrew("הזמנות")}`);
-    doc.text(`${data.suppliers.length} :${formatHebrew("ספקים")}`);
-    doc.text(`${data.salaries.length} :${formatHebrew("משכורות")}`);
-    doc.text(`${data.incomes.length} :${formatHebrew("הכנסות")}`);
-    doc.text(`${data.expenses.length} :${formatHebrew("הוצאות")}`);
-    doc.moveDown(2);
-
-    // סיכום פיננסי
-    doc.fontSize(18).text(formatHebrew("סיכום פיננסי"), { underline: true });
-    doc.moveDown();
-
-    // סיכום תקציבים
-    const totalBudget = data.projects.reduce((sum, p) => sum + (p.budget || 0), 0);
-    const totalRemaining = data.projects.reduce(
-      (sum, p) => sum + (p.remainingBudget || 0),
-      0
-    );
-    doc.fontSize(12).text(`${formatHebrew("ש״ח")} ${formatNumber(totalBudget)} :${formatHebrew("סה״כ תקציב")}`);
-    doc.text(`${formatHebrew("ש״ח")} ${formatNumber(totalRemaining)} :${formatHebrew("תקציב שנותר")}`);
-    doc.moveDown();
-
-    // סיכום חשבוניות
-    const totalInvoices = data.invoices.reduce(
-      (sum, inv) => sum + (inv.totalAmount || 0),
-      0
-    );
-    doc.text(`${formatHebrew("ש״ח")} ${formatNumber(totalInvoices)} :${formatHebrew("סה״כ חשבוניות")}`);
-    doc.moveDown();
-
-    // סיכום הזמנות
-    const totalOrders = data.orders.reduce((sum, ord) => sum + (ord.sum || 0), 0);
-    doc.text(`${formatHebrew("ש״ח")} ${formatNumber(totalOrders)} :${formatHebrew("סה״כ הזמנות")}`);
-    doc.moveDown();
-
-    // סיכום משכורות
-    const totalSalaries = data.salaries.reduce(
-      (sum, sal) => sum + (sal.finalAmount || 0),
-      0
-    );
-    doc.text(`${formatHebrew("ש״ח")} ${formatNumber(totalSalaries)} :${formatHebrew("סה״כ משכורות")}`);
-    doc.moveDown();
-
-    // סיכום הכנסות והוצאות
-    const totalIncomes = data.incomes.reduce((sum, inc) => sum + (inc.amount || 0), 0);
-    const totalExpenses = data.expenses.reduce(
-      (sum, exp) => sum + (exp.amount || 0),
-      0
-    );
-    doc.text(`${formatHebrew("ש״ח")} ${formatNumber(totalIncomes)} :${formatHebrew("סה״כ הכנסות")}`);
-    doc.text(`${formatHebrew("ש״ח")} ${formatNumber(totalExpenses)} :${formatHebrew("סה״כ הוצאות")}`);
-
-    // סיום המסמך
-    doc.end();
   } catch (error) {
     console.error("Export to PDF error:", error);
     res.status(500).json({ message: "שגיאה בייצוא ל-PDF", error: error.message });
+  } finally {
+    // מחיקת קובץ זמני
+    if (pdfPath && fs.existsSync(pdfPath)) {
+      setTimeout(() => {
+        fs.unlink(pdfPath, (err) => {
+          if (err) console.error("Failed to delete temp PDF:", err);
+        });
+      }, 100);
+    }
   }
 };

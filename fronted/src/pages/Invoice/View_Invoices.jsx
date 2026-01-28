@@ -2978,7 +2978,7 @@ const InvoicesPage = () => {
                           <td className="px-2 py-4 text-center">
                             {invoice.paid === "כן" ? (
                               <span className="bg-emerald-100 text-emerald-700 px-2 py-1 rounded-full text-xs font-bold border border-emerald-200 whitespace-nowrap">
-                                שולם
+                                {invoice.paymentMethod === "check" ? "שולם בצ'ק" : "שולם"}
                               </span>
                             ) : invoice.paid === "יצא לתשלום" ? (
                               <span className="bg-blue-100 text-blue-700 px-2 py-1 rounded-full text-xs font-bold border border-blue-200 whitespace-nowrap">

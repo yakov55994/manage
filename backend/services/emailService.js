@@ -197,7 +197,10 @@ export const sendPaymentConfirmationEmail = async (supplierEmail, supplierName, 
       return { success: false, message: 'Supplier email not provided' };
     }
 
-    const { invoiceNumber, totalAmount, paymentDate, documentType, detail } = invoiceData;
+    const { invoiceNumber, totalAmount, paymentDate, documentType, detail, paymentMethod } = invoiceData;
+
+    // תרגום שיטת תשלום
+    const paymentMethodText = paymentMethod === "check" ? "צ'ק" : paymentMethod === "bank_transfer" ? "העברה בנקאית" : "העברה";
 
     // בדיקה אם חסר מסמך מס/קבלה
     const isMissingDocument = !documentType ||
@@ -296,6 +299,11 @@ export const sendPaymentConfirmationEmail = async (supplierEmail, supplierName, 
         <tr>
           <td style="padding:10px 0; font-weight:bold;">תאריך תשלום:</td>
           <td>${formattedDate}</td>
+        </tr>
+
+        <tr>
+          <td style="padding:10px 0; font-weight:bold;">אופן תשלום:</td>
+          <td>${paymentMethodText}</td>
         </tr>
 
         <tr>

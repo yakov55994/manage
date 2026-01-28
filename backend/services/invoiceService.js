@@ -358,6 +358,7 @@ async function createInvoice(user, data) {
             paymentDate: invoice.paymentDate || new Date(),
             documentType: invoice.documentType,
             detail: invoice.detail,
+            paymentMethod: invoice.paymentMethod,
           }
         );
       } catch (emailError) {
@@ -532,6 +533,7 @@ async function updateInvoice(user, invoiceId, data) {
           paymentDate: updated.paymentDate || new Date(),
           documentType: updated.documentType,
           detail: updated.detail,
+          paymentMethod: updated.paymentMethod,
         }
       );
     } catch (emailError) {
@@ -904,6 +906,7 @@ async function updatePaymentStatus(
           paymentDate: date || new Date(),
           documentType: updatedInvoice.documentType,
           detail: updatedInvoice.detail,
+          paymentMethod: updatedInvoice.paymentMethod,
         }
       );
     } catch (emailError) {
