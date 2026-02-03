@@ -261,6 +261,8 @@ const invoiceControllers = {
                     totalAmount: invoice.totalAmount,
                     paymentDate: paymentDate || new Date(),
                     documentType: invoice.documentType,
+                    detail: invoice.detail,
+                    paymentMethod: invoice.paymentMethod || paymentMethod,
                   }
                 );
               } catch (emailError) {

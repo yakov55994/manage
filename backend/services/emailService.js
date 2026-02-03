@@ -308,7 +308,7 @@ export const sendPaymentConfirmationEmail = async (supplierEmail, supplierName, 
 
         <tr>
           <td style="padding:10px 0; font-weight:bold;">סכום ששולם:</td>
-          <td style="font-size:20px; font-weight:bold;">₪${formattedAmount}</td>
+          <td style="font-size:20px; font-weight:bold;"><span dir="ltr">₪${formattedAmount}</span></td>
         </tr>
       </table>
     </div>
