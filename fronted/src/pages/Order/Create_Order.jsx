@@ -1029,7 +1029,7 @@ const CreateOrder = () => {
                       </div>
 
                       {/* ✅ מילגה */}
-                      <div className="md:col-span-2 p-4 rounded-xl bg-purple-50 border-2 border-purple-200">
+                      {/* <div className="md:col-span-2 p-4 rounded-xl bg-purple-50 border-2 border-purple-200">
                         <div className="flex items-center gap-3 mb-3">
                           <input
                             type="checkbox"
@@ -1073,7 +1073,7 @@ const CreateOrder = () => {
                             </select>
                           </div>
                         )}
-                      </div>
+                      </div> */}
 
                       <div className="md:col-span-2">
                         <div className="p-4 rounded-xl bg-white border-2 border-dashed border-blue-300 hover:border-blue-400 transition-all">

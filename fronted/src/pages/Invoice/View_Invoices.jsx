@@ -1580,6 +1580,12 @@ const InvoicesPage = () => {
       toast.error("שגיאה בהורדה: " + error.message);
     }
   };
+  const normalizeId = (val) => {
+    if (!val) return null;
+    if (typeof val === "string") return val;
+    if (val._id) return String(val._id);
+    return String(val);
+  };
 
   // ✅ טעינת חשבוניות עם סינון לפי הרשאות
   useEffect(() => {
@@ -1596,17 +1602,19 @@ const InvoicesPage = () => {
 
         let filteredData = allData;
         if (allowedProjectIds !== null) {
-          // אם לא אדמין - סנן לפי פרויקטים מורשים
           filteredData = allData.filter((invoice) => {
-            const projectId = String(
-              invoice.projectId?._id ||
-              invoice.projectId ||
-              invoice.project?._id ||
-              invoice.project
+
+            if (!Array.isArray(invoice.projects)) return false;
+
+            return invoice.projects.some((p) =>
+              allowedProjectIds.includes(
+                normalizeId(p.projectId)
+              )
             );
-            return allowedProjectIds.includes(projectId);
           });
         }
+
+
 
         setAllInvoices(filteredData);
         setAllExpenses(expensesRes.data?.data || []);
@@ -2739,7 +2747,7 @@ const InvoicesPage = () => {
           </div>
         </div>
 
-
+        {console.log(sortedInvoices)}
         {/* Invoices Table */}
         {sortedInvoices.length > 0 ? (
 

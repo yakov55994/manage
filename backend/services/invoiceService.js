@@ -9,6 +9,7 @@ import Supplier from "../models/Supplier.js";
 import Salary from "../models/Salary.js";
 import { sendPaymentConfirmationEmail } from "./emailService.js";
 import notificationService from "./notificationService.js";
+import mongoose from "mongoose";
 
 // ===================================================
 // עוזר לחישוב סכומים
@@ -138,22 +139,25 @@ async function searchInvoices(query) {
 async function getInvoices(user) {
   let query = {};
 
-  // אדמין ו-accountant רואים הכל
-  if (user.role === "admin" || user.role === "accountant") {
-    // אין סינון - רואה הכל
-  } else {
-    // משתמש רגיל - סנן לפי הרשאות
+  if (user.role !== "admin" && user.role !== "accountant") {
+
+    console.log("USER PERMISSIONS:", user.permissions);
+
     const allowed = user.permissions.map(
-      (p) => String(p.project?._id || p.project)
+      (p) => new mongoose.Types.ObjectId(p.project?._id || p.project)
     );
 
-    // סנן לפי פרויקטים במערך projects או לפי fundedFromProjectId
+    console.log("ALLOWED IDS:", allowed);
+
+
     query = {
       $or: [
         { "projects.projectId": { $in: allowed } },
         { fundedFromProjectId: { $in: allowed } }
       ]
     };
+    console.log("QUERY:", query);
+
   }
 
   const invoices = await Invoice.find(query)
@@ -161,9 +165,11 @@ async function getInvoices(user) {
     .populate("projects.projectId", "name")
     .populate("fundedFromProjectId", "name")
     .sort({ createdAt: -1 });
+  console.log("FOUND INVOICES:", invoices.length);
 
   return invoices;
 }
+
 
 // ===============================================
 // GET INVOICE BY ID
@@ -177,22 +183,53 @@ async function getInvoiceById(user, invoiceId) {
 
   if (!invoice) return null;
 
-  // אדמין ו-accountant רואים הכל
+  // אדמין ורואת חשבון רואים הכל
   if (user.role === "admin" || user.role === "accountant") {
     return invoice;
   }
 
-  // משתמש רגיל - בדוק הרשאות
-  const allowed = user.permissions.map(
-    (p) => String(p.project?._id || p.project)
-  );
+  // רשימת כל הפרויקטים שהמשתמש מורשה עליהם
+  const allowed = user.permissions.map(p => String(p.project?._id || p.project));
 
-  const projectIds = invoice.projects.map((p) =>
-    String(p.projectId._id || p.projectId)
-  );
+  // ────────────────────────────────────────────────
+  // אסוף את כל הפרויקטים הרלוונטיים לחשבונית
+  // ────────────────────────────────────────────────
+  const relevantIds = new Set();
 
-  const canView = projectIds.some((id) => allowed.includes(id));
-  if (!canView) throw new Error("אין לך הרשאה לצפות במסמך זה");
+  // 1. פרויקטים רגילים (מערך projects)
+  (invoice.projects || []).forEach(p => {
+    const pid = String(p.projectId?._id || p.projectId);
+    if (pid) relevantIds.add(pid);
+  });
+
+  // 2. fundedFromProjectId ← זה החלק החסר!
+  if (invoice.fundedFromProjectId) {
+    const fid = String(invoice.fundedFromProjectId._id || invoice.fundedFromProjectId);
+    if (fid) relevantIds.add(fid);
+  }
+
+  // 3. אם יש מערך fundedFromProjectIds (גרסה חדשה יותר)
+  if (invoice.fundedFromProjectIds && Array.isArray(invoice.fundedFromProjectIds)) {
+    invoice.fundedFromProjectIds.forEach(f => {
+      const fid = String(f._id || f);
+      if (fid) relevantIds.add(fid);
+    });
+  }
+
+  // 4. submittedToProjectId (אם רלוונטי)
+  if (invoice.submittedToProjectId) {
+    const sid = String(invoice.submittedToProjectId._id || invoice.submittedToProjectId);
+    if (sid) relevantIds.add(sid);
+  }
+
+  // ────────────────────────────────────────────────
+  // האם יש לפחות פרויקט אחד שהמשתמש מורשה עליו?
+  // ────────────────────────────────────────────────
+  const hasAccess = Array.from(relevantIds).some(id => allowed.includes(id));
+
+  if (!hasAccess) {
+    throw new Error("אין לך הרשאה לצפות במסמך זה");
+  }
 
   return invoice;
 }

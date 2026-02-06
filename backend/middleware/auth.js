@@ -148,9 +148,40 @@ export const checkAccess = (moduleName, action) => {
       let item = null;
 
       if (moduleName === "invoices") {
-        if (id) item = await Invoice.findById(id);
-        projectId = item?.projectId?.toString() || projectIdFromBody;
+
+        if (!id) return next();
+
+        const invoice = await Invoice.findById(id);
+        if (!invoice) {
+          return res.status(404).json({ message: "חשבונית לא נמצאה" });
+        }
+
+        const invoiceProjects = invoice.projects.map(p =>
+          String(p.projectId?._id || p.projectId)
+        );
+
+        const hasAccess = invoiceProjects.some(pid =>
+          user.permissions.some(perm => {
+            const permPid = String(perm.project?._id || perm.project);
+
+            if (permPid !== pid) return false;
+
+            const level = perm.modules?.invoices || "none";
+
+            if (action === "view") return level === "view" || level === "edit";
+            if (action === "edit") return level === "edit";
+
+            return false;
+          })
+        );
+
+        if (!hasAccess) {
+          return res.status(403).json({ message: "אין גישה לפרויקט" });
+        }
+
+        return next();
       }
+
 
       if (moduleName === "orders") {
         if (id) item = await Order.findById(id);
