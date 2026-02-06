@@ -9,6 +9,7 @@ import Supplier from "../models/Supplier.js";
 import Salary from "../models/Salary.js";
 import { sendPaymentConfirmationEmail } from "./emailService.js";
 import notificationService from "./notificationService.js";
+import mongoose from "mongoose";
 
 // ===================================================
 // עוזר לחישוב סכומים
@@ -143,9 +144,11 @@ async function getInvoices(user) {
     // אין סינון - רואה הכל
   } else {
     // משתמש רגיל - סנן לפי הרשאות
-    const allowed = user.permissions.map(
-      (p) => String(p.project?._id || p.project)
-    );
+    const allowed = (user.permissions || [])
+      .map((p) => p.project?._id || p.project)
+      .filter(Boolean)
+      .map((id) => new mongoose.Types.ObjectId(id));
+
 
     // סנן לפי פרויקטים במערך projects או לפי fundedFromProjectId
     query = {
@@ -154,6 +157,7 @@ async function getInvoices(user) {
         { fundedFromProjectId: { $in: allowed } }
       ]
     };
+
   }
 
   const invoices = await Invoice.find(query)
@@ -168,31 +172,57 @@ async function getInvoices(user) {
 // ===============================================
 // GET INVOICE BY ID
 // ===============================================
+// GET INVOICE BY ID - הגרסה המתוקנת 100%
 async function getInvoiceById(user, invoiceId) {
   const invoice = await Invoice.findById(invoiceId)
     .populate("supplierId")
     .populate("projects.projectId", "name invitingName budget remainingBudget")
     .populate("fundedFromProjectId", "name")
+    .populate("submittedFromProjectIds", "name") // אם יש מערך
     .populate("submittedToProjectId", "name");
 
   if (!invoice) return null;
 
-  // אדמין ו-accountant רואים הכל
+  // אדמין ורואה חשבון רואים הכל
   if (user.role === "admin" || user.role === "accountant") {
     return invoice;
   }
 
-  // משתמש רגיל - בדוק הרשאות
-  const allowed = user.permissions.map(
-    (p) => String(p.project?._id || p.project)
+  // רשימת הפרויקטים שהמשתמש מורשה עליהם
+  const allowedProjectIds = (user.permissions || []).map(p =>
+    String(p.project?._id || p.project)
   );
 
-  const projectIds = invoice.projects.map((p) =>
-    String(p.projectId._id || p.projectId)
+  // 1. פרויקטים מהמערך הרגיל
+  const fromProjects = (invoice.projects || []).map(p =>
+    String(p.projectId?._id || p.projectId)
   );
 
-  const canView = projectIds.some((id) => allowed.includes(id));
-  if (!canView) throw new Error("אין לך הרשאה לצפות במסמך זה");
+  // 2. פרויקט מממן (הכי חשוב!)
+  const fromFunded = invoice.fundedFromProjectId
+    ? [String(invoice.fundedFromProjectId._id || invoice.fundedFromProjectId)]
+    : [];
+
+  // 3. פרויקטים מממנים (אם זה מערך - תמיכה בגרסה החדשה)
+  const fromFundedArray = (invoice.fundedFromProjectIds || []).map(p =>
+    String(p._id || p)
+  );
+
+  // 4. פרויקט להגשה (אם רלוונטי)
+  const fromSubmitted = invoice.submittedToProjectId
+    ? [String(invoice.submittedToProjectId._id || invoice.submittedToProjectId)]
+    : [];
+
+  // איחוד כל המזהים הרלוונטיים
+  const allRelevantProjectIds = [...fromProjects, ...fromFunded, ...fromFundedArray, ...fromSubmitted]
+    .filter(Boolean);
+
+  // אם יש לפחות פרויקט אחד שהמשתמש מורשה עליו – תן גישה
+  const hasAccess = allRelevantProjectIds.some(id => allowedProjectIds.includes(id));
+
+  if (!hasAccess) {
+    throw new Error("אין לך הרשאה לצפות במסמך זה");
+  }
 
   return invoice;
 }

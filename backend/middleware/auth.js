@@ -148,8 +148,54 @@ export const checkAccess = (moduleName, action) => {
       let item = null;
 
       if (moduleName === "invoices") {
-        if (id) item = await Invoice.findById(id);
-        projectId = item?.projectId?.toString() || projectIdFromBody;
+        if (!id) return next();
+
+        const invoice = await Invoice.findById(id);
+        if (!invoice) {
+          return res.status(404).json({ message: "חשבונית לא נמצאה" });
+        }
+
+        // ────────────────────────────────────────────────
+        // אסוף את כל מזהי הפרויקטים הרלוונטיים
+        // ────────────────────────────────────────────────
+        const relevantProjectIds = [];
+
+        // 1. כל הפרויקטים במערך projects
+        if (invoice.projects && Array.isArray(invoice.projects)) {
+          invoice.projects.forEach(p => {
+            const pid = String(p.projectId?._id || p.projectId);
+            if (pid) relevantProjectIds.push(pid);
+          });
+        }
+
+        // 2. fundedFromProjectId (חשוב!)
+        if (invoice.fundedFromProjectId) {
+          relevantProjectIds.push(String(invoice.fundedFromProjectId));
+        }
+
+        // 3. (אופציונלי) גם submittedToProjectId אם רלוונטי
+        if (invoice.submittedToProjectId) {
+          relevantProjectIds.push(String(invoice.submittedToProjectId));
+        }
+
+        // עכשיו בדוק אם יש לפחות פרויקט אחד שהמשתמש מורשה עליו
+        const hasAccess = relevantProjectIds.some(pid => {
+          return user.permissions.some(perm => {
+            const permPid = String(perm.project?._id || perm.project);
+            if (permPid !== pid) return false;
+
+            const level = perm.modules?.invoices || "none";
+            return action === "view"
+              ? (level === "view" || level === "edit")
+              : level === "edit";
+          });
+        });
+
+        if (!hasAccess) {
+          return res.status(403).json({ message: "אין גישה לפרויקט של החשבונית" });
+        }
+
+        return next();
       }
 
       if (moduleName === "orders") {
