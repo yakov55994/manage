@@ -72,6 +72,7 @@ const CreateInvoice = () => {
   );
 
   const [rows, setRows] = useState(draft?.rows || []);
+  const [declaredTotal, setDeclaredTotal] = useState(draft?.declaredTotal || "");
   const [fundedFromProjectId, setFundedFromProjectId] = useState("");
   const [fundedFromProjectIds, setFundedFromProjectIds] = useState(draft?.fundedFromProjectIds || []);
 
@@ -84,11 +85,12 @@ const CreateInvoice = () => {
       form,
       selectedProjects,
       rows,
+      declaredTotal,
       fundedFromProjectId, // ← הוספנו
       fundedFromProjectIds, // ← הוספנו
     };
     localStorage.setItem("invoiceDraft", JSON.stringify(dataToSave));
-  }, [form, selectedProjects, rows, fundedFromProjectId, fundedFromProjectIds]);
+  }, [form, selectedProjects, rows, declaredTotal, fundedFromProjectId, fundedFromProjectIds]);
 
   const [loading, setLoading] = useState(false);
   const [showPaymentModal, setShowPaymentModal] = useState(false);
@@ -285,6 +287,14 @@ const CreateInvoice = () => {
       for (const row of rows) {
         if (!row.sum || Number(row.sum) <= 0) {
           return toast.error(`יש להזין סכום תקין לפרויקט "${row.projectName}"`);
+        }
+      }
+
+      // ולידציה: סכום כולל מול סכומי הפרויקטים
+      if (declaredTotal !== "" && Number(declaredTotal) > 0) {
+        const rowsTotal = rows.reduce((acc, r) => acc + Number(r.sum || 0), 0);
+        if (Math.abs(rowsTotal - Number(declaredTotal)) > 0.01) {
+          return toast.error("סכומי הפרויקטים לא תואמים את הסכום הכולל שהוזן");
         }
       }
     }
@@ -782,6 +792,7 @@ const CreateInvoice = () => {
             >
               <option value="לא">לא שולם</option>
               <option value="כן">שולם</option>
+              <option value="לא לתשלום">לא לתשלום</option>
             </select>
           </div>
 
@@ -905,6 +916,47 @@ const CreateInvoice = () => {
           <div className="bg-white rounded-2xl sm:rounded-3xl shadow-xl p-4 sm:p-5 md:p-6 mb-8">
             <h2 className="text-xl font-bold mb-4">סכומים לפי פרויקט</h2>
 
+            {/* שדה סכום כולל */}
+            {rows.length > 1 && (
+              <div className="border-2 border-dashed border-orange-300 rounded-xl p-4 mb-5 bg-orange-50/50">
+                <div className="flex flex-wrap items-center gap-4">
+                  <div className="flex-1 min-w-[200px]">
+                    <label className="block font-bold mb-2 text-orange-800">
+                      סכום כולל לחשבונית
+                    </label>
+                    <input
+                      type="number"
+                      placeholder="הזן את הסכום הכולל..."
+                      className="w-full p-3 border border-orange-300 rounded-xl focus:ring-2 focus:ring-orange-500 focus:border-orange-500"
+                      value={declaredTotal}
+                      onChange={(e) => setDeclaredTotal(e.target.value)}
+                    />
+                  </div>
+                  {declaredTotal !== "" && Number(declaredTotal) > 0 && (() => {
+                    const currentRowsTotal = rows.reduce((acc, r) => acc + Number(r.sum || 0), 0);
+                    const diff = Number(declaredTotal) - currentRowsTotal;
+                    const isMatch = Math.abs(diff) <= 0.01;
+                    return (
+                      <div
+                        className={`mt-6 px-4 py-3 rounded-xl font-bold text-sm ${
+                          isMatch
+                            ? "bg-green-100 text-green-700 border border-green-300"
+                            : "bg-red-100 text-red-700 border border-red-300"
+                        }`}
+                      >
+                        <div>סה"כ שורות: {currentRowsTotal.toLocaleString("he-IL")} ש"ח</div>
+                        <div>
+                          {isMatch
+                            ? "✓ הסכומים תואמים"
+                            : `הפרש: ${diff.toLocaleString("he-IL")} ש"ח`}
+                        </div>
+                      </div>
+                    );
+                  })()}
+                </div>
+              </div>
+            )}
+
             {rows.map((row, index) => (
               <div
                 key={row.projectId}
@@ -959,8 +1011,18 @@ const CreateInvoice = () => {
         <div className="flex justify-center">
           {/* SUBMIT */}
           <button
-            className="w-44 p-4 rounded-xl bg-orange-600 text-white font-bold shadow-xl ml-5"
-            disabled={loading}
+            className="w-44 p-4 rounded-xl bg-orange-600 text-white font-bold shadow-xl ml-5 disabled:opacity-50"
+            disabled={
+              loading ||
+              (!isSalary &&
+                rows.length > 1 &&
+                declaredTotal !== "" &&
+                Number(declaredTotal) > 0 &&
+                Math.abs(
+                  rows.reduce((acc, r) => acc + Number(r.sum || 0), 0) -
+                    Number(declaredTotal)
+                ) > 0.01)
+            }
             onClick={handleSubmit}
           >
             {loading ? "שומר..." : "צור חשבונית"}

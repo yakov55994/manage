@@ -47,13 +47,20 @@ const notificationService = {
   /**
    * התראת חריגת תקציב
    */
-  async checkBudgetThreshold(project, oldRemaining, newRemaining) {
+  async checkBudgetThreshold(project, oldRemaining, newRemaining, changedByUserId = null) {
     try {
       if (!project.budget || project.budget <= 0) return;
 
       const thresholds = [80, 90, 95, 100];
       const oldPercent = Math.round(((project.budget - oldRemaining) / project.budget) * 100);
       const newPercent = Math.round(((project.budget - newRemaining) / project.budget) * 100);
+
+      // שליפת שם מבצע הפעולה
+      let actorName = null;
+      if (changedByUserId) {
+        const actor = await User.findById(changedByUserId).select("username name");
+        actorName = actor?.username || actor?.name || null;
+      }
 
       // מחפשים האם עברנו סף חדש
       for (const threshold of thresholds) {
@@ -75,6 +82,9 @@ const notificationService = {
             ? `התקציב בפרויקט ${project.name} נוצל במלואו (${newPercent}%)`
             : `נוצלו ${newPercent}% מהתקציב בפרויקט ${project.name}`;
 
+          // יצירת groupId משותף לכל ההתראות
+          const groupId = new mongoose.Types.ObjectId();
+
           for (const user of users) {
             await this.createNotification(user._id, {
               type: "budget_threshold",
@@ -82,12 +92,14 @@ const notificationService = {
               message,
               entityType: "project",
               entityId: project._id,
+              groupId,
               metadata: {
                 threshold,
                 percentUsed: newPercent,
                 projectName: project.name,
                 budget: project.budget,
-                remaining: newRemaining
+                remaining: newRemaining,
+                ...(actorName && { actorName })
               }
             });
           }
@@ -117,7 +129,19 @@ const notificationService = {
         ]
       });
 
-      const statusText = newStatus === "כן" ? "שולם" : newStatus === "יצא לתשלום" ? "יצא לתשלום" : "לא שולם";
+      // שליפת שם מבצע הפעולה
+      let actorName = null;
+      if (changedByUserId) {
+        const actor = await User.findById(changedByUserId).select("username name");
+        actorName = actor?.username || actor?.name || null;
+      }
+
+      const statusText = newStatus === "כן" ? "שולם" : newStatus === "יצא לתשלום" ? "יצא לתשלום" : newStatus === "לא לתשלום" ? "לא לתשלום" : "לא שולם";
+      const projectNames = invoice.projects?.map(p => p.projectName).join(", ") || "";
+      const supplierName = invoice.supplierId?.name || null;
+
+      // יצירת groupId משותף לכל ההתראות
+      const groupId = new mongoose.Types.ObjectId();
 
       for (const user of users) {
         await this.createNotification(user._id, {
@@ -126,10 +150,14 @@ const notificationService = {
           message: `סטטוס התשלום עודכן ל: ${statusText}`,
           entityType: "invoice",
           entityId: invoice._id,
+          groupId,
           metadata: {
             invoiceNumber: invoice.invoiceNumber,
             newStatus,
-            totalAmount: invoice.totalAmount
+            totalAmount: invoice.totalAmount,
+            projectNames,
+            ...(supplierName && { supplierName }),
+            ...(actorName && { actorName })
           }
         });
       }
@@ -143,7 +171,24 @@ const notificationService = {
    */
   async notifyNewInvoice(invoice, createdByUserId) {
     try {
-      const projectIds = invoice.projects?.map(p => p.projectId) || [];
+      // שליפת שם מבצע הפעולה
+      let actorName = null;
+      if (createdByUserId) {
+        const actor = await User.findById(createdByUserId).select("username name");
+        actorName = actor?.username || actor?.name || null;
+      }
+
+      // שליפת שם ספק
+      let supplierName = null;
+      if (invoice.supplierId) {
+        if (typeof invoice.supplierId === "object" && invoice.supplierId.name) {
+          supplierName = invoice.supplierId.name;
+        } else {
+          const Supplier = (await import("../models/Supplier.js")).default;
+          const supplier = await Supplier.findById(invoice.supplierId).select("name");
+          supplierName = supplier?.name || null;
+        }
+      }
 
       // שולחים לכל האדמינים ומנהלי חשבונות (כולל היוצר)
       const users = await User.find({
@@ -164,11 +209,13 @@ const notificationService = {
           message: `נוצרה חשבונית חדשה על סך ${invoice.totalAmount?.toLocaleString("he-IL")} ש״ח`,
           entityType: "invoice",
           entityId: invoice._id,
-          groupId, // קישור לקבוצה
+          groupId,
           metadata: {
             invoiceNumber: invoice.invoiceNumber,
             totalAmount: invoice.totalAmount,
-            projectNames: invoice.projects?.map(p => p.projectName).join(", ")
+            projectNames: invoice.projects?.map(p => p.projectName).join(", "),
+            ...(supplierName && { supplierName }),
+            ...(actorName && { actorName })
           }
         });
       }
@@ -182,6 +229,25 @@ const notificationService = {
    */
   async notifyNewOrder(order, createdByUserId) {
     try {
+      // שליפת שם מבצע הפעולה
+      let actorName = null;
+      if (createdByUserId) {
+        const actor = await User.findById(createdByUserId).select("username name");
+        actorName = actor?.username || actor?.name || null;
+      }
+
+      // שליפת שם ספק
+      let supplierName = null;
+      if (order.supplierId) {
+        if (typeof order.supplierId === "object" && order.supplierId.name) {
+          supplierName = order.supplierId.name;
+        } else {
+          const Supplier = (await import("../models/Supplier.js")).default;
+          const supplier = await Supplier.findById(order.supplierId).select("name");
+          supplierName = supplier?.name || null;
+        }
+      }
+
       // שולחים לכל האדמינים
       const users = await User.find({
         isActive: true,
@@ -198,11 +264,13 @@ const notificationService = {
           message: `נוצרה הזמנה חדשה על סך ${order.sum?.toLocaleString("he-IL")} ש״ח`,
           entityType: "order",
           entityId: order._id,
-          groupId, // קישור לקבוצה
+          groupId,
           metadata: {
             orderNumber: order.orderNumber,
             sum: order.sum,
-            projectName: order.projectName
+            projectName: order.projectName,
+            ...(supplierName && { supplierName }),
+            ...(actorName && { actorName })
           }
         });
       }

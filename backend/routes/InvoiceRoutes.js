@@ -67,6 +67,9 @@ router.put("/:id/move", protect, checkAccess("invoices", "edit"), invoiceControl
 // 📌 עדכון סטטוס תשלום — משתמש ב־:id (מתוקן!)
 router.put("/:id/status", protect, checkAccess("invoices", "edit"), invoiceController.updatePaymentStatus);
 
+// 📎 הוספת קבצים לחשבונית
+router.put("/:id/files", protect, checkAccess("invoices", "edit"), invoiceController.addFilesToInvoice);
+
 // 📌 עדכון סטטוס מרובה (bulk update)
 router.put("/bulk/update-status", protect, checkAccess("invoices", "edit"), invoiceController.bulkUpdatePaymentStatus);
 

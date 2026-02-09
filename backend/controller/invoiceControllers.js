@@ -193,6 +193,52 @@ const invoiceControllers = {
   // ===============================================
   // עדכון סטטוס תשלום מרובה (bulk)
   // ===============================================
+  // ===============================================
+  // הוספת קבצים לחשבונית
+  // ===============================================
+  async addFilesToInvoice(req, res) {
+    try {
+      const { files, documentType } = req.body;
+      const invoice = await Invoice.findById(req.params.id);
+      if (!invoice) {
+        return res.status(404).json({ success: false, error: "חשבונית לא נמצאה" });
+      }
+
+      if (!files || !Array.isArray(files) || files.length === 0) {
+        return res.status(400).json({ success: false, error: "יש לספק קבצים" });
+      }
+
+      invoice.files.push(...files);
+
+      if (documentType) {
+        invoice.documentType = documentType;
+      }
+
+      // 📝 תיעוד העלאת קבצים בהיסטוריה
+      if (!invoice.editHistory) invoice.editHistory = [];
+      let fileChanges = `הועלו ${files.length} קבצים`;
+      if (documentType) fileChanges += `, סוג מסמך שונה ל: ${documentType}`;
+      invoice.editHistory.push({
+        userId: req.user._id,
+        userName: req.user.username || req.user.name,
+        action: 'files_added',
+        changes: fileChanges,
+        timestamp: new Date()
+      });
+
+      await invoice.save();
+
+      const populated = await Invoice.findById(invoice._id)
+        .populate("supplierId", "name email phone")
+        .populate("projects.projectId", "name");
+
+      res.json({ success: true, data: populated });
+    } catch (err) {
+      console.error("❌ ADD FILES ERROR:", err);
+      res.status(400).json({ success: false, error: err.message });
+    }
+  },
+
   async bulkUpdatePaymentStatus(req, res) {
     try {
       const { invoiceIds, status, paymentDate, paymentMethod, checkNumber, checkDate } = req.body;
@@ -204,7 +250,7 @@ const invoiceControllers = {
         });
       }
 
-      if (!["כן", "לא", "יצא לתשלום"].includes(status)) {
+      if (!["כן", "לא", "יצא לתשלום", "לא לתשלום"].includes(status)) {
         return res.status(400).json({
           success: false,
           error: "סטטוס לא תקין"
@@ -239,9 +285,22 @@ const invoiceControllers = {
         updateObj.checkDate = null;
       }
 
+      // 📝 תיעוד שינוי מרובה בהיסטוריה
+      const bulkStatusText = status === "כן" ? "שולם" : status === "יצא לתשלום" ? "יצא לתשלום" : status === "לא לתשלום" ? "לא לתשלום" : "לא שולם";
+      const bulkHistoryEntry = {
+        userId: req.user._id,
+        userName: req.user.username || req.user.name,
+        action: 'payment_status_changed',
+        changes: `סטטוס תשלום שונה ל: ${bulkStatusText} (עדכון מרובה)`,
+        timestamp: new Date()
+      };
+
       const updated = await Invoice.updateMany(
         { _id: { $in: invoiceIds } },
-        { $set: updateObj }
+        {
+          $set: updateObj,
+          $push: { editHistory: bulkHistoryEntry }
+        }
       );
 
       // שליחת מיילים לספקים כשמעדכנים לשולם

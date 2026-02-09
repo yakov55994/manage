@@ -29,6 +29,7 @@ const InvoiceEditPage = () => {
   const MILGA_ID = milgaProject?._id;
 
   const [rows, setRows] = useState([]);
+  const [declaredTotal, setDeclaredTotal] = useState("");
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
 
@@ -161,6 +162,11 @@ const InvoiceEditPage = () => {
               }));
 
             setRows(builtRows);
+
+            // -------- DECLARED TOTAL ----------
+            if (builtRows.length > 1 && invoice.totalAmount) {
+              setDeclaredTotal(String(invoice.totalAmount));
+            }
 
             // -------- FUNDING PROJECT MAP ----------
             // ✅ אם יש fundedFromProjectId או fundedFromProjectIds, טען את המיפוי
@@ -358,6 +364,14 @@ const InvoiceEditPage = () => {
     for (let i = 0; i < rows.length; i++) {
       if (!rows[i].sum || rows[i].sum <= 0) {
         return toast.error(`סכום לא תקין בשורה ${i + 1}`);
+      }
+    }
+
+    // ולידציה: סכום כולל מול סכומי הפרויקטים
+    if (declaredTotal !== "" && Number(declaredTotal) > 0) {
+      const rowsTotal = rows.reduce((acc, r) => acc + Number(r.sum || 0), 0);
+      if (Math.abs(rowsTotal - Number(declaredTotal)) > 0.01) {
+        return toast.error("סכומי הפרויקטים לא תואמים את הסכום הכולל שהוזן");
       }
     }
 
@@ -660,6 +674,7 @@ const InvoiceEditPage = () => {
                 >
                   <option value="לא">לא</option>
                   <option value="כן">כן</option>
+                  <option value="לא לתשלום">לא לתשלום</option>
                 </select>
               </div>
 
@@ -778,6 +793,49 @@ const InvoiceEditPage = () => {
           </div>
         </div>
 
+        {/* סכום כולל */}
+        {rows.length > 1 && (
+          <div className="bg-white rounded-2xl sm:rounded-3xl shadow-xl p-4 sm:p-5 md:p-6 mb-6">
+            <div className="border-2 border-dashed border-orange-300 rounded-xl p-4 bg-orange-50/50">
+              <div className="flex flex-wrap items-center gap-4">
+                <div className="flex-1 min-w-[200px]">
+                  <label className="block font-bold mb-2 text-orange-800">
+                    סכום כולל לחשבונית
+                  </label>
+                  <input
+                    type="number"
+                    placeholder="הזן את הסכום הכולל..."
+                    className="w-full p-3 border border-orange-300 rounded-xl focus:ring-2 focus:ring-orange-500 focus:border-orange-500"
+                    value={declaredTotal}
+                    onChange={(e) => setDeclaredTotal(e.target.value)}
+                  />
+                </div>
+                {declaredTotal !== "" && Number(declaredTotal) > 0 && (() => {
+                  const currentRowsTotal = rows.reduce((acc, r) => acc + Number(r.sum || 0), 0);
+                  const diff = Number(declaredTotal) - currentRowsTotal;
+                  const isMatch = Math.abs(diff) <= 0.01;
+                  return (
+                    <div
+                      className={`mt-6 px-4 py-3 rounded-xl font-bold text-sm ${
+                        isMatch
+                          ? "bg-green-100 text-green-700 border border-green-300"
+                          : "bg-red-100 text-red-700 border border-red-300"
+                      }`}
+                    >
+                      <div>סה"כ שורות: {currentRowsTotal.toLocaleString("he-IL")} ש"ח</div>
+                      <div>
+                        {isMatch
+                          ? "✓ הסכומים תואמים"
+                          : `הפרש: ${diff.toLocaleString("he-IL")} ש"ח`}
+                      </div>
+                    </div>
+                  );
+                })()}
+              </div>
+            </div>
+          </div>
+        )}
+
         {/* ROWS PER PROJECT */}
         <div className="space-y-6">
           {rows.map((row, index) => (
@@ -805,8 +863,17 @@ const InvoiceEditPage = () => {
         <div className="mt-10 text-center">
           <button
             onClick={saveInvoice}
-            disabled={saving}
-            className="px-10 py-3 bg-orange-600 text-white font-bold text-lg rounded-xl shadow-xl hover:bg-orange-700"
+            disabled={
+              saving ||
+              (rows.length > 1 &&
+                declaredTotal !== "" &&
+                Number(declaredTotal) > 0 &&
+                Math.abs(
+                  rows.reduce((acc, r) => acc + Number(r.sum || 0), 0) -
+                    Number(declaredTotal)
+                ) > 0.01)
+            }
+            className="px-10 py-3 bg-orange-600 text-white font-bold text-lg rounded-xl shadow-xl hover:bg-orange-700 disabled:opacity-50"
           >
             {saving ? "שומר..." : "שמור שינויים"}
           </button>

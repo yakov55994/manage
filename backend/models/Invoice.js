@@ -22,6 +22,19 @@ const InvoiceProjectSchema = new mongoose.Schema({
   }],
 });
 
+// היסטוריית עריכות
+const EditHistorySchema = new mongoose.Schema({
+  userId: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
+  userName: { type: String, required: true },
+  action: {
+    type: String,
+    enum: ['created', 'updated', 'payment_status_changed', 'moved', 'files_added', 'status_changed'],
+    required: true
+  },
+  changes: { type: String },
+  timestamp: { type: Date, default: Date.now }
+}, { _id: false });
+
 const FileSchema = new mongoose.Schema({
   name: { type: String, required: true },
   url: { type: String, required: true },
@@ -76,7 +89,7 @@ const invoiceSchema = new mongoose.Schema({
 
   paid: {
     type: String,
-    enum: ["כן", "לא", "יצא לתשלום"],
+    enum: ["כן", "לא", "יצא לתשלום", "לא לתשלום"],
     default: "לא",
     required: false
   },
@@ -137,6 +150,9 @@ supplierId: {
     type: mongoose.Schema.Types.ObjectId,
     ref: "Project"
   }],
+
+  // היסטוריית עריכות
+  editHistory: [EditHistorySchema],
 }, {
   timestamps: true  // Mongoose will automatically manage createdAt and updatedAt
 });

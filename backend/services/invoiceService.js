@@ -312,6 +312,20 @@ async function createSalaryInvoice(user, data) {
   // 📌 7) חישוב תקציב
   await recalculateRemainingBudget(fundedFromProjectId);
 
+  // 📝 תיעוד היסטוריית יצירה
+  try {
+    invoice.editHistory = [{
+      userId: user._id,
+      userName: user.username || user.name,
+      action: 'created',
+      changes: 'חשבונית משכורת נוצרה',
+      timestamp: new Date()
+    }];
+    await invoice.save();
+  } catch (historyError) {
+    console.error("❌ Failed to save edit history:", historyError);
+  }
+
   return invoice;
 }
 
@@ -402,6 +416,20 @@ async function createInvoice(user, data) {
         console.error("❌ Failed to send payment confirmation email on create:", emailError);
       }
     }
+  }
+
+  // 📝 תיעוד היסטוריית יצירה
+  try {
+    invoice.editHistory = [{
+      userId: user._id,
+      userName: user.username || user.name,
+      action: 'created',
+      changes: 'חשבונית נוצרה',
+      timestamp: new Date()
+    }];
+    await invoice.save();
+  } catch (historyError) {
+    console.error("❌ Failed to save edit history:", historyError);
   }
 
   // 🔔 שליחת התראה על חשבונית חדשה
@@ -512,11 +540,49 @@ async function updateInvoice(user, invoiceId, data) {
     updateFields.fundedFromProjectIds = fundedFromProjectIds;
   }
 
+  // 📝 בניית תיאור שינויים להיסטוריה
+  const changesList = [];
+  if (invoice.totalAmount !== updateFields.totalAmount) {
+    changesList.push(`סכום שונה מ-${invoice.totalAmount?.toLocaleString("he-IL")} ל-${updateFields.totalAmount?.toLocaleString("he-IL")}`);
+  }
+  if (basic.detail !== undefined && basic.detail !== invoice.detail) {
+    changesList.push('פירוט עודכן');
+  }
+  if (basic.documentType !== undefined && basic.documentType !== invoice.documentType) {
+    changesList.push(`סוג מסמך שונה ל: ${basic.documentType}`);
+  }
+  if (basic.invoiceDate !== undefined && String(basic.invoiceDate) !== String(invoice.invoiceDate)) {
+    changesList.push('תאריך חשבונית עודכן');
+  }
+  if (basic.paid !== undefined && basic.paid !== invoice.paid) {
+    changesList.push(`סטטוס תשלום שונה ל: ${basic.paid}`);
+  }
+  if (status !== undefined && status !== invoice.status) {
+    changesList.push(`סטטוס הגשה שונה ל: ${status}`);
+  }
+  const oldProjectNames = invoice.projects.map(p => p.projectName).join(", ");
+  const newProjectNames = projectsWithNames.map(p => p.projectName).join(", ");
+  if (oldProjectNames !== newProjectNames) {
+    changesList.push(`פרויקטים שונו: ${newProjectNames}`);
+  }
+  if (changesList.length === 0) {
+    changesList.push('חשבונית עודכנה');
+  }
+
+  const historyEntry = {
+    userId: user._id,
+    userName: user.username || user.name,
+    action: 'updated',
+    changes: changesList.join(', '),
+    timestamp: new Date()
+  };
+
   const updated = await Invoice.findByIdAndUpdate(
     invoiceId,
     {
       $set: updateFields,
       ...(Object.keys(unsetFields).length ? { $unset: unsetFields } : {}),
+      $push: { editHistory: historyEntry },
     },
     { new: true }
   );
@@ -667,6 +733,18 @@ async function moveInvoiceToMultipleProjects(user, invoice, targetProjects, fund
     invoice.fundedFromProjectId = null;
     invoice.fundedFromProjectIds = [];
   }
+
+  // 📝 תיעוד העברה בהיסטוריה
+  const oldNames = invoice.projects?.map(p => p.projectName).join(", ") || "";
+  const newNames = newProjects.map(p => p.projectName).join(", ");
+  invoice.editHistory = invoice.editHistory || [];
+  invoice.editHistory.push({
+    userId: user._id,
+    userName: user.username || user.name,
+    action: 'moved',
+    changes: `חשבונית הועברה מ: ${oldNames} ל: ${newNames}`,
+    timestamp: new Date()
+  });
 
   // שמור
   await invoice.save();
@@ -855,6 +933,17 @@ async function moveInvoice(user, invoiceId, fromProjectId, toProjectId, fundedFr
     0
   );
 
+  // 📝 תיעוד העברה בהיסטוריה
+  const fromProject = await Project.findById(fromProjectId).select("name");
+  invoice.editHistory = invoice.editHistory || [];
+  invoice.editHistory.push({
+    userId: user._id,
+    userName: user.username || user.name,
+    action: 'moved',
+    changes: `חשבונית הועברה מ: ${fromProject?.name || fromProjectId} ל: ${newProject.name}`,
+    timestamp: new Date()
+  });
+
   // שמור את השינויים
   await invoice.save();
 
@@ -927,7 +1016,24 @@ async function updatePaymentStatus(
     updateData.checkDate = null;
   }
 
-  const updatedInvoice = await Invoice.findByIdAndUpdate(invoiceId, updateData, {
+  // 📝 תיעוד שינוי סטטוס תשלום בהיסטוריה
+  const statusText = status === "כן" ? "שולם" : status === "יצא לתשלום" ? "יצא לתשלום" : status === "לא לתשלום" ? "לא לתשלום" : "לא שולם";
+  let paymentChanges = `סטטוס תשלום שונה ל: ${statusText}`;
+  if (date) paymentChanges += `, תאריך תשלום: ${new Date(date).toLocaleDateString("he-IL")}`;
+  if (method === "check" && checkNumber) paymentChanges += `, צ׳ק מס: ${checkNumber}`;
+
+  const updatedInvoice = await Invoice.findByIdAndUpdate(invoiceId, {
+    ...updateData,
+    $push: {
+      editHistory: {
+        userId: user._id,
+        userName: user.username || user.name,
+        action: 'payment_status_changed',
+        changes: paymentChanges,
+        timestamp: new Date()
+      }
+    }
+  }, {
     new: true,
   }).populate("supplierId", "name phone email bankDetails");
 

@@ -27,6 +27,7 @@ import { useAuth } from "../../context/AuthContext.jsx";
 import { FileText, Paperclip, Link } from "lucide-react";
 import MasavModal from "../../Components/MasavModal.jsx";
 import MultiSelectDropdown from "../../Components/MultiSelectDropdown.jsx";
+import QuickFileUploadModal from "../../Components/QuickFileUploadModal.jsx";
 
 
 // פונקציית עזר לסידור עברי נכון (א'-ב')
@@ -97,6 +98,7 @@ const InvoicesPage = () => {
 
   const [paymentFilter, setPaymentFilter] = useState([]);
   const [statusFilter, setStatusFilter] = useState([]);
+  const [uploadModal, setUploadModal] = useState({ open: false, invoice: null });
 
   const [selectedProjectForPrint, setSelectedProjectForPrint] = useState([]);
   const [selectedSupplierForPrint, setSelectedSupplierForPrint] = useState([]);
@@ -458,6 +460,7 @@ const InvoicesPage = () => {
         if (paymentFilter.includes("paid") && invoice.paid === "כן") return true;
         if (paymentFilter.includes("sent_to_payment") && invoice.paid === "יצא לתשלום") return true;
         if (paymentFilter.includes("unpaid") && invoice.paid === "לא") return true;
+        if (paymentFilter.includes("not_for_payment") && invoice.paid === "לא לתשלום") return true;
         return false;
       });
     }
@@ -575,7 +578,11 @@ const InvoicesPage = () => {
       if (advancedFilters.paymentStatus === "paid") {
         filtered = filtered.filter((inv) => inv.paid === "כן");
       } else if (advancedFilters.paymentStatus === "unpaid") {
-        filtered = filtered.filter((inv) => inv.paid !== "כן");
+        filtered = filtered.filter((inv) => inv.paid === "לא");
+      } else if (advancedFilters.paymentStatus === "sent_to_payment") {
+        filtered = filtered.filter((inv) => inv.paid === "יצא לתשלום");
+      } else if (advancedFilters.paymentStatus === "not_for_payment") {
+        filtered = filtered.filter((inv) => inv.paid === "לא לתשלום");
       }
 
       if (advancedFilters.submissionStatus === "submitted") {
@@ -642,6 +649,7 @@ const InvoicesPage = () => {
         if (paymentFilter.includes("paid") && invoice.paid === "כן") return true;
         if (paymentFilter.includes("sent_to_payment") && invoice.paid === "יצא לתשלום") return true;
         if (paymentFilter.includes("unpaid") && invoice.paid === "לא") return true;
+        if (paymentFilter.includes("not_for_payment") && invoice.paid === "לא לתשלום") return true;
         return false;
       });
     }
@@ -1738,7 +1746,8 @@ const InvoicesPage = () => {
               paymentFilter.length === 0 ||
               (paymentFilter.includes("paid") && invoice.paid === "כן") ||
               (paymentFilter.includes("sent_to_payment") && invoice.paid === "יצא לתשלום") ||
-              (paymentFilter.includes("unpaid") && invoice.paid === "לא");
+              (paymentFilter.includes("unpaid") && invoice.paid === "לא") ||
+              (paymentFilter.includes("not_for_payment") && invoice.paid === "לא לתשלום");
 
             let matchesStatusFilter =
               statusFilter.length === 0 ||
@@ -2019,6 +2028,8 @@ const InvoicesPage = () => {
       invoicesToExport = invoicesToExport.filter(inv => inv.paid === "כן");
     } else if (exportPaymentStatusFilter === "sent_to_payment") {
       invoicesToExport = invoicesToExport.filter(inv => inv.paid === "יצא לתשלום");
+    } else if (exportPaymentStatusFilter === "not_for_payment") {
+      invoicesToExport = invoicesToExport.filter(inv => inv.paid === "לא לתשלום");
     }
     // אם "all" - מייצאים הכל ללא סינון
 
@@ -2027,7 +2038,8 @@ const InvoicesPage = () => {
         exportPaymentStatusFilter === "unpaid" ? "שלא שולמו" :
           exportPaymentStatusFilter === "paid" ? "ששולמו" :
             exportPaymentStatusFilter === "sent_to_payment" ? "שיצאו לתשלום" :
-              "";
+              exportPaymentStatusFilter === "not_for_payment" ? "שלא לתשלום" :
+                "";
       toast.error(`לא נמצאו חשבוניות ${statusText} לייצוא`, {
         className: "sonner-toast error rtl",
       });
@@ -2319,6 +2331,8 @@ const InvoicesPage = () => {
       invoicesToExport = invoicesToExport.filter(inv => inv.paid === "כן");
     } else if (exportPaymentStatusFilter === "sent_to_payment") {
       invoicesToExport = invoicesToExport.filter(inv => inv.paid === "יצא לתשלום");
+    } else if (exportPaymentStatusFilter === "not_for_payment") {
+      invoicesToExport = invoicesToExport.filter(inv => inv.paid === "לא לתשלום");
     }
     // אם "all" - מייצאים הכל ללא סינון
 
@@ -2327,7 +2341,8 @@ const InvoicesPage = () => {
         exportPaymentStatusFilter === "unpaid" ? "שלא שולמו" :
           exportPaymentStatusFilter === "paid" ? "ששולמו" :
             exportPaymentStatusFilter === "sent_to_payment" ? "שיצאו לתשלום" :
-              "";
+              exportPaymentStatusFilter === "not_for_payment" ? "שלא לתשלום" :
+                "";
       toast.error(`לא נמצאו חשבוניות ${statusText} לייצוא`, {
         className: "sonner-toast error rtl",
       });
@@ -2586,6 +2601,7 @@ const InvoicesPage = () => {
                     { value: "paid", label: "שולמו" },
                     { value: "sent_to_payment", label: "יצא לתשלום" },
                     { value: "unpaid", label: "לא שולמו" },
+                    { value: "not_for_payment", label: "לא לתשלום" },
                   ]}
                   selected={paymentFilter}
                   onChange={setPaymentFilter}
@@ -2992,6 +3008,10 @@ const InvoicesPage = () => {
                               <span className="bg-blue-100 text-blue-700 px-2 py-1 rounded-full text-xs font-bold border border-blue-200 whitespace-nowrap">
                                 יצא לתשלום
                               </span>
+                            ) : invoice.paid === "לא לתשלום" ? (
+                              <span className="bg-gray-100 text-gray-700 px-2 py-1 rounded-full text-xs font-bold border border-gray-300 whitespace-nowrap">
+                                לא לתשלום
+                              </span>
                             ) : (
                               <span className="bg-red-100 text-red-700 px-2 py-1 rounded-full text-xs font-bold border border-red-200 whitespace-nowrap">
                                 לא שולם
@@ -2999,14 +3019,21 @@ const InvoicesPage = () => {
                             )}
                           </td>
 
-                          {/* עמודה 10/9: קבצים */}
+                          {/* עמודה 10/9: קבצים + העלאה */}
                           <td className="px-2 py-4 text-center">
-                            <div className="flex items-center justify-center gap-1">
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setUploadModal({ open: true, invoice });
+                              }}
+                              className="flex items-center justify-center gap-1 hover:bg-orange-50 rounded-lg p-1 transition-colors mx-auto"
+                              title="העלה קובץ לחשבונית"
+                            >
                               <Paperclip className="w-4 h-4 text-orange-500" />
                               <span className="font-bold text-slate-900 text-xs">
                                 {getInvoiceFilesCount(invoice)}
                               </span>
-                            </div>
+                            </button>
                           </td>
 
                           {/* עמודה: שויך */}
@@ -3029,7 +3056,8 @@ const InvoicesPage = () => {
                               <label className="relative inline-block cursor-pointer" title={
                                 invoice.paid === "כן" ? "לחץ להחזרה ללא שולם" :
                                   invoice.paid === "יצא לתשלום" ? "לחץ להחזרה ללא שולם" :
-                                    "לחץ לסימון כשולם"
+                                    invoice.paid === "לא לתשלום" ? "לחץ להחזרה ללא שולם" :
+                                      "לחץ לסימון כשולם"
                               }>
                                 <input
                                   type="checkbox"
@@ -3045,7 +3073,9 @@ const InvoicesPage = () => {
                                     ? "bg-emerald-500 border-emerald-500"
                                     : invoice.paid === "יצא לתשלום"
                                       ? "bg-blue-500 border-blue-500"
-                                      : "bg-gray-200 border-gray-400"
+                                      : invoice.paid === "לא לתשלום"
+                                        ? "bg-gray-500 border-gray-500"
+                                        : "bg-gray-200 border-gray-400"
                                     } flex items-center justify-center`}
                                 >
                                   {invoice.paid === "כן" && (
@@ -3070,6 +3100,19 @@ const InvoicesPage = () => {
                                       strokeWidth="2"
                                     >
                                       <path d="M12 2L15 8L22 9L17 14L18 21L12 18L6 21L7 14L2 9L9 8Z" />
+                                    </svg>
+                                  )}
+                                  {invoice.paid === "לא לתשלום" && (
+                                    <svg
+                                      viewBox="0 0 24 24"
+                                      className="w-4 h-4"
+                                      stroke="white"
+                                      fill="none"
+                                      strokeWidth="2"
+                                      strokeLinecap="round"
+                                      strokeLinejoin="round"
+                                    >
+                                      <path d="M18 6L6 18M6 6l12 12" />
                                     </svg>
                                   )}
                                 </span>
@@ -3401,6 +3444,7 @@ const InvoicesPage = () => {
                           <option value="paid">שולם</option>
                           <option value="sent_to_payment">יצא לתשלום</option>
                           <option value="unpaid">לא שולם</option>
+                          <option value="not_for_payment">לא לתשלום</option>
                         </select>
                       </div>
 
@@ -3741,6 +3785,7 @@ const InvoicesPage = () => {
                   <option value="unpaid">לא שולם</option>
                   <option value="sent_to_payment">יצא לתשלום</option>
                   <option value="paid">שולם</option>
+                  <option value="not_for_payment">לא לתשלום</option>
                   <option value="all">הכל</option>
                 </select>
                 <p className="mt-2 text-xs text-slate-500">
@@ -3852,6 +3897,14 @@ const InvoicesPage = () => {
             )
           );
         }}
+      />
+
+      {/* Quick File Upload Modal */}
+      <QuickFileUploadModal
+        open={uploadModal.open}
+        onClose={() => setUploadModal({ open: false, invoice: null })}
+        invoice={uploadModal.invoice}
+        onSuccess={() => fetchInvoices()}
       />
 
       {/* Delete Modal */}

@@ -25,6 +25,11 @@ import {
   Printer,
   Eye,
   Link2,
+  Clock,
+  Plus,
+  RefreshCw,
+  ArrowLeftRight,
+  Upload,
 } from "lucide-react";
 
 import { useAuth } from "../../context/AuthContext.jsx";
@@ -455,6 +460,45 @@ const InvoiceDetailsPage = () => {
                     </div>
                   </div>
                 ))}
+              </div>
+            </div>
+          )}
+
+          {/* EDIT HISTORY */}
+          {invoice.editHistory && invoice.editHistory.length > 0 && (
+            <div className="mb-6 sm:mb-8 md:mb-10">
+              <h2 className="text-2xl font-bold flex items-center gap-2 mb-4">
+                <Clock className="w-6 h-6 text-indigo-600" />
+                היסטוריית שינויים
+              </h2>
+              <div className="relative border-r-2 border-indigo-200 mr-4 space-y-4">
+                {[...invoice.editHistory].reverse().map((entry, idx) => {
+                  const actionMap = {
+                    created: { label: "נוצרה", icon: <Plus className="w-4 h-4" />, color: "bg-green-500" },
+                    updated: { label: "עודכנה", icon: <RefreshCw className="w-4 h-4" />, color: "bg-blue-500" },
+                    payment_status_changed: { label: "סטטוס תשלום שונה", icon: <CreditCard className="w-4 h-4" />, color: "bg-orange-500" },
+                    moved: { label: "הועברה", icon: <ArrowLeftRight className="w-4 h-4" />, color: "bg-purple-500" },
+                    files_added: { label: "קבצים הועלו", icon: <Upload className="w-4 h-4" />, color: "bg-gray-500" },
+                    status_changed: { label: "סטטוס הגשה שונה", icon: <FileText className="w-4 h-4" />, color: "bg-teal-500" },
+                  };
+                  const action = actionMap[entry.action] || { label: entry.action, icon: <Clock className="w-4 h-4" />, color: "bg-gray-400" };
+                  return (
+                    <div key={idx} className="relative pr-8">
+                      <div className={`absolute -right-[11px] top-1 w-5 h-5 rounded-full ${action.color} text-white flex items-center justify-center`}>
+                        {action.icon}
+                      </div>
+                      <div className="bg-slate-50 border border-slate-200 rounded-xl p-3">
+                        <p className="font-bold text-slate-800 text-sm">{action.label}</p>
+                        {entry.changes && (
+                          <p className="text-sm text-slate-600 mt-1">{entry.changes}</p>
+                        )}
+                        <p className="text-xs text-slate-400 mt-2">
+                          {entry.userName} &bull; {new Date(entry.timestamp).toLocaleString("he-IL")}
+                        </p>
+                      </div>
+                    </div>
+                  );
+                })}
               </div>
             </div>
           )}

@@ -403,7 +403,8 @@ ${invoicesForPrint.map((inv, i) => `
       const statusMap = {
         "unpaid": "לא",
         "paid": "כן",
-        "sent_to_payment": "יצא לתשלום"
+        "sent_to_payment": "יצא לתשלום",
+        "not_for_payment": "לא לתשלום"
       };
       const matchesStatus = paymentStatusFilter.some(status => {
         return inv.paid === statusMap[status];
@@ -477,7 +478,8 @@ ${invoicesForPrint.map((inv, i) => `
                 {[
                   { value: "unpaid", label: "לא שולם" },
                   { value: "sent_to_payment", label: "יצא לתשלום" },
-                  { value: "paid", label: "שולם" }
+                  { value: "paid", label: "שולם" },
+                  { value: "not_for_payment", label: "לא לתשלום" }
                 ].map((status) => (
                   <label key={status.value} className="flex items-center gap-2 cursor-pointer">
                     <input

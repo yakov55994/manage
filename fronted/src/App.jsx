@@ -1,3 +1,4 @@
+import { useEffect } from "react";
 import {
   BrowserRouter as Router,
   Route,
@@ -52,8 +53,21 @@ import { ArrowRightCircle, KeyRound } from "lucide-react";
 import "./App.css";
 
 const AppContent = () => {
-  const { user, isAuthenticated, logout } = useAuth();
+  const { user, isAuthenticated, logout, inactivityLogout, clearInactivityFlag } =
+    useAuth();
   const navigate = useNavigate();
+
+  // מצב שינה - התנתקות אוטומטית אחרי 7 שעות ללא פעילות
+  useEffect(() => {
+    if (inactivityLogout) {
+      clearInactivityFlag();
+      toast.info("ההפעלה הסתיימה עקב חוסר פעילות, יש להתחבר מחדש", {
+        duration: 8000,
+        className: "sonner-toast info rtl",
+      });
+      navigate("/login");
+    }
+  }, [inactivityLogout, clearInactivityFlag, navigate]);
 
   const handleLogout = async () => {
     const result = await logout();

@@ -1,16 +1,32 @@
-import { useState } from "react";
-import { DownloadCloud, FileSpreadsheet, FileText, Loader2, Calendar } from "lucide-react";
+import { useState, useEffect } from "react";
+import { DownloadCloud, FileSpreadsheet, FileText, Loader2, Calendar, Database, Clock, CheckCircle2, AlertCircle } from "lucide-react";
 import { toast } from "sonner";
 import api from "../api/api";
 
 const ExportDataPage = () => {
   const [loadingExcel, setLoadingExcel] = useState(false);
   const [loadingPDF, setLoadingPDF] = useState(false);
+  const [loadingBackup, setLoadingBackup] = useState(false);
+  const [loadingLatest, setLoadingLatest] = useState(false);
+  const [backupStatus, setBackupStatus] = useState(null);
   const currentYear = new Date().getFullYear();
   const [selectedYear, setSelectedYear] = useState(currentYear);
 
   // יצירת רשימת שנים (5 שנים אחורה)
   const years = Array.from({ length: 6 }, (_, i) => currentYear - i);
+
+  // שליפת סטטוס גיבוי אחרון
+  useEffect(() => {
+    const fetchBackupStatus = async () => {
+      try {
+        const { data } = await api.get("/backup/status");
+        setBackupStatus(data);
+      } catch (error) {
+        console.error("Failed to fetch backup status:", error);
+      }
+    };
+    fetchBackupStatus();
+  }, []);
 
   // ייצוא לאקסל
   const handleExportExcel = async () => {
@@ -81,6 +97,76 @@ const ExportDataPage = () => {
       });
     } finally {
       setLoadingPDF(false);
+    }
+  };
+
+  // גיבוי מלא של מסד הנתונים
+  const handleBackup = async () => {
+    try {
+      setLoadingBackup(true);
+      const response = await api.get("/backup/download", {
+        responseType: "blob",
+        timeout: 300000,
+      });
+
+      const url = window.URL.createObjectURL(new Blob([response.data]));
+      const link = document.createElement("a");
+      link.href = url;
+      const date = new Date().toISOString().split("T")[0];
+      link.setAttribute("download", `backup_${date}.zip`);
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      window.URL.revokeObjectURL(url);
+
+      toast.success("הגיבוי הורד בהצלחה!", {
+        className: "sonner-toast success rtl",
+      });
+
+      // רענון סטטוס
+      try {
+        const { data } = await api.get("/backup/status");
+        setBackupStatus(data);
+      } catch {}
+    } catch (error) {
+      console.error("Backup error:", error);
+      toast.error("שגיאה ביצירת גיבוי", {
+        className: "sonner-toast error rtl",
+      });
+    } finally {
+      setLoadingBackup(false);
+    }
+  };
+
+  // הורדת גיבוי אוטומטי אחרון
+  const handleDownloadLatest = async () => {
+    try {
+      setLoadingLatest(true);
+      const response = await api.get("/backup/download-latest", {
+        responseType: "blob",
+        timeout: 300000,
+      });
+
+      const url = window.URL.createObjectURL(new Blob([response.data]));
+      const link = document.createElement("a");
+      link.href = url;
+      link.setAttribute("download", `backup_latest.zip`);
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      window.URL.revokeObjectURL(url);
+
+      toast.success("הגיבוי האוטומטי הורד בהצלחה!", {
+        className: "sonner-toast success rtl",
+      });
+    } catch (error) {
+      console.error("Download latest error:", error);
+      const isNotFound = error.response?.status === 404;
+      toast.error(isNotFound ? "אין גיבוי אוטומטי זמין" : "שגיאה בהורדת גיבוי", {
+        className: "sonner-toast error rtl",
+      });
+    } finally {
+      setLoadingLatest(false);
     }
   };
 
@@ -265,6 +351,115 @@ const ExportDataPage = () => {
           </div>
         </div>
 
+        {/* Backup Card */}
+        <div className="mt-6 bg-white rounded-3xl shadow-xl border-2 border-orange-100 overflow-hidden">
+          <div className="bg-gradient-to-r from-blue-500 to-indigo-600 p-6">
+            <div className="flex items-center gap-3">
+              <div className="p-3 bg-white/20 rounded-xl">
+                <Database className="w-8 h-8 text-white" />
+              </div>
+              <div>
+                <h2 className="text-xl font-bold text-white">
+                  גיבוי מסד נתונים
+                </h2>
+                <p className="text-blue-100 text-sm">
+                  קבצי Excel + קבצים מ-Cloudinary בקובץ ZIP
+                </p>
+              </div>
+            </div>
+          </div>
+          <div className="p-6">
+            {/* סטטוס גיבוי אחרון */}
+            {backupStatus?.lastBackup && (
+              <div className="mb-4 p-3 bg-blue-50 border border-blue-200 rounded-xl flex items-center gap-3">
+                <CheckCircle2 className="w-5 h-5 text-blue-600 flex-shrink-0" />
+                <div className="text-sm">
+                  <span className="font-bold text-blue-800">גיבוי אחרון: </span>
+                  <span className="text-blue-700">
+                    {new Date(backupStatus.lastBackup.date).toLocaleString("he-IL")}
+                    {" "}({backupStatus.lastBackup.type === "scheduled" ? "אוטומטי" : "ידני"})
+                  </span>
+                  {backupStatus.lastBackup.recordCounts && (
+                    <span className="text-blue-600 mr-2">
+                      - {Object.values(backupStatus.lastBackup.recordCounts).reduce((a, b) => a + b, 0)} רשומות
+                      {backupStatus.lastBackup.filesCount > 0 && `, ${backupStatus.lastBackup.filesCount} קבצים`}
+                    </span>
+                  )}
+                </div>
+              </div>
+            )}
+
+            <div className="space-y-3 mb-6">
+              <p className="text-slate-600 text-sm">
+                הגיבוי יכלול את <strong>כל</strong> הנתונים כקבצי Excel + כל הקבצים מ-Cloudinary:
+              </p>
+              <ul className="text-sm text-slate-500 space-y-1 mr-4">
+                {[
+                  "חשבוניות (Excel + קבצים מצורפים)",
+                  "פרויקטים",
+                  "ספקים",
+                  "הזמנות (Excel + קבצים מצורפים)",
+                  "משכורות",
+                  "הכנסות",
+                  "הוצאות",
+                  "משתמשים (ללא סיסמאות)",
+                  "הערות",
+                  "התראות",
+                ].map((item) => (
+                  <li key={item} className="flex items-center gap-2">
+                    <span className="w-2 h-2 bg-blue-500 rounded-full"></span>
+                    {item}
+                  </li>
+                ))}
+              </ul>
+            </div>
+
+            <div className="flex gap-3">
+              <button
+                onClick={handleBackup}
+                disabled={loadingBackup || loadingLatest}
+                className="flex-1 py-4 bg-gradient-to-r from-blue-500 to-indigo-600 text-white rounded-2xl font-bold text-lg hover:from-blue-600 hover:to-indigo-700 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-300 shadow-lg hover:shadow-xl flex items-center justify-center gap-3"
+              >
+                {loadingBackup ? (
+                  <>
+                    <Loader2 className="w-6 h-6 animate-spin" />
+                    מייצא גיבוי...
+                  </>
+                ) : (
+                  <>
+                    <DownloadCloud className="w-6 h-6" />
+                    הורד גיבוי מלא
+                  </>
+                )}
+              </button>
+
+              {backupStatus?.lastScheduled && (
+                <button
+                  onClick={handleDownloadLatest}
+                  disabled={loadingBackup || loadingLatest}
+                  className="py-4 px-6 bg-gradient-to-r from-slate-500 to-slate-600 text-white rounded-2xl font-bold hover:from-slate-600 hover:to-slate-700 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-300 shadow-lg flex items-center justify-center gap-2"
+                  title="הורד גיבוי אוטומטי אחרון"
+                >
+                  {loadingLatest ? (
+                    <Loader2 className="w-5 h-5 animate-spin" />
+                  ) : (
+                    <>
+                      <Clock className="w-5 h-5" />
+                      אחרון
+                    </>
+                  )}
+                </button>
+              )}
+            </div>
+
+            {/* הודעה על גיבוי אוטומטי */}
+            <div className="mt-4 flex items-center gap-2 text-xs text-slate-400">
+              <Clock className="w-4 h-4" />
+              גיבוי אוטומטי רץ כל יום בחצות
+            </div>
+          </div>
+        </div>
+
         {/* Info Box */}
         <div className="mt-8 bg-amber-50 border-2 border-amber-200 rounded-2xl p-6">
           <div className="flex items-start gap-3">
@@ -276,6 +471,7 @@ const ExportDataPage = () => {
               <p className="text-amber-700 text-sm">
                 קובץ האקסל מכיל את כל הנתונים המפורטים ומתאים לעבודה ועריכה.
                 קובץ ה-PDF מכיל סיכום כללי ומתאים לארכיון והדפסה.
+                הגיבוי המלא כולל קבצי Excel עם כל הנתונים + כל הקבצים שהועלו למערכת.
               </p>
             </div>
           </div>

@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from "react";
-import { Bell, Check, CheckCheck, X, Wallet, FileText, ShoppingCart, Info, BellRing, BellOff, Trash2 } from "lucide-react";
+import { Bell, Check, CheckCheck, X, Wallet, FileText, ShoppingCart, Info, BellRing, BellOff, Trash2, User2, Building2, Truck } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 import api from "../../api/api";
@@ -300,6 +300,29 @@ const NotificationCenter = () => {
                       <p className="text-sm text-gray-600 mt-1 line-clamp-2">
                         {notification.message}
                       </p>
+                      {/* מידע נוסף - שם מבצע, פרויקט, ספק */}
+                      {(notification.metadata?.actorName || notification.metadata?.projectNames || notification.metadata?.projectName || notification.metadata?.supplierName) && (
+                        <div className="flex flex-wrap gap-x-3 gap-y-1 mt-1.5">
+                          {notification.metadata?.actorName && (
+                            <span className="flex items-center gap-1 text-xs text-gray-500">
+                              <User2 className="w-3 h-3" />
+                              {notification.metadata.actorName}
+                            </span>
+                          )}
+                          {(notification.metadata?.projectNames || notification.metadata?.projectName) && (
+                            <span className="flex items-center gap-1 text-xs text-gray-500">
+                              <Building2 className="w-3 h-3" />
+                              {notification.metadata.projectNames || notification.metadata.projectName}
+                            </span>
+                          )}
+                          {notification.metadata?.supplierName && (
+                            <span className="flex items-center gap-1 text-xs text-gray-500">
+                              <Truck className="w-3 h-3" />
+                              {notification.metadata.supplierName}
+                            </span>
+                          )}
+                        </div>
+                      )}
                       <p className="text-xs text-gray-400 mt-2">
                         {formatTime(notification.createdAt)}
                       </p>
