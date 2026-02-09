@@ -154,8 +154,22 @@ const createExcelBuffer = (data, sheetName) => {
   return xlsx.write(wb, { type: "buffer", bookType: "xlsx" });
 };
 
-// הורדת קבצים מ-Cloudinary לתוך ה-ZIP
-const downloadCloudinaryFiles = async (zip) => {
+// רשימת הגיליונות
+const getSheetsList = (data) => [
+  { name: "חשבוניות", key: "invoices", prepare: prepareInvoicesData, data: data.invoices },
+  { name: "פרויקטים", key: "projects", prepare: prepareProjectsData, data: data.projects },
+  { name: "הזמנות", key: "orders", prepare: prepareOrdersData, data: data.orders },
+  { name: "ספקים", key: "suppliers", prepare: prepareSuppliersData, data: data.suppliers },
+  { name: "משכורות", key: "salaries", prepare: prepareSalariesData, data: data.salaries },
+  { name: "הכנסות", key: "incomes", prepare: prepareIncomesData, data: data.incomes },
+  { name: "הוצאות", key: "expenses", prepare: prepareExpensesData, data: data.expenses },
+  { name: "משתמשים", key: "users", prepare: prepareUsersData, data: data.users },
+  { name: "הערות", key: "notes", prepare: prepareNotesData, data: data.notes },
+  { name: "התראות", key: "notifications", prepare: prepareNotificationsData, data: data.notifications },
+];
+
+// הורדת קבצים מ-Cloudinary לתוך ה-ZIP (לגיבוי ידני)
+const downloadCloudinaryFilesToZip = async (zip) => {
   let filesCount = 0;
   const filesFolder = zip.folder("קבצים");
 
@@ -170,7 +184,6 @@ const downloadCloudinaryFiles = async (zip) => {
 
         let response = await fetch(file.url);
 
-        // fallback ל-image/upload אם raw/upload נכשל
         if (!response.ok && file.url.includes("/raw/upload/")) {
           const altUrl = file.url.replace("/raw/upload/", "/image/upload/");
           response = await fetch(altUrl);
@@ -231,48 +244,126 @@ const downloadCloudinaryFiles = async (zip) => {
   return filesCount;
 };
 
-// שליפת כל הנתונים (עם אפשרות לסינון incremental)
-const fetchAllBackupData = async (sinceDate = null) => {
-  const dateFilter = sinceDate ? { updatedAt: { $gte: sinceDate } } : {};
+// הורדת קבצים מ-Cloudinary לתיקייה (מדלג על קבצים שכבר קיימים)
+const downloadCloudinaryFilesToFolder = async (basePath) => {
+  let newFilesCount = 0;
+  let skippedCount = 0;
 
+  const invoicesDir = path.join(basePath, "קבצים", "חשבוניות");
+  const ordersDir = path.join(basePath, "קבצים", "הזמנות");
+  fs.mkdirSync(invoicesDir, { recursive: true });
+  fs.mkdirSync(ordersDir, { recursive: true });
+
+  // קבצי חשבוניות
+  const invoices = await Invoice.find({ "files.0": { $exists: true } }).select("invoiceNumber files").lean();
+
+  for (const invoice of invoices) {
+    for (const file of invoice.files || []) {
+      try {
+        if (!file.url || (!file.url.startsWith("http://") && !file.url.startsWith("https://"))) continue;
+
+        const safeName = `${invoice.invoiceNumber}_${file.name}`.replace(/[^\u0590-\u05FF\w.-]/g, "_");
+        const filePath = path.join(invoicesDir, safeName);
+
+        // דילוג על קובץ שכבר קיים
+        if (fs.existsSync(filePath)) {
+          skippedCount++;
+          continue;
+        }
+
+        let response = await fetch(file.url);
+
+        if (!response.ok && file.url.includes("/raw/upload/")) {
+          const altUrl = file.url.replace("/raw/upload/", "/image/upload/");
+          response = await fetch(altUrl);
+        }
+
+        if (!response.ok) continue;
+
+        const buffer = Buffer.from(await response.arrayBuffer());
+        fs.writeFileSync(filePath, buffer);
+        newFilesCount++;
+      } catch (err) {
+        console.error(`❌ שגיאה בהורדת קובץ חשבונית ${invoice.invoiceNumber}:`, err.message);
+      }
+    }
+  }
+
+  // קבצי הזמנות
+  const orders = await Order.find({
+    $or: [
+      { "files.0": { $exists: true } },
+      { "invoiceFiles.0": { $exists: true } },
+      { "receiptFiles.0": { $exists: true } },
+    ]
+  }).select("orderNumber files invoiceFiles receiptFiles").lean();
+
+  for (const order of orders) {
+    const allFiles = [
+      ...(order.files || []),
+      ...(order.invoiceFiles || []),
+      ...(order.receiptFiles || []),
+    ];
+    for (const file of allFiles) {
+      try {
+        if (!file.url || (!file.url.startsWith("http://") && !file.url.startsWith("https://"))) continue;
+
+        const safeName = `${order.orderNumber}_${file.name}`.replace(/[^\u0590-\u05FF\w.-]/g, "_");
+        const filePath = path.join(ordersDir, safeName);
+
+        // דילוג על קובץ שכבר קיים
+        if (fs.existsSync(filePath)) {
+          skippedCount++;
+          continue;
+        }
+
+        let response = await fetch(file.url);
+
+        if (!response.ok && file.url.includes("/raw/upload/")) {
+          const altUrl = file.url.replace("/raw/upload/", "/image/upload/");
+          response = await fetch(altUrl);
+        }
+
+        if (!response.ok) continue;
+
+        const buffer = Buffer.from(await response.arrayBuffer());
+        fs.writeFileSync(filePath, buffer);
+        newFilesCount++;
+      } catch (err) {
+        console.error(`❌ שגיאה בהורדת קובץ הזמנה ${order.orderNumber}:`, err.message);
+      }
+    }
+  }
+
+  return { newFilesCount, skippedCount };
+};
+
+// שליפת כל הנתונים
+const fetchAllBackupData = async () => {
   const [invoices, projects, users, suppliers, orders, salaries, incomes, expenses, notes, notifications] =
     await Promise.all([
-      Invoice.find(dateFilter).populate("supplierId", "name").lean(),
-      Project.find(dateFilter).lean(),
-      User.find(dateFilter).select("-password").lean(),
-      Supplier.find(sinceDate ? { updatedAt: { $gte: sinceDate } } : {}).lean(),
-      Order.find(dateFilter).populate("supplierId", "name").lean(),
-      Salary.find(dateFilter).populate("projectId", "name").lean(),
-      Income.find(dateFilter).lean(),
-      Expense.find(dateFilter).lean(),
-      Notes.find(dateFilter).lean(),
-      Notification.find(dateFilter).lean(),
+      Invoice.find().populate("supplierId", "name").lean(),
+      Project.find().lean(),
+      User.find().select("-password").lean(),
+      Supplier.find().lean(),
+      Order.find().populate("supplierId", "name").lean(),
+      Salary.find().populate("projectId", "name").lean(),
+      Income.find().lean(),
+      Expense.find().lean(),
+      Notes.find().lean(),
+      Notification.find().lean(),
     ]);
 
   return { invoices, projects, users, suppliers, orders, salaries, incomes, expenses, notes, notifications };
 };
 
-// בניית ZIP עם קבצי אקסל + קבצי Cloudinary
-const buildBackupZip = async (sinceDate = null) => {
+// בניית ZIP (לגיבוי ידני - הורדה ישירה)
+const buildBackupZip = async () => {
   const zip = new JSZip();
-  const data = await fetchAllBackupData(sinceDate);
+  const data = await fetchAllBackupData();
 
   const recordCounts = {};
-
-  // יצירת קבצי אקסל עם שמות עבריים
-  const sheets = [
-    { name: "חשבוניות", key: "invoices", prepare: prepareInvoicesData, data: data.invoices },
-    { name: "פרויקטים", key: "projects", prepare: prepareProjectsData, data: data.projects },
-    { name: "הזמנות", key: "orders", prepare: prepareOrdersData, data: data.orders },
-    { name: "ספקים", key: "suppliers", prepare: prepareSuppliersData, data: data.suppliers },
-    { name: "משכורות", key: "salaries", prepare: prepareSalariesData, data: data.salaries },
-    { name: "הכנסות", key: "incomes", prepare: prepareIncomesData, data: data.incomes },
-    { name: "הוצאות", key: "expenses", prepare: prepareExpensesData, data: data.expenses },
-    { name: "משתמשים", key: "users", prepare: prepareUsersData, data: data.users },
-    { name: "הערות", key: "notes", prepare: prepareNotesData, data: data.notes },
-    { name: "התראות", key: "notifications", prepare: prepareNotificationsData, data: data.notifications },
-  ];
-
+  const sheets = getSheetsList(data);
   const excelFolder = zip.folder("נתונים");
 
   for (const sheet of sheets) {
@@ -282,15 +373,12 @@ const buildBackupZip = async (sinceDate = null) => {
     recordCounts[sheet.key] = sheet.data.length;
   }
 
-  // הורדת קבצים מ-Cloudinary
-  const filesCount = await downloadCloudinaryFiles(zip);
+  const filesCount = await downloadCloudinaryFilesToZip(zip);
 
-  // מטא-דאטא
   const metadata = {
     backupDate: new Date().toISOString(),
     backupDateHebrew: new Date().toLocaleDateString("he-IL"),
-    type: sinceDate ? "incremental" : "full",
-    sinceDate: sinceDate?.toISOString() || null,
+    type: "full",
     recordCounts,
     filesCount,
     totalRecords: Object.values(recordCounts).reduce((a, b) => a + b, 0),
@@ -301,19 +389,72 @@ const buildBackupZip = async (sinceDate = null) => {
   return { zip, metadata, recordCounts, filesCount };
 };
 
+// בניית גיבוי לתיקייה (אקסל מלא + קבצים חדשים בלבד)
+const buildBackupToFolder = async (backupDir) => {
+  const data = await fetchAllBackupData();
+  const recordCounts = {};
+
+  const excelDir = path.join(backupDir, "נתונים");
+  fs.mkdirSync(excelDir, { recursive: true });
+
+  const sheets = getSheetsList(data);
+
+  for (const sheet of sheets) {
+    const prepared = sheet.prepare(sheet.data);
+    const buffer = createExcelBuffer(prepared, sheet.name);
+    fs.writeFileSync(path.join(excelDir, `${sheet.name}.xlsx`), buffer);
+    recordCounts[sheet.key] = sheet.data.length;
+  }
+
+  // הורדת קבצים חדשים בלבד (מדלג על קיימים)
+  const { newFilesCount, skippedCount } = await downloadCloudinaryFilesToFolder(backupDir);
+
+  // ספירת כל הקבצים שיש בתיקייה
+  const totalFilesCount = newFilesCount + skippedCount;
+
+  // מטא-דאטא
+  const metadata = {
+    backupDate: new Date().toISOString(),
+    backupDateHebrew: new Date().toLocaleDateString("he-IL"),
+    type: "incremental",
+    recordCounts,
+    newFilesCount,
+    skippedFilesCount: skippedCount,
+    totalFilesCount,
+    totalRecords: Object.values(recordCounts).reduce((a, b) => a + b, 0),
+  };
+
+  fs.writeFileSync(path.join(backupDir, "_metadata.json"), JSON.stringify(metadata, null, 2));
+
+  return { recordCounts, newFilesCount, skippedCount, totalFilesCount };
+};
+
+// הוספת תיקייה ל-ZIP רקורסיבית
+const addFolderToZip = (zip, folderPath, zipPath) => {
+  const items = fs.readdirSync(folderPath);
+  for (const item of items) {
+    const fullPath = path.join(folderPath, item);
+    const itemZipPath = zipPath ? `${zipPath}/${item}` : item;
+    if (fs.statSync(fullPath).isDirectory()) {
+      addFolderToZip(zip, fullPath, itemZipPath);
+    } else {
+      zip.file(itemZipPath, fs.readFileSync(fullPath));
+    }
+  }
+};
+
 // ===============================================
 // גיבוי מלא ידני (הורדה ישירה)
 // ===============================================
 export const createBackup = async (req, res) => {
   try {
-    const { zip, metadata, recordCounts, filesCount } = await buildBackupZip(null);
+    const { zip, recordCounts, filesCount } = await buildBackupZip();
 
     const zipContent = await zip.generateAsync({ type: "nodebuffer" });
 
     const date = new Date().toISOString().split("T")[0];
     const fileName = `backup_${date}.zip`;
 
-    // שמירת לוג
     await BackupLog.create({
       backupDate: new Date(),
       type: "manual",
@@ -344,50 +485,38 @@ export const createBackup = async (req, res) => {
 };
 
 // ===============================================
-// גיבוי אוטומטי (cron) - שומר לקובץ זמני
+// גיבוי אוטומטי (cron) - תיקייה יומית עם אינקרמנטלי
 // ===============================================
 export const createScheduledBackup = async () => {
   try {
-    // בדיקת תאריך גיבוי אחרון
-    const lastBackup = await BackupLog.findOne({ status: "success", type: "scheduled" })
-      .sort({ backupDate: -1 });
-
-    const sinceDate = lastBackup?.backupDate || null;
-
-    const { zip, recordCounts, filesCount } = await buildBackupZip(sinceDate);
-
-    const zipContent = await zip.generateAsync({ type: "nodebuffer" });
-
-    // שמירה לתיקייה זמנית
-    const backupDir = path.join(process.cwd(), "tmp", "backups");
-    if (!fs.existsSync(backupDir)) {
-      fs.mkdirSync(backupDir, { recursive: true });
-    }
-
-    // מחיקת גיבויים ישנים (שמירת 7 אחרונים)
-    const existingFiles = fs.readdirSync(backupDir)
-      .filter(f => f.startsWith("backup_") && f.endsWith(".zip"))
-      .sort()
-      .reverse();
-
-    for (const oldFile of existingFiles.slice(6)) {
-      fs.unlinkSync(path.join(backupDir, oldFile));
-    }
-
     const date = new Date().toISOString().split("T")[0];
-    const filePath = path.join(backupDir, `backup_${date}.zip`);
-    fs.writeFileSync(filePath, zipContent);
+    const backupsBase = path.join(process.cwd(), "tmp", "backups");
+    const backupDir = path.join(backupsBase, `backup_${date}`);
+
+    // מחיקת תיקיות גיבוי ישנות (שמירת 7 אחרונות)
+    if (fs.existsSync(backupsBase)) {
+      const existingDirs = fs.readdirSync(backupsBase)
+        .filter(f => f.startsWith("backup_") && fs.statSync(path.join(backupsBase, f)).isDirectory())
+        .sort()
+        .reverse();
+
+      for (const oldDir of existingDirs.slice(6)) {
+        fs.rmSync(path.join(backupsBase, oldDir), { recursive: true, force: true });
+      }
+    }
+
+    const { recordCounts, newFilesCount, skippedCount, totalFilesCount } = await buildBackupToFolder(backupDir);
 
     await BackupLog.create({
       backupDate: new Date(),
       type: "scheduled",
       recordCounts,
-      filesCount,
+      filesCount: totalFilesCount,
       status: "success",
-      filePath,
+      filePath: backupDir,
     });
 
-    console.log(`✅ גיבוי אוטומטי נוצר בהצלחה: ${filePath}`);
+    console.log(`✅ גיבוי אוטומטי: ${newFilesCount} קבצים חדשים הורדו, ${skippedCount} קיימים דולגו`);
   } catch (error) {
     console.error("❌ Scheduled backup error:", error);
 
@@ -432,26 +561,39 @@ export const getBackupStatus = async (req, res) => {
 };
 
 // ===============================================
-// הורדת גיבוי אוטומטי אחרון
+// הורדת גיבוי אוטומטי אחרון (ZIP מהתיקייה)
 // ===============================================
 export const downloadLatestBackup = async (req, res) => {
   try {
-    const lastScheduled = await BackupLog.findOne({
-      status: "success",
-      type: "scheduled",
-      filePath: { $ne: null }
-    }).sort({ backupDate: -1 });
+    const backupsBase = path.join(process.cwd(), "tmp", "backups");
 
-    if (!lastScheduled || !lastScheduled.filePath || !fs.existsSync(lastScheduled.filePath)) {
+    if (!fs.existsSync(backupsBase)) {
       return res.status(404).json({ message: "אין גיבוי אוטומטי זמין" });
     }
 
-    const fileName = path.basename(lastScheduled.filePath);
-    res.setHeader("Content-Type", "application/zip");
-    res.setHeader("Content-Disposition", `attachment; filename="${fileName}"`);
+    const folders = fs.readdirSync(backupsBase)
+      .filter(f => f.startsWith("backup_") && fs.statSync(path.join(backupsBase, f)).isDirectory())
+      .sort()
+      .reverse();
 
-    const fileStream = fs.createReadStream(lastScheduled.filePath);
-    fileStream.pipe(res);
+    if (folders.length === 0) {
+      return res.status(404).json({ message: "אין גיבוי אוטומטי זמין" });
+    }
+
+    const latestFolder = path.join(backupsBase, folders[0]);
+
+    // יצירת ZIP מהתיקייה
+    const zip = new JSZip();
+    addFolderToZip(zip, latestFolder, "");
+    const zipContent = await zip.generateAsync({ type: "nodebuffer" });
+    const fileName = `${folders[0]}.zip`;
+
+    res.writeHead(200, {
+      "Content-Type": "application/zip",
+      "Content-Disposition": `attachment; filename="${fileName}"`,
+      "Content-Length": zipContent.length,
+    });
+    res.end(zipContent);
   } catch (error) {
     console.error("Download latest backup error:", error);
     res.status(500).json({ message: "שגיאה בהורדת גיבוי" });

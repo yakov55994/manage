@@ -181,7 +181,7 @@ const connectDB = async () => {
       console.log(`🔌 Socket.IO ready for connections`);
 
       // ⏰ גיבוי אוטומטי כל יום בחצות
-      cron.schedule('0 0 * * *', async () => {
+      cron.schedule('00 00 * * *', async () => {
         console.log('⏰ מתחיל גיבוי אוטומטי...');
         await createScheduledBackup();
       });

@@ -622,7 +622,7 @@ const SupplierDetailsPage = () => {
                               {inv.invoiceNumber || "—"}
                             </td>
                             <td className="px-4 py-3 text-sm font-bold">
-                              {formatILS(inv.sum)}
+                              {formatILS(inv.totalAmount)}
                             </td>
                             <td className="px-4 py-3 text-sm">
                               {inv.status || "—"}

@@ -704,6 +704,9 @@ async function moveInvoiceToMultipleProjects(user, invoice, targetProjects, fund
     throw new Error("פרויקט מילגה דורש בחירת לפחות פרויקט ממומן אחד");
   }
 
+  // שמור שמות פרויקטים ישנים לפני ההחלפה (לצורך היסטוריה)
+  const oldNames = invoice.projects?.map(p => p.projectName).join(", ") || "";
+
   // בנה את מערך הפרויקטים החדש
   const newProjects = [];
   for (const tp of targetProjects) {
@@ -719,6 +722,7 @@ async function moveInvoiceToMultipleProjects(user, invoice, targetProjects, fund
 
   // עדכן את החשבונית
   invoice.projects = newProjects;
+  invoice.markModified('projects');
   invoice.totalAmount = totalAllocated;
 
   // עדכן את fundedFromProjectIds או fundedFromProjectId (תמיכה לאחור)
@@ -735,7 +739,6 @@ async function moveInvoiceToMultipleProjects(user, invoice, targetProjects, fund
   }
 
   // 📝 תיעוד העברה בהיסטוריה
-  const oldNames = invoice.projects?.map(p => p.projectName).join(", ") || "";
   const newNames = newProjects.map(p => p.projectName).join(", ");
   invoice.editHistory = invoice.editHistory || [];
   invoice.editHistory.push({
