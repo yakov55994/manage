@@ -26,6 +26,7 @@ import PaymentCaptureModal from "../../Components/PaymentCaptureModal.jsx";
 import { useAuth } from "../../context/AuthContext.jsx";
 import { FileText, Paperclip, Link } from "lucide-react";
 import MasavModal from "../../Components/MasavModal.jsx";
+import MasavHistoryModal from "../../Components/MasavHistoryModal.jsx";
 import MultiSelectDropdown from "../../Components/MultiSelectDropdown.jsx";
 import QuickFileUploadModal from "../../Components/QuickFileUploadModal.jsx";
 
@@ -149,6 +150,7 @@ const InvoicesPage = () => {
     supplierAccountNumber: true,
   });
   const [masavModal, setMasavModal] = useState(false);
+  const [masavHistoryModal, setMasavHistoryModal] = useState(false);
   const [selectedInvoices, setSelectedInvoices] = useState([]);
   const [allExpenses, setAllExpenses] = useState([]);
   const [showBulkDeleteModal, setShowBulkDeleteModal] = useState(false);
@@ -2681,6 +2683,14 @@ const InvoicesPage = () => {
               </button>
 
               <button
+                onClick={() => setMasavHistoryModal(true)}
+                className="flex items-center justify-center gap-2 px-4 py-3 bg-gradient-to-r from-slate-600 to-slate-700 text-white font-bold rounded-full hover:from-slate-700 hover:to-slate-800 transition-all shadow-lg"
+              >
+                <FileText className="w-5 h-5 flex-shrink-0" />
+                <span className="text-sm">היסטוריית מס״ב</span>
+              </button>
+
+              <button
                 onClick={() => setShowPrintModal(true)}
                 className="flex items-center justify-center gap-2 px-4 py-3 bg-gradient-to-r from-orange-500 to-amber-500 text-white font-bold rounded-full hover:from-orange-600 hover:to-amber-600 transition-all shadow-lg"
               >
@@ -3897,6 +3907,12 @@ const InvoicesPage = () => {
             )
           );
         }}
+      />
+
+      {/* MASAV History Modal */}
+      <MasavHistoryModal
+        open={masavHistoryModal}
+        onClose={() => setMasavHistoryModal(false)}
       />
 
       {/* Quick File Upload Modal */}

@@ -357,6 +357,7 @@ ${invoicesForPrint.map((inv, i) => `
             senderId: "92982",
             companyName: "חינוך עם חיוך",
           },
+          invoiceIds: withBankDetails.map(inv => inv._id),
         },
         { responseType: "blob" }
       );

@@ -6,6 +6,7 @@ import path from "path";
 import { generateMasavPDF } from "../services/masavPdfService.js";
 import { generateMasavFile, validatePayments } from "../services/masavService.js";
 import fs from "fs";
+import MasavHistory from "../models/MasavHistory.js";
 
 // ===============================================
 // פונקציית עזר לסידור עברי (א'-ב')
@@ -38,7 +39,7 @@ async generateMasav(req, res) {
   let htmlPath = path.join(process.cwd(), "tmp", "masavReport.html");
 
   try {
-    const { payments, companyInfo, executionDate } = req.body;
+    const { payments, companyInfo, executionDate, invoiceIds } = req.body;
 
     // יצירת שם קובץ עם תאריך בפורמט DD-MM-YYYY
     const fileDate = executionDate; // YYYY-MM-DD
@@ -104,6 +105,40 @@ async generateMasav(req, res) {
 
     const zipContent = await zip.generateAsync({ type: "nodebuffer" });
 
+    // ✅ שמירת היסטוריה
+    try {
+      const totalAmount = sortedPayments.reduce((sum, p) => sum + (p.amount || 0), 0);
+      const fileName = `זיכוייים ${formattedDate}.zip`;
+
+      await MasavHistory.create({
+        executionDate: new Date(`${year}-${month}-${day}`),
+        generatedBy: {
+          userId: req.user?._id || null,
+          userName: req.user?.username || req.user?.name || "לא ידוע",
+        },
+        companyInfo,
+        payments: sortedPayments.map(p => ({
+          supplierName: p.supplierName,
+          bankNumber: p.bankNumber,
+          branchNumber: p.branchNumber,
+          accountNumber: p.accountNumber,
+          amount: p.amount,
+          internalId: p.internalId,
+          invoiceNumbers: p.invoiceNumbers,
+          projectNames: p.projectNames,
+          bankName: p.bankName,
+        })),
+        invoiceIds: invoiceIds || [],
+        totalAmount,
+        totalPayments: sortedPayments.length,
+        fileName,
+        masavFileBase64: txtBuffer.toString("base64"),
+        pdfFileBase64: pdfBuffer.toString("base64"),
+      });
+    } catch (historyErr) {
+      console.error("Failed to save MASAV history:", historyErr);
+    }
+
     // קידוד UTF-8 לשם הקובץ בעברית
     const fileName = `זיכוייים ${formattedDate}.zip`;
     const encodedFileName = encodeURIComponent(fileName);
@@ -141,6 +176,62 @@ async generateMasav(req, res) {
       }, 100);
     }
 
+  }
+},
+
+// ✅ רשימת היסטוריית מסב
+async getMasavHistory(req, res) {
+  try {
+    const history = await MasavHistory.find()
+      .select("-masavFileBase64 -pdfFileBase64")
+      .sort({ generatedAt: -1 })
+      .lean();
+
+    res.json({ success: true, data: history });
+  } catch (err) {
+    console.error("Error fetching MASAV history:", err);
+    res.status(500).json({ error: err.message });
+  }
+},
+
+// ✅ הורדת קובץ מסב מההיסטוריה
+async downloadMasavHistory(req, res) {
+  try {
+    const { id } = req.params;
+    const record = await MasavHistory.findById(id);
+
+    if (!record) {
+      return res.status(404).json({ error: "רשומת מסב לא נמצאה" });
+    }
+
+    const JSZip = (await import("jszip")).default;
+    const zip = new JSZip();
+
+    // שחזור הקבצים מ-base64
+    if (record.masavFileBase64) {
+      const txtBuffer = Buffer.from(record.masavFileBase64, "base64");
+      const dateStr = record.fileName?.replace("זיכוייים ", "").replace(".zip", "") || "unknown";
+      zip.file(`זיכוייים ${dateStr}.txt`, txtBuffer);
+    }
+
+    if (record.pdfFileBase64) {
+      const pdfBuffer = Buffer.from(record.pdfFileBase64, "base64");
+      const dateStr = record.fileName?.replace("זיכוייים ", "").replace(".zip", "") || "unknown";
+      zip.file(`זיכוייים (סיכום) ${dateStr}.pdf`, pdfBuffer);
+    }
+
+    const zipContent = await zip.generateAsync({ type: "nodebuffer" });
+
+    const encodedFileName = encodeURIComponent(record.fileName || "masav.zip");
+    res.writeHead(200, {
+      "Content-Type": "application/zip",
+      "Content-Disposition": `attachment; filename*=UTF-8''${encodedFileName}`,
+    });
+
+    res.end(zipContent);
+  } catch (err) {
+    console.error("Error downloading MASAV history:", err);
+    if (!res.headersSent) res.status(500).json({ error: err.message });
   }
 }
 };

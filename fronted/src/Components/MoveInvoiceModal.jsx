@@ -85,18 +85,37 @@ export default function MoveInvoiceModal({
       return;
     }
 
-    // אתחול הסכומים - ניתן סכום ברירת מחדל שווה לכל הפרויקטים
-    const defaultAmount = Math.floor(invoice.totalAmount / selectedProjectIds.length);
+    // שימוש בסכומים המקוריים מהחשבונית אם קיימים
     const amounts = {};
-    selectedProjectIds.forEach((id, index) => {
-      // לפרויקט האחרון נותנים את השארית
-      if (index === selectedProjectIds.length - 1) {
-        const sumSoFar = Object.values(amounts).reduce((a, b) => a + b, 0);
-        amounts[id] = invoice.totalAmount - sumSoFar;
+    let hasExistingAmounts = false;
+
+    selectedProjectIds.forEach((id) => {
+      const existingProject = invoice.projects?.find(p => {
+        const pid = p.projectId?._id || p.projectId;
+        return String(pid) === String(id);
+      });
+
+      if (existingProject && existingProject.sum > 0) {
+        amounts[id] = existingProject.sum;
+        hasExistingAmounts = true;
       } else {
-        amounts[id] = defaultAmount;
+        amounts[id] = 0;
       }
     });
+
+    // אם אין סכומים מקוריים (הכל פרויקטים חדשים) - חלוקה שווה
+    if (!hasExistingAmounts) {
+      const defaultAmount = Math.floor(invoice.totalAmount / selectedProjectIds.length);
+      selectedProjectIds.forEach((id, index) => {
+        if (index === selectedProjectIds.length - 1) {
+          const sumSoFar = Object.values(amounts).reduce((a, b) => a + b, 0);
+          amounts[id] = invoice.totalAmount - sumSoFar;
+        } else {
+          amounts[id] = defaultAmount;
+        }
+      });
+    }
+
     setProjectAmounts(amounts);
     setStep(2);
   };

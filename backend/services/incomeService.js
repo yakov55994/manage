@@ -26,7 +26,7 @@ export default {
       })
       .populate("linkedSalaries", "employeeName totalAmount finalAmount month year")
       .populate("linkedOrders", "orderNumber projectName sum status")
-      .sort({ createdAt: -1 });
+      .sort({ date: -1 });
 
     return incomes;
   },
@@ -150,7 +150,7 @@ export default {
       .populate("invoiceId", "invoiceNumber projectName")
       .populate("supplierId", "name")
       .populate("linkedIncomeId", "description amount date")
-      .sort({ createdAt: -1 })
+      .sort({ date: -1 })
       .limit(100);
 
     return incomes;

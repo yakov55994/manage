@@ -298,7 +298,11 @@ const InvoiceDetailsPage = () => {
                   ? "שולם"
                   : invoice.paid === "יצא לתשלום"
                     ? "יצא לתשלום"
-                    : "לא שולם"
+                    : invoice.paid === "לא לתשלום"
+                      ? "לא לתשלום"
+                      : invoice.paid ==="לא שולם" 
+                      ? "לא שולם"
+                      : ""
               }
             />
 

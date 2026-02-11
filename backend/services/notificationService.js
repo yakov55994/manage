@@ -1,7 +1,7 @@
 import mongoose from "mongoose";
 import Notification from "../models/Notification.js";
 import User from "../models/User.js";
-import { emitToUser, emitToAdmins } from "../config/socket.js";
+import { emitToUser, emitToAdmins, emitToAll } from "../config/socket.js";
 import { sendPushNotification } from "./pushService.js";
 
 const notificationService = {
@@ -356,8 +356,8 @@ const notificationService = {
       // מוחקים את כל ההתראות בקבוצה
       const result = await Notification.deleteMany({ groupId: notification.groupId });
 
-      // מעדכנים את כל המנהלים
-      emitToAdmins("notification:group-deleted", {
+      // מעדכנים את כל המשתמשים המחוברים
+      emitToAll("notification:group-deleted", {
         groupId: notification.groupId,
         notificationId
       });

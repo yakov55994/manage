@@ -290,8 +290,8 @@ const CreateInvoice = () => {
         }
       }
 
-      // ולידציה: סכום כולל מול סכומי הפרויקטים
-      if (declaredTotal !== "" && Number(declaredTotal) > 0) {
+      // ולידציה: סכום כולל מול סכומי הפרויקטים - רק כשיש יותר מפרויקט אחד
+      if (rows.length > 1 && declaredTotal !== "" && Number(declaredTotal) > 0) {
         const rowsTotal = rows.reduce((acc, r) => acc + Number(r.sum || 0), 0);
         if (Math.abs(rowsTotal - Number(declaredTotal)) > 0.01) {
           return toast.error("סכומי הפרויקטים לא תואמים את הסכום הכולל שהוזן");
