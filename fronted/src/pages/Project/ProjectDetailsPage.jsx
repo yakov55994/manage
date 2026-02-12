@@ -98,6 +98,7 @@ const ProjectDetailsPage = () => {
   const [loadingInvoices, setLoadingInvoices] = useState(true);
   const [loadingSalaries, setLoadingSalaries] = useState(true);
   const [exportLoading, setExportLoading] = useState(false);
+  const [kartesetLoading, setKartesetLoading] = useState(false);
 
   useEffect(() => {
     if (loading) return;
@@ -574,6 +575,31 @@ const ProjectDetailsPage = () => {
     }
   };
 
+  const handleExportKarteset = async () => {
+    try {
+      setKartesetLoading(true);
+      const response = await api.post(
+        "/karteset/project",
+        { projectId: project._id },
+        { responseType: "blob" }
+      );
+
+      const url = window.URL.createObjectURL(new Blob([response.data]));
+      const link = document.createElement("a");
+      link.href = url;
+      link.download = `כרטסת-${project.name}.pdf`;
+      link.click();
+      window.URL.revokeObjectURL(url);
+
+      toast.success("כרטסת פרויקט הורדה בהצלחה!");
+    } catch (err) {
+      console.error("Export karteset error:", err);
+      toast.error("שגיאה ביצירת כרטסת פרויקט");
+    } finally {
+      setKartesetLoading(false);
+    }
+  };
+
   // פרויקט ספציפי מתוך החשבונית
 
   const hasNonSalaryInvoices = filteredInvoices.some(inv => inv.type !== "salary");
@@ -677,6 +703,16 @@ const ProjectDetailsPage = () => {
                     <span>הוספת חשבונית</span>
                   </button>
                 )}
+
+                {/* כרטסת פרויקט */}
+                <button
+                  onClick={handleExportKarteset}
+                  disabled={kartesetLoading}
+                  className="flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-teal-600 to-emerald-600 text-white font-bold rounded-xl hover:from-teal-700 hover:to-emerald-700 transition-all shadow-xl shadow-teal-500/30 disabled:opacity-60 disabled:cursor-not-allowed"
+                >
+                  <FileText className="w-4 h-4" />
+                  <span>{kartesetLoading ? "מוריד..." : "כרטסת"}</span>
+                </button>
 
                 {/* הפחתת תקציב - לא למשתמש מוגבל */}
                 {!isSalaryProject && !isLimited && canEditInvoices() && (

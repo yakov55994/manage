@@ -43,6 +43,7 @@ const InvoiceDetailsPage = () => {
   const [confirmOpen, setConfirmOpen] = useState(false);
   const [deleting, setDeleting] = useState(false);
   const [linkedExpenses, setLinkedExpenses] = useState([]);
+  const [linkedIncomes, setLinkedIncomes] = useState([]);
 
   const { user, isAdmin } = useAuth();
 
@@ -116,6 +117,20 @@ const InvoiceDetailsPage = () => {
           setLinkedExpenses(linked);
         } catch (expErr) {
           console.error("שגיאה בטעינת הוצאות משויכות:", expErr);
+        }
+
+        // טען הכנסות משויכות לחשבונית זו
+        try {
+          const incomesRes = await api.get("/incomes");
+          const allIncomes = incomesRes.data?.data || [];
+          const linkedInc = allIncomes.filter(inc =>
+            inc.linkedInvoices?.some(inv =>
+              String(inv._id || inv) === String(id)
+            )
+          );
+          setLinkedIncomes(linkedInc);
+        } catch (incErr) {
+          console.error("שגיאה בטעינת הכנסות משויכות:", incErr);
         }
       } catch (err) {
         console.error(err);
@@ -461,6 +476,37 @@ const InvoiceDetailsPage = () => {
 
                     <div className="text-right font-bold text-blue-700">
                       {Number(expense.amount || 0).toLocaleString()} ₪
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* LINKED INCOMES */}
+          {linkedIncomes.length > 0 && (
+            <div className="mb-6 sm:mb-8 md:mb-10">
+              <h2 className="text-2xl font-bold flex items-center gap-2 mb-4">
+                <DollarSign className="w-6 h-6 text-green-600" />
+                הכנסות משויכות
+              </h2>
+
+              <div className="space-y-3">
+                {linkedIncomes.map((income) => (
+                  <div
+                    key={income._id}
+                    className="p-4 rounded-xl border-2 border-green-200 bg-green-50 flex justify-between items-center cursor-pointer hover:bg-green-100 transition-colors"
+                    onClick={() => navigate(`/incomes/${income._id}`)}
+                  >
+                    <div>
+                      <p className="font-bold text-lg">{income.description}</p>
+                      <p className="text-sm text-slate-600">
+                        {formatDate(income.date)}
+                      </p>
+                    </div>
+
+                    <div className="text-right font-bold text-green-700">
+                      {Number(income.amount || 0).toLocaleString()} ₪
                     </div>
                   </div>
                 ))}

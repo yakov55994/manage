@@ -25,6 +25,7 @@ import analyticsRoutes from './routes/analyticsRoutes.js';
 import notificationRoutes from './routes/notificationRoutes.js';
 import exportRoutes from './routes/exportRoutes.js';
 import backupRoutes from './routes/backupRoutes.js';
+import kartesetRoutes from './routes/kartesetRoutes.js';
 import cron from 'node-cron';
 import { createScheduledBackup } from './controller/backupController.js';
 
@@ -163,6 +164,7 @@ app.use('/api/notifications', notificationRoutes);
 // Export routes
 app.use('/api/export', exportRoutes);
 app.use('/api/backup', backupRoutes);
+app.use('/api/karteset', kartesetRoutes);
 
 // Error handler
 app.use((err, req, res, next) => {

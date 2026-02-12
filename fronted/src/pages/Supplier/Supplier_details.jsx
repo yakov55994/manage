@@ -32,6 +32,7 @@ const SupplierDetailsPage = () => {
   const [invoices, setInvoices] = useState([]);
   const [invoicesLoading, setInvoicesLoading] = useState(true);
   const [loading, setLoading] = useState(true);
+  const [kartesetLoading, setKartesetLoading] = useState(false);
 
   const arr = (res) =>
     Array.isArray(res?.data?.data)
@@ -73,6 +74,31 @@ const SupplierDetailsPage = () => {
 
 
 
+
+  const handleExportKarteset = async () => {
+    try {
+      setKartesetLoading(true);
+      const response = await api.post(
+        "/karteset/supplier",
+        { supplierId: id },
+        { responseType: "blob" }
+      );
+
+      const url = window.URL.createObjectURL(new Blob([response.data]));
+      const link = document.createElement("a");
+      link.href = url;
+      link.download = `כרטסת-ספק-${supplier?.name || "supplier"}.pdf`;
+      link.click();
+      window.URL.revokeObjectURL(url);
+
+      toast.success("כרטסת ספק הורדה בהצלחה!");
+    } catch (err) {
+      console.error("Export supplier karteset error:", err);
+      toast.error("שגיאה ביצירת כרטסת ספק");
+    } finally {
+      setKartesetLoading(false);
+    }
+  };
 
   const INTERIM_TYPES = new Set(["ח. עסקה", "ה. עבודה", "ד. תשלום"]);
   const FINAL_TYPES = new Set([
@@ -236,6 +262,14 @@ const SupplierDetailsPage = () => {
                 >
                   <Edit2 className="w-4 h-4" />
                   <span>עריכת ספק</span>
+                </button>
+                <button
+                  onClick={handleExportKarteset}
+                  disabled={kartesetLoading}
+                  className="flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-teal-600 to-emerald-600 text-white font-bold rounded-xl hover:from-teal-700 hover:to-emerald-700 transition-all shadow-xl shadow-teal-500/30 disabled:opacity-60 disabled:cursor-not-allowed"
+                >
+                  <FileText className="w-4 h-4" />
+                  <span>{kartesetLoading ? "מוריד..." : "כרטסת"}</span>
                 </button>
               </div>
             </div>

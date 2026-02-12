@@ -20,6 +20,7 @@ import {
 } from "lucide-react";
 import { useAuth } from "../context/AuthContext.jsx";
 import NotificationCenter from "../Components/notifications/NotificationCenter";
+import MasavHistoryModal from "../Components/MasavHistoryModal";
 
 const Sidebar = () => {
   const [activeDropdown, setActiveDropdown] = useState(null);
@@ -27,6 +28,7 @@ const Sidebar = () => {
   const [closeTimeout, setCloseTimeout] = useState(null);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [mobileActiveGroup, setMobileActiveGroup] = useState(null);
+  const [masavHistoryOpen, setMasavHistoryOpen] = useState(false);
   const navigate = useNavigate();
 
   const { isAdmin, canViewModule, canEditModule, canViewAnyProject, user } = useAuth();
@@ -99,6 +101,12 @@ const Sidebar = () => {
           text: "הצגת חשבוניות",
           path: "/invoices",
           show: isAdmin || canViewModule(null, "invoices"),
+        },
+        {
+          text: "היסטוריית מסב",
+          path: "#masav-history",
+          show: isAdmin || user?.role === "accountant",
+          onClick: () => setMasavHistoryOpen(true),
         },
       ],
     },
@@ -294,15 +302,25 @@ const Sidebar = () => {
                       {/* Dropdown Menu */}
                       {activeDropdown === group.id && (
                         <div className="absolute top-full mt-2 right-0 bg-gray-800 border-2 border-orange-500/50 rounded-xl shadow-2xl shadow-orange-500/20 overflow-hidden w-max min-w-[200px] z-50 animate-fadeIn">
-                          {visibleItems.map((item, index) => (
-                            <Link
-                              key={index}
-                              to={item.path}
-                              className="block px-5 py-3 text-sm font-medium text-gray-300 hover:bg-orange-500 hover:text-white transition-all border-b border-gray-700 last:border-b-0 whitespace-nowrap"
-                            >
-                              {item.text}
-                            </Link>
-                          ))}
+                          {visibleItems.map((item, index) =>
+                            item.onClick ? (
+                              <button
+                                key={index}
+                                onClick={() => { item.onClick(); setActiveDropdown(null); }}
+                                className="block w-full text-right px-5 py-3 text-sm font-medium text-gray-300 hover:bg-orange-500 hover:text-white transition-all border-b border-gray-700 last:border-b-0 whitespace-nowrap"
+                              >
+                                {item.text}
+                              </button>
+                            ) : (
+                              <Link
+                                key={index}
+                                to={item.path}
+                                className="block px-5 py-3 text-sm font-medium text-gray-300 hover:bg-orange-500 hover:text-white transition-all border-b border-gray-700 last:border-b-0 whitespace-nowrap"
+                              >
+                                {item.text}
+                              </Link>
+                            )
+                          )}
                         </div>
                       )}
                     </div>
@@ -409,16 +427,26 @@ const Sidebar = () => {
 
                         {mobileActiveGroup === group.id && (
                           <div className="pr-4 space-y-1">
-                            {visibleItems.map((item, index) => (
-                              <Link
-                                key={index}
-                                to={item.path}
-                                onClick={() => setMobileMenuOpen(false)}
-                                className="block px-4 py-2.5 rounded-lg text-sm text-gray-400 hover:bg-orange-500 hover:text-white transition-all"
-                              >
-                                {item.text}
-                              </Link>
-                            ))}
+                            {visibleItems.map((item, index) =>
+                              item.onClick ? (
+                                <button
+                                  key={index}
+                                  onClick={() => { item.onClick(); setMobileMenuOpen(false); }}
+                                  className="block w-full text-right px-4 py-2.5 rounded-lg text-sm text-gray-400 hover:bg-orange-500 hover:text-white transition-all"
+                                >
+                                  {item.text}
+                                </button>
+                              ) : (
+                                <Link
+                                  key={index}
+                                  to={item.path}
+                                  onClick={() => setMobileMenuOpen(false)}
+                                  className="block px-4 py-2.5 rounded-lg text-sm text-gray-400 hover:bg-orange-500 hover:text-white transition-all"
+                                >
+                                  {item.text}
+                                </Link>
+                              )
+                            )}
                           </div>
                         )}
                       </div>
@@ -429,6 +457,8 @@ const Sidebar = () => {
           </div>
         </div>
       )}
+
+      <MasavHistoryModal open={masavHistoryOpen} onClose={() => setMasavHistoryOpen(false)} />
     </>
   );
 };
