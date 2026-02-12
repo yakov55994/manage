@@ -33,7 +33,7 @@ const NotificationCenter = () => {
       setLoading(false);
     }
   };
-  
+
   useEffect(() => {
     if (!socket) return;
 
@@ -67,20 +67,21 @@ const NotificationCenter = () => {
     };
 
     // כשמנהל אחר מוחק התראה מקבוצה - נמחק גם אצלנו
-    const handleGroupDeleted = ({ groupId, notificationId }) => {
+    const handleGroupDeleted = ({ groupId }) => {
       setNotifications((prev) => {
-        const toRemove = prev.filter((n) => n.groupId === groupId || n._id === notificationId);
-        const newList = prev.filter((n) => n.groupId !== groupId && n._id !== notificationId);
-        // עדכון ספירת ההתראות שלא נקראו
-        const unreadRemoved = toRemove.filter((n) => !n.read).length;
-        setUnreadCount((prevCount) => Math.max(0, prevCount - unreadRemoved));
-        return newList;
+        const updated = prev.filter(n => n.groupId !== groupId);
+
+        setUnreadCount(updated.filter(n => !n.read).length);
+
+        return updated;
       });
     };
 
+
+
     socket.on("notification:new", handleNewNotification);
     socket.on("notification:unread_count", handleUnreadCount);
-    socket.on("notification:group-deleted", handleGroupDeleted);
+    socket.on("notification:deleted", handleGroupDeleted);
 
     return () => {
       socket.off("notification:new", handleNewNotification);
@@ -282,8 +283,8 @@ const NotificationCenter = () => {
                   key={notification._id}
                   onClick={() => handleNotificationClick(notification)}
                   className={`p-4 border-b border-gray-100 cursor-pointer transition-colors ${!notification.read
-                      ? "bg-orange-50 hover:bg-orange-100"
-                      : "hover:bg-gray-50"
+                    ? "bg-orange-50 hover:bg-orange-100"
+                    : "hover:bg-gray-50"
                     }`}
                 >
                   <div className="flex gap-3">

@@ -347,27 +347,20 @@ const notificationService = {
    * מחיקת התראה - מוחק גם לכל המנהלים אם יש groupId
    */
   async deleteNotification(userId, notificationId) {
-    // קודם מחפשים את ההתראה כדי לבדוק אם יש לה groupId
-    const notification = await Notification.findOne({ _id: notificationId, userId });
+    const notification = await Notification.findById(notificationId);
 
     if (!notification) return;
 
-    if (notification.groupId) {
-      // מוחקים את כל ההתראות בקבוצה
-      const result = await Notification.deleteMany({ groupId: notification.groupId });
+    // מוחקים את כל ההתראות מהאירוע
+    const result = await Notification.deleteMany({
+      groupId: notification.groupId
+    });
 
-      // מעדכנים את כל המשתמשים המחוברים
-      emitToAll("notification:group-deleted", {
-        groupId: notification.groupId,
-        notificationId
-      });
+    emitToAll("notification:deleted", {
+      groupId: notification.groupId
+    });
 
-      return { deletedCount: result.deletedCount };
-    } else {
-      // מחיקה רגילה
-      await Notification.findOneAndDelete({ _id: notificationId, userId });
-      return { deletedCount: 1 };
-    }
+    return { deletedCount: result.deletedCount };
   },
 
   /**
