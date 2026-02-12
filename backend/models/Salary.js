@@ -13,6 +13,7 @@ const salarySchema = new mongoose.Schema({
   department: { type: String, default: null }, // מחלקה - אופציונלי
 
   baseAmount: { type: Number, required: true },
+  netAmount: { type: Number, default: null }, // נטו - הסכום שמשוייך לתנועות בנק
   overheadPercent: { type: Number, default: 0 },
   finalAmount: { type: Number, required: true },
 

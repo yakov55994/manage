@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useRef, useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import {
   LayoutDashboard,
@@ -17,8 +17,12 @@ import {
   X,
   DollarSign,
   DownloadCloud,
+  UserCircle,
+  LogOut,
+  LogIn,
 } from "lucide-react";
 import { useAuth } from "../context/AuthContext.jsx";
+import { toast } from "sonner";
 import NotificationCenter from "../Components/notifications/NotificationCenter";
 import MasavHistoryModal from "../Components/MasavHistoryModal";
 
@@ -29,9 +33,36 @@ const Sidebar = () => {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [mobileActiveGroup, setMobileActiveGroup] = useState(null);
   const [masavHistoryOpen, setMasavHistoryOpen] = useState(false);
+  const [avatarOpen, setAvatarOpen] = useState(false);
+  const avatarRef = useRef(null);
   const navigate = useNavigate();
 
-  const { isAdmin, canViewModule, canEditModule, canViewAnyProject, user } = useAuth();
+  const { isAdmin, canViewModule, canEditModule, canViewAnyProject, user, isAuthenticated, logout } = useAuth();
+
+  // סגירת popup אווטאר בלחיצה מחוץ לאלמנט
+  useEffect(() => {
+    const handleClickOutside = (e) => {
+      if (avatarRef.current && !avatarRef.current.contains(e.target)) {
+        setAvatarOpen(false);
+      }
+    };
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
+
+  const handleLogout = async () => {
+    setAvatarOpen(false);
+    const result = await logout();
+    if (result.success) {
+      toast.success("ההתנתקות בוצעה בהצלחה, להתראות 👋", {
+        duration: 5000,
+        className: "sonner-toast success rtl",
+      });
+      navigate("/login");
+    } else {
+      toast.error("שגיאה בהתנתקות");
+    }
+  };
 
   const handleMouseEnter = (groupId) => {
     if (closeTimeout) {
@@ -329,12 +360,52 @@ const Sidebar = () => {
               })}
           </nav>
 
-          {/* חיפוש והתראות - responsive */}
+          {/* חיפוש, התראות ואווטאר - responsive */}
           <div className="flex items-center gap-2 md:gap-3">
-            {isAdmin &&
-              < NotificationCenter />
-            }
+            {/* אווטאר משתמש */}
+            <div className="relative" ref={avatarRef}>
+              <button
+                onClick={() => {
+                  if (!isAuthenticated) {
+                    navigate("/login");
+                  } else {
+                    setAvatarOpen(!avatarOpen);
+                  }
+                }}
+                className={`relative flex items-center justify-center w-9 h-9 md:w-10 md:h-10 rounded-full border-2 transition-all hover:scale-105 ${
+                  isAuthenticated
+                    ? "border-green-500 bg-green-500/20 hover:bg-green-500/30"
+                    : "border-red-500 bg-red-500/20 hover:bg-red-500/30"
+                }`}
+              >
+                <UserCircle className={`w-5 h-5 md:w-6 md:h-6 ${isAuthenticated ? "text-green-400" : "text-red-400"}`} />
+                <div className={`absolute bottom-0 right-0 w-2.5 h-2.5 rounded-full border-2 border-gray-900 ${isAuthenticated ? "bg-green-500" : "bg-red-500"}`} />
+              </button>
 
+              {/* Popup אווטאר */}
+              {avatarOpen && isAuthenticated && (
+                <div className="absolute top-full mt-2 left-0 bg-gray-800 border-2 border-orange-500/50 rounded-xl shadow-2xl shadow-orange-500/20 overflow-hidden w-max min-w-[200px] z-50 animate-fadeIn">
+                  <div className="px-5 py-3 border-b border-gray-700">
+                    <div className="text-sm font-bold text-white">{user?.username}</div>
+                    <div className="flex items-center gap-2 mt-1">
+                      <div className="w-2 h-2 rounded-full bg-green-500" />
+                      <span className="text-xs text-green-400">מחובר/ת</span>
+                    </div>
+                  </div>
+                  <button
+                    onClick={handleLogout}
+                    className="w-full flex items-center gap-2 px-5 py-3 text-sm font-medium text-red-400 hover:bg-red-500/20 transition-all"
+                  >
+                    <LogOut size={16} />
+                    <span>התנתקות</span>
+                  </button>
+                </div>
+              )}
+            </div>
+
+            {isAdmin &&
+              <NotificationCenter />
+            }
 
             <div className="relative">
               <input

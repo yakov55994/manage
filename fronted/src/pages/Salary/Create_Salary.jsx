@@ -29,8 +29,9 @@ const CreateSalary = () => {
     projectId: projectIdFromUrl || "",
     employeeName: "",
     baseAmount: "",
+    netAmount: "",
     overheadPercent: 0,
-    department: "", // מחלקה - לא חובה
+    department: "",
   });
 
   // ============================
@@ -100,9 +101,10 @@ const CreateSalary = () => {
         projectId: form.projectId,
         employeeName: form.employeeName,
         baseAmount: parseFloat(form.baseAmount),
+        netAmount: form.netAmount ? parseFloat(form.netAmount) : null,
         overheadPercent: parseFloat(form.overheadPercent) || 0,
         finalAmount: finalAmount,
-        department: form.department || null, // מחלקה אופציונלית
+        department: form.department || null,
       };
 
       await api.post("/salaries", payload);
@@ -235,23 +237,39 @@ const CreateSalary = () => {
                 />
               </div>
 
-              {/* Base Amount */}
-              <div>
-                <label className="flex items-center gap-2 text-sm font-bold text-slate-700 mb-2">
-                  <DollarSign className="w-4 h-4 text-orange-600" />
-                  סכום ברוטו *
-                </label>
-                <input
-                  // type="number"
-                  name="baseAmount"
-                  value={form.baseAmount}
-                  onChange={handleChange}
-                  required
-                  min="0"
-                  step="0.01"
-                  placeholder="0.00"
-                  className="w-full px-4 py-3 rounded-xl border-2 border-orange-200 focus:border-orange-500 focus:ring-2 focus:ring-orange-200 transition-all text-right"
-                />
+              {/* Base Amount + Net Amount */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <label className="flex items-center gap-2 text-sm font-bold text-slate-700 mb-2">
+                    <DollarSign className="w-4 h-4 text-orange-600" />
+                    סכום ברוטו *
+                  </label>
+                  <input
+                    name="baseAmount"
+                    value={form.baseAmount}
+                    onChange={handleChange}
+                    required
+                    min="0"
+                    step="0.01"
+                    placeholder="0.00"
+                    className="w-full px-4 py-3 rounded-xl border-2 border-orange-200 focus:border-orange-500 focus:ring-2 focus:ring-orange-200 transition-all text-right"
+                  />
+                </div>
+                <div>
+                  <label className="flex items-center gap-2 text-sm font-bold text-slate-700 mb-2">
+                    <DollarSign className="w-4 h-4 text-amber-600" />
+                    סכום נטו (אופציונלי)
+                  </label>
+                  <input
+                    name="netAmount"
+                    value={form.netAmount}
+                    onChange={handleChange}
+                    min="0"
+                    step="0.01"
+                    placeholder="0.00"
+                    className="w-full px-4 py-3 rounded-xl border-2 border-orange-200 focus:border-orange-500 focus:ring-2 focus:ring-orange-200 transition-all text-right"
+                  />
+                </div>
               </div>
 
               {/* Overhead Percent */}

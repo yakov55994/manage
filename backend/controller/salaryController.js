@@ -3,6 +3,7 @@ import Project from "../models/Project.js";
 import { recalculateRemainingBudget } from "../services/invoiceService.js";
 import { generateSalaryExportPDF } from "../services/salaryPdfService.js";
 import fs from "fs";
+import xlsx from "xlsx";
 
 // =======================================================
 // CREATE SALARY
@@ -13,6 +14,7 @@ export async function createSalary(req, res) {
       projectId,
       employeeName,
       baseAmount,
+      netAmount,
       overheadPercent,
       department,
     } = req.body;
@@ -32,6 +34,7 @@ export async function createSalary(req, res) {
       employeeName,
       department: department || null,
       baseAmount,
+      netAmount: netAmount || null,
       overheadPercent: overheadPercent || 0,
       finalAmount,
       createdBy: req.user._id,
@@ -102,6 +105,7 @@ export async function updateSalary(req, res) {
       employeeName,
       department,
       baseAmount,
+      netAmount,
       overheadPercent,
       projectId,
     } = req.body;
@@ -114,6 +118,7 @@ export async function updateSalary(req, res) {
     salary.employeeName = employeeName;
     salary.department = department || null;
     salary.baseAmount = baseAmount;
+    salary.netAmount = netAmount !== undefined ? netAmount : salary.netAmount;
     salary.overheadPercent = overheadPercent || 0;
     salary.finalAmount = finalAmount;
 
@@ -223,6 +228,102 @@ export async function exportSalaries(req, res) {
   } catch (err) {
     console.error("❌ EXPORT SALARIES ERROR:", err);
     console.error("Error stack:", err.stack);
+    res.status(500).json({ success: false, error: err.message });
+  }
+}
+
+// =======================================================
+// UPLOAD SALARIES FROM EXCEL
+// =======================================================
+export async function uploadSalariesExcel(req, res) {
+  try {
+    if (!req.file) {
+      return res.status(400).json({ success: false, error: "לא נבחר קובץ" });
+    }
+
+    const { projectId, overheadPercent, department } = req.body;
+
+    if (!projectId) {
+      return res.status(400).json({ success: false, error: "יש לבחור פרויקט" });
+    }
+
+    const project = await Project.findById(projectId);
+    if (!project) {
+      return res.status(404).json({ success: false, error: "פרויקט לא נמצא" });
+    }
+
+    // קריאת קובץ אקסל
+    const workbook = xlsx.read(req.file.buffer, { type: "buffer" });
+    const sheetName = workbook.SheetNames[0];
+    const worksheet = workbook.Sheets[sheetName];
+    const rows = xlsx.utils.sheet_to_json(worksheet, { header: 1 });
+
+    // מציאת שורת הכותרות
+    let headerRowIndex = -1;
+    for (let i = 0; i < Math.min(rows.length, 10); i++) {
+      const row = rows[i];
+      if (row && row.some(cell => typeof cell === "string" && (cell.includes("שם") || cell.includes("תשלומים") || cell.includes("נטו")))) {
+        headerRowIndex = i;
+        break;
+      }
+    }
+
+    if (headerRowIndex === -1) {
+      return res.status(400).json({
+        success: false,
+        error: "לא נמצאו כותרות מתאימות בקובץ. יש לוודא שהקובץ מכיל עמודות: שם, סה\"כ תשלומים, נטו לתשלום",
+      });
+    }
+
+    const overhead = parseFloat(overheadPercent) || 0;
+    const createdSalaries = [];
+    let skippedRows = 0;
+
+    for (let i = headerRowIndex + 1; i < rows.length; i++) {
+      const row = rows[i];
+      if (!row || row.length === 0) continue;
+
+      const name = row[0];
+      const baseAmount = parseFloat(row[1]);
+      const netAmount = parseFloat(row[2]);
+
+      // דלג על שורות ריקות, סיכומים, או שורות לא תקינות
+      if (!name || typeof name !== "string" || name.trim() === "") continue;
+      if (name.includes("סה\"כ") || name.includes("סהכ")) continue;
+      if (isNaN(baseAmount) && isNaN(netAmount)) {
+        skippedRows++;
+        continue;
+      }
+
+      const finalAmount = (baseAmount || 0) + ((baseAmount || 0) * overhead / 100);
+
+      const salary = await Salary.create({
+        projectId,
+        employeeName: name.trim(),
+        department: department || null,
+        baseAmount: baseAmount || 0,
+        netAmount: isNaN(netAmount) ? null : netAmount,
+        overheadPercent: overhead,
+        finalAmount,
+        createdBy: req.user._id,
+        createdByName: req.user.username || req.user.name,
+      });
+
+      createdSalaries.push(salary);
+    }
+
+    await recalculateRemainingBudget(projectId);
+
+    res.status(201).json({
+      success: true,
+      message: `נוצרו ${createdSalaries.length} משכורות בהצלחה${skippedRows > 0 ? ` (${skippedRows} שורות דולגו)` : ""}`,
+      data: {
+        created: createdSalaries.length,
+        skipped: skippedRows,
+      },
+    });
+  } catch (err) {
+    console.error("UPLOAD SALARIES EXCEL ERROR:", err);
     res.status(500).json({ success: false, error: err.message });
   }
 }

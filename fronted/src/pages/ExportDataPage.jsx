@@ -174,7 +174,7 @@ const ExportDataPage = () => {
     <div className="min-h-screen bg-gradient-to-br from-slate-50 via-orange-50/30 to-amber-50/20 p-4 sm:p-6" dir="rtl">
       <div className="max-w-4xl mx-auto">
         {/* Header */}
-        <div className="bg-gradient-to-r from-slate-800 via-slate-700 to-slate-800 rounded-3xl p-6 sm:p-8 mb-8 shadow-2xl">
+        <div className="bg-gradient-to-r from-orange-600 via-amber-600 to-orange-600 rounded-3xl p-6 sm:p-8 mb-8 shadow-2xl shadow-orange-500/20">
           <div className="flex items-center gap-4">
             <div className="p-3 bg-gradient-to-br from-orange-400 to-amber-500 rounded-2xl shadow-lg">
               <DownloadCloud className="w-8 h-8 text-white" />
@@ -183,7 +183,7 @@ const ExportDataPage = () => {
               <h1 className="text-2xl sm:text-3xl font-bold text-white">
                 ייצוא נתונים
               </h1>
-              <p className="text-slate-300 mt-1">
+              <p className="text-orange-100 mt-1">
                 ייצוא כל הנתונים במערכת לקובץ Excel או PDF
               </p>
             </div>
@@ -218,14 +218,14 @@ const ExportDataPage = () => {
         <div className="grid md:grid-cols-2 gap-6">
           {/* Excel Card */}
           <div className="bg-white rounded-3xl shadow-xl border-2 border-orange-100 overflow-hidden hover:shadow-2xl transition-all duration-300">
-            <div className="bg-gradient-to-r from-green-500 to-emerald-600 p-6">
+            <div className="bg-gradient-to-r from-orange-500 to-amber-600 p-6">
               <div className="flex items-center gap-3">
                 <div className="p-3 bg-white/20 rounded-xl">
                   <FileSpreadsheet className="w-8 h-8 text-white" />
                 </div>
                 <div>
                   <h2 className="text-xl font-bold text-white">ייצוא לאקסל</h2>
-                  <p className="text-green-100 text-sm">קובץ xlsx עם גיליונות</p>
+                  <p className="text-orange-100 text-sm">קובץ xlsx עם גיליונות</p>
                 </div>
               </div>
             </div>
@@ -237,27 +237,27 @@ const ExportDataPage = () => {
                 </p>
                 <ul className="text-sm text-slate-500 space-y-1 mr-4">
                   <li className="flex items-center gap-2">
-                    <span className="w-2 h-2 bg-green-500 rounded-full"></span>
+                    <span className="w-2 h-2 bg-orange-500 rounded-full"></span>
                     פרויקטים
                   </li>
                   <li className="flex items-center gap-2">
-                    <span className="w-2 h-2 bg-green-500 rounded-full"></span>
+                    <span className="w-2 h-2 bg-orange-500 rounded-full"></span>
                     חשבוניות
                   </li>
                   <li className="flex items-center gap-2">
-                    <span className="w-2 h-2 bg-green-500 rounded-full"></span>
+                    <span className="w-2 h-2 bg-orange-500 rounded-full"></span>
                     הזמנות
                   </li>
                   <li className="flex items-center gap-2">
-                    <span className="w-2 h-2 bg-green-500 rounded-full"></span>
+                    <span className="w-2 h-2 bg-orange-500 rounded-full"></span>
                     ספקים
                   </li>
                   <li className="flex items-center gap-2">
-                    <span className="w-2 h-2 bg-green-500 rounded-full"></span>
+                    <span className="w-2 h-2 bg-orange-500 rounded-full"></span>
                     משכורות
                   </li>
                   <li className="flex items-center gap-2">
-                    <span className="w-2 h-2 bg-green-500 rounded-full"></span>
+                    <span className="w-2 h-2 bg-orange-500 rounded-full"></span>
                     הכנסות והוצאות
                   </li>
                 </ul>
@@ -266,7 +266,7 @@ const ExportDataPage = () => {
               <button
                 onClick={handleExportExcel}
                 disabled={loadingExcel || loadingPDF}
-                className="w-full py-4 bg-gradient-to-r from-green-500 to-emerald-600 text-white rounded-2xl font-bold text-lg hover:from-green-600 hover:to-emerald-700 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-300 shadow-lg hover:shadow-xl flex items-center justify-center gap-3"
+                className="w-full py-4 bg-gradient-to-r from-orange-500 to-amber-600 text-white rounded-2xl font-bold text-lg hover:from-orange-600 hover:to-amber-700 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-300 shadow-lg hover:shadow-xl flex items-center justify-center gap-3"
               >
                 {loadingExcel ? (
                   <>
@@ -285,14 +285,14 @@ const ExportDataPage = () => {
 
           {/* PDF Card */}
           <div className="bg-white rounded-3xl shadow-xl border-2 border-orange-100 overflow-hidden hover:shadow-2xl transition-all duration-300">
-            <div className="bg-gradient-to-r from-red-500 to-rose-600 p-6">
+            <div className="bg-gradient-to-r from-amber-500 to-yellow-600 p-6">
               <div className="flex items-center gap-3">
                 <div className="p-3 bg-white/20 rounded-xl">
                   <FileText className="w-8 h-8 text-white" />
                 </div>
                 <div>
                   <h2 className="text-xl font-bold text-white">ייצוא ל-PDF</h2>
-                  <p className="text-red-100 text-sm">דוח סיכום להדפסה</p>
+                  <p className="text-amber-100 text-sm">דוח סיכום להדפסה</p>
                 </div>
               </div>
             </div>
@@ -304,27 +304,27 @@ const ExportDataPage = () => {
                 </p>
                 <ul className="text-sm text-slate-500 space-y-1 mr-4">
                   <li className="flex items-center gap-2">
-                    <span className="w-2 h-2 bg-red-500 rounded-full"></span>
+                    <span className="w-2 h-2 bg-amber-500 rounded-full"></span>
                     סיכום כמויות נתונים
                   </li>
                   <li className="flex items-center gap-2">
-                    <span className="w-2 h-2 bg-red-500 rounded-full"></span>
+                    <span className="w-2 h-2 bg-amber-500 rounded-full"></span>
                     סיכום פיננסי
                   </li>
                   <li className="flex items-center gap-2">
-                    <span className="w-2 h-2 bg-red-500 rounded-full"></span>
+                    <span className="w-2 h-2 bg-amber-500 rounded-full"></span>
                     סה"כ תקציבים
                   </li>
                   <li className="flex items-center gap-2">
-                    <span className="w-2 h-2 bg-red-500 rounded-full"></span>
+                    <span className="w-2 h-2 bg-amber-500 rounded-full"></span>
                     סה"כ חשבוניות
                   </li>
                   <li className="flex items-center gap-2">
-                    <span className="w-2 h-2 bg-red-500 rounded-full"></span>
+                    <span className="w-2 h-2 bg-amber-500 rounded-full"></span>
                     סה"כ הזמנות
                   </li>
                   <li className="flex items-center gap-2">
-                    <span className="w-2 h-2 bg-red-500 rounded-full"></span>
+                    <span className="w-2 h-2 bg-amber-500 rounded-full"></span>
                     סה"כ משכורות
                   </li>
                 </ul>
@@ -333,7 +333,7 @@ const ExportDataPage = () => {
               <button
                 onClick={handleExportPDF}
                 disabled={loadingExcel || loadingPDF}
-                className="w-full py-4 bg-gradient-to-r from-red-500 to-rose-600 text-white rounded-2xl font-bold text-lg hover:from-red-600 hover:to-rose-700 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-300 shadow-lg hover:shadow-xl flex items-center justify-center gap-3"
+                className="w-full py-4 bg-gradient-to-r from-amber-500 to-yellow-600 text-white rounded-2xl font-bold text-lg hover:from-amber-600 hover:to-yellow-700 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-300 shadow-lg hover:shadow-xl flex items-center justify-center gap-3"
               >
                 {loadingPDF ? (
                   <>
@@ -353,7 +353,7 @@ const ExportDataPage = () => {
 
         {/* Backup Card */}
         <div className="mt-6 bg-white rounded-3xl shadow-xl border-2 border-orange-100 overflow-hidden">
-          <div className="bg-gradient-to-r from-blue-500 to-indigo-600 p-6">
+          <div className="bg-gradient-to-r from-orange-600 to-amber-700 p-6">
             <div className="flex items-center gap-3">
               <div className="p-3 bg-white/20 rounded-xl">
                 <Database className="w-8 h-8 text-white" />
@@ -362,7 +362,7 @@ const ExportDataPage = () => {
                 <h2 className="text-xl font-bold text-white">
                   גיבוי מסד נתונים
                 </h2>
-                <p className="text-blue-100 text-sm">
+                <p className="text-orange-100 text-sm">
                   קבצי Excel + קבצים מ-Cloudinary בקובץ ZIP
                 </p>
               </div>
@@ -371,16 +371,16 @@ const ExportDataPage = () => {
           <div className="p-6">
             {/* סטטוס גיבוי אחרון */}
             {backupStatus?.lastBackup && (
-              <div className="mb-4 p-3 bg-blue-50 border border-blue-200 rounded-xl flex items-center gap-3">
-                <CheckCircle2 className="w-5 h-5 text-blue-600 flex-shrink-0" />
+              <div className="mb-4 p-3 bg-orange-50 border border-orange-200 rounded-xl flex items-center gap-3">
+                <CheckCircle2 className="w-5 h-5 text-orange-600 flex-shrink-0" />
                 <div className="text-sm">
-                  <span className="font-bold text-blue-800">גיבוי אחרון: </span>
-                  <span className="text-blue-700">
+                  <span className="font-bold text-orange-800">גיבוי אחרון: </span>
+                  <span className="text-orange-700">
                     {new Date(backupStatus.lastBackup.date).toLocaleString("he-IL")}
                     {" "}({backupStatus.lastBackup.type === "scheduled" ? "אוטומטי" : "ידני"})
                   </span>
                   {backupStatus.lastBackup.recordCounts && (
-                    <span className="text-blue-600 mr-2">
+                    <span className="text-orange-600 mr-2">
                       - {Object.values(backupStatus.lastBackup.recordCounts).reduce((a, b) => a + b, 0)} רשומות
                       {backupStatus.lastBackup.filesCount > 0 && `, ${backupStatus.lastBackup.filesCount} קבצים`}
                     </span>
@@ -407,7 +407,7 @@ const ExportDataPage = () => {
                   "התראות",
                 ].map((item) => (
                   <li key={item} className="flex items-center gap-2">
-                    <span className="w-2 h-2 bg-blue-500 rounded-full"></span>
+                    <span className="w-2 h-2 bg-orange-500 rounded-full"></span>
                     {item}
                   </li>
                 ))}
@@ -418,7 +418,7 @@ const ExportDataPage = () => {
               <button
                 onClick={handleBackup}
                 disabled={loadingBackup || loadingLatest}
-                className="flex-1 py-4 bg-gradient-to-r from-blue-500 to-indigo-600 text-white rounded-2xl font-bold text-lg hover:from-blue-600 hover:to-indigo-700 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-300 shadow-lg hover:shadow-xl flex items-center justify-center gap-3"
+                className="flex-1 py-4 bg-gradient-to-r from-orange-600 to-amber-700 text-white rounded-2xl font-bold text-lg hover:from-orange-700 hover:to-amber-800 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-300 shadow-lg hover:shadow-xl flex items-center justify-center gap-3"
               >
                 {loadingBackup ? (
                   <>

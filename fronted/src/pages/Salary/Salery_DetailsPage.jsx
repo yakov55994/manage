@@ -229,10 +229,21 @@ export default function SalaryDetailsPage() {
               <div className="p-4 rounded-xl bg-gradient-to-br from-amber-50 to-yellow-50 border-2 border-amber-200">
                 <div className="flex items-center gap-3 mb-2">
                   <DollarSign className="w-5 h-5 text-amber-600" />
-                  <span className="text-sm font-bold text-amber-600">שכר בסיס</span>
+                  <span className="text-sm font-bold text-amber-600">שכר בסיס (ברוטו)</span>
                 </div>
                 <p className="text-2xl font-black bg-gradient-to-r from-amber-600 to-yellow-600 bg-clip-text text-transparent">
                   {formatCurrency(salary.baseAmount)}
+                </p>
+              </div>
+
+              {/* Net Amount */}
+              <div className="p-4 rounded-xl bg-gradient-to-br from-amber-50 to-orange-50 border-2 border-amber-200">
+                <div className="flex items-center gap-3 mb-2">
+                  <DollarSign className="w-5 h-5 text-amber-600" />
+                  <span className="text-sm font-bold text-amber-600">נטו</span>
+                </div>
+                <p className="text-2xl font-black bg-gradient-to-r from-amber-600 to-orange-600 bg-clip-text text-transparent">
+                  {salary.netAmount ? formatCurrency(salary.netAmount) : "—"}
                 </p>
               </div>
 
@@ -270,21 +281,21 @@ export default function SalaryDetailsPage() {
 
             {/* הוצאות משויכות */}
             {linkedExpenses.length > 0 && (
-              <div className="mt-6 p-4 rounded-xl bg-gradient-to-br from-blue-50 to-cyan-50 border-2 border-blue-200">
+              <div className="mt-6 p-4 rounded-xl bg-gradient-to-br from-orange-50 to-amber-50 border-2 border-orange-200">
                 <div className="flex items-center gap-3 mb-4">
-                  <Link2 className="w-5 h-5 text-blue-600" />
-                  <span className="text-lg font-bold text-blue-800">הוצאות משויכות</span>
+                  <Link2 className="w-5 h-5 text-orange-600" />
+                  <span className="text-lg font-bold text-orange-800">הוצאות משויכות</span>
                 </div>
                 <div className="space-y-2">
                   {linkedExpenses.map((expense) => (
                     <div
                       key={expense._id}
-                      className="p-3 bg-white rounded-xl border border-blue-200 cursor-pointer hover:bg-blue-50 transition-colors"
+                      className="p-3 bg-white rounded-xl border border-orange-200 cursor-pointer hover:bg-orange-50 transition-colors"
                       onClick={() => navigate(`/expense/${expense._id}`)}
                     >
                       <div className="flex items-center justify-between">
                         <div className="flex items-center gap-3">
-                          <TrendingDown className="w-4 h-4 text-blue-600" />
+                          <TrendingDown className="w-4 h-4 text-orange-600" />
                           <div>
                             <span className="font-bold text-slate-900">
                               {expense.description}
@@ -294,7 +305,7 @@ export default function SalaryDetailsPage() {
                             </span>
                           </div>
                         </div>
-                        <span className="font-bold text-blue-600">
+                        <span className="font-bold text-orange-600">
                           {formatCurrency(expense.amount)}
                         </span>
                       </div>

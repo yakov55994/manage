@@ -16,6 +16,9 @@ import {
   Trash2,
   Download,
   Link,
+  Upload,
+  FileSpreadsheet,
+  Percent,
 } from "lucide-react";
 import { toast } from "sonner";
 import ProjectSelector from "../../Components/ProjectSelector";
@@ -32,6 +35,15 @@ export default function View_Salaries() {
   const [exportLoading, setExportLoading] = useState(false);
   const [deleteModal, setDeleteModal] = useState({ open: false, salaryId: null, salaryName: "" });
   const [allExpenses, setAllExpenses] = useState([]);
+
+  // Upload Excel state
+  const [uploadOpen, setUploadOpen] = useState(false);
+  const [uploadFile, setUploadFile] = useState(null);
+  const [uploadProjectId, setUploadProjectId] = useState("");
+  const [uploadOverhead, setUploadOverhead] = useState(0);
+  const [uploadDepartment, setUploadDepartment] = useState("");
+  const [uploadLoading, setUploadLoading] = useState(false);
+  const [uploadResult, setUploadResult] = useState(null);
 
   useEffect(() => {
     fetchSalaries();
@@ -238,6 +250,49 @@ export default function View_Salaries() {
     }
   };
 
+  const handleUploadExcel = async () => {
+    if (!uploadFile) {
+      toast.error("יש לבחור קובץ אקסל", { className: "sonner-toast error rtl" });
+      return;
+    }
+    if (!uploadProjectId) {
+      toast.error("יש לבחור פרויקט", { className: "sonner-toast error rtl" });
+      return;
+    }
+
+    try {
+      setUploadLoading(true);
+      setUploadResult(null);
+      const formData = new FormData();
+      formData.append("file", uploadFile);
+      formData.append("projectId", uploadProjectId);
+      formData.append("overheadPercent", uploadOverhead);
+      formData.append("department", uploadDepartment);
+
+      const res = await api.post("/salaries/upload-excel", formData, {
+        headers: { "Content-Type": "multipart/form-data" },
+      });
+
+      const msg = res.data.message || "הקובץ הועלה בהצלחה!";
+      setUploadResult({ success: true, message: msg });
+      toast.success(msg, { className: "sonner-toast success rtl" });
+      setUploadFile(null);
+      setUploadProjectId("");
+      setUploadOverhead(0);
+      setUploadDepartment("");
+      const fileInput = document.getElementById("salary-excel-file");
+      if (fileInput) fileInput.value = "";
+      fetchSalaries();
+    } catch (err) {
+      console.error("Upload error:", err);
+      const errMsg = err.response?.data?.error || "שגיאה בהעלאת הקובץ";
+      setUploadResult({ success: false, message: errMsg });
+      toast.error(errMsg, { className: "sonner-toast error rtl" });
+    } finally {
+      setUploadLoading(false);
+    }
+  };
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-orange-50 via-amber-50 to-yellow-50 relative overflow-hidden pt-20 sm:pt-24 md:pt-28 pb-8 sm:pb-12">
       {/* Animated Background */}
@@ -272,9 +327,9 @@ export default function View_Salaries() {
 
         {/* Export Section */}
         <div className="relative mb-4 sm:mb-5 md:mb-6">
-          <div className="absolute -inset-2 bg-gradient-to-r from-emerald-500 via-teal-500 to-cyan-500 rounded-2xl sm:rounded-3xl opacity-10 blur-xl"></div>
+          <div className="absolute -inset-2 bg-gradient-to-r from-orange-500 via-amber-500 to-yellow-500 rounded-2xl sm:rounded-3xl opacity-10 blur-xl"></div>
 
-          <div className="relative bg-white/90 backdrop-blur-xl rounded-2xl sm:rounded-3xl shadow-xl shadow-emerald-500/10 p-4 sm:p-5 md:p-6 border border-white/50">
+          <div className="relative bg-white/90 backdrop-blur-xl rounded-2xl sm:rounded-3xl shadow-xl shadow-orange-500/10 p-4 sm:p-5 md:p-6 border border-white/50">
             <div className="space-y-4">
               <div>
                 <ProjectSelector
@@ -302,6 +357,155 @@ export default function View_Salaries() {
                 </button>
               </div>
             </div>
+          </div>
+        </div>
+
+        {/* Upload Excel Section */}
+        <div className="relative mb-4 sm:mb-5 md:mb-6">
+          <div className="absolute -inset-2 bg-gradient-to-r from-orange-500 via-amber-500 to-yellow-500 rounded-2xl sm:rounded-3xl opacity-10 blur-xl"></div>
+
+          <div className="relative bg-white/90 backdrop-blur-xl rounded-2xl sm:rounded-3xl shadow-xl shadow-orange-500/10 p-4 sm:p-5 md:p-6 border border-white/50">
+            <button
+              onClick={() => setUploadOpen(!uploadOpen)}
+              className="flex items-center gap-2 text-lg font-bold text-slate-900 w-full"
+            >
+              <FileSpreadsheet className="w-5 h-5 text-orange-600" />
+              העלאת משכורות מאקסל
+              <span className={`mr-auto text-orange-500 transition-transform ${uploadOpen ? "rotate-180" : ""}`}>▼</span>
+            </button>
+
+            {uploadOpen && (
+              <div className="mt-4 space-y-4">
+                {/* Project Selector */}
+                <ProjectSelector
+                  projects={projects}
+                  selectedProjectId={uploadProjectId}
+                  onProjectChange={(projectId) => setUploadProjectId(projectId)}
+                  multiSelect={false}
+                  label="פרויקט מקור *"
+                  placeholder="חפש פרויקט..."
+                />
+
+                {/* File Drop Area */}
+                <div>
+                  <input
+                    id="salary-excel-file"
+                    type="file"
+                    accept=".xlsx,.xls"
+                    onChange={(e) => {
+                      const file = e.target.files[0];
+                      if (file) {
+                        const validTypes = [
+                          "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+                          "application/vnd.ms-excel",
+                        ];
+                        if (!validTypes.includes(file.type)) {
+                          toast.error("נא להעלות קובץ Excel בלבד (.xlsx או .xls)");
+                          e.target.value = "";
+                          return;
+                        }
+                        setUploadFile(file);
+                      }
+                    }}
+                    className="hidden"
+                  />
+                  <label
+                    htmlFor="salary-excel-file"
+                    className="flex items-center justify-center gap-3 px-6 py-4 border-2 border-dashed border-orange-300 rounded-xl hover:border-orange-500 hover:bg-orange-50 transition-all cursor-pointer"
+                  >
+                    <Upload className="w-6 h-6 text-orange-500" />
+                    <span className="font-medium text-slate-700">
+                      {uploadFile ? uploadFile.name : "לחץ לבחירת קובץ Excel"}
+                    </span>
+                  </label>
+                  <p className="text-xs text-slate-500 mt-1">
+                    עמודות: שם כולל, סה"כ תשלומים (ברוטו), נטו לתשלום
+                  </p>
+                </div>
+
+                {/* Advanced Options - Collapsed */}
+                <details className="group">
+                  <summary className="flex items-center gap-2 text-sm font-medium text-slate-500 cursor-pointer hover:text-slate-700 transition-colors">
+                    <span className="text-orange-400 group-open:rotate-90 transition-transform">▶</span>
+                    אפשרויות נוספות (תקורה, מחלקה)
+                  </summary>
+                  <div className="mt-3 grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                      <label className="flex items-center gap-2 text-sm font-bold text-slate-700 mb-2">
+                        <Percent className="w-4 h-4 text-orange-600" />
+                        תקורה (%)
+                      </label>
+                      <div className="flex flex-wrap gap-2 mb-2">
+                        {[0, 42, 45, 50].map((p) => (
+                          <button
+                            key={p}
+                            type="button"
+                            onClick={() => setUploadOverhead(p)}
+                            className={`px-3 py-1.5 rounded-lg font-bold text-sm transition-all ${
+                              uploadOverhead == p
+                                ? "bg-orange-600 text-white shadow-lg"
+                                : "bg-orange-100 text-orange-700 hover:bg-orange-200"
+                            }`}
+                          >
+                            {p}%
+                          </button>
+                        ))}
+                      </div>
+                      <input
+                        type="number"
+                        value={uploadOverhead}
+                        onChange={(e) => setUploadOverhead(e.target.value)}
+                        min="0"
+                        max="100"
+                        step="0.01"
+                        className="w-full px-4 py-2.5 border-2 border-orange-200 rounded-xl focus:border-orange-400 focus:outline-none transition-colors"
+                      />
+                    </div>
+                    <div>
+                      <label className="flex items-center gap-2 text-sm font-bold text-slate-700 mb-2">
+                        <Building2 className="w-4 h-4 text-orange-600" />
+                        מחלקה (אופציונלי)
+                      </label>
+                      <input
+                        type="text"
+                        value={uploadDepartment}
+                        onChange={(e) => setUploadDepartment(e.target.value)}
+                        placeholder="הזן שם מחלקה..."
+                        className="w-full px-4 py-2.5 border-2 border-orange-200 rounded-xl focus:border-orange-400 focus:outline-none transition-colors mt-8"
+                      />
+                    </div>
+                  </div>
+                </details>
+
+                {/* Upload Button */}
+                <div className="flex justify-center">
+                  <button
+                    onClick={handleUploadExcel}
+                    disabled={uploadLoading || !uploadFile || !uploadProjectId}
+                    className="flex items-center gap-2 px-8 py-3 bg-gradient-to-r from-orange-500 to-amber-500 text-white font-bold rounded-full hover:from-orange-600 hover:to-amber-600 transition-all shadow-lg disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    <Upload className="w-5 h-5" />
+                    {uploadLoading ? "מעלה..." : "העלה משכורות"}
+                  </button>
+                </div>
+
+                {/* Upload Result */}
+                {uploadResult && (
+                  <div className={`p-4 rounded-xl ${uploadResult.success ? 'bg-green-50 border-2 border-green-200' : 'bg-red-50 border-2 border-red-200'}`}>
+                    <div className="flex items-center gap-3">
+                      {uploadResult.success ? (
+                        <Users className="w-5 h-5 text-green-600" />
+                      ) : (
+                        <Users className="w-5 h-5 text-red-600" />
+                      )}
+                      <span className={`font-bold ${uploadResult.success ? 'text-green-800' : 'text-red-800'}`}>
+                        {uploadResult.message}
+                      </span>
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
           </div>
         </div>
 
@@ -384,37 +588,40 @@ export default function View_Salaries() {
               <>
                 {/* Desktop Table */}
                 <div className="hidden lg:block overflow-x-auto">
-                  <table className="min-w-full text-sm">
+                  <table className="w-full text-sm table-fixed">
                     <thead className="bg-gradient-to-r from-orange-500 via-amber-500 to-yellow-500">
                       <tr>
-                        <th className="px-3 py-3 text-right text-xs font-bold text-white uppercase">
+                        <th className="px-2 py-2.5 text-right text-xs font-bold text-white w-[13%]">
                           שם עובד
                         </th>
-                        <th className="px-3 py-3 text-right text-xs font-bold text-white uppercase">
+                        <th className="px-2 py-2.5 text-right text-xs font-bold text-white w-[7%]">
                           מחלקה
                         </th>
-                        <th className="px-3 py-3 text-right text-xs font-bold text-white uppercase">
+                        <th className="px-2 py-2.5 text-right text-xs font-bold text-white w-[10%]">
                           פרויקט
                         </th>
-                        <th className="px-3 py-3 text-center text-xs font-bold text-white uppercase">
+                        <th className="px-2 py-2.5 text-center text-xs font-bold text-white w-[9%]">
                           ברוטו
                         </th>
-                        <th className="px-3 py-3 text-center text-xs font-bold text-white uppercase">
+                        <th className="px-1 py-2.5 text-center text-xs font-bold text-white w-[8%]">
+                          נטו
+                        </th>
+                        <th className="px-1 py-2.5 text-center text-xs font-bold text-white w-[5%]">
                           תקורה
                         </th>
-                        <th className="px-3 py-3 text-center text-xs font-bold text-white uppercase">
+                        <th className="px-2 py-2.5 text-center text-xs font-bold text-white w-[9%]">
                           סופי
                         </th>
-                        <th className="px-3 py-3 text-center text-xs font-bold text-white uppercase">
+                        <th className="px-2 py-2.5 text-center text-xs font-bold text-white w-[8%]">
                           תאריך
                         </th>
-                        <th className="px-3 py-3 text-right text-xs font-bold text-white uppercase">
+                        <th className="px-2 py-2.5 text-right text-xs font-bold text-white w-[8%]">
                           נוצר ע"י
                         </th>
-                        <th className="px-3 py-3 text-center text-xs font-bold text-white uppercase">
+                        <th className="px-1 py-2.5 text-center text-xs font-bold text-white w-[7%]">
                           שויך
                         </th>
-                        <th className="px-3 py-3 text-center text-xs font-bold text-white uppercase">
+                        <th className="px-1 py-2.5 text-center text-xs font-bold text-white w-[10%]">
                           פעולות
                         </th>
                       </tr>
@@ -428,71 +635,67 @@ export default function View_Salaries() {
                           }`}
                           onClick={() => navigate(`/salaries/${salary._id}`)}
                         >
-                          <td className="px-3 py-2 whitespace-nowrap">
-                            <div className="flex items-center gap-1">
-                              <User className="w-3 h-3 text-orange-500" />
-                              <span className="font-bold text-slate-900 text-sm">
-                                {salary.employeeName}
-                              </span>
-                            </div>
+                          <td className="px-2 py-1.5 truncate">
+                            <span className="font-bold text-slate-900 text-sm">
+                              {salary.employeeName}
+                            </span>
                           </td>
-                          <td className="px-3 py-2 whitespace-nowrap">
-                            <div className="flex items-center gap-1">
-                              <Briefcase className="w-3 h-3 text-amber-500" />
-                              <span className="text-xs text-slate-600">
-                                {salary.department || "—"}
-                              </span>
-                            </div>
+                          <td className="px-2 py-1.5 truncate">
+                            <span className="text-xs text-slate-600">
+                              {salary.department || "—"}
+                            </span>
                           </td>
-                          <td className="px-3 py-2 whitespace-nowrap">
-                            <div className="flex items-center gap-1">
-                              <Building2 className="w-3 h-3 text-yellow-500" />
-                              <span className="text-xs text-slate-600">
-                                {salary.projectId?.name || "—"}
-                              </span>
-                            </div>
+                          <td className="px-2 py-1.5 truncate">
+                            <span className="text-xs text-slate-600">
+                              {salary.projectId?.name || "—"}
+                            </span>
                           </td>
-                          <td className="px-3 py-2 whitespace-nowrap text-center">
-                            <span className="font-bold text-slate-700 text-sm">
+                          <td className="px-2 py-1.5 whitespace-nowrap text-center">
+                            <span className="font-bold text-slate-700 text-xs">
                               {formatCurrency(salary.baseAmount)}
                             </span>
                           </td>
-                          <td className="px-3 py-2 whitespace-nowrap text-center">
-                            <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-bold bg-amber-100 text-amber-700">
+                          <td className="px-1 py-1.5 whitespace-nowrap text-center">
+                            <span className="font-bold text-amber-600 text-xs">
+                              {salary.netAmount ? formatCurrency(salary.netAmount) : "—"}
+                            </span>
+                          </td>
+                          <td className="px-1 py-1.5 whitespace-nowrap text-center">
+                            <span className="text-xs font-bold text-amber-700">
                               {salary.overheadPercent || 0}%
                             </span>
                           </td>
-                          <td className="px-3 py-2 whitespace-nowrap text-center">
-                            <span className="font-bold bg-gradient-to-r from-orange-600 to-amber-600 bg-clip-text text-transparent">
+                          <td className="px-2 py-1.5 whitespace-nowrap text-center">
+                            <span className="font-bold text-orange-600 text-xs">
                               {formatCurrency(salary.finalAmount)}
                             </span>
                           </td>
-                          <td className="px-3 py-2 whitespace-nowrap text-center text-xs text-slate-600">
+                          <td className="px-2 py-1.5 whitespace-nowrap text-center text-xs text-slate-600">
                             {formatDate(salary.date)}
                           </td>
-                          <td className="px-3 py-2 whitespace-nowrap text-xs text-slate-600">
+                          <td className="px-2 py-1.5 truncate text-xs text-slate-600">
                             {salary.createdByName || "—"}
                           </td>
-                          <td className="px-3 py-2 text-center">
+                          <td className="px-1 py-1.5 text-center">
                             {salaryToExpenseMap[salary._id]?.length > 0 ? (
                               <div className="flex items-center justify-center gap-1 text-green-600">
                                 <Link className="w-3 h-3" />
                                 <span className="text-xs font-bold">
-                                  {salaryToExpenseMap[salary._id].length} הוצאות
+                                  {salaryToExpenseMap[salary._id].length}
                                 </span>
                               </div>
                             ) : (
-                              <span className="text-slate-400 text-xs">לא שויך</span>
+                              <span className="text-slate-400 text-xs">—</span>
                             )}
                           </td>
-                          <td className="px-3 py-2 text-center">
-                            <div className="flex justify-center gap-1">
+                          <td className="px-1 py-1.5 text-center">
+                            <div className="flex justify-center gap-0.5">
                               <button
                                 onClick={(e) => {
                                   e.stopPropagation();
                                   navigate(`/salaries/${salary._id}`);
                                 }}
-                                className="p-1.5 hover:bg-blue-100 rounded-lg transition-colors group"
+                                className="p-1 hover:bg-blue-100 rounded-lg transition-colors group"
                                 title="צפייה"
                               >
                                 <Eye className="w-3.5 h-3.5 text-blue-600 group-hover:text-blue-700" />
@@ -502,7 +705,7 @@ export default function View_Salaries() {
                                   e.stopPropagation();
                                   navigate(`/update-salary/${salary._id}`);
                                 }}
-                                className="p-1.5 hover:bg-orange-100 rounded-lg transition-colors group"
+                                className="p-1 hover:bg-orange-100 rounded-lg transition-colors group"
                                 title="עריכה"
                               >
                                 <Edit2 className="w-3.5 h-3.5 text-orange-600 group-hover:text-orange-700" />
@@ -512,7 +715,7 @@ export default function View_Salaries() {
                                   e.stopPropagation();
                                   openDeleteModal(salary);
                                 }}
-                                className="p-1.5 hover:bg-red-100 rounded-lg transition-colors group"
+                                className="p-1 hover:bg-red-100 rounded-lg transition-colors group"
                                 title="מחיקה"
                               >
                                 <Trash2 className="w-3.5 h-3.5 text-red-600 group-hover:text-red-700" />
@@ -577,11 +780,17 @@ export default function View_Salaries() {
                       </div>
 
                       {/* Amounts */}
-                      <div className="grid grid-cols-3 gap-2 mb-3 bg-orange-50 rounded-lg p-3">
+                      <div className="grid grid-cols-2 gap-2 mb-3 bg-orange-50 rounded-lg p-3">
                         <div className="text-center">
                           <div className="text-xs text-slate-600 mb-1">ברוטו</div>
                           <div className="text-sm font-bold text-slate-900">
                             {formatCurrency(salary.baseAmount)}
+                          </div>
+                        </div>
+                        <div className="text-center">
+                          <div className="text-xs text-slate-600 mb-1">נטו</div>
+                          <div className="text-sm font-bold text-amber-600">
+                            {salary.netAmount ? formatCurrency(salary.netAmount) : "—"}
                           </div>
                         </div>
                         <div className="text-center">
@@ -623,7 +832,7 @@ export default function View_Salaries() {
                             e.stopPropagation();
                             navigate(`/salaries/${salary._id}`);
                           }}
-                          className="flex-1 flex items-center justify-center gap-2 px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors"
+                          className="flex-1 flex items-center justify-center gap-2 px-4 py-2 bg-amber-500 text-white rounded-lg hover:bg-amber-600 transition-colors"
                         >
                           <Eye className="w-4 h-4" />
                           <span>צפייה</span>
@@ -662,12 +871,12 @@ export default function View_Salaries() {
             <div className="absolute -inset-2 bg-gradient-to-r from-orange-500 via-amber-500 to-yellow-500 rounded-2xl sm:rounded-3xl opacity-10 blur-xl"></div>
 
             <div className="relative bg-white/90 backdrop-blur-xl rounded-2xl sm:rounded-3xl shadow-xl shadow-orange-500/10 p-4 sm:p-5 md:p-6 border border-white/50">
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-3 sm:gap-4 sm:p-5 md:p-6">
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-3 sm:gap-4 sm:p-5 md:p-6">
                 <div className="text-center p-4 rounded-xl bg-gradient-to-br from-orange-50 to-amber-50 border-2 border-orange-200">
                   <p className="text-sm font-bold text-orange-600 mb-2">
-                    סה"כ סכום ברוטו
+                    סה"כ ברוטו
                   </p>
-                  <p className="text-2xl font-black text-slate-900">
+                  <p className="text-xl font-black text-slate-900">
                     {formatCurrency(
                       filteredSalaries.reduce(
                         (sum, s) => sum + (s.baseAmount || 0),
@@ -677,11 +886,25 @@ export default function View_Salaries() {
                   </p>
                 </div>
 
+                <div className="text-center p-4 rounded-xl bg-gradient-to-br from-amber-50 to-orange-50 border-2 border-amber-200">
+                  <p className="text-sm font-bold text-amber-600 mb-2">
+                    סה"כ נטו
+                  </p>
+                  <p className="text-xl font-black text-slate-900">
+                    {formatCurrency(
+                      filteredSalaries.reduce(
+                        (sum, s) => sum + (s.netAmount || 0),
+                        0
+                      )
+                    )}
+                  </p>
+                </div>
+
                 <div className="text-center p-4 rounded-xl bg-gradient-to-br from-amber-50 to-yellow-50 border-2 border-amber-200">
                   <p className="text-sm font-bold text-amber-600 mb-2">
-                    סה"כ סכום סופי
+                    סה"כ סופי
                   </p>
-                  <p className="text-2xl font-black text-slate-900">
+                  <p className="text-xl font-black text-slate-900">
                     {formatCurrency(
                       filteredSalaries.reduce(
                         (sum, s) => sum + (s.finalAmount || 0),
@@ -695,7 +918,7 @@ export default function View_Salaries() {
                   <p className="text-sm font-bold text-yellow-600 mb-2">
                     מספר עובדים
                   </p>
-                  <p className="text-2xl font-black text-slate-900">
+                  <p className="text-xl font-black text-slate-900">
                     {filteredSalaries.length}
                   </p>
                 </div>
