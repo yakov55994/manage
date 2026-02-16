@@ -51,8 +51,16 @@ const CreateInvoice = () => {
   );
   const [projectSearch, setProjectSearch] = useState("");
 
-  const [form, setForm] = useState(
-    draft?.form || {
+  const [form, setForm] = useState(() => {
+    if (draft?.form) {
+      return {
+        ...draft.form,
+        // אפס שדות שלא צריכים לעבור מטיוטה
+        documentType: "",
+        invoiceNumber: "",
+      };
+    }
+    return {
       invoiceNumber: "",
       supplierId: "",
       invitingName: "",
@@ -65,12 +73,12 @@ const CreateInvoice = () => {
       paymentMethod: "",
       checkNumber: "",
       checkDate: "",
-      status: "לא הוגש", // ✅ סטטוס הגשה
-      submittedToProjectId: null, // ✅ פרויקט שאליו הוגשה החשבונית
-      submittedAt: null, // ✅ תאריך הגשה
+      status: "לא הוגש",
+      submittedToProjectId: null,
+      submittedAt: null,
       files: [],
-    }
-  );
+    };
+  });
 
   const [rows, setRows] = useState(draft?.rows || []);
   const [declaredTotal, setDeclaredTotal] = useState(draft?.declaredTotal || "");
