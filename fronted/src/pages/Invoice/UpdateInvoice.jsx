@@ -398,6 +398,8 @@ const InvoiceEditPage = () => {
             size: file.size,
             publicId: res.data.file.publicId,
             resourceType: res.data.file.resourceType,
+            documentType: file.documentType || "",
+            documentNumber: file.documentNumber || "",
           });
         } else {
           // קובץ קיים - שמור אותו כמו שהוא
@@ -408,6 +410,8 @@ const InvoiceEditPage = () => {
             size: file.size,
             publicId: file.publicId,
             resourceType: file.resourceType,
+            documentType: file.documentType || "",
+            documentNumber: file.documentNumber || "",
           });
         }
       }
@@ -582,7 +586,9 @@ const InvoiceEditPage = () => {
             <select
               className="w-full p-3 border rounded-xl"
               value={globalFields.documentType}
-              onChange={(e) => updateGlobal("documentType", e.target.value)}
+              onChange={(e) => {
+                updateGlobal("documentType", e.target.value);
+              }}
             >
               <option value="">בחר…</option>
               <option value="ח. עסקה">ח. עסקה</option>
@@ -762,8 +768,6 @@ const InvoiceEditPage = () => {
                 setGlobalFields((prev) => ({
                   ...prev,
                   files: [...prev.files, ...files],
-                  // עדכן את סוג המסמך הראשי אם נבחר סוג מסמך בקובץ
-                  documentType: files[0]?.documentType || prev.documentType,
                 }));
               }}
             />
@@ -772,18 +776,28 @@ const InvoiceEditPage = () => {
               globalFields.files.map((file, index) => (
                 <div
                   key={index}
-                  className="flex justify-between items-center mt-2 p-2 bg-white border rounded-xl"
+                  className="flex justify-between items-center mt-2 p-3 bg-white border rounded-xl gap-3"
                 >
-                  <a
-                    href={file.url}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="truncate"
-                  >
-                    {file.name}
-                  </a>
+                  <div className="flex-1 min-w-0">
+                    <a
+                      href={file.url}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="truncate block text-sm font-medium text-blue-600 hover:underline"
+                    >
+                      {file.name}
+                    </a>
+                    <div className="flex gap-3 mt-1 text-xs text-slate-500">
+                      {file.documentType && (
+                        <span>סוג: <span className="font-bold text-slate-700">{file.documentType}</span></span>
+                      )}
+                      {file.documentNumber && (
+                        <span>מס׳: <span className="font-bold text-slate-700">{file.documentNumber}</span></span>
+                      )}
+                    </div>
+                  </div>
                   <button
-                    className="text-red-600"
+                    className="text-red-600 text-sm flex-shrink-0"
                     onClick={() => deleteGlobalFile(index)}
                   >
                     הסר

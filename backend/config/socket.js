@@ -49,15 +49,13 @@ io.on("connection", async (socket) => {
     socket.join(`role:${socket.userRole}`);
   }
 
-  // 🔥 זה החלק החסר
-  const unreadNotifications = await Notification.find({
+  // שליחת ספירת התראות שלא נקראו בלבד (לא דורס את הרשימה)
+  const unreadCount = await Notification.countDocuments({
     userId: socket.userId,
     read: false
-  })
-    .sort({ createdAt: -1 })
-    .limit(20);
+  });
 
-  socket.emit("notification:sync", unreadNotifications);
+  socket.emit("notification:unread_count", { unreadCount });
 });
 
 

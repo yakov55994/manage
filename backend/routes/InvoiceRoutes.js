@@ -52,6 +52,21 @@ router.get("/", protect, invoiceController.getInvoices);
 // 📌 בדיקת כפילות — אין checkAccess
 router.get("/check/duplicate", protect, invoiceController.checkDuplicate);
 
+// 🔢 מספר סידורי הבא לחשבוניות "אין צורך"
+router.get("/next-no-doc-serial", protect, invoiceController.getNextNoDocSerial);
+
+// 🔢 מספר סידורי הבא למסמכים (קבצים) – אטומי (שורף מספר)
+router.get("/next-doc-serial", protect, invoiceController.getNextDocSerial);
+
+// 🔢 תצוגה מקדימה של מספר סידורי הבא (לא שורף!)
+router.get("/next-doc-serial/preview", protect, invoiceController.previewNextDocSerial);
+
+// 🔢 מילוי מספרים סידוריים לכל הקבצים שאין להם מספר מסמך
+router.post("/backfill-doc-serials", protect, requireAdmin, invoiceController.backfillDocSerials);
+
+// 🔢 מילוי מספרים סידוריים לחשבוניות "אין צורך" קיימות
+router.post("/backfill-no-doc-serials", protect, requireAdmin, invoiceController.backfillNoDocSerials);
+
 // 📌 חשבונית בודדת — משתמש ב־:id (מתוקן!)
 router.get("/:id", protect, checkAccess("invoices", "view"), invoiceController.getInvoiceById);
 

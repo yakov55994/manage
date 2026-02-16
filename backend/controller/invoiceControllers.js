@@ -4,6 +4,7 @@
 
 import Invoice from "../models/Invoice.js";
 import Project from "../models/Project.js";
+import Counter from "../models/Counter.js";
 import invoiceService, {
   recalculateRemainingBudget
 } from "../services/invoiceService.js";
@@ -198,7 +199,7 @@ const invoiceControllers = {
   // ===============================================
   async addFilesToInvoice(req, res) {
     try {
-      const { files, documentType } = req.body;
+      const { files } = req.body;
       const invoice = await Invoice.findById(req.params.id);
       if (!invoice) {
         return res.status(404).json({ success: false, error: "חשבונית לא נמצאה" });
@@ -208,16 +209,23 @@ const invoiceControllers = {
         return res.status(400).json({ success: false, error: "יש לספק קבצים" });
       }
 
-      invoice.files.push(...files);
-
-      if (documentType) {
-        invoice.documentType = documentType;
+      // בדיקת כפילויות מספרים סידוריים
+      const docNumbers = files.map(f => f.documentNumber).filter(Boolean);
+      if (docNumbers.length > 0) {
+        const duplicates = await checkDuplicateDocNumbers(docNumbers);
+        if (duplicates.length > 0) {
+          return res.status(400).json({
+            success: false,
+            error: `מספרים סידוריים כפולים: ${duplicates.join(", ")}`
+          });
+        }
       }
+
+      invoice.files.push(...files);
 
       // 📝 תיעוד העלאת קבצים בהיסטוריה
       if (!invoice.editHistory) invoice.editHistory = [];
-      let fileChanges = `הועלו ${files.length} קבצים`;
-      if (documentType) fileChanges += `, סוג מסמך שונה ל: ${documentType}`;
+      const fileChanges = `הועלו ${files.length} קבצים`;
       invoice.editHistory.push({
         userId: req.user._id,
         userName: req.user.username || req.user.name,
@@ -344,5 +352,224 @@ const invoiceControllers = {
       res.status(400).json({ success: false, error: err.message });
     }
   },
+
+  // ===============================================
+  // מספר סידורי הבא לחשבוניות "אין צורך"
+  // ===============================================
+  async getNextNoDocSerial(req, res) {
+    try {
+      const nextSerial = await getNextAinTsorchSerial();
+      res.json({ success: true, serial: nextSerial });
+    } catch (err) {
+      res.status(500).json({ success: false, error: err.message });
+    }
+  },
+
+  // ===============================================
+  // תצוגה מקדימה – מספר סידורי הבא (לא שורף מספר!)
+  // ===============================================
+  async previewNextDocSerial(req, res) {
+    try {
+      await ensureDocSerialCounter();
+      const counter = await Counter.findOne({ name: "documentSerial" });
+      const next = (counter?.seq || 0) + 1;
+      res.json({ success: true, serial: String(next).padStart(4, "0") });
+    } catch (err) {
+      res.status(500).json({ success: false, error: err.message });
+    }
+  },
+
+  // ===============================================
+  // מספר סידורי הבא למסמכים (קבצים) – אטומי וייחודי
+  // ===============================================
+  async getNextDocSerial(req, res) {
+    try {
+      const count = parseInt(req.query.count) || 1;
+      await ensureDocSerialCounter();
+
+      if (count === 1) {
+        const seq = await Counter.getNextSequence("documentSerial");
+        res.json({ success: true, serial: String(seq).padStart(4, "0") });
+      } else {
+        // לקבצים מרובים - מחזיר מערך של מספרים רצופים
+        const serials = await Counter.getNextSequenceBatch("documentSerial", count);
+        res.json({
+          success: true,
+          serial: String(serials[0]).padStart(4, "0"),
+          serials: serials.map(s => String(s).padStart(4, "0"))
+        });
+      }
+    } catch (err) {
+      res.status(500).json({ success: false, error: err.message });
+    }
+  },
+
+  // ===============================================
+  // מילוי מספרים סידוריים לקבצים מסוג "אין צורך" שאין להם מספר מסמך
+  // ===============================================
+  async backfillDocSerials(req, res) {
+    try {
+      // רק חשבוניות שיש להן קבצים מסוג "אין צורך"
+      const invoices = await Invoice.find({
+        "files.0": { $exists: true },
+        "files.documentType": "אין צורך"
+      }).sort({ createdAt: 1 });
+
+      // ספור כמה קבצים מסוג "אין צורך" חסרי מספר יש
+      let filesWithoutSerial = 0;
+      for (const inv of invoices) {
+        for (const file of inv.files) {
+          if (file.documentType === "אין צורך" && !file.documentNumber) {
+            filesWithoutSerial++;
+          }
+        }
+      }
+
+      if (filesWithoutSerial === 0) {
+        return res.json({ success: true, message: "כל הקבצים מסוג 'אין צורך' כבר מספוררו", updated: 0 });
+      }
+
+      // הקצה מספרים אטומית דרך Counter
+      await ensureDocSerialCounter();
+      const serials = await Counter.getNextSequenceBatch("documentSerial", filesWithoutSerial);
+      let serialIndex = 0;
+      let updatedCount = 0;
+
+      for (const inv of invoices) {
+        let changed = false;
+        for (const file of inv.files) {
+          if (file.documentType === "אין צורך" && !file.documentNumber) {
+            file.documentNumber = String(serials[serialIndex]).padStart(4, "0");
+            serialIndex++;
+            changed = true;
+            updatedCount++;
+          }
+        }
+        if (changed) {
+          await inv.save();
+        }
+      }
+
+      res.json({
+        success: true,
+        message: `עודכנו ${updatedCount} קבצים מסוג "אין צורך"`,
+        updated: updatedCount,
+        lastSerial: serials[serials.length - 1]
+      });
+    } catch (err) {
+      res.status(500).json({ success: false, error: err.message });
+    }
+  },
+
+  // ===============================================
+  // מילוי מספרים סידוריים לחשבוניות "אין צורך" קיימות עם מספר 0
+  // ===============================================
+  async backfillNoDocSerials(req, res) {
+    try {
+      const invoices = await Invoice.find({
+        documentType: "אין צורך",
+        $or: [
+          { invoiceNumber: "0" },
+          { invoiceNumber: "" },
+          { invoiceNumber: null }
+        ]
+      }).sort({ createdAt: 1 });
+
+      if (invoices.length === 0) {
+        return res.json({ success: true, message: "אין חשבוניות לעדכון", updated: 0 });
+      }
+
+      // מצא את המספר הסידורי הגבוה ביותר הקיים
+      let currentMax = await getMaxAinTsorchSerial();
+
+      for (const inv of invoices) {
+        currentMax++;
+        inv.invoiceNumber = `ללא-${String(currentMax).padStart(4, "0")}`;
+        await inv.save();
+      }
+
+      res.json({
+        success: true,
+        message: `עודכנו ${invoices.length} חשבוניות`,
+        updated: invoices.length,
+        lastSerial: currentMax
+      });
+    } catch (err) {
+      res.status(500).json({ success: false, error: err.message });
+    }
+  },
 }
+
+// פונקציית עזר - מוצאת את המספר הסידורי הגבוה ביותר של "אין צורך"
+async function getMaxAinTsorchSerial() {
+  const existing = await Invoice.find({
+    documentType: "אין צורך",
+    invoiceNumber: { $regex: /^ללא-\d+$/ }
+  }).select("invoiceNumber");
+
+  let max = 0;
+  for (const inv of existing) {
+    const num = parseInt(inv.invoiceNumber.replace("ללא-", ""), 10);
+    if (!isNaN(num) && num > max) max = num;
+  }
+  return max;
+}
+
+// פונקציית עזר - מחזירה את המספר הסידורי הבא
+async function getNextAinTsorchSerial() {
+  const max = await getMaxAinTsorchSerial();
+  return `ללא-${String(max + 1).padStart(4, "0")}`;
+}
+
+// ===============================================
+// פונקציות עזר – מספרים סידוריים אטומיים למסמכים
+// ===============================================
+
+// סורקת את כל הקבצים הקיימים ומחזירה את המקסימום
+async function getMaxDocumentSerial() {
+  const invoices = await Invoice.find({ "files.documentNumber": { $exists: true, $ne: "" } }).select("files.documentNumber");
+
+  let max = 0;
+  for (const inv of invoices) {
+    for (const file of inv.files) {
+      if (file.documentNumber) {
+        const num = parseInt(file.documentNumber, 10);
+        if (!isNaN(num) && num > max) max = num;
+      }
+    }
+  }
+  return max;
+}
+
+// מוודאת שה-Counter מאותחל עם המקסימום הנוכחי (רץ פעם אחת)
+async function ensureDocSerialCounter() {
+  const counter = await Counter.findOne({ name: "documentSerial" });
+  if (!counter) {
+    // אתחול ראשוני – סנכרון עם המספר הגבוה ביותר הקיים
+    const max = await getMaxDocumentSerial();
+    await Counter.findOneAndUpdate(
+      { name: "documentSerial" },
+      { $setOnInsert: { seq: max } },
+      { upsert: true }
+    );
+  }
+}
+
+// בדיקת כפילויות מספרים סידוריים
+async function checkDuplicateDocNumbers(docNumbers) {
+  const invoices = await Invoice.find({
+    "files.documentNumber": { $in: docNumbers }
+  }).select("files.documentNumber");
+
+  const existingNumbers = new Set();
+  for (const inv of invoices) {
+    for (const file of inv.files) {
+      if (file.documentNumber && docNumbers.includes(file.documentNumber)) {
+        existingNumbers.add(file.documentNumber);
+      }
+    }
+  }
+  return Array.from(existingNumbers);
+}
+
 export default invoiceControllers;

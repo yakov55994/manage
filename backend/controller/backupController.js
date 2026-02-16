@@ -444,32 +444,46 @@ const addFolderToZip = (zip, folderPath, zipPath) => {
 };
 
 // ===============================================
-// גיבוי מלא ידני (הורדה ישירה)
+// גיבוי מלא ידני (שמירה על השרת בלבד, בלי הורדה)
 // ===============================================
 export const createBackup = async (req, res) => {
   try {
-    const { zip, recordCounts, filesCount } = await buildBackupZip();
-
-    const zipContent = await zip.generateAsync({ type: "nodebuffer" });
-
     const date = new Date().toISOString().split("T")[0];
-    const fileName = `backup_${date}.zip`;
+    const backupsBase = path.join(process.cwd(), "tmp", "backups");
+    const backupDir = path.join(backupsBase, `backup_${date}`);
+
+    // מחיקת תיקיות גיבוי ישנות (שמירת 7 אחרונות)
+    if (fs.existsSync(backupsBase)) {
+      const existingDirs = fs.readdirSync(backupsBase)
+        .filter(f => f.startsWith("backup_") && fs.statSync(path.join(backupsBase, f)).isDirectory())
+        .sort()
+        .reverse();
+
+      for (const oldDir of existingDirs.slice(6)) {
+        fs.rmSync(path.join(backupsBase, oldDir), { recursive: true, force: true });
+      }
+    }
+
+    const { recordCounts, newFilesCount, skippedCount, totalFilesCount } = await buildBackupToFolder(backupDir);
 
     await BackupLog.create({
       backupDate: new Date(),
       type: "manual",
       recordCounts,
-      filesCount,
+      filesCount: totalFilesCount,
       status: "success",
+      filePath: backupDir,
     });
 
-    res.writeHead(200, {
-      "Content-Type": "application/zip",
-      "Content-Disposition": `attachment; filename="${fileName}"`,
-      "Content-Length": zipContent.length,
+    res.json({
+      success: true,
+      message: "הגיבוי נוצר בהצלחה על השרת",
+      date,
+      recordCounts,
+      newFilesCount,
+      skippedCount,
+      totalFilesCount,
     });
-
-    res.end(zipContent);
   } catch (error) {
     console.error("Backup error:", error);
 

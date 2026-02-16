@@ -175,6 +175,21 @@ export const AuthProvider = ({ children }) => {
 
         api.defaults.headers.common["Authorization"] = `Bearer ${token}`;
         setUser(normalized);
+
+        // רענון נתוני משתמש מהשרת (תפקיד, הרשאות וכו')
+        api.get("/auth/me").then((res) => {
+          if (res.data?.success && res.data.user) {
+            const fresh = normalizeUser(res.data.user);
+            localStorage.setItem("user", JSON.stringify(fresh));
+            setUser(fresh);
+          }
+        }).catch(() => {
+          // token פג תוקף - נקה ותנתק
+          localStorage.removeItem("token");
+          localStorage.removeItem("user");
+          delete api.defaults.headers.common["Authorization"];
+          setUser(null);
+        });
       } catch (err) {
         console.error("❌ Error parsing user data:", err);
         localStorage.removeItem("token");

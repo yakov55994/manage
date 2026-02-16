@@ -100,26 +100,13 @@ const ExportDataPage = () => {
     }
   };
 
-  // גיבוי מלא של מסד הנתונים
+  // יצירת גיבוי על השרת (בלי הורדה)
   const handleBackup = async () => {
     try {
       setLoadingBackup(true);
-      const response = await api.get("/backup/download", {
-        responseType: "blob",
-        timeout: 300000,
-      });
+      await api.post("/backup/create", {}, { timeout: 300000 });
 
-      const url = window.URL.createObjectURL(new Blob([response.data]));
-      const link = document.createElement("a");
-      link.href = url;
-      const date = new Date().toISOString().split("T")[0];
-      link.setAttribute("download", `backup_${date}.zip`);
-      document.body.appendChild(link);
-      link.click();
-      link.remove();
-      window.URL.revokeObjectURL(url);
-
-      toast.success("הגיבוי הורד בהצלחה!", {
+      toast.success("הגיבוי נוצר בהצלחה על השרת!", {
         className: "sonner-toast success rtl",
       });
 
@@ -423,33 +410,33 @@ const ExportDataPage = () => {
                 {loadingBackup ? (
                   <>
                     <Loader2 className="w-6 h-6 animate-spin" />
-                    מייצא גיבוי...
+                    יוצר גיבוי...
                   </>
                 ) : (
                   <>
-                    <DownloadCloud className="w-6 h-6" />
-                    הורד גיבוי מלא
+                    <Database className="w-6 h-6" />
+                    צור גיבוי
                   </>
                 )}
               </button>
 
-              {backupStatus?.lastScheduled && (
-                <button
-                  onClick={handleDownloadLatest}
-                  disabled={loadingBackup || loadingLatest}
-                  className="py-4 px-6 bg-gradient-to-r from-slate-500 to-slate-600 text-white rounded-2xl font-bold hover:from-slate-600 hover:to-slate-700 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-300 shadow-lg flex items-center justify-center gap-2"
-                  title="הורד גיבוי אוטומטי אחרון"
-                >
-                  {loadingLatest ? (
-                    <Loader2 className="w-5 h-5 animate-spin" />
-                  ) : (
-                    <>
-                      <Clock className="w-5 h-5" />
-                      אחרון
-                    </>
-                  )}
-                </button>
-              )}
+              <button
+                onClick={handleDownloadLatest}
+                disabled={loadingBackup || loadingLatest}
+                className="flex-1 py-4 bg-gradient-to-r from-slate-500 to-slate-600 text-white rounded-2xl font-bold text-lg hover:from-slate-600 hover:to-slate-700 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-300 shadow-lg hover:shadow-xl flex items-center justify-center gap-3"
+              >
+                {loadingLatest ? (
+                  <>
+                    <Loader2 className="w-6 h-6 animate-spin" />
+                    מוריד...
+                  </>
+                ) : (
+                  <>
+                    <DownloadCloud className="w-6 h-6" />
+                    הורד גיבוי אחרון
+                  </>
+                )}
+              </button>
             </div>
 
             {/* הודעה על גיבוי אוטומטי */}

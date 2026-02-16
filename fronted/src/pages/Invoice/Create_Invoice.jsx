@@ -324,6 +324,8 @@ const CreateInvoice = () => {
             size: file.size,
             publicId: res.data.file.publicId,
             resourceType: res.data.file.resourceType,
+            documentType: file.documentType || "",
+            documentNumber: file.documentNumber || "",
           });
         } else {
           uploadedFiles.push(file);
@@ -986,19 +988,34 @@ const CreateInvoice = () => {
             <FileText className="text-orange-600" /> קבצים לחשבונית
           </h2>
 
-          <FileUploader onUploadSuccess={handleFiles} folder="invoices" />
+          <FileUploader
+            onUploadSuccess={handleFiles}
+            folder="invoices"
+            askForDocumentType={true}
+            isExistingInvoice={true}
+          />
 
           {form.files.length > 0 && (
             <div className="mt-4 space-y-2">
               {form.files.map((file, i) => (
                 <div
                   key={i}
-                  className="flex justify-between items-center bg-orange-50 border border-orange-200 rounded-xl px-4 py-2"
+                  className="flex justify-between items-center bg-orange-50 border border-orange-200 rounded-xl px-4 py-3 gap-3"
                 >
-                  <span>{file.name}</span>
+                  <div className="flex-1 min-w-0">
+                    <span className="block truncate text-sm font-medium">{file.name}</span>
+                    <div className="flex gap-3 mt-1 text-xs text-slate-500">
+                      {file.documentType && (
+                        <span>סוג: <span className="font-bold text-slate-700">{file.documentType}</span></span>
+                      )}
+                      {file.documentNumber && (
+                        <span>מס׳: <span className="font-bold text-slate-700">{file.documentNumber}</span></span>
+                      )}
+                    </div>
+                  </div>
                   <button
                     onClick={() => removeFile(i)}
-                    className="text-red-600"
+                    className="text-red-600 text-sm flex-shrink-0"
                   >
                     הסר
                   </button>

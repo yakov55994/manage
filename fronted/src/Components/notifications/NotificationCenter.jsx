@@ -13,6 +13,10 @@ const NotificationCenter = () => {
   const [notifications, setNotifications] = useState([]);
   const [unreadCount, setUnreadCount] = useState(0);
   const [loading, setLoading] = useState(false);
+  const [loadingMore, setLoadingMore] = useState(false);
+  const [hasMore, setHasMore] = useState(false);
+  const [page, setPage] = useState(1);
+  const LIMIT = 20;
   const dropdownRef = useRef(null);
   const navigate = useNavigate();
   const { socket, isConnected } = useSocket();
@@ -22,10 +26,12 @@ const NotificationCenter = () => {
   const fetchNotifications = async () => {
     try {
       setLoading(true);
-      const { data } = await api.get("/notifications?limit=20");
+      setPage(1);
+      const { data } = await api.get(`/notifications?limit=${LIMIT}&page=1`);
       if (data.success) {
         setNotifications(data.data.notifications || []);
         setUnreadCount(data.data.unreadCount || 0);
+        setHasMore((data.data.page || 1) < (data.data.totalPages || 1));
       }
     } catch (error) {
       console.error("Error fetching notifications:", error);
@@ -34,19 +40,24 @@ const NotificationCenter = () => {
     }
   };
 
-  useEffect(() => {
-    if (!socket) return;
-
-    socket.on("notification:sync", (list) => {
-      setNotifications(list);
-      setUnreadCount(list.length);
-    });
-
-    return () => {
-      socket.off("notification:sync");
-    };
-  }, [socket]);
-
+  // Load more notifications
+  const loadMoreNotifications = async () => {
+    try {
+      setLoadingMore(true);
+      const nextPage = page + 1;
+      const { data } = await api.get(`/notifications?limit=${LIMIT}&page=${nextPage}`);
+      if (data.success) {
+        const newNotifs = data.data.notifications || [];
+        setNotifications((prev) => [...prev, ...newNotifs]);
+        setPage(nextPage);
+        setHasMore(nextPage < (data.data.totalPages || 1));
+      }
+    } catch (error) {
+      console.error("Error loading more notifications:", error);
+    } finally {
+      setLoadingMore(false);
+    }
+  };
 
   // Initial fetch
   useEffect(() => {
@@ -86,7 +97,7 @@ const NotificationCenter = () => {
     return () => {
       socket.off("notification:new", handleNewNotification);
       socket.off("notification:unread_count", handleUnreadCount);
-      socket.off("notification:group-deleted", handleGroupDeleted);
+      socket.off("notification:deleted", handleGroupDeleted);
     };
   }, [socket]);
 
@@ -278,83 +289,102 @@ const NotificationCenter = () => {
                 <p className="font-medium">אין התראות חדשות</p>
               </div>
             ) : (
-              notifications.map((notification) => (
-                <div
-                  key={notification._id}
-                  onClick={() => handleNotificationClick(notification)}
-                  className={`p-4 border-b border-gray-100 cursor-pointer transition-colors ${!notification.read
-                    ? "bg-orange-50 hover:bg-orange-100"
-                    : "hover:bg-gray-50"
-                    }`}
-                >
-                  <div className="flex gap-3">
-                    {/* Icon */}
-                    <div className="flex-shrink-0 mt-1">
-                      {getNotificationIcon(notification.type)}
-                    </div>
+              <>
+                {notifications.map((notification) => (
+                  <div
+                    key={notification._id}
+                    onClick={() => handleNotificationClick(notification)}
+                    className={`p-4 border-b border-gray-100 cursor-pointer transition-colors ${!notification.read
+                      ? "bg-orange-50 hover:bg-orange-100"
+                      : "hover:bg-gray-50"
+                      }`}
+                  >
+                    <div className="flex gap-3">
+                      {/* Icon */}
+                      <div className="flex-shrink-0 mt-1">
+                        {getNotificationIcon(notification.type)}
+                      </div>
 
-                    {/* Content */}
-                    <div className="flex-1 min-w-0">
-                      <p className="font-semibold text-gray-900 text-sm">
-                        {notification.title}
-                      </p>
-                      <p className="text-sm text-gray-600 mt-1 line-clamp-2">
-                        {notification.message}
-                      </p>
-                      {/* מידע נוסף - שם מבצע, פרויקט, ספק */}
-                      {(notification.metadata?.actorName || notification.metadata?.projectNames || notification.metadata?.projectName || notification.metadata?.supplierName) && (
-                        <div className="flex flex-wrap gap-x-3 gap-y-1 mt-1.5">
-                          {notification.metadata?.actorName && (
-                            <span className="flex items-center gap-1 text-xs text-gray-500">
-                              <User2 className="w-3 h-3" />
-                              {notification.metadata.actorName}
-                            </span>
-                          )}
-                          {(notification.metadata?.projectNames || notification.metadata?.projectName) && (
-                            <span className="flex items-center gap-1 text-xs text-gray-500">
-                              <Building2 className="w-3 h-3" />
-                              {notification.metadata.projectNames || notification.metadata.projectName}
-                            </span>
-                          )}
-                          {notification.metadata?.supplierName && (
-                            <span className="flex items-center gap-1 text-xs text-gray-500">
-                              <Truck className="w-3 h-3" />
-                              {notification.metadata.supplierName}
-                            </span>
-                          )}
-                        </div>
-                      )}
-                      <p className="text-xs text-gray-400 mt-2">
-                        {formatTime(notification.createdAt)}
-                      </p>
-                    </div>
+                      {/* Content */}
+                      <div className="flex-1 min-w-0">
+                        <p className="font-semibold text-gray-900 text-sm">
+                          {notification.title}
+                        </p>
+                        <p className="text-sm text-gray-600 mt-1 line-clamp-2">
+                          {notification.message}
+                        </p>
+                        {/* מידע נוסף - שם מבצע, פרויקט, ספק */}
+                        {(notification.metadata?.actorName || notification.metadata?.projectNames || notification.metadata?.projectName || notification.metadata?.supplierName) && (
+                          <div className="flex flex-wrap gap-x-3 gap-y-1 mt-1.5">
+                            {notification.metadata?.actorName && (
+                              <span className="flex items-center gap-1 text-xs text-gray-500">
+                                <User2 className="w-3 h-3" />
+                                {notification.metadata.actorName}
+                              </span>
+                            )}
+                            {(notification.metadata?.projectNames || notification.metadata?.projectName) && (
+                              <span className="flex items-center gap-1 text-xs text-gray-500">
+                                <Building2 className="w-3 h-3" />
+                                {notification.metadata.projectNames || notification.metadata.projectName}
+                              </span>
+                            )}
+                            {notification.metadata?.supplierName && (
+                              <span className="flex items-center gap-1 text-xs text-gray-500">
+                                <Truck className="w-3 h-3" />
+                                {notification.metadata.supplierName}
+                              </span>
+                            )}
+                          </div>
+                        )}
+                        <p className="text-xs text-gray-400 mt-2">
+                          {formatTime(notification.createdAt)}
+                        </p>
+                      </div>
 
-                    {/* Actions */}
-                    <div className="flex flex-col gap-1 flex-shrink-0">
-                      {/* Unread indicator / Mark as read */}
-                      {!notification.read && (
-                        <button
-                          onClick={(e) => markAsRead(notification._id, e)}
-                          className="p-1 hover:bg-orange-200 rounded-full transition-colors"
-                          title="סמן כנקרא"
-                        >
-                          <div className="w-3 h-3 bg-orange-500 rounded-full"></div>
-                        </button>
-                      )}
-                      {/* Delete button - admins only */}
-                      {isAdmin && (
-                        <button
-                          onClick={(e) => deleteNotification(notification._id, e)}
-                          className="p-1 hover:bg-red-100 rounded-full transition-colors"
-                          title="מחק התראה"
-                        >
-                          <Trash2 className="w-4 h-4 text-red-400 hover:text-red-600" />
-                        </button>
-                      )}
+                      {/* Actions */}
+                      <div className="flex flex-col gap-1 flex-shrink-0">
+                        {/* Unread indicator / Mark as read */}
+                        {!notification.read && (
+                          <button
+                            onClick={(e) => markAsRead(notification._id, e)}
+                            className="p-1 hover:bg-orange-200 rounded-full transition-colors"
+                            title="סמן כנקרא"
+                          >
+                            <div className="w-3 h-3 bg-orange-500 rounded-full"></div>
+                          </button>
+                        )}
+                        {/* Delete button - admins only */}
+                        {isAdmin && (
+                          <button
+                            onClick={(e) => deleteNotification(notification._id, e)}
+                            className="p-1 hover:bg-red-100 rounded-full transition-colors"
+                            title="מחק התראה"
+                          >
+                            <Trash2 className="w-4 h-4 text-red-400 hover:text-red-600" />
+                          </button>
+                        )}
+                      </div>
                     </div>
                   </div>
-                </div>
-              ))
+                ))}
+                {/* Load more button */}
+                {hasMore && (
+                  <button
+                    onClick={loadMoreNotifications}
+                    disabled={loadingMore}
+                    className="w-full py-3 text-sm text-orange-600 hover:bg-orange-50 font-medium transition-colors border-b border-gray-100 flex items-center justify-center gap-2"
+                  >
+                    {loadingMore ? (
+                      <>
+                        <div className="animate-spin rounded-full h-4 w-4 border-2 border-orange-500 border-t-transparent"></div>
+                        טוען...
+                      </>
+                    ) : (
+                      "טען עוד התראות"
+                    )}
+                  </button>
+                )}
+              </>
             )}
           </div>
 

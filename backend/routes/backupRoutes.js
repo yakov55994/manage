@@ -4,7 +4,7 @@ import { createBackup, getBackupStatus, downloadLatestBackup } from "../controll
 
 const router = express.Router();
 
-router.get("/download", protect, requireAdmin, createBackup);
+router.post("/create", protect, requireAdmin, createBackup);
 router.get("/status", protect, requireAdmin, getBackupStatus);
 router.get("/download-latest", protect, requireAdmin, downloadLatestBackup);
 

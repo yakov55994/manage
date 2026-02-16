@@ -43,6 +43,8 @@ const FileSchema = new mongoose.Schema({
   folder: { type: String },
   publicId: { type: String, required: true },
   resourceType: { type: String, required: true },
+  documentType: { type: String, default: "" },
+  documentNumber: { type: String, default: "" },
 });
 
 const invoiceSchema = new mongoose.Schema({

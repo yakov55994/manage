@@ -58,8 +58,8 @@ function FileUploader({
             localFiles.push(localFile);
         }
 
-        // 🔥 אם זו חשבונית קיימת וצריך לשאול על סוג מסמך
-        if (isExistingInvoice && askForDocumentType && localFiles.length > 0) {
+        // 🔥 אם צריך לשאול על סוג מסמך ומספר סידורי
+        if (askForDocumentType && localFiles.length > 0) {
             setPendingFiles(localFiles);
             setCurrentFileIndex(0);
             setModalOpen(true);
@@ -79,9 +79,12 @@ function FileUploader({
         e.target.value = null;
     };
 
-    const handleDocumentTypeSelect = (documentType) => {
+    const handleDocumentTypeSelect = (documentType, documentNumber) => {
         const updatedFiles = [...pendingFiles];
         updatedFiles[currentFileIndex].documentType = documentType;
+        if (documentNumber !== undefined) {
+            updatedFiles[currentFileIndex].documentNumber = documentNumber;
+        }
 
         // אם יש עוד קבצים - עבור להבא
         if (currentFileIndex < updatedFiles.length - 1) {
@@ -145,6 +148,7 @@ function FileUploader({
                 }}
                 onSelect={handleDocumentTypeSelect}
                 fileName={pendingFiles[currentFileIndex]?.name}
+                showInvoiceNumber={isExistingInvoice}
             />
         </>
     );

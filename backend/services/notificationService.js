@@ -280,9 +280,74 @@ const notificationService = {
   },
 
   /**
+   * סנכרון התראות לאדמין חדש - מעתיק התראות שחסרות לו מאדמינים אחרים
+   */
+  async syncAdminNotifications(userId) {
+    try {
+      // בדיקה אם יש כבר התראות למשתמש
+      const userNotifCount = await Notification.countDocuments({ userId });
+      if (userNotifCount > 5) return; // כבר מסונכרן
+
+      // איסוף groupIds שכבר קיימים למשתמש
+      const existingGroupIds = await Notification.distinct("groupId", { userId });
+
+      // מציאת התראות מאדמינים אחרים שחסרות למשתמש (30 יום אחרונים)
+      const thirtyDaysAgo = new Date();
+      thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+
+      const missingNotifications = await Notification.aggregate([
+        {
+          $match: {
+            userId: { $ne: new mongoose.Types.ObjectId(userId) },
+            groupId: { $nin: existingGroupIds, $ne: null },
+            createdAt: { $gte: thirtyDaysAgo }
+          }
+        },
+        // קבוצה לפי groupId - לקחת רק אחד מכל קבוצה
+        {
+          $group: {
+            _id: "$groupId",
+            doc: { $first: "$$ROOT" }
+          }
+        },
+        { $replaceRoot: { newRoot: "$doc" } },
+        { $sort: { createdAt: -1 } },
+        { $limit: 50 }
+      ]);
+
+      if (missingNotifications.length === 0) return;
+
+      // יצירת עותקים למשתמש החדש
+      const copies = missingNotifications.map(n => ({
+        userId,
+        type: n.type,
+        title: n.title,
+        message: n.message,
+        entityType: n.entityType,
+        entityId: n.entityId,
+        groupId: n.groupId,
+        read: false,
+        metadata: n.metadata,
+        createdAt: n.createdAt
+      }));
+
+      await Notification.insertMany(copies);
+      console.log(`Synced ${copies.length} notifications for admin ${userId}`);
+    } catch (error) {
+      console.error("Error syncing admin notifications:", error);
+    }
+  },
+
+  /**
    * קבלת התראות של משתמש
    */
   async getUserNotifications(userId, { page = 1, limit = 20, unreadOnly = false }) {
+    // סנכרון התראות לאדמינים חדשים
+    const user = await User.findById(userId).select("role");
+    if (user?.role === "admin") {
+      await this.syncAdminNotifications(userId);
+    }
+
     const query = { userId };
     if (unreadOnly) {
       query.read = false;
@@ -351,25 +416,61 @@ const notificationService = {
 
     if (!notification) return;
 
-    // מוחקים את כל ההתראות מהאירוע
-    const result = await Notification.deleteMany({
-      groupId: notification.groupId
-    });
+    if (notification.groupId) {
+      // מוחקים את כל ההתראות מהאירוע (לכל המשתמשים)
+      const result = await Notification.deleteMany({
+        groupId: notification.groupId
+      });
 
-    emitToAll("notification:deleted", {
-      groupId: notification.groupId
-    });
+      emitToAll("notification:deleted", {
+        groupId: notification.groupId
+      });
 
-    return { deletedCount: result.deletedCount };
+      return { deletedCount: result.deletedCount };
+    } else {
+      // אין groupId - מוחקים רק את ההתראה הספציפית
+      await Notification.findByIdAndDelete(notificationId);
+
+      emitToUser(userId, "notification:unread_count", {
+        unreadCount: await Notification.countDocuments({ userId, read: false })
+      });
+
+      return { deletedCount: 1 };
+    }
   },
 
   /**
-   * מחיקת כל ההתראות של משתמש
+   * מחיקת כל ההתראות של משתמש - כולל סנכרון לשאר המשתמשים
    */
   async deleteAllNotifications(userId) {
-    const result = await Notification.deleteMany({ userId });
+    // איסוף כל ה-groupIds של ההתראות של המשתמש
+    const userNotifications = await Notification.find({ userId }).select("groupId");
+    const groupIds = [...new Set(
+      userNotifications.map(n => n.groupId).filter(Boolean).map(id => id.toString())
+    )];
+
+    // מחיקת כל ההתראות עם אותם groupIds (לכל המשתמשים)
+    let deletedCount = 0;
+    if (groupIds.length > 0) {
+      const result = await Notification.deleteMany({
+        $or: [
+          { userId },
+          { groupId: { $in: groupIds } }
+        ]
+      });
+      deletedCount = result.deletedCount;
+
+      // שליחת עדכון סנכרון לכל המשתמשים
+      for (const groupId of groupIds) {
+        emitToAll("notification:deleted", { groupId });
+      }
+    } else {
+      const result = await Notification.deleteMany({ userId });
+      deletedCount = result.deletedCount;
+    }
+
     emitToUser(userId, "notification:unread_count", { unreadCount: 0 });
-    return { deletedCount: result.deletedCount };
+    return { deletedCount };
   },
 
   /**

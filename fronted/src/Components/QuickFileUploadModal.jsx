@@ -1,6 +1,6 @@
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 import { toast } from "sonner";
-import { Upload, X, FileText, Paperclip } from "lucide-react";
+import { Upload, X, FileText, Paperclip, Hash } from "lucide-react";
 import api from "../api/api.js";
 
 const documentTypes = [
@@ -20,8 +20,33 @@ export default function QuickFileUploadModal({
 }) {
   const [selectedFiles, setSelectedFiles] = useState([]);
   const [documentType, setDocumentType] = useState("");
+  const [startingSerial, setStartingSerial] = useState("");
+  const [loadingSerial, setLoadingSerial] = useState(false);
   const [uploading, setUploading] = useState(false);
   const fileInputRef = useRef(null);
+
+  // שליפת מספר סידורי רק כשנבחר "אין צורך"
+  useEffect(() => {
+    if (documentType === "אין צורך") {
+      fetchPreviewSerial();
+    } else {
+      setStartingSerial("");
+    }
+  }, [documentType]);
+
+  const fetchPreviewSerial = async () => {
+    try {
+      setLoadingSerial(true);
+      const { data } = await api.get("/invoices/next-doc-serial/preview");
+      if (data.success) {
+        setStartingSerial(data.serial);
+      }
+    } catch (err) {
+      console.error("Error fetching serial:", err);
+    } finally {
+      setLoadingSerial(false);
+    }
+  };
 
   if (!open || !invoice) return null;
 
@@ -35,6 +60,13 @@ export default function QuickFileUploadModal({
     setSelectedFiles((prev) => prev.filter((_, i) => i !== index));
   };
 
+  // חישוב מספר סידורי לכל קובץ
+  const getSerialForFile = (index) => {
+    const base = parseInt(startingSerial, 10);
+    if (isNaN(base)) return startingSerial;
+    return String(base + index).padStart(4, "0");
+  };
+
   const handleUpload = async () => {
     if (selectedFiles.length === 0) {
       return toast.error("יש לבחור לפחות קובץ אחד", {
@@ -42,10 +74,26 @@ export default function QuickFileUploadModal({
       });
     }
 
+    if (!documentType) {
+      return toast.error("יש לבחור סוג מסמך", {
+        className: "sonner-toast error rtl",
+      });
+    }
+
     setUploading(true);
     try {
+      // הקצאת מספרים סידוריים רק עבור "אין צורך"
+      let reservedSerials = [];
+      if (documentType === "אין צורך") {
+        const { data: serialData } = await api.get(
+          `/invoices/next-doc-serial?count=${selectedFiles.length}`
+        );
+        reservedSerials = serialData.serials || [serialData.serial];
+      }
+
       const uploadedFiles = [];
-      for (const file of selectedFiles) {
+      for (let i = 0; i < selectedFiles.length; i++) {
+        const file = selectedFiles[i];
         const formData = new FormData();
         formData.append("file", file);
         formData.append("folder", "invoices");
@@ -61,12 +109,13 @@ export default function QuickFileUploadModal({
           size: file.size,
           publicId: res.data.file.publicId,
           resourceType: res.data.file.resourceType,
+          documentType: documentType,
+          documentNumber: reservedSerials[i] || "",
         });
       }
 
       await api.put(`/invoices/${invoice._id}/files`, {
         files: uploadedFiles,
-        ...(documentType && { documentType }),
       });
 
       toast.success(
@@ -75,6 +124,7 @@ export default function QuickFileUploadModal({
       );
       setSelectedFiles([]);
       setDocumentType("");
+      setStartingSerial("");
       onSuccess?.();
       onClose();
     } catch (err) {
@@ -90,6 +140,7 @@ export default function QuickFileUploadModal({
   const handleClose = () => {
     setSelectedFiles([]);
     setDocumentType("");
+    setStartingSerial("");
     onClose();
   };
 
@@ -121,14 +172,14 @@ export default function QuickFileUploadModal({
           {/* Document Type */}
           <div>
             <label className="block font-bold mb-2 text-slate-700">
-              סוג מסמך
+              סוג מסמך <span className="text-red-500">*</span>
             </label>
             <select
               value={documentType}
               onChange={(e) => setDocumentType(e.target.value)}
               className="w-full p-3 border-2 border-gray-200 rounded-xl focus:border-orange-500 focus:outline-none focus:ring-2 focus:ring-orange-200"
             >
-              <option value="">ללא שינוי סוג מסמך</option>
+              <option value="">בחר סוג מסמך...</option>
               {documentTypes.map((type) => (
                 <option key={type} value={type}>
                   {type}
@@ -136,6 +187,35 @@ export default function QuickFileUploadModal({
               ))}
             </select>
           </div>
+
+          {/* Document Number – רק עבור "אין צורך" */}
+          {documentType === "אין צורך" && (
+            <div>
+              <label className="flex items-center gap-2 font-bold mb-2 text-slate-700">
+                <Hash className="w-4 h-4 text-orange-600" />
+                מספר מסמך (סידורי)
+              </label>
+              {loadingSerial ? (
+                <div className="flex items-center gap-2 text-sm text-slate-500 p-3">
+                  <div className="animate-spin rounded-full h-4 w-4 border-2 border-orange-500 border-t-transparent"></div>
+                  מחשב מספר סידורי...
+                </div>
+              ) : (
+                <input
+                  type="text"
+                  value={startingSerial}
+                  onChange={(e) => setStartingSerial(e.target.value)}
+                  placeholder="מספר סידורי..."
+                  className="w-full p-3 border-2 border-gray-200 rounded-xl focus:border-orange-500 focus:outline-none focus:ring-2 focus:ring-orange-200"
+                />
+              )}
+              {selectedFiles.length > 1 && startingSerial && (
+                <p className="text-xs text-slate-500 mt-1">
+                  הקבצים יקבלו מספרים: {getSerialForFile(0)} עד {getSerialForFile(selectedFiles.length - 1)}
+                </p>
+              )}
+            </div>
+          )}
 
           {/* File Selection */}
           <div>
@@ -174,15 +254,20 @@ export default function QuickFileUploadModal({
                   key={index}
                   className="flex items-center justify-between bg-orange-50 border border-orange-200 rounded-xl px-4 py-2"
                 >
-                  <div className="flex items-center gap-2">
-                    <FileText className="w-4 h-4 text-orange-500" />
-                    <span className="text-sm text-slate-700 truncate max-w-[250px]">
+                  <div className="flex items-center gap-2 flex-1 min-w-0">
+                    <FileText className="w-4 h-4 text-orange-500 flex-shrink-0" />
+                    <span className="text-sm text-slate-700 truncate">
                       {file.name}
                     </span>
+                    {documentType === "אין צורך" && startingSerial && (
+                      <span className="text-xs bg-orange-200 text-orange-800 px-2 py-0.5 rounded-full flex-shrink-0">
+                        #{getSerialForFile(index)}
+                      </span>
+                    )}
                   </div>
                   <button
                     onClick={() => removeFile(index)}
-                    className="text-red-500 hover:text-red-700 text-sm font-bold"
+                    className="text-red-500 hover:text-red-700 text-sm font-bold flex-shrink-0 mr-2"
                   >
                     הסר
                   </button>
