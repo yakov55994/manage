@@ -462,37 +462,36 @@ const invoiceControllers = {
   },
 
   // ===============================================
-  // מילוי מספרים סידוריים לחשבוניות "אין צורך" קיימות עם מספר 0
+  // מילוי מספרים סידוריים לכל חשבוניות "אין צורך" – מספור מ-0 ללא כפילויות
   // ===============================================
   async backfillNoDocSerials(req, res) {
     try {
-      const invoices = await Invoice.find({
+      // שלוף את כל חשבוניות "אין צורך" לפי סדר יצירה
+      const allInvoices = await Invoice.find({
         documentType: "אין צורך",
-        $or: [
-          { invoiceNumber: "0" },
-          { invoiceNumber: "" },
-          { invoiceNumber: null }
-        ]
       }).sort({ createdAt: 1 });
 
-      if (invoices.length === 0) {
-        return res.json({ success: true, message: "אין חשבוניות לעדכון", updated: 0 });
+      if (allInvoices.length === 0) {
+        return res.json({ success: true, message: "אין חשבוניות מסוג 'אין צורך'", updated: 0 });
       }
 
-      // מצא את המספר הסידורי הגבוה ביותר הקיים
-      let currentMax = await getMaxAinTsorchSerial();
-
-      for (const inv of invoices) {
-        currentMax++;
-        inv.invoiceNumber = `ללא-${String(currentMax).padStart(4, "0")}`;
-        await inv.save();
+      // מספור מחדש מ-0 לכולם – ללא כפילויות
+      let updated = 0;
+      for (let i = 0; i < allInvoices.length; i++) {
+        const newNumber = String(i);
+        if (allInvoices[i].invoiceNumber !== newNumber) {
+          allInvoices[i].invoiceNumber = newNumber;
+          await allInvoices[i].save();
+          updated++;
+        }
       }
 
       res.json({
         success: true,
-        message: `עודכנו ${invoices.length} חשבוניות`,
-        updated: invoices.length,
-        lastSerial: currentMax
+        message: `עודכנו ${updated} חשבוניות (סה"כ ${allInvoices.length} חשבוניות "אין צורך")`,
+        updated,
+        total: allInvoices.length,
+        lastSerial: allInvoices.length - 1
       });
     } catch (err) {
       res.status(500).json({ success: false, error: err.message });
@@ -500,25 +499,17 @@ const invoiceControllers = {
   },
 }
 
-// פונקציית עזר - מוצאת את המספר הסידורי הגבוה ביותר של "אין צורך"
-async function getMaxAinTsorchSerial() {
-  const existing = await Invoice.find({
-    documentType: "אין צורך",
-    invoiceNumber: { $regex: /^ללא-\d+$/ }
-  }).select("invoiceNumber");
-
-  let max = 0;
-  for (const inv of existing) {
-    const num = parseInt(inv.invoiceNumber.replace("ללא-", ""), 10);
-    if (!isNaN(num) && num > max) max = num;
-  }
-  return max;
-}
-
-// פונקציית עזר - מחזירה את המספר הסידורי הבא
+// פונקציית עזר - מחזירה את המספר הסידורי הבא (מבוסס ספירה + בדיקת כפילויות)
 async function getNextAinTsorchSerial() {
-  const max = await getMaxAinTsorchSerial();
-  return `ללא-${String(max + 1).padStart(4, "0")}`;
+  const count = await Invoice.countDocuments({ documentType: "אין צורך" });
+  let next = count;
+
+  // בדיקת כפילויות – אם המספר כבר קיים, המשך עד שתמצא פנוי
+  while (await Invoice.exists({ documentType: "אין צורך", invoiceNumber: String(next) })) {
+    next++;
+  }
+
+  return String(next);
 }
 
 // ===============================================

@@ -5,7 +5,7 @@ import puppeteer from "puppeteer";
 // =============================================
 // כרטסת פרויקט - הזמנות בזכות, חשבוניות בחובה
 // =============================================
-export async function generateProjectKarteset({ project, orders, invoices, dateFrom, dateTo }) {
+export async function generateProjectKarteset({ project, orders, invoices, salaries = [], dateFrom, dateTo }) {
   const formatDate = (d) => {
     if (!d) return "-";
     return new Date(d).toLocaleDateString("he-IL");
@@ -45,6 +45,19 @@ export async function generateProjectKarteset({ project, orders, invoices, dateF
     });
   });
 
+  // משכורות – הפחתות תקציב (חובה)
+  salaries.forEach((sal) => {
+    transactions.push({
+      date: sal.date || sal.createdAt,
+      type: "חובה",
+      description: `משכורת - ${sal.employeeName}`,
+      details: sal.department || "",
+      docNumber: "",
+      debit: sal.finalAmount || sal.baseAmount || 0,
+      credit: 0,
+    });
+  });
+
   // מיון לפי תאריך
   transactions.sort((a, b) => new Date(a.date) - new Date(b.date));
 
@@ -57,6 +70,7 @@ export async function generateProjectKarteset({ project, orders, invoices, dateF
 
   const totalDebit = transactions.reduce((sum, t) => sum + t.debit, 0);
   const totalCredit = transactions.reduce((sum, t) => sum + t.credit, 0);
+  const totalSalaries = salaries.reduce((sum, s) => sum + (s.finalAmount || s.baseAmount || 0), 0);
 
   const periodStr = dateFrom && dateTo
     ? `${formatDate(dateFrom)} - ${formatDate(dateTo)}`
@@ -183,6 +197,14 @@ transactions.map((t, i) => `
     <div class="label">מספר תנועות</div>
     <div class="value">${transactions.length}</div>
   </div>
+  ${totalSalaries > 0 ? `<div class="summary-item">
+    <div class="label">סה"כ משכורות</div>
+    <div class="value debit">${formatAmount(totalSalaries)} ₪</div>
+  </div>` : ""}
+  ${project.budget ? `<div class="summary-item">
+    <div class="label">תקציב</div>
+    <div class="value">${formatAmount(project.budget)} ₪</div>
+  </div>` : ""}
 </div>
 
 <div class="footer">

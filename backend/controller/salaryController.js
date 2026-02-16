@@ -164,6 +164,111 @@ export async function deleteSalary(req, res) {
 }
 
 // =======================================================
+// BULK UPDATE SALARIES
+// =======================================================
+export async function bulkUpdateSalaries(req, res) {
+  try {
+    const { salaryIds, department, projectId, overheadPercent } = req.body;
+
+    if (!salaryIds || !Array.isArray(salaryIds) || salaryIds.length === 0) {
+      return res.status(400).json({ success: false, error: "חייב לספק מערך של מזהי משכורות" });
+    }
+
+    const updateObj = {};
+    if (department !== undefined) updateObj.department = department || null;
+    if (projectId !== undefined) updateObj.projectId = projectId;
+
+    // אם יש עדכון תקורה – צריך לחשב מחדש finalAmount לכל משכורת
+    if (overheadPercent !== undefined) {
+      const salaries = await Salary.find({ _id: { $in: salaryIds } });
+      const projectsToRecalc = new Set();
+
+      for (const salary of salaries) {
+        salary.overheadPercent = overheadPercent;
+        salary.finalAmount = salary.baseAmount + (salary.baseAmount * overheadPercent / 100);
+        if (department !== undefined) salary.department = department || null;
+        if (projectId !== undefined) {
+          projectsToRecalc.add(salary.projectId.toString());
+          salary.projectId = projectId;
+        }
+        await salary.save();
+        projectsToRecalc.add(salary.projectId.toString());
+      }
+
+      for (const pid of projectsToRecalc) {
+        await recalculateRemainingBudget(pid);
+      }
+
+      return res.json({
+        success: true,
+        message: `עודכנו ${salaries.length} משכורות`,
+        updated: salaries.length
+      });
+    }
+
+    // עדכון פשוט (בלי חישוב תקורה מחדש)
+    if (Object.keys(updateObj).length > 0) {
+      const projectsToRecalc = new Set();
+
+      if (projectId) {
+        // מציאת פרויקטים ישנים לחישוב מחדש
+        const oldSalaries = await Salary.find({ _id: { $in: salaryIds } }).select("projectId");
+        oldSalaries.forEach(s => projectsToRecalc.add(s.projectId.toString()));
+        projectsToRecalc.add(projectId);
+      }
+
+      await Salary.updateMany({ _id: { $in: salaryIds } }, { $set: updateObj });
+
+      for (const pid of projectsToRecalc) {
+        await recalculateRemainingBudget(pid);
+      }
+
+      return res.json({
+        success: true,
+        message: `עודכנו ${salaryIds.length} משכורות`,
+        updated: salaryIds.length
+      });
+    }
+
+    return res.json({ success: true, message: "אין שינויים", updated: 0 });
+  } catch (err) {
+    console.error("BULK UPDATE SALARIES ERROR:", err);
+    res.status(500).json({ success: false, error: err.message });
+  }
+}
+
+// =======================================================
+// BULK DELETE SALARIES
+// =======================================================
+export async function bulkDeleteSalaries(req, res) {
+  try {
+    const { salaryIds } = req.body;
+
+    if (!salaryIds || !Array.isArray(salaryIds) || salaryIds.length === 0) {
+      return res.status(400).json({ success: false, error: "חייב לספק מערך של מזהי משכורות" });
+    }
+
+    const salaries = await Salary.find({ _id: { $in: salaryIds } }).select("projectId");
+    const projectIds = [...new Set(salaries.map(s => s.projectId.toString()))];
+
+    await Salary.deleteMany({ _id: { $in: salaryIds } });
+
+    for (const pid of projectIds) {
+      await recalculateRemainingBudget(pid);
+    }
+
+    res.json({
+      success: true,
+      message: `נמחקו ${salaryIds.length} משכורות`,
+      deleted: salaryIds.length
+    });
+  } catch (err) {
+    console.error("BULK DELETE SALARIES ERROR:", err);
+    res.status(500).json({ success: false, error: err.message });
+  }
+}
+
+// =======================================================
 // EXPORT SALARIES PDF (BY PROJECT)
 // =======================================================
 export async function exportSalaries(req, res) {

@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect } from "react";
 import { toast } from "sonner";
-import { Upload, X, FileText, Paperclip, Hash } from "lucide-react";
+import { Upload, X, FileText, Paperclip, Hash, FileDigit } from "lucide-react";
 import api from "../api/api.js";
 
 const documentTypes = [
@@ -23,7 +23,15 @@ export default function QuickFileUploadModal({
   const [startingSerial, setStartingSerial] = useState("");
   const [loadingSerial, setLoadingSerial] = useState(false);
   const [uploading, setUploading] = useState(false);
+  const [editedInvoiceNumber, setEditedInvoiceNumber] = useState("");
   const fileInputRef = useRef(null);
+
+  // אתחול מספר חשבונית כשנפתח
+  useEffect(() => {
+    if (open && invoice) {
+      setEditedInvoiceNumber(invoice.invoiceNumber || "");
+    }
+  }, [open, invoice]);
 
   // שליפת מספר סידורי רק כשנבחר "אין צורך"
   useEffect(() => {
@@ -118,6 +126,27 @@ export default function QuickFileUploadModal({
         files: uploadedFiles,
       });
 
+      // עדכון מספר חשבונית אם השתנה
+      if (editedInvoiceNumber !== invoice.invoiceNumber) {
+        try {
+          await api.put(`/invoices/${invoice._id}`, {
+            invoiceNumber: editedInvoiceNumber,
+            projects: invoice.projects?.map(p => ({
+              projectId: p.projectId?._id || p.projectId,
+              projectName: p.projectName,
+              sum: p.sum,
+            })),
+            files: [...(invoice.files || []), ...uploadedFiles],
+            documentType: invoice.documentType,
+            detail: invoice.detail,
+            invoiceDate: invoice.invoiceDate,
+            paid: invoice.paid,
+          });
+        } catch (err) {
+          console.error("Error updating invoice number:", err);
+        }
+      }
+
       toast.success(
         `${uploadedFiles.length} ${uploadedFiles.length === 1 ? "קובץ הועלה" : "קבצים הועלו"} בהצלחה`,
         { className: "sonner-toast success rtl" }
@@ -169,6 +198,20 @@ export default function QuickFileUploadModal({
         </div>
 
         <div className="p-5 space-y-5">
+          {/* Invoice Number */}
+          <div>
+            <label className="flex items-center gap-2 font-bold mb-2 text-slate-700">
+              <FileDigit className="w-4 h-4 text-orange-600" />
+              מספר חשבונית
+            </label>
+            <input
+              type="text"
+              value={editedInvoiceNumber}
+              onChange={(e) => setEditedInvoiceNumber(e.target.value)}
+              className="w-full p-3 border-2 border-gray-200 rounded-xl focus:border-orange-500 focus:outline-none focus:ring-2 focus:ring-orange-200"
+            />
+          </div>
+
           {/* Document Type */}
           <div>
             <label className="block font-bold mb-2 text-slate-700">

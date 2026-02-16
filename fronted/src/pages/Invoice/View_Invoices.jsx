@@ -1598,47 +1598,44 @@ const InvoicesPage = () => {
   };
 
   // ✅ טעינת חשבוניות עם סינון לפי הרשאות
-  useEffect(() => {
-    const fetchInvoices = async () => {
-      try {
-        const [invoicesRes, expensesRes] = await Promise.all([
-          api.get("/invoices"),
-          api.get("/expenses")
-        ]);
+  const fetchInvoices = async () => {
+    try {
+      const [invoicesRes, expensesRes] = await Promise.all([
+        api.get("/invoices"),
+        api.get("/expenses")
+      ]);
 
-        const allData = arr(invoicesRes.data.data);
-        // ✅ סנן חשבוניות לפי הרשאות
-        const allowedProjectIds = getAllowedProjectIds();
+      const allData = arr(invoicesRes.data.data);
+      // ✅ סנן חשבוניות לפי הרשאות
+      const allowedProjectIds = getAllowedProjectIds();
 
-        let filteredData = allData;
-        if (allowedProjectIds !== null) {
-          filteredData = allData.filter((invoice) => {
+      let filteredData = allData;
+      if (allowedProjectIds !== null) {
+        filteredData = allData.filter((invoice) => {
 
-            if (!Array.isArray(invoice.projects)) return false;
+          if (!Array.isArray(invoice.projects)) return false;
 
-            return invoice.projects.some((p) =>
-              allowedProjectIds.includes(
-                normalizeId(p.projectId)
-              )
-            );
-          });
-        }
-
-
-
-        setAllInvoices(filteredData);
-        setAllExpenses(expensesRes.data?.data || []);
-        // לא מגדירים setInvoices כאן - getFilteredInvoices() יסנן אוטומטית
-      } catch (error) {
-        console.error("Error fetching invoices:", error);
-        toast.error("שגיאה בטעינת הנתונים. נסה שנית מאוחר יותר.", {
-          className: "sonner-toast error rtl",
+          return invoice.projects.some((p) =>
+            allowedProjectIds.includes(
+              normalizeId(p.projectId)
+            )
+          );
         });
-      } finally {
-        setLoading(false);
       }
-    };
 
+      setAllInvoices(filteredData);
+      setAllExpenses(expensesRes.data?.data || []);
+    } catch (error) {
+      console.error("Error fetching invoices:", error);
+      toast.error("שגיאה בטעינת הנתונים. נסה שנית מאוחר יותר.", {
+        className: "sonner-toast error rtl",
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
     fetchInvoices();
   }, []);
 

@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import api from "../../api/api";
 import { ClipLoader } from "react-spinners";
@@ -19,6 +19,9 @@ import {
   Upload,
   FileSpreadsheet,
   Percent,
+  CheckSquare,
+  Square,
+  X,
 } from "lucide-react";
 import { toast } from "sonner";
 import ProjectSelector from "../../Components/ProjectSelector";
@@ -35,6 +38,15 @@ export default function View_Salaries() {
   const [exportLoading, setExportLoading] = useState(false);
   const [deleteModal, setDeleteModal] = useState({ open: false, salaryId: null, salaryName: "" });
   const [allExpenses, setAllExpenses] = useState([]);
+
+  // Multi-select state
+  const [selectedSalaries, setSelectedSalaries] = useState([]);
+  const lastSelectedIdRef = useRef(null);
+  const [bulkActionModal, setBulkActionModal] = useState({ open: false, type: null });
+  const [bulkDepartment, setBulkDepartment] = useState("");
+  const [bulkProjectId, setBulkProjectId] = useState("");
+  const [bulkOverhead, setBulkOverhead] = useState(0);
+  const [bulkLoading, setBulkLoading] = useState(false);
 
   // Upload Excel state
   const [uploadOpen, setUploadOpen] = useState(false);
@@ -200,6 +212,79 @@ export default function View_Salaries() {
     } else {
       setSortBy(field);
       setSortOrder("desc");
+    }
+  };
+
+  // ========== Multi-select functions ==========
+  const toggleSelectSalary = (salary, event) => {
+    const currentId = salary._id;
+    const currentIndex = filteredSalaries.findIndex(s => s._id === currentId);
+    const lastId = lastSelectedIdRef.current;
+    const lastIndex = lastId ? filteredSalaries.findIndex(s => s._id === lastId) : -1;
+
+    if (!event.shiftKey || lastIndex === -1) {
+      setSelectedSalaries(prev => {
+        const exists = prev.some(s => s._id === currentId);
+        return exists ? prev.filter(s => s._id !== currentId) : [...prev, salary];
+      });
+      lastSelectedIdRef.current = currentId;
+      return;
+    }
+
+    // Shift selection
+    const start = Math.min(lastIndex, currentIndex);
+    const end = Math.max(lastIndex, currentIndex);
+    const range = filteredSalaries.slice(start, end + 1);
+
+    setSelectedSalaries(prev => {
+      const map = new Map(prev.map(s => [s._id, s]));
+      range.forEach(s => map.set(s._id, s));
+      return Array.from(map.values());
+    });
+  };
+
+  const toggleSelectAll = () => {
+    if (selectedSalaries.length === filteredSalaries.length) {
+      setSelectedSalaries([]);
+      lastSelectedIdRef.current = null;
+    } else {
+      setSelectedSalaries([...filteredSalaries]);
+    }
+  };
+
+  const clearSelection = () => {
+    setSelectedSalaries([]);
+    lastSelectedIdRef.current = null;
+  };
+
+  const handleBulkAction = async () => {
+    setBulkLoading(true);
+    try {
+      const ids = selectedSalaries.map(s => s._id);
+
+      if (bulkActionModal.type === "delete") {
+        await api.post("/salaries/bulk-delete", { salaryIds: ids });
+        setSalaries(prev => prev.filter(s => !ids.includes(s._id)));
+        toast.success(`נמחקו ${ids.length} משכורות`, { className: "sonner-toast success rtl" });
+      } else {
+        const updateData = { salaryIds: ids };
+        if (bulkActionModal.type === "department") updateData.department = bulkDepartment;
+        if (bulkActionModal.type === "project") updateData.projectId = bulkProjectId;
+        if (bulkActionModal.type === "overhead") updateData.overheadPercent = parseFloat(bulkOverhead) || 0;
+
+        await api.put("/salaries/bulk-update", updateData);
+        toast.success(`עודכנו ${ids.length} משכורות`, { className: "sonner-toast success rtl" });
+        fetchSalaries();
+      }
+
+      setSelectedSalaries([]);
+      lastSelectedIdRef.current = null;
+      setBulkActionModal({ open: false, type: null });
+    } catch (err) {
+      console.error("Bulk action error:", err);
+      toast.error(err.response?.data?.error || "שגיאה בביצוע הפעולה", { className: "sonner-toast error rtl" });
+    } finally {
+      setBulkLoading(false);
     }
   };
 
@@ -572,6 +657,53 @@ export default function View_Salaries() {
           </div>
         </div>
 
+        {/* Bulk Action Bar */}
+        {selectedSalaries.length > 0 && (
+          <div className="relative mb-4 sm:mb-5 md:mb-6">
+            <div className="absolute -inset-2 bg-gradient-to-r from-blue-500 to-indigo-500 rounded-2xl sm:rounded-3xl opacity-10 blur-xl"></div>
+            <div className="relative bg-white/95 backdrop-blur-xl rounded-2xl sm:rounded-3xl shadow-xl p-4 border-2 border-blue-200">
+              <div className="flex flex-wrap items-center gap-3">
+                <div className="flex items-center gap-2">
+                  <CheckSquare className="w-5 h-5 text-blue-600" />
+                  <span className="font-bold text-slate-900">{selectedSalaries.length} נבחרו</span>
+                  <button onClick={clearSelection} className="p-1 hover:bg-slate-100 rounded-lg">
+                    <X className="w-4 h-4 text-slate-500" />
+                  </button>
+                </div>
+                <div className="h-6 w-px bg-slate-300"></div>
+                <button
+                  onClick={() => { setBulkDepartment(""); setBulkActionModal({ open: true, type: "department" }); }}
+                  className="flex items-center gap-2 px-4 py-2 bg-blue-100 text-blue-700 rounded-xl font-bold hover:bg-blue-200 transition-all"
+                >
+                  <Building2 className="w-4 h-4" />
+                  מחלקה
+                </button>
+                <button
+                  onClick={() => { setBulkProjectId(""); setBulkActionModal({ open: true, type: "project" }); }}
+                  className="flex items-center gap-2 px-4 py-2 bg-emerald-100 text-emerald-700 rounded-xl font-bold hover:bg-emerald-200 transition-all"
+                >
+                  <Briefcase className="w-4 h-4" />
+                  פרויקט
+                </button>
+                <button
+                  onClick={() => { setBulkOverhead(0); setBulkActionModal({ open: true, type: "overhead" }); }}
+                  className="flex items-center gap-2 px-4 py-2 bg-amber-100 text-amber-700 rounded-xl font-bold hover:bg-amber-200 transition-all"
+                >
+                  <Percent className="w-4 h-4" />
+                  תקורה
+                </button>
+                <button
+                  onClick={() => setBulkActionModal({ open: true, type: "delete" })}
+                  className="flex items-center gap-2 px-4 py-2 bg-red-100 text-red-700 rounded-xl font-bold hover:bg-red-200 transition-all"
+                >
+                  <Trash2 className="w-4 h-4" />
+                  מחיקה
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
         {/* Salaries Table */}
         <div className="relative">
           <div className="absolute -inset-2 bg-gradient-to-r from-orange-500 via-amber-500 to-yellow-500 rounded-2xl sm:rounded-3xl opacity-10 blur-xl"></div>
@@ -591,7 +723,16 @@ export default function View_Salaries() {
                   <table className="w-full text-sm table-fixed">
                     <thead className="bg-gradient-to-r from-orange-500 via-amber-500 to-yellow-500">
                       <tr>
-                        <th className="px-2 py-2.5 text-right text-xs font-bold text-white w-[13%]">
+                        <th className="px-2 py-2.5 text-center text-xs font-bold text-white w-[4%]">
+                          <button onClick={toggleSelectAll} className="hover:opacity-80 transition-opacity">
+                            {selectedSalaries.length === filteredSalaries.length && filteredSalaries.length > 0 ? (
+                              <CheckSquare className="w-4 h-4 text-white" />
+                            ) : (
+                              <Square className="w-4 h-4 text-white" />
+                            )}
+                          </button>
+                        </th>
+                        <th className="px-2 py-2.5 text-right text-xs font-bold text-white w-[12%]">
                           שם עובד
                         </th>
                         <th className="px-2 py-2.5 text-right text-xs font-bold text-white w-[7%]">
@@ -631,10 +772,24 @@ export default function View_Salaries() {
                         <tr
                           key={salary._id}
                           className={`hover:bg-orange-50/50 transition-colors cursor-pointer ${
-                            index % 2 === 0 ? "bg-white" : "bg-orange-50/30"
+                            selectedSalaries.some(s => s._id === salary._id)
+                              ? "bg-blue-50/70"
+                              : index % 2 === 0 ? "bg-white" : "bg-orange-50/30"
                           }`}
                           onClick={() => navigate(`/salaries/${salary._id}`)}
                         >
+                          <td className="px-2 py-1.5 text-center">
+                            <button
+                              onClick={(e) => { e.stopPropagation(); toggleSelectSalary(salary, e); }}
+                              className="hover:opacity-80 transition-opacity"
+                            >
+                              {selectedSalaries.some(s => s._id === salary._id) ? (
+                                <CheckSquare className="w-4 h-4 text-blue-600" />
+                              ) : (
+                                <Square className="w-4 h-4 text-slate-400" />
+                              )}
+                            </button>
+                          </td>
                           <td className="px-2 py-1.5 truncate">
                             <span className="font-bold text-slate-900 text-sm">
                               {salary.employeeName}
@@ -734,11 +889,25 @@ export default function View_Salaries() {
                     <div
                       key={salary._id}
                       onClick={() => navigate(`/salaries/${salary._id}`)}
-                      className="bg-white/90 backdrop-blur-xl rounded-xl shadow-lg hover:shadow-xl transition-all border border-orange-100 p-4 cursor-pointer active:scale-98"
+                      className={`backdrop-blur-xl rounded-xl shadow-lg hover:shadow-xl transition-all border p-4 cursor-pointer active:scale-98 ${
+                        selectedSalaries.some(s => s._id === salary._id)
+                          ? "bg-blue-50/90 border-blue-200"
+                          : "bg-white/90 border-orange-100"
+                      }`}
                     >
                       {/* Header - Employee Name */}
                       <div className="flex items-center justify-between mb-3 pb-3 border-b border-orange-100">
                         <div className="flex items-center gap-2">
+                          <button
+                            onClick={(e) => { e.stopPropagation(); toggleSelectSalary(salary, e); }}
+                            className="hover:opacity-80 transition-opacity"
+                          >
+                            {selectedSalaries.some(s => s._id === salary._id) ? (
+                              <CheckSquare className="w-5 h-5 text-blue-600" />
+                            ) : (
+                              <Square className="w-5 h-5 text-slate-400" />
+                            )}
+                          </button>
                           <div className="p-2 rounded-lg bg-gradient-to-br from-orange-500 to-amber-500">
                             <User className="w-4 h-4 text-white" />
                           </div>
@@ -958,6 +1127,132 @@ export default function View_Salaries() {
                   </button>
                   <button
                     onClick={closeDeleteModal}
+                    className="flex-1 px-6 py-3 rounded-xl font-bold text-slate-700 bg-slate-100 hover:bg-slate-200 transition-all"
+                  >
+                    ביטול
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Bulk Action Modal */}
+        {bulkActionModal.open && (
+          <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+            <div className="relative">
+              <div className={`absolute -inset-4 rounded-2xl sm:rounded-3xl opacity-20 blur-2xl ${
+                bulkActionModal.type === "delete"
+                  ? "bg-gradient-to-r from-red-500 to-rose-500"
+                  : "bg-gradient-to-r from-blue-500 to-indigo-500"
+              }`}></div>
+
+              <div className="relative bg-white rounded-2xl sm:rounded-3xl shadow-2xl p-6 md:p-8 max-w-md w-full max-h-[90vh] overflow-y-auto">
+                <div className="text-center mb-6">
+                  <div className={`mx-auto w-16 h-16 rounded-full flex items-center justify-center mb-4 ${
+                    bulkActionModal.type === "delete"
+                      ? "bg-gradient-to-br from-red-500 to-rose-500"
+                      : "bg-gradient-to-br from-blue-500 to-indigo-500"
+                  }`}>
+                    {bulkActionModal.type === "department" && <Building2 className="w-8 h-8 text-white" />}
+                    {bulkActionModal.type === "project" && <Briefcase className="w-8 h-8 text-white" />}
+                    {bulkActionModal.type === "overhead" && <Percent className="w-8 h-8 text-white" />}
+                    {bulkActionModal.type === "delete" && <Trash2 className="w-8 h-8 text-white" />}
+                  </div>
+                  <h3 className="text-2xl font-bold text-slate-900 mb-1">
+                    {bulkActionModal.type === "department" && "עדכון מחלקה"}
+                    {bulkActionModal.type === "project" && "עדכון פרויקט"}
+                    {bulkActionModal.type === "overhead" && "עדכון תקורה"}
+                    {bulkActionModal.type === "delete" && "מחיקה מרובה"}
+                  </h3>
+                  <p className="text-slate-500 text-sm">
+                    {selectedSalaries.length} משכורות נבחרו
+                  </p>
+                </div>
+
+                {bulkActionModal.type === "department" && (
+                  <div className="mb-6">
+                    <label className="block text-sm font-bold text-slate-700 mb-2">מחלקה</label>
+                    <input
+                      type="text"
+                      value={bulkDepartment}
+                      onChange={(e) => setBulkDepartment(e.target.value)}
+                      placeholder="הזן שם מחלקה..."
+                      className="w-full p-3 border-2 border-blue-200 rounded-xl focus:border-blue-400 focus:outline-none"
+                    />
+                  </div>
+                )}
+
+                {bulkActionModal.type === "project" && (
+                  <div className="mb-6">
+                    <ProjectSelector
+                      projects={projects}
+                      selectedProjectId={bulkProjectId}
+                      onProjectChange={(projectId) => setBulkProjectId(projectId)}
+                      multiSelect={false}
+                      label="פרויקט"
+                      placeholder="חפש פרויקט..."
+                    />
+                  </div>
+                )}
+
+                {bulkActionModal.type === "overhead" && (
+                  <div className="mb-6">
+                    <label className="block text-sm font-bold text-slate-700 mb-2">אחוז תקורה</label>
+                    <div className="flex flex-wrap gap-2 mb-3">
+                      {[0, 42, 45, 50].map((p) => (
+                        <button
+                          key={p}
+                          type="button"
+                          onClick={() => setBulkOverhead(p)}
+                          className={`px-3 py-1.5 rounded-lg font-bold text-sm transition-all ${
+                            bulkOverhead == p
+                              ? "bg-amber-600 text-white shadow-lg"
+                              : "bg-amber-100 text-amber-700 hover:bg-amber-200"
+                          }`}
+                        >
+                          {p}%
+                        </button>
+                      ))}
+                    </div>
+                    <input
+                      type="number"
+                      value={bulkOverhead}
+                      onChange={(e) => setBulkOverhead(e.target.value)}
+                      min="0"
+                      max="100"
+                      step="0.01"
+                      className="w-full p-3 border-2 border-amber-200 rounded-xl focus:border-amber-400 focus:outline-none"
+                    />
+                  </div>
+                )}
+
+                {bulkActionModal.type === "delete" && (
+                  <div className="mb-6 text-center">
+                    <p className="text-slate-600">
+                      פעולה זו תמחק <span className="font-bold text-red-600">{selectedSalaries.length}</span> משכורות לצמיתות.
+                    </p>
+                    <p className="text-sm text-red-600 mt-2 font-medium">
+                      פעולה זו אינה ניתנת לביטול!
+                    </p>
+                  </div>
+                )}
+
+                <div className="flex gap-3">
+                  <button
+                    onClick={handleBulkAction}
+                    disabled={bulkLoading || (bulkActionModal.type === "project" && !bulkProjectId)}
+                    className={`flex-1 px-6 py-3 rounded-xl font-bold text-white transition-all shadow-lg disabled:opacity-50 ${
+                      bulkActionModal.type === "delete"
+                        ? "bg-gradient-to-r from-red-500 to-rose-500 hover:from-red-600 hover:to-rose-600"
+                        : "bg-gradient-to-r from-blue-500 to-indigo-500 hover:from-blue-600 hover:to-indigo-600"
+                    }`}
+                  >
+                    {bulkLoading ? "מעדכן..." : bulkActionModal.type === "delete" ? "מחק" : "עדכן"}
+                  </button>
+                  <button
+                    onClick={() => setBulkActionModal({ open: false, type: null })}
+                    disabled={bulkLoading}
                     className="flex-1 px-6 py-3 rounded-xl font-bold text-slate-700 bg-slate-100 hover:bg-slate-200 transition-all"
                   >
                     ביטול

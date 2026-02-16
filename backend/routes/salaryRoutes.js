@@ -1,6 +1,6 @@
 import express from "express";
 import multer from "multer";
-import { createSalary, getSalaries, exportSalaries, getSalaryById, updateSalary, deleteSalary, uploadSalariesExcel } from "../controller/salaryController.js";
+import { createSalary, getSalaries, exportSalaries, getSalaryById, updateSalary, deleteSalary, uploadSalariesExcel, bulkUpdateSalaries, bulkDeleteSalaries } from "../controller/salaryController.js";
 import { protect } from "../middleware/auth.js";
 
 const router = express.Router();
@@ -31,6 +31,10 @@ router.post("/export", protect, exportSalaries);
 
 // העלאת קובץ אקסל משכורות
 router.post("/upload-excel", protect, upload.single("file"), uploadSalariesExcel);
+
+// פעולות מרובות
+router.put("/bulk-update", protect, bulkUpdateSalaries);
+router.post("/bulk-delete", protect, bulkDeleteSalaries);
 
 router.get("/:id", protect, getSalaryById);
 router.put("/:id", protect, updateSalary);

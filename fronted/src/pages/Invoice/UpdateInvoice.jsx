@@ -48,6 +48,7 @@ const InvoiceEditPage = () => {
     documentType: "",
     invoiceDate: "",
     detail: "",
+    internalNotes: "",
     paid: "לא",
     paymentDate: "",
     paymentMethod: "",
@@ -122,6 +123,7 @@ const InvoiceEditPage = () => {
                 ? invoice.invoiceDate.split("T")[0]
                 : new Date().toISOString().split("T")[0],
               detail: invoice.detail || "",
+              internalNotes: invoice.internalNotes || "",
               paid: invoice.paid || "לא",
               paymentDate: invoice.paymentDate
                 ? invoice.paymentDate.split("T")[0]
@@ -306,7 +308,7 @@ const InvoiceEditPage = () => {
   // GLOBAL FIELDS CHANGE
   // ===============================================================
   const updateGlobal = (field, value) => {
-    setGlobalFields({ ...globalFields, [field]: value });
+    setGlobalFields(prev => ({ ...prev, [field]: value }));
   };
 
 
@@ -569,9 +571,13 @@ const InvoiceEditPage = () => {
             <input
               type="text"
               value={globalFields.invoiceNumber}
+              readOnly={globalFields.documentType === "אין צורך"}
               onChange={(e) => updateGlobal("invoiceNumber", e.target.value)}
-              className="w-full p-3 border rounded-xl"
+              className={`w-full p-3 border rounded-xl ${globalFields.documentType === "אין צורך" ? "bg-gray-100 text-gray-500" : ""}`}
             />
+            {globalFields.documentType === "אין צורך" && (
+              <p className="text-xs text-slate-500 mt-1">מספר סידורי אוטומטי</p>
+            )}
           </div>
 
           <DateField
@@ -587,7 +593,20 @@ const InvoiceEditPage = () => {
               className="w-full p-3 border rounded-xl"
               value={globalFields.documentType}
               onChange={(e) => {
-                updateGlobal("documentType", e.target.value);
+                const value = e.target.value;
+                const prevType = globalFields.documentType;
+                updateGlobal("documentType", value);
+                // אם "אין צורך" – שלוף מספר סידורי אוטומטי
+                if (value === "אין צורך") {
+                  api.get("/invoices/next-no-doc-serial").then(({ data }) => {
+                    if (data.success) {
+                      updateGlobal("invoiceNumber", data.serial);
+                    }
+                  }).catch(() => {});
+                } else if (prevType === "אין צורך") {
+                  // מחק מספר סידורי רק כשעוברים מ-"אין צורך" לסוג אחר
+                  updateGlobal("invoiceNumber", "");
+                }
               }}
             >
               <option value="">בחר…</option>
@@ -756,6 +775,19 @@ const InvoiceEditPage = () => {
               value={globalFields.detail}
               onChange={(e) => updateGlobal("detail", e.target.value)}
               className="w-full p-3 border rounded-xl min-h-[100px]"
+            />
+          </div>
+
+          <div className="md:col-span-2">
+            <label className="font-bold mb-1 block flex items-center gap-2">
+              הערות פנימיות
+              <span className="text-xs text-slate-400 font-normal">(לשימוש המשרד בלבד)</span>
+            </label>
+            <textarea
+              value={globalFields.internalNotes}
+              onChange={(e) => updateGlobal("internalNotes", e.target.value)}
+              className="w-full p-3 border rounded-xl min-h-[80px] bg-yellow-50/50 border-yellow-200 focus:border-yellow-400 focus:outline-none"
+              placeholder="הערות פנימיות..."
             />
           </div>
 

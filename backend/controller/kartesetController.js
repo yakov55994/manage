@@ -2,6 +2,7 @@ import fs from "fs";
 import Project from "../models/Project.js";
 import Order from "../models/Order.js";
 import Invoice from "../models/Invoice.js";
+import Salary from "../models/Salary.js";
 import Supplier from "../models/Supplier.js";
 import { generateProjectKarteset, generateSupplierKarteset } from "../services/kartesetPdfService.js";
 
@@ -43,10 +44,20 @@ export default {
       }
       const invoices = await Invoice.find(invoiceQuery).populate("supplierId", "name").lean();
 
+      // טעינת משכורות
+      let salaryQuery = { projectId };
+      if (dateFrom || dateTo) {
+        salaryQuery.date = {};
+        if (dateFrom) salaryQuery.date.$gte = new Date(dateFrom);
+        if (dateTo) salaryQuery.date.$lte = new Date(new Date(dateTo).setHours(23, 59, 59));
+      }
+      const salaries = await Salary.find(salaryQuery).lean();
+
       pdfPath = await generateProjectKarteset({
         project,
         orders,
         invoices,
+        salaries,
         dateFrom,
         dateTo,
       });

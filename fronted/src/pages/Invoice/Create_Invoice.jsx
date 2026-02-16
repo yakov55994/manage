@@ -59,6 +59,7 @@ const CreateInvoice = () => {
       documentType: "",
       invoiceDate: "",
       detail: "",
+      internalNotes: "",
       paid: "לא",
       paymentDate: "",
       paymentMethod: "",
@@ -351,6 +352,7 @@ const CreateInvoice = () => {
         invitingName: form.invitingName,
         invoiceDate: form.invoiceDate,
         detail: form.detail,
+        internalNotes: form.internalNotes,
 
         paid: form.paid,
         paymentDate: form.paid === "כן" ? form.paymentDate : "",
@@ -654,8 +656,9 @@ const CreateInvoice = () => {
           <div>
             <label>מספר חשבונית</label>
             <input
-              className="w-full p-3 border rounded-xl"
+              className={`w-full p-3 border rounded-xl ${form.documentType === "אין צורך" ? "bg-gray-100 text-gray-500" : ""}`}
               value={form.invoiceNumber}
+              readOnly={form.documentType === "אין צורך"}
               onChange={(e) =>
                 setForm((prev) => ({
                   ...prev,
@@ -663,6 +666,9 @@ const CreateInvoice = () => {
                 }))
               }
             />
+            {form.documentType === "אין צורך" && (
+              <p className="text-xs text-slate-500 mt-1">מספר סידורי אוטומטי</p>
+            )}
           </div>
 
           {/* תאריך החשבונית */}
@@ -711,6 +717,18 @@ const CreateInvoice = () => {
                   setRows([]);
                 } else {
                   setIsSalary(false);
+                }
+
+                // אם "אין צורך" – שלוף מספר סידורי אוטומטי כמספר חשבונית
+                if (value === "אין צורך") {
+                  api.get("/invoices/next-no-doc-serial").then(({ data }) => {
+                    if (data.success) {
+                      setForm((prev) => ({ ...prev, invoiceNumber: data.serial }));
+                    }
+                  }).catch(() => {});
+                } else if (form.documentType === "אין צורך") {
+                  // נקה את המספר הסידורי רק כשעוברים מ"אין צורך" לסוג אחר
+                  setForm((prev) => ({ ...prev, invoiceNumber: "" }));
                 }
               }}
             >
@@ -909,6 +927,26 @@ const CreateInvoice = () => {
                   detail: e.target.value,
                 }))
               }
+            ></textarea>
+          </div>
+
+          {/* הערות פנימיות */}
+          <div className="col-span-2">
+            <label className="flex items-center gap-2">
+              הערות פנימיות
+              <span className="text-xs text-slate-400 font-normal">(לשימוש המשרד בלבד)</span>
+            </label>
+            <textarea
+              className="w-full p-3 border rounded-xl bg-yellow-50/50 border-yellow-200 focus:border-yellow-400 focus:outline-none"
+              value={form.internalNotes}
+              onChange={(e) =>
+                setForm((prev) => ({
+                  ...prev,
+                  internalNotes: e.target.value,
+                }))
+              }
+              placeholder="הערות פנימיות..."
+              rows={2}
             ></textarea>
           </div>
         </div>

@@ -153,6 +153,9 @@ supplierId: {
     ref: "Project"
   }],
 
+  // הערות פנימיות – לשימוש המשרד בלבד (לא מוצג בכרטסת/ייצוא)
+  internalNotes: { type: String, default: "" },
+
   // היסטוריית עריכות
   editHistory: [EditHistorySchema],
 }, {

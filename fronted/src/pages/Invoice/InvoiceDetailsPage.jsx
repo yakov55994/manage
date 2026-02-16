@@ -305,6 +305,14 @@ const InvoiceDetailsPage = () => {
               value={invoice.documentType}
             />
 
+            {invoice.documentType === "אין צורך" && (
+              <DetailCard
+                label="מספר סידורי"
+                icon={<Hash />}
+                value={invoice.invoiceNumber}
+              />
+            )}
+
             <DetailCard
               label="סטטוס תשלום"
               icon={<CheckCircle2 />}
@@ -362,6 +370,16 @@ const InvoiceDetailsPage = () => {
               icon={<FileText />}
               value={invoice.detail || "—"}
             />
+
+            {invoice.internalNotes && (
+              <div className="md:col-span-2">
+                <DetailCard
+                  label="הערות פנימיות (משרד)"
+                  icon={<FileText />}
+                  value={invoice.internalNotes}
+                />
+              </div>
+            )}
 
             <DetailCard
               label="נוצר ע״י"
