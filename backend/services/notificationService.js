@@ -417,6 +417,11 @@ const notificationService = {
     if (!notification) return;
 
     if (notification.groupId) {
+      // מוצאים את כל המשתמשים המושפעים לפני המחיקה
+      const affectedUserIds = await Notification.distinct("userId", {
+        groupId: notification.groupId
+      });
+
       // מוחקים את כל ההתראות מהאירוע (לכל המשתמשים)
       const result = await Notification.deleteMany({
         groupId: notification.groupId
@@ -425,6 +430,15 @@ const notificationService = {
       emitToAll("notification:deleted", {
         groupId: notification.groupId
       });
+
+      // עדכון ספירת ההתראות שלא נקראו לכל המשתמשים המושפעים
+      for (const affectedUserId of affectedUserIds) {
+        const unreadCount = await Notification.countDocuments({
+          userId: affectedUserId,
+          read: false
+        });
+        emitToUser(affectedUserId, "notification:unread_count", { unreadCount });
+      }
 
       return { deletedCount: result.deletedCount };
     } else {
@@ -452,6 +466,12 @@ const notificationService = {
     // מחיקת כל ההתראות עם אותם groupIds (לכל המשתמשים)
     let deletedCount = 0;
     if (groupIds.length > 0) {
+      // מוצאים את כל המשתמשים המושפעים לפני המחיקה
+      const affectedUserIds = await Notification.distinct("userId", {
+        groupId: { $in: groupIds },
+        userId: { $ne: userId }
+      });
+
       const result = await Notification.deleteMany({
         $or: [
           { userId },
@@ -463,6 +483,15 @@ const notificationService = {
       // שליחת עדכון סנכרון לכל המשתמשים
       for (const groupId of groupIds) {
         emitToAll("notification:deleted", { groupId });
+      }
+
+      // עדכון ספירת ההתראות שלא נקראו לכל המשתמשים המושפעים
+      for (const affectedUserId of affectedUserIds) {
+        const unreadCount = await Notification.countDocuments({
+          userId: affectedUserId,
+          read: false
+        });
+        emitToUser(affectedUserId, "notification:unread_count", { unreadCount });
       }
     } else {
       const result = await Notification.deleteMany({ userId });

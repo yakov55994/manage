@@ -1,6 +1,7 @@
 import * as brevo from '@getbrevo/brevo';
 import crypto from 'crypto';
 import dotenv from 'dotenv';
+import logoBase64 from './logoBase64.js';
 
 dotenv.config();
 
@@ -236,6 +237,7 @@ export const sendPaymentConfirmationEmail = async (supplierEmail, supplierName, 
   ${isMissingDocument
         ? `
       <div style="background:#7f1d1d; color:white; padding:35px; text-align:center;">
+        <img src="data:image/jpeg;base64,${logoBase64}" alt="חינוך עם חיוך" style="height:70px; margin-bottom:12px;" />
         <h1 style="margin:0; font-size:34px; font-weight:900;">
           ⚠️ נדרש לשלוח חשבונית מס / קבלה
         </h1>
@@ -246,6 +248,7 @@ export const sendPaymentConfirmationEmail = async (supplierEmail, supplierName, 
       `
         : `
       <div style="background:#15803d; color:white; padding:35px; text-align:center;">
+        <img src="data:image/jpeg;base64,${logoBase64}" alt="חינוך עם חיוך" style="height:70px; margin-bottom:12px;" />
         <h1 style="margin:0; font-size:30px;">✅ אישור תשלום</h1>
         <p style="margin-top:10px;">עמותת חינוך עם חיוך</p>
       </div>

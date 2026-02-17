@@ -1,6 +1,7 @@
 import fs from "fs";
 import path from "path";
 import puppeteer from "puppeteer";
+import logoBase64 from "./logoBase64.js";
 
 // =============================================
 // כרטסת פרויקט - הזמנות בזכות, חשבוניות בחובה
@@ -20,7 +21,7 @@ export async function generateProjectKarteset({ project, orders, invoices, salar
     transactions.push({
       date: order.createdAt,
       type: "זכות",
-      description: `הזמנה #${order.orderNumber}`,
+      description: order.detail || "",
       details: order.invitingName || order.supplierId?.name || "",
       docNumber: order.orderNumber || "",
       debit: 0,
@@ -37,7 +38,7 @@ export async function generateProjectKarteset({ project, orders, invoices, salar
     transactions.push({
       date: inv.invoiceDate || inv.createdAt,
       type: "חובה",
-      description: `חשבונית #${inv.invoiceNumber}`,
+      description: inv.detail || "",
       details: inv.supplierId?.name || "",
       docNumber: inv.invoiceNumber || "",
       debit: amount,
@@ -45,7 +46,7 @@ export async function generateProjectKarteset({ project, orders, invoices, salar
     });
   });
 
-  // משכורות – הפחתות תקציב (חובה)
+  // משכורות (חובה)
   salaries.forEach((sal) => {
     transactions.push({
       date: sal.date || sal.createdAt,
@@ -54,6 +55,20 @@ export async function generateProjectKarteset({ project, orders, invoices, salar
       details: sal.department || "",
       docNumber: "",
       debit: sal.finalAmount || sal.baseAmount || 0,
+      credit: 0,
+    });
+  });
+
+  // הפחתות תקציב (חובה)
+  const budgetDeductions = project.budgetDeductions || [];
+  budgetDeductions.forEach((ded, index) => {
+    transactions.push({
+      date: ded.date || ded.createdAt,
+      type: "חובה",
+      description: ded.notes || "",
+      details: ded.reason || "",
+      docNumber: `הפ-${String(index + 1).padStart(3, "0")}`,
+      debit: ded.amount || 0,
       credit: 0,
     });
   });
@@ -114,10 +129,10 @@ th, td {
 }
 th { font-size: 11px; font-weight: bold; }
 tbody tr:nth-child(even) { background: #f3f4f6; }
-.debit { color: #dc2626; font-weight: bold; }
-.credit { color: #16a34a; font-weight: bold; }
-.balance-pos { color: #16a34a; }
-.balance-neg { color: #dc2626; }
+.debit { color: #111827; font-weight: bold; }
+.credit { color: #111827; font-weight: bold; }
+.balance-pos { color: #111827; }
+.balance-neg { color: #111827; }
 .summary {
   margin-top: 20px;
   padding: 12px;
@@ -143,6 +158,7 @@ tbody tr:nth-child(even) { background: #f3f4f6; }
 <body>
 
 <div class="header">
+  <img src="data:image/jpeg;base64,${logoBase64}" alt="לוגו" style="height: 60px; margin-bottom: 8px; filter: grayscale(100%);" />
   <h1>כרטסת פרויקט</h1>
   <div class="subtitle">${project.name}</div>
   <div class="period">${periodStr} | הופק: ${formatDate(new Date())}</div>
@@ -181,6 +197,10 @@ transactions.map((t, i) => `
 </table>
 
 <div class="summary">
+  ${project.budget ? `<div class="summary-item">
+    <div class="label">תקציב</div>
+    <div class="value">${formatAmount(project.budget)} ₪</div>
+  </div>` : ""}
   <div class="summary-item">
     <div class="label">סה"כ חובה</div>
     <div class="value debit">${formatAmount(totalDebit)} ₪</div>
@@ -201,10 +221,6 @@ transactions.map((t, i) => `
     <div class="label">סה"כ משכורות</div>
     <div class="value debit">${formatAmount(totalSalaries)} ₪</div>
   </div>` : ""}
-  ${project.budget ? `<div class="summary-item">
-    <div class="label">תקציב</div>
-    <div class="value">${formatAmount(project.budget)} ₪</div>
-  </div>` : ""}
 </div>
 
 <div class="footer">
@@ -220,7 +236,7 @@ transactions.map((t, i) => `
 // =============================================
 // כרטסת ספק - כל החשבוניות של הספק
 // =============================================
-export async function generateSupplierKarteset({ supplier, invoices, dateFrom, dateTo }) {
+export async function generateSupplierKarteset({ supplier, invoices, projects = [], dateFrom, dateTo }) {
   const formatDate = (d) => {
     if (!d) return "-";
     return new Date(d).toLocaleDateString("he-IL");
@@ -235,6 +251,21 @@ export async function generateSupplierKarteset({ supplier, invoices, dateFrom, d
 
   const totalAmount = sorted.reduce((sum, inv) => sum + (inv.totalAmount || 0), 0);
   const paidCount = sorted.filter((inv) => inv.paid === "כן").length;
+
+  // הפחתות תקציב מפרויקטים קשורים
+  const allDeductions = [];
+  projects.forEach((proj) => {
+    (proj.budgetDeductions || []).forEach((ded) => {
+      allDeductions.push({
+        projectName: proj.name,
+        reason: ded.reason,
+        amount: ded.amount || 0,
+        date: ded.date || ded.createdAt,
+        notes: ded.notes || "",
+      });
+    });
+  });
+  allDeductions.sort((a, b) => new Date(a.date) - new Date(b.date));
 
   const periodStr = dateFrom && dateTo
     ? `${formatDate(dateFrom)} - ${formatDate(dateTo)}`
@@ -283,8 +314,8 @@ th, td {
 }
 th { font-size: 11px; font-weight: bold; }
 tbody tr:nth-child(even) { background: #f3f4f6; }
-.paid { color: #16a34a; font-weight: bold; }
-.unpaid { color: #dc2626; font-weight: bold; }
+.paid { color: #111827; font-weight: bold; }
+.unpaid { color: #4b5563; font-weight: bold; }
 .amount { font-weight: bold; }
 .summary {
   margin-top: 20px;
@@ -311,6 +342,7 @@ tbody tr:nth-child(even) { background: #f3f4f6; }
 <body>
 
 <div class="header">
+  <img src="data:image/jpeg;base64,${logoBase64}" alt="לוגו" style="height: 60px; margin-bottom: 8px; filter: grayscale(100%);" />
   <h1>כרטסת ספק</h1>
   <div class="subtitle">${supplier.name}</div>
   <div class="details">
@@ -357,6 +389,33 @@ sorted.map((inv, i) => {
 }).join("")}
 </tbody>
 </table>
+
+${allDeductions.length > 0 ? `
+<h3 style="margin-top: 20px; font-size: 14px; color: #111827;">הפחתות תקציב בפרויקטים</h3>
+<table>
+<thead>
+<tr>
+  <th>#</th>
+  <th>תאריך</th>
+  <th>פרויקט</th>
+  <th>סיבה</th>
+  <th>סכום</th>
+  <th>הערות</th>
+</tr>
+</thead>
+<tbody>
+${allDeductions.map((d, i) => `
+<tr>
+  <td>${i + 1}</td>
+  <td>${formatDate(d.date)}</td>
+  <td>${d.projectName}</td>
+  <td>${d.reason}</td>
+  <td class="amount">${formatAmount(d.amount)} ₪</td>
+  <td>${d.notes || "-"}</td>
+</tr>`).join("")}
+</tbody>
+</table>
+` : ""}
 
 <div class="summary">
   <div class="summary-item">

@@ -67,6 +67,10 @@ router.post("/backfill-doc-serials", protect, requireAdmin, invoiceController.ba
 // 🔢 מילוי מספרים סידוריים לחשבוניות "אין צורך" קיימות
 router.post("/backfill-no-doc-serials", protect, requireAdmin, invoiceController.backfillNoDocSerials);
 
+// 📄 ייצוא סיכום חשבוניות ל-PDF
+router.get("/export", protect, invoiceController.exportInvoices);
+router.post("/export", protect, invoiceController.exportInvoices);
+
 // 📌 חשבונית בודדת — משתמש ב־:id (מתוקן!)
 router.get("/:id", protect, checkAccess("invoices", "view"), invoiceController.getInvoiceById);
 

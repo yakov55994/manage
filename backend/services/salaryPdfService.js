@@ -1,6 +1,6 @@
 import fs from "fs";
 import path from "path";
-import pdf from "html-pdf-node";
+import puppeteer from "puppeteer";
 
 export async function generateSalaryExportPDF({ salaries, projectName, isMultipleProjects = false }) {
   try {
@@ -69,19 +69,22 @@ export async function generateSalaryExportPDF({ salaries, projectName, isMultipl
       .replace(/\{\{totalBase\}\}/g, totalBase.toLocaleString("he-IL"))
       .replace(/\{\{totalFinal\}\}/g, totalFinal.toLocaleString("he-IL"))
       .replace(/\{\{year\}\}/g, new Date().getFullYear())
-      .replace(/\{\{css\}\}/g, ''); // Remove any remaining {{css}} placeholders
+      .replace(/\{\{css\}\}/g, '');
 
+    const browser = await puppeteer.launch({
+      headless: "new",
+      args: ["--no-sandbox", "--disable-setuid-sandbox"],
+    });
 
-    // html-pdf-node doesn't use handlebars - we already replaced the variables
-    // So we need to pass the HTML as-is without using handlebars
-    const file = { content: html };
-    const options = {
+    const page = await browser.newPage();
+    await page.setContent(html, { waitUntil: "networkidle0" });
+
+    const pdfBuffer = await page.pdf({
       format: "A4",
       printBackground: true,
-      args: ['--no-sandbox', '--disable-setuid-sandbox']
-    };
+    });
 
-    const pdfBuffer = await pdf.generatePdf(file, options);
+    await browser.close();
 
     const tmpDir = path.join(process.cwd(), "tmp");
     if (!fs.existsSync(tmpDir)) fs.mkdirSync(tmpDir);

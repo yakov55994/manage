@@ -12,6 +12,8 @@ const documentTypes = [
   "אין צורך",
 ];
 
+const SERIAL_TYPES = new Set(["אין צורך", "חשבונית מס / קבלה"]);
+
 export default function QuickFileUploadModal({
   open,
   onClose,
@@ -33,9 +35,9 @@ export default function QuickFileUploadModal({
     }
   }, [open, invoice]);
 
-  // שליפת מספר סידורי רק כשנבחר "אין צורך"
+  // שליפת מספר סידורי כשנבחר סוג מסמך עם מספר רץ
   useEffect(() => {
-    if (documentType === "אין צורך") {
+    if (SERIAL_TYPES.has(documentType)) {
       fetchPreviewSerial();
     } else {
       setStartingSerial("");
@@ -90,9 +92,9 @@ export default function QuickFileUploadModal({
 
     setUploading(true);
     try {
-      // הקצאת מספרים סידוריים רק עבור "אין צורך"
+      // הקצאת מספרים סידוריים עבור סוגי מסמך עם מספר רץ
       let reservedSerials = [];
-      if (documentType === "אין צורך") {
+      if (SERIAL_TYPES.has(documentType)) {
         const { data: serialData } = await api.get(
           `/invoices/next-doc-serial?count=${selectedFiles.length}`
         );
@@ -126,25 +128,23 @@ export default function QuickFileUploadModal({
         files: uploadedFiles,
       });
 
-      // עדכון מספר חשבונית אם השתנה
-      if (editedInvoiceNumber !== invoice.invoiceNumber) {
-        try {
-          await api.put(`/invoices/${invoice._id}`, {
-            invoiceNumber: editedInvoiceNumber,
-            projects: invoice.projects?.map(p => ({
-              projectId: p.projectId?._id || p.projectId,
-              projectName: p.projectName,
-              sum: p.sum,
-            })),
-            files: [...(invoice.files || []), ...uploadedFiles],
-            documentType: invoice.documentType,
-            detail: invoice.detail,
-            invoiceDate: invoice.invoiceDate,
-            paid: invoice.paid,
-          });
-        } catch (err) {
-          console.error("Error updating invoice number:", err);
-        }
+      // עדכון חשבונית – תמיד מעדכן סוג מסמך ומספר חשבונית
+      try {
+        await api.put(`/invoices/${invoice._id}`, {
+          invoiceNumber: editedInvoiceNumber,
+          projects: invoice.projects?.map(p => ({
+            projectId: p.projectId?._id || p.projectId,
+            projectName: p.projectName,
+            sum: p.sum,
+          })),
+          files: [...(invoice.files || []), ...uploadedFiles],
+          documentType: documentType,
+          detail: invoice.detail,
+          invoiceDate: invoice.invoiceDate,
+          paid: invoice.paid,
+        });
+      } catch (err) {
+        console.error("Error updating invoice:", err);
       }
 
       toast.success(
@@ -231,8 +231,8 @@ export default function QuickFileUploadModal({
             </select>
           </div>
 
-          {/* Document Number – רק עבור "אין צורך" */}
-          {documentType === "אין צורך" && (
+          {/* Document Number – עבור סוגי מסמך עם מספר רץ */}
+          {SERIAL_TYPES.has(documentType) && (
             <div>
               <label className="flex items-center gap-2 font-bold mb-2 text-slate-700">
                 <Hash className="w-4 h-4 text-orange-600" />
@@ -302,7 +302,7 @@ export default function QuickFileUploadModal({
                     <span className="text-sm text-slate-700 truncate">
                       {file.name}
                     </span>
-                    {documentType === "אין צורך" && startingSerial && (
+                    {SERIAL_TYPES.has(documentType) && startingSerial && (
                       <span className="text-xs bg-orange-200 text-orange-800 px-2 py-0.5 rounded-full flex-shrink-0">
                         #{getSerialForFile(index)}
                       </span>

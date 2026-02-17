@@ -98,6 +98,7 @@ const ProjectDetailsPage = () => {
   const [loadingInvoices, setLoadingInvoices] = useState(true);
   const [loadingSalaries, setLoadingSalaries] = useState(true);
   const [exportLoading, setExportLoading] = useState(false);
+  const [exportInvoiceLoading, setExportInvoiceLoading] = useState(false);
   const [kartesetLoading, setKartesetLoading] = useState(false);
 
   useEffect(() => {
@@ -575,6 +576,65 @@ const ProjectDetailsPage = () => {
     }
   };
 
+  const handleExportInvoices = async (retryCount = 0) => {
+    const MAX_RETRIES = 2;
+
+    try {
+      setExportInvoiceLoading(true);
+
+      const response = await api.post('/invoices/export',
+        { projectId: project._id },
+        { responseType: 'blob' }
+      );
+
+      const url = window.URL.createObjectURL(new Blob([response.data]));
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = `invoice-export-${project.name}.pdf`;
+      link.click();
+      window.URL.revokeObjectURL(url);
+
+      toast.success('קובץ סיכום חשבוניות הורד בהצלחה!');
+    } catch (err) {
+      console.error('Export invoices error:', err);
+
+      if (err.response?.status === 418 && retryCount < MAX_RETRIES) {
+        await new Promise(resolve => setTimeout(resolve, 1000));
+        return handleExportInvoices(retryCount + 1);
+      }
+
+      if (err.response?.status === 404) {
+        let errorMessage = "לא נמצאו חשבוניות לפרויקט זה";
+
+        if (err.response?.data instanceof Blob) {
+          try {
+            const text = await err.response.data.text();
+            const errorData = JSON.parse(text);
+            if (errorData.error) {
+              errorMessage = errorData.error === "No invoices found for this project"
+                ? "לא נמצאו חשבוניות לפרויקט זה"
+                : errorData.error;
+            }
+          } catch (e) {
+            // fallback
+          }
+        }
+
+        toast.error(errorMessage);
+      } else if (err.response?.status === 418) {
+        toast.error(
+          'הבקשה נחסמה על ידי אנטי-וירוס או חומת אש. אנא נסה שנית או פנה למנהל מערכת.',
+          { duration: 6000 }
+        );
+      } else {
+        const errorMsg = err.response?.data?.error || err.message || 'שגיאה לא ידועה';
+        toast.error(`שגיאה ביצירת סיכום חשבוניות: ${errorMsg}`);
+      }
+    } finally {
+      setExportInvoiceLoading(false);
+    }
+  };
+
   const handleExportKarteset = async () => {
     try {
       setKartesetLoading(true);
@@ -703,6 +763,18 @@ const ProjectDetailsPage = () => {
                     <span>הוספת חשבונית</span>
                   </button>
                 )}
+
+                {/* ייצוא סיכום חשבוניות */}
+                {/* {!isSalaryProject && (
+                  <button
+                    onClick={handleExportInvoices}
+                    disabled={exportInvoiceLoading}
+                    className="flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-blue-600 to-purple-600 text-white font-bold rounded-xl hover:from-blue-700 hover:to-purple-700 transition-all shadow-xl shadow-blue-500/30 disabled:opacity-60 disabled:cursor-not-allowed"
+                  >
+                    <Download className="w-4 h-4" />
+                    <span>{exportInvoiceLoading ? 'מוריד...' : 'ייצוא סיכום חשבוניות'}</span>
+                  </button>
+                )} */}
 
                 {/* כרטסת פרויקט */}
                 <button
@@ -1096,6 +1168,7 @@ const ProjectDetailsPage = () => {
                 </div>
 
               ) : filteredInvoices.length > 0 ? (
+                <>
                 <div className="overflow-x-auto rounded-xl border-2 border-orange-200">
                   <table className="min-w-full text-right">
                     <thead className="bg-gradient-to-r from-orange-100 to-amber-100">
@@ -1249,6 +1322,21 @@ const ProjectDetailsPage = () => {
                     </tbody>
                   </table>
                 </div>
+
+                {/* כפתור ייצוא חשבוניות */}
+                {!isSalaryProject && (
+                  <div className="mt-4 flex justify-end">
+                    <button
+                      onClick={handleExportInvoices}
+                      disabled={exportInvoiceLoading}
+                      className="flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-orange-500 to-amber-500 text-white font-bold rounded-full hover:from-orange-600 hover:to-amber-600 transition-all shadow-lg whitespace-nowrap disabled:opacity-60 disabled:cursor-not-allowed"
+                    >
+                      <Download className="w-4 h-4" />
+                      <span>{exportInvoiceLoading ? 'מוריד...' : 'ייצוא סיכום חשבוניות'}</span>
+                    </button>
+                  </div>
+                )}
+                </>
               ) : (
                 <div className="text-center py-8 text-slate-600">
                   <FileText className="w-12 h-12 mx-auto mb-3 opacity-50" />

@@ -109,9 +109,20 @@ export default {
       }
       const invoices = await Invoice.find(invoiceQuery).lean();
 
+      // טעינת פרויקטים עם הפחתות תקציב
+      const projectIds = [...new Set(
+        invoices.flatMap(inv =>
+          (inv.projects || []).map(p => String(p.projectId))
+        ).filter(Boolean)
+      )];
+      const projects = projectIds.length > 0
+        ? await Project.find({ _id: { $in: projectIds } }).lean()
+        : [];
+
       pdfPath = await generateSupplierKarteset({
         supplier,
         invoices,
+        projects,
         dateFrom,
         dateTo,
       });

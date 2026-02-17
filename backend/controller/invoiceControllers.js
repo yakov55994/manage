@@ -9,6 +9,8 @@ import invoiceService, {
   recalculateRemainingBudget
 } from "../services/invoiceService.js";
 import { sendPaymentConfirmationEmail } from "../services/emailService.js";
+import { generateInvoiceExportPDF } from "../services/invoicePdfService.js";
+import fs from "fs";
 
 const invoiceControllers = {
   // ===============================================
@@ -494,6 +496,75 @@ const invoiceControllers = {
         lastSerial: allInvoices.length - 1
       });
     } catch (err) {
+      res.status(500).json({ success: false, error: err.message });
+    }
+  },
+
+  // ===============================================
+  // ייצוא סיכום חשבוניות ל-PDF
+  // ===============================================
+  async exportInvoices(req, res) {
+    try {
+      const projectId = req.body.projectId || req.query.projectId;
+
+      if (!projectId) {
+        return res.status(400).json({
+          success: false,
+          error: "projectId is required",
+        });
+      }
+
+      const project = await Project.findById(projectId);
+      if (!project) {
+        return res.status(404).json({
+          success: false,
+          error: "Project not found",
+        });
+      }
+
+      // מציאת חשבוניות השייכות לפרויקט
+      const invoices = await Invoice.find({
+        "projects.projectId": projectId,
+      })
+        .populate("supplierId", "name")
+        .sort({ createdAt: -1 });
+
+      if (invoices.length === 0) {
+        return res.status(404).json({
+          success: false,
+          error: "No invoices found for this project",
+        });
+      }
+
+      // הכנת נתונים לתבנית
+      const invoiceData = invoices.map((inv) => {
+        const proj = inv.projects.find(
+          (p) => String(p.projectId) === String(projectId)
+        );
+        return {
+          invoiceNumber: inv.invoiceNumber,
+          supplierName: inv.supplierId?.name || inv.invitingName || "-",
+          documentType: inv.documentType || "-",
+          amount: proj ? proj.sum : inv.totalAmount,
+          paid: inv.paid === "כן" ? "שולם" : inv.paid === "יצא לתשלום" ? "יצא לתשלום" : "לא שולם",
+          date: inv.invoiceDate || inv.createdAt,
+          detail: inv.detail || "",
+        };
+      });
+
+      const pdfPath = await generateInvoiceExportPDF({
+        invoices: invoiceData,
+        projectName: project.name,
+      });
+
+      const fileName = `invoice-export-${project.name}.pdf`;
+
+      res.download(pdfPath, fileName, (err) => {
+        if (err) console.error("PDF DOWNLOAD ERROR:", err);
+        if (fs.existsSync(pdfPath)) fs.unlinkSync(pdfPath);
+      });
+    } catch (err) {
+      console.error("EXPORT INVOICES ERROR:", err);
       res.status(500).json({ success: false, error: err.message });
     }
   },
