@@ -12,7 +12,11 @@ export async function generateProjectKarteset({ project, orders, invoices, salar
     return new Date(d).toLocaleDateString("he-IL");
   };
 
-  const formatAmount = (n) => Number(n || 0).toLocaleString();
+  const formatAmount = (n) => {
+    const num = Number(n || 0);
+    if (num < 0) return `-${Math.abs(num).toLocaleString()}`;
+    return num.toLocaleString();
+  };
 
   // איחוד כל התנועות למערך אחד ומיון לפי תאריך
   const transactions = [];
@@ -188,9 +192,9 @@ transactions.map((t, i) => `
   <td>${t.description}</td>
   <td>${t.details}</td>
   <td>${t.docNumber}</td>
-  <td class="debit">${t.debit > 0 ? formatAmount(t.debit) + " ₪" : ""}</td>
-  <td class="credit">${t.credit > 0 ? formatAmount(t.credit) + " ₪" : ""}</td>
-  <td class="${t.balance >= 0 ? "balance-pos" : "balance-neg"}">${formatAmount(t.balance)} ₪</td>
+  <td class="debit"><span dir="ltr">${t.debit > 0 ? formatAmount(t.debit) + " ₪" : ""}</span></td>
+  <td class="credit"><span dir="ltr">${t.credit > 0 ? formatAmount(t.credit) + " ₪" : ""}</span></td>
+  <td class="${t.balance >= 0 ? "balance-pos" : "balance-neg"}"><span dir="ltr">${formatAmount(t.balance)} ₪</span></td>
 </tr>
 `).join("")}
 </tbody>
@@ -199,19 +203,19 @@ transactions.map((t, i) => `
 <div class="summary">
   ${project.budget ? `<div class="summary-item">
     <div class="label">תקציב</div>
-    <div class="value">${formatAmount(project.budget)} ₪</div>
+    <div class="value"><span dir="ltr">${formatAmount(project.budget)} ₪</span></div>
   </div>` : ""}
   <div class="summary-item">
     <div class="label">סה"כ חובה</div>
-    <div class="value debit">${formatAmount(totalDebit)} ₪</div>
+    <div class="value debit"><span dir="ltr">${formatAmount(totalDebit)} ₪</span></div>
   </div>
   <div class="summary-item">
     <div class="label">סה"כ זכות</div>
-    <div class="value credit">${formatAmount(totalCredit)} ₪</div>
+    <div class="value credit"><span dir="ltr">${formatAmount(totalCredit)} ₪</span></div>
   </div>
   <div class="summary-item">
     <div class="label">יתרה</div>
-    <div class="value ${balance >= 0 ? "balance-pos" : "balance-neg"}">${formatAmount(balance)} ₪</div>
+    <div class="value ${balance >= 0 ? "balance-pos" : "balance-neg"}"><span dir="ltr">${formatAmount(balance)} ₪</span></div>
   </div>
   <div class="summary-item">
     <div class="label">מספר תנועות</div>
