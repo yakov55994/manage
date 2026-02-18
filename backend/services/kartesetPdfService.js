@@ -184,7 +184,7 @@ tbody tr:nth-child(even) { background: #f3f4f6; }
 </thead>
 <tbody>
 ${transactions.length === 0 ? '<tr><td colspan="9">אין תנועות בתקופה זו</td></tr>' :
-transactions.map((t, i) => `
+      transactions.map((t, i) => `
 <tr>
   <td>${i + 1}</td>
   <td>${formatDate(t.date)}</td>
@@ -192,9 +192,9 @@ transactions.map((t, i) => `
   <td>${t.description}</td>
   <td>${t.details}</td>
   <td>${t.docNumber}</td>
-  <td class="debit"><span dir="ltr">${t.debit > 0 ? formatAmount(t.debit) + " ₪" : ""}</span></td>
-  <td class="credit"><span dir="ltr">${t.credit > 0 ? formatAmount(t.credit) + " ₪" : ""}</span></td>
-  <td class="${t.balance >= 0 ? "balance-pos" : "balance-neg"}"><span dir="ltr">${formatAmount(t.balance)} ₪</span></td>
+  <td class="debit">${t.debit > 0 ? formatAmount(t.debit) + " ₪" : ""}</td>
+  <td class="credit">${t.credit > 0 ? formatAmount(t.credit) + " ₪" : ""}</td>
+  <td class="${t.balance >= 0 ? "balance-pos" : "balance-neg"}">${formatAmount(t.balance)} ₪</td>
 </tr>
 `).join("")}
 </tbody>
@@ -203,28 +203,25 @@ transactions.map((t, i) => `
 <div class="summary">
   ${project.budget ? `<div class="summary-item">
     <div class="label">תקציב</div>
-    <div class="value"><span dir="ltr">${formatAmount(project.budget)} ₪</span></div>
+    <div class="value">${formatAmount(project.budget)} ₪</div>
   </div>` : ""}
   <div class="summary-item">
-    <div class="label">סה"כ חובה</div>
-    <div class="value debit"><span dir="ltr">${formatAmount(totalDebit)} ₪</span></div>
+    <div class="label">סה"כ חשבוניות</div>
+    <div class="value debit">${formatAmount(totalDebit)} ₪</div>
   </div>
-  <div class="summary-item">
-    <div class="label">סה"כ זכות</div>
-    <div class="value credit"><span dir="ltr">${formatAmount(totalCredit)} ₪</span></div>
-  </div>
+${totalSalaries > 0 ? `<div class="summary-item">
+    <div class="label">סה"כ משכורות</div>
+    <div class="value debit">${formatAmount(totalSalaries)} ₪</div>
+  </div>` : ""}
   <div class="summary-item">
     <div class="label">יתרה</div>
-    <div class="value ${balance >= 0 ? "balance-pos" : "balance-neg"}"><span dir="ltr">${formatAmount(balance)} ₪</span></div>
+    <div class="value ${balance >= 0 ? "balance-pos" : "balance-neg"}">${formatAmount(balance)} ₪</div>
   </div>
   <div class="summary-item">
     <div class="label">מספר תנועות</div>
     <div class="value">${transactions.length}</div>
   </div>
-  ${totalSalaries > 0 ? `<div class="summary-item">
-    <div class="label">סה"כ משכורות</div>
-    <div class="value debit">${formatAmount(totalSalaries)} ₪</div>
-  </div>` : ""}
+  
 </div>
 
 <div class="footer">
@@ -373,11 +370,11 @@ tbody tr:nth-child(even) { background: #f3f4f6; }
 </thead>
 <tbody>
 ${sorted.length === 0 ? '<tr><td colspan="10">אין חשבוניות בתקופה זו</td></tr>' :
-sorted.map((inv, i) => {
-  const projectNames = inv.projects?.map(p => p.projectName).join(", ") || "-";
-  const paidStatus = inv.paid === "כן" ? "שולם" : inv.paid === "יצא לתשלום" ? "יצא לתשלום" : inv.paid === "לא לתשלום" ? "לא לתשלום" : "לא שולם";
-  const paidClass = inv.paid === "כן" ? "paid" : "unpaid";
-  return `
+      sorted.map((inv, i) => {
+        const projectNames = inv.projects?.map(p => p.projectName).join(", ") || "-";
+        const paidStatus = inv.paid === "כן" ? "שולם" : inv.paid === "יצא לתשלום" ? "יצא לתשלום" : inv.paid === "לא לתשלום" ? "לא לתשלום" : "לא שולם";
+        const paidClass = inv.paid === "כן" ? "paid" : "unpaid";
+        return `
 <tr>
   <td>${i + 1}</td>
   <td>${formatDate(inv.invoiceDate || inv.createdAt)}</td>
@@ -390,7 +387,7 @@ sorted.map((inv, i) => {
   <td>${paymentMethodMap[inv.paymentMethod] || "-"}</td>
   <td>${inv.detail || "-"}</td>
 </tr>`;
-}).join("")}
+      }).join("")}
 </tbody>
 </table>
 
