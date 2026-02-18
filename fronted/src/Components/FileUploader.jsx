@@ -12,7 +12,8 @@ function FileUploader({
     disabled = false,
     disabledMessage = "אין הרשאה להעלות קבצים",
     askForDocumentType = false, // 🔥 חדש - לשאול על סוג מסמך
-    isExistingInvoice = false // 🔥 חדש - האם זו חשבונית קיימת
+    isExistingInvoice = false, // 🔥 חדש - האם זו חשבונית קיימת
+    documentType: externalDocumentType = "" // סוג מסמך שכבר נבחר בטופס החיצוני
 }) {
     const [loading, setLoading] = useState(false);
     const [files, setFiles] = useState([]);
@@ -58,8 +59,18 @@ function FileUploader({
             localFiles.push(localFile);
         }
 
-        // 🔥 אם צריך לשאול על סוג מסמך ומספר סידורי
-        if (askForDocumentType && localFiles.length > 0) {
+        // אם יש סוג מסמך מהטופס החיצוני - השתמש בו ישירות בלי מודל
+        if (askForDocumentType && externalDocumentType && localFiles.length > 0) {
+            const filesWithType = localFiles.map(f => ({ ...f, documentType: externalDocumentType }));
+            setFiles((prev) => [...prev, ...filesWithType]);
+            onUploadSuccess(filesWithType);
+
+            toast.success(`${filesWithType.length} קבצים נבחרו (יועלו בעת השמירה)`, {
+                className: "sonner-toast success rtl"
+            });
+
+            setLoading(false);
+        } else if (askForDocumentType && localFiles.length > 0) {
             setPendingFiles(localFiles);
             setCurrentFileIndex(0);
             setModalOpen(true);

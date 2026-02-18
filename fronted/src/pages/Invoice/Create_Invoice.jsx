@@ -801,19 +801,20 @@ const CreateInvoice = () => {
               onChange={(e) => {
                 const value = e.target.value;
 
-                if (value === "לא") {
-                  // אם בחרו "לא" - אפס את פרטי התשלום
-                  setForm((prev) => ({
-                    ...prev,
-                    paid: "לא",
-                    paymentDate: "",
-                    paymentMethod: "",
-                  }));
-                } else {
-                  // אם בחרו "כן" - רק עדכן את paid
+                if (value === "כן") {
                   setForm((prev) => ({
                     ...prev,
                     paid: "כן",
+                  }));
+                } else {
+                  // "לא" או "לא לתשלום" - אפס את פרטי התשלום
+                  setForm((prev) => ({
+                    ...prev,
+                    paid: value,
+                    paymentDate: "",
+                    paymentMethod: "",
+                    checkNumber: "",
+                    checkDate: "",
                   }));
                 }
               }}
@@ -1039,6 +1040,7 @@ const CreateInvoice = () => {
             folder="invoices"
             askForDocumentType={true}
             isExistingInvoice={true}
+            documentType={form.documentType}
           />
 
           {form.files.length > 0 && (
