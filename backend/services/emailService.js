@@ -200,7 +200,7 @@ export const sendPaymentConfirmationEmail = async (supplierEmail, supplierName, 
     const { invoiceNumber, totalAmount, paymentDate, documentType, detail, paymentMethod } = invoiceData;
 
     // תרגום שיטת תשלום
-    const paymentMethodText = paymentMethod === "check" ? "צ'ק" : paymentMethod === "bank_transfer" ? "העברה בנקאית" : "העברה";
+    const paymentMethodText = paymentMethod === "check" ? "צ'ק" : paymentMethod === "bank_transfer" ? "העברה בנקאית" : paymentMethod === "credit_card" ? "כרטיס אשראי" : paymentMethod || "לא צויין";
 
     // בדיקה אם חסר מסמך מס/קבלה
     const isMissingDocument = !documentType ||

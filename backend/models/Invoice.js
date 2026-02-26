@@ -109,7 +109,7 @@ supplierId: {
 
   paymentMethod: {
     type: String,
-    enum: ["", "check", "bank_transfer"],
+    enum: ["", "check", "bank_transfer", "credit_card"],
     default: "",
   },
   checkNumber: {

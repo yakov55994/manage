@@ -294,6 +294,7 @@ const InvoicesPage = () => {
     const translations = {
       "check": "צ'ק",
       "bank_transfer": "העברה בנקאית",
+      "credit_card": "כרטיס אשראי",
       "": "לא זמין"
     };
     return translations[method] || method || "לא זמין";
@@ -1845,7 +1846,7 @@ const InvoicesPage = () => {
       );
 
       const paymentInfo =
-        paymentMethod === "check" ? `צ'ק ${checkNumber}` : "העברה בנקאית";
+        paymentMethod === "check" ? `צ'ק ${checkNumber}` : paymentMethod === "bank_transfer" ? "העברה בנקאית" : paymentMethod === "credit_card" ? "כרטיס אשראי" : "-";
 
       toast.success(`עודכן לשולם (${paymentInfo})`, {
         className: "sonner-toast success rtl",
@@ -1931,7 +1932,7 @@ const InvoicesPage = () => {
 
       const paymentInfo = bulkPaymentMethod === "check"
         ? `צ'ק ${bulkCheckNumber}`
-        : "העברה בנקאית";
+        : bulkPaymentMethod === "bank_transfer" ? "העברה בנקאית" : bulkPaymentMethod === "credit_card" ? "כרטיס אשראי" : "";
 
       toast.success(`${selectedInvoices.length} חשבוניות סומנו כשולמו בתאריך ${new Date(bulkPaymentDate).toLocaleDateString('he-IL')} (${paymentInfo})`, {
         className: "sonner-toast success rtl",
@@ -3999,6 +4000,8 @@ const InvoicesPage = () => {
                     <option value="">בחר אמצעי תשלום...</option>
                     <option value="bank_transfer">העברה בנקאית</option>
                     <option value="check">צ'ק</option>
+                    <option value="credit_card">כרטיס אשראי</option>
+
                   </select>
                 </div>
 

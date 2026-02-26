@@ -187,35 +187,35 @@ const InvoiceDetailsPage = () => {
                 </h1>
 
                 <div className="flex gap-3 sm:gap-4 mt-6">
-            <button
-              onClick={() => navigate("/invoices")}
-              className="px-6 py-3 rounded-xl bg-slate-200 text-slate-700 font-bold"
-            >
-              <ArrowRight className="inline-block w-4 h-4 ml-1" />
-              חזרה
-            </button>
+                  <button
+                    onClick={() => navigate("/invoices")}
+                    className="px-6 py-3 rounded-xl bg-slate-200 text-slate-700 font-bold"
+                  >
+                    <ArrowRight className="inline-block w-4 h-4 ml-1" />
+                    חזרה
+                  </button>
 
-            {/* כפתור עריכה - לא מוצג לרואת חשבון */}
-            {user?.role !== "accountant" && (
-              <button
-                onClick={() => navigate(`/update-invoice/${invoice._id}`)}
-                className="px-6 py-3 rounded-xl bg-orange-600 text-white font-bold shadow"
-              >
-                <Edit2 className="inline-block w-4 h-4 ml-1" />
-                עריכה
-              </button>
-            )}
+                  {/* כפתור עריכה - לא מוצג לרואת חשבון */}
+                  {user?.role !== "accountant" && (
+                    <button
+                      onClick={() => navigate(`/update-invoice/${invoice._id}`)}
+                      className="px-6 py-3 rounded-xl bg-orange-600 text-white font-bold shadow"
+                    >
+                      <Edit2 className="inline-block w-4 h-4 ml-1" />
+                      עריכה
+                    </button>
+                  )}
 
-            {/* כפתור מחיקה - רק מנהל */}
-            {isAdmin && (
-              <button
-                onClick={() => setConfirmOpen(true)}
-                className="px-6 py-3 rounded-xl bg-red-600 text-white font-bold shadow"
-              >
-                <Trash2 className="inline-block w-4 h-4 ml-1" />
-                מחיקה
-              </button>
-            )}
+                  {/* כפתור מחיקה - רק מנהל */}
+                  {isAdmin && (
+                    <button
+                      onClick={() => setConfirmOpen(true)}
+                      className="px-6 py-3 rounded-xl bg-red-600 text-white font-bold shadow"
+                    >
+                      <Trash2 className="inline-block w-4 h-4 ml-1" />
+                      מחיקה
+                    </button>
+                  )}
                 </div>
               </div>
             </div>
@@ -224,277 +224,277 @@ const InvoiceDetailsPage = () => {
 
         {/* DETAILS */}
         <div className="bg-white/90 shadow-lg rounded-2xl sm:rounded-3xl p-4 sm:p-4 sm:p-5 md:p-6 md:p-8 border border-orange-100">
-        {/* סכום כולל */}
-        <div className="mb-8">
-          <h2 className="text-2xl font-bold flex items-center gap-2">
-            <DollarSign className="w-6 h-6 text-green-600" />
-            סכום כולל:{" "}
-            <span className="text-green-700">
-              {Number(invoice?.totalAmount || 0).toLocaleString()} ₪
-            </span>
-          </h2>
-        </div>
+          {/* סכום כולל */}
+          <div className="mb-8">
+            <h2 className="text-2xl font-bold flex items-center gap-2">
+              <DollarSign className="w-6 h-6 text-green-600" />
+              סכום כולל:{" "}
+              <span className="text-green-700">
+                {Number(invoice?.totalAmount || 0).toLocaleString()} ₪
+              </span>
+            </h2>
+          </div>
 
-        {/* שדות כלליים */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-3 sm:gap-4 sm:p-5 md:p-6 mb-8">
-          {
-            hasNonSalaryInvoices && (
+          {/* שדות כלליים */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-3 sm:gap-4 sm:p-5 md:p-6 mb-8">
+            {
+              hasNonSalaryInvoices && (
 
+                <DetailCard
+                  label="שם ספק"
+                  icon={<User />}
+                  value={invoice.supplierId?.name || "לא הוזן"}
+                />
+
+              )}
+
+            <DetailCard
+              label="שם מזמין"
+              icon={<User />}
+              value={invoice.invitingName || "לא זמין"}
+            />
+
+            <DetailCard
+              label="תאריך החשבונית"
+              icon={<Calendar />}
+              value={formatDate(invoice.invoiceDate || invoice.createdAt)}
+            />
+
+            <DetailCard
+              label="תאריך הזנה למערכת"
+              icon={<Calendar />}
+              value={formatDate(invoice.createdAt)}
+            />
+
+            <DetailCard
+              label="סוג מסמך"
+              icon={<FileText />}
+              value={invoice.documentType}
+            />
+
+            <DetailCard
+              label="סטטוס תשלום"
+              icon={<CheckCircle2 />}
+              value={
+                invoice.paid === "כן"
+                  ? "שולם"
+                  : invoice.paid === "יצא לתשלום"
+                    ? "יצא לתשלום"
+                    : "לא שולם"
+              }
+            />
+
+            <DetailCard
+              label="תאריך תשלום"
+              icon={<Calendar />}
+              value={invoice.paymentDate ? formatDate(invoice.paymentDate) : "—"}
+            />
+
+            <DetailCard
+              label="אמצעי תשלום"
+              icon={<CreditCard />}
+              value={
+                invoice.paymentMethod === "bank_transfer"
+                  ? "העברה בנקאית"
+                  : invoice.paymentMethod === "check"
+                    ? "צ'ק"
+                    : invoice.paymentMethod === "credit_card" ? "כרטיס אשראי" : ""
+            }
+            />
+
+            {/* ✅ אם זה צ'ק - הצג מספר צ'ק */}
+            {invoice.paymentMethod === "check" && invoice.checkNumber && (
               <DetailCard
-                label="שם ספק"
-                icon={<User />}
-                value={invoice.supplierId?.name || "לא הוזן"}
+                label="מספר צ'ק"
+                icon={<Hash />}
+                value={invoice.checkNumber}
               />
-
             )}
 
-          <DetailCard
-            label="שם מזמין"
-            icon={<User />}
-            value={invoice.invitingName || "לא זמין"}
-          />
-
-          <DetailCard
-            label="תאריך החשבונית"
-            icon={<Calendar />}
-            value={formatDate(invoice.invoiceDate || invoice.createdAt)}
-          />
-
-          <DetailCard
-            label="תאריך הזנה למערכת"
-            icon={<Calendar />}
-            value={formatDate(invoice.createdAt)}
-          />
-
-          <DetailCard
-            label="סוג מסמך"
-            icon={<FileText />}
-            value={invoice.documentType}
-          />
-
-          <DetailCard
-            label="סטטוס תשלום"
-            icon={<CheckCircle2 />}
-            value={
-              invoice.paid === "כן"
-                ? "שולם"
-                : invoice.paid === "יצא לתשלום"
-                ? "יצא לתשלום"
-                : "לא שולם"
-            }
-          />
-
-          <DetailCard
-            label="תאריך תשלום"
-            icon={<Calendar />}
-            value={invoice.paymentDate ? formatDate(invoice.paymentDate) : "—"}
-          />
-
-          <DetailCard
-            label="אמצעי תשלום"
-            icon={<CreditCard />}
-            value={
-              invoice.paymentMethod === "bank_transfer"
-                ? "העברה בנקאית"
-                : invoice.paymentMethod === "check"
-                  ? "צ'ק"
-                  : "—"
-            }
-          />
-
-          {/* ✅ אם זה צ'ק - הצג מספר צ'ק */}
-          {invoice.paymentMethod === "check" && invoice.checkNumber && (
-            <DetailCard
-              label="מספר צ'ק"
-              icon={<Hash />}
-              value={invoice.checkNumber}
-            />
-          )}
-
-          {/* ✅ אם זה צ'ק - הצג תאריך פירעון */}
-          {invoice.paymentMethod === "check" && invoice.checkDate && (
-            <DetailCard
-              label="תאריך פירעון צ'ק"
-              icon={<Calendar />}
-              value={formatDate(invoice.checkDate)}
-            />
-          )}
-
-          <DetailCard
-            label="פירוט"
-            icon={<FileText />}
-            value={invoice.detail || "—"}
-          />
-
-          <DetailCard
-            label="נוצר ע״י"
-            icon={<User />}
-            value={invoice.createdByName || "—"}
-          />
-
-          {/* ✅ הצגת סטטוס הגשה */}
-          <DetailCard
-            label="סטטוס הגשה"
-            icon={<FileText />}
-            value={
-              invoice.status === "הוגש"
-                ? <span className="font-bold text-green-600">הוגש ✓</span>
-                : <span className="text-gray-500">לא הוגש</span>
-            }
-          />
-
-          {/* ✅ אם הוגש - הצג לאיזה פרויקט */}
-          {invoice.status === "הוגש" && invoice.submittedToProjectId && (
-            <DetailCard
-              label="הוגש לפרויקט"
-              icon={<Building2 />}
-              value={invoice.submittedToProjectId?.name || "טוען..."}
-            />
-          )}
-
-          {/* ✅ אם הוגש - הצג תאריך הגשה */}
-          {invoice.status === "הוגש" && invoice.submittedAt && (
-            <DetailCard
-              label="תאריך הגשה"
-              icon={<Calendar />}
-              value={formatDate(invoice.submittedAt)}
-            />
-          )}
-
-          {/* תווית מילגה - אם החשבונית יורדת מפרויקט מילגה */}
-          {invoice.fundedFromProjectId && (
-            <>
+            {/* ✅ אם זה צ'ק - הצג תאריך פירעון */}
+            {invoice.paymentMethod === "check" && invoice.checkDate && (
               <DetailCard
-                label="סוג חשבונית"
-                icon={<Sparkles />}
-                value="מילגה 🎓"
+                label="תאריך פירעון צ'ק"
+                icon={<Calendar />}
+                value={formatDate(invoice.checkDate)}
               />
+            )}
+
+            <DetailCard
+              label="פירוט"
+              icon={<FileText />}
+              value={invoice.detail || "—"}
+            />
+
+            <DetailCard
+              label="נוצר ע״י"
+              icon={<User />}
+              value={invoice.createdByName || "—"}
+            />
+
+            {/* ✅ הצגת סטטוס הגשה */}
+            <DetailCard
+              label="סטטוס הגשה"
+              icon={<FileText />}
+              value={
+                invoice.status === "הוגש"
+                  ? <span className="font-bold text-green-600">הוגש ✓</span>
+                  : <span className="text-gray-500">לא הוגש</span>
+              }
+            />
+
+            {/* ✅ אם הוגש - הצג לאיזה פרויקט */}
+            {invoice.status === "הוגש" && invoice.submittedToProjectId && (
               <DetailCard
-                label="ממומן מפרויקט"
+                label="הוגש לפרויקט"
                 icon={<Building2 />}
-                value={
-                  typeof invoice.fundedFromProjectId === "object"
-                    ? invoice.fundedFromProjectId?.name || "—"
-                    : invoice.projects?.find(
+                value={invoice.submittedToProjectId?.name || "טוען..."}
+              />
+            )}
+
+            {/* ✅ אם הוגש - הצג תאריך הגשה */}
+            {invoice.status === "הוגש" && invoice.submittedAt && (
+              <DetailCard
+                label="תאריך הגשה"
+                icon={<Calendar />}
+                value={formatDate(invoice.submittedAt)}
+              />
+            )}
+
+            {/* תווית מילגה - אם החשבונית יורדת מפרויקט מילגה */}
+            {invoice.fundedFromProjectId && (
+              <>
+                <DetailCard
+                  label="סוג חשבונית"
+                  icon={<Sparkles />}
+                  value="מילגה 🎓"
+                />
+                <DetailCard
+                  label="ממומן מפרויקט"
+                  icon={<Building2 />}
+                  value={
+                    typeof invoice.fundedFromProjectId === "object"
+                      ? invoice.fundedFromProjectId?.name || "—"
+                      : invoice.projects?.find(
                         (p) => p.projectName !== "מילגה"
                       )?.projectName || "—"
-                }
-              />
-            </>
+                  }
+                />
+              </>
+            )}
+          </div>
+
+          {/* PROJECTS */}
+          <div className="mb-4 sm:mb-5 md:mb-6 sm:mb-8 md:mb-10">
+            <h2 className="text-2xl font-bold flex items-center gap-2 mb-4">
+              <Building2 className="w-6 h-6 text-orange-600" />
+              פרויקטים בחשבונית
+            </h2>
+
+            <div className="space-y-4">
+              {invoice.projects
+                .filter((proj) => {
+                  // ✅ סנן פרויקט מילגה מהתצוגה - הוא לא צריך להופיע כי אין לו תקציב משלו
+                  return proj.projectName !== "מילגה";
+                })
+                .map((proj, i) => (
+                  <div
+                    key={i}
+                    className="p-4 rounded-xl border-2 border-orange-200 bg-orange-50 flex justify-between items-center"
+                  >
+                    <div>
+                      <p className="font-bold text-lg">{proj.projectName}</p>
+                    </div>
+
+                    <div className="text-right font-bold text-green-700">
+                      {(proj.sum || 0).toLocaleString()} ₪
+                    </div>
+                  </div>
+                ))}
+            </div>
+          </div>
+
+          {/* LINKED EXPENSES */}
+          {linkedExpenses.length > 0 && (
+            <div className="mb-6 sm:mb-8 md:mb-10">
+              <h2 className="text-2xl font-bold flex items-center gap-2 mb-4">
+                <Link2 className="w-6 h-6 text-blue-600" />
+                הוצאות משויכות
+              </h2>
+
+              <div className="space-y-3">
+                {linkedExpenses.map((expense) => (
+                  <div
+                    key={expense._id}
+                    className="p-4 rounded-xl border-2 border-blue-200 bg-blue-50 flex justify-between items-center cursor-pointer hover:bg-blue-100 transition-colors"
+                    onClick={() => navigate(`/expense/${expense._id}`)}
+                  >
+                    <div>
+                      <p className="font-bold text-lg">{expense.description}</p>
+                      <p className="text-sm text-slate-600">
+                        {formatDate(expense.date)}
+                        {expense.reference && ` • אסמכתא: ${expense.reference}`}
+                      </p>
+                    </div>
+
+                    <div className="text-right font-bold text-blue-700">
+                      {Number(expense.amount || 0).toLocaleString()} ₪
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
           )}
-        </div>
 
-        {/* PROJECTS */}
-        <div className="mb-4 sm:mb-5 md:mb-6 sm:mb-8 md:mb-10">
-          <h2 className="text-2xl font-bold flex items-center gap-2 mb-4">
-            <Building2 className="w-6 h-6 text-orange-600" />
-            פרויקטים בחשבונית
-          </h2>
+          {/* FILES */}
+          <div>
+            <h2 className="text-2xl font-bold flex items-center gap-2 mb-4">
+              <Paperclip className="w-6 h-6 text-purple-600" />
+              קבצים מצורפים
+            </h2>
 
-          <div className="space-y-4">
-            {invoice.projects
-              .filter((proj) => {
-                // ✅ סנן פרויקט מילגה מהתצוגה - הוא לא צריך להופיע כי אין לו תקציב משלו
-                return proj.projectName !== "מילגה";
-              })
-              .map((proj, i) => (
-                <div
-                  key={i}
-                  className="p-4 rounded-xl border-2 border-orange-200 bg-orange-50 flex justify-between items-center"
-                >
-                  <div>
-                    <p className="font-bold text-lg">{proj.projectName}</p>
-                  </div>
+            {invoice.files.length === 0 && (
+              <p className="text-slate-600 text-center py-6">אין קבצים</p>
+            )}
 
-                  <div className="text-right font-bold text-green-700">
-                    {(proj.sum || 0).toLocaleString()} ₪
-                  </div>
-                </div>
+            <div className="space-y-3">
+              {invoice.files.map((file, idx) => (
+                <FileItem key={idx} file={file} />
               ))}
+            </div>
           </div>
         </div>
 
-        {/* LINKED EXPENSES */}
-        {linkedExpenses.length > 0 && (
-          <div className="mb-6 sm:mb-8 md:mb-10">
-            <h2 className="text-2xl font-bold flex items-center gap-2 mb-4">
-              <Link2 className="w-6 h-6 text-blue-600" />
-              הוצאות משויכות
-            </h2>
+        {/* DELETE MODAL */}
+        {confirmOpen && (
+          <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50">
+            <div className="bg-white p-4 sm:p-4 sm:p-5 md:p-6 md:p-8 rounded-2xl shadow-xl max-w-md w-full">
+              <h3 className="text-2xl font-bold text-center mb-4">
+                למחוק חשבונית?
+              </h3>
+              <p className="text-center text-slate-700 mb-4 sm:mb-5 md:mb-6">
+                פעולה זו בלתי הפיכה.
+              </p>
 
-            <div className="space-y-3">
-              {linkedExpenses.map((expense) => (
-                <div
-                  key={expense._id}
-                  className="p-4 rounded-xl border-2 border-blue-200 bg-blue-50 flex justify-between items-center cursor-pointer hover:bg-blue-100 transition-colors"
-                  onClick={() => navigate(`/expense/${expense._id}`)}
+              <div className="flex gap-3 sm:gap-4">
+                <button
+                  onClick={handleDelete}
+                  className="flex-1 bg-red-600 text-white py-3 rounded-xl font-bold"
                 >
-                  <div>
-                    <p className="font-bold text-lg">{expense.description}</p>
-                    <p className="text-sm text-slate-600">
-                      {formatDate(expense.date)}
-                      {expense.reference && ` • אסמכתא: ${expense.reference}`}
-                    </p>
-                  </div>
+                  {deleting ? "מוחק..." : "מחק"}
+                </button>
 
-                  <div className="text-right font-bold text-blue-700">
-                    {Number(expense.amount || 0).toLocaleString()} ₪
-                  </div>
-                </div>
-              ))}
+                <button
+                  onClick={() => setConfirmOpen(false)}
+                  className="flex-1 bg-slate-200 py-3 rounded-xl font-bold"
+                >
+                  ביטול
+                </button>
+              </div>
             </div>
           </div>
         )}
-
-        {/* FILES */}
-        <div>
-          <h2 className="text-2xl font-bold flex items-center gap-2 mb-4">
-            <Paperclip className="w-6 h-6 text-purple-600" />
-            קבצים מצורפים
-          </h2>
-
-          {invoice.files.length === 0 && (
-            <p className="text-slate-600 text-center py-6">אין קבצים</p>
-          )}
-
-          <div className="space-y-3">
-            {invoice.files.map((file, idx) => (
-              <FileItem key={idx} file={file} />
-            ))}
-          </div>
-        </div>
       </div>
-
-      {/* DELETE MODAL */}
-      {confirmOpen && (
-        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50">
-          <div className="bg-white p-4 sm:p-4 sm:p-5 md:p-6 md:p-8 rounded-2xl shadow-xl max-w-md w-full">
-            <h3 className="text-2xl font-bold text-center mb-4">
-              למחוק חשבונית?
-            </h3>
-            <p className="text-center text-slate-700 mb-4 sm:mb-5 md:mb-6">
-              פעולה זו בלתי הפיכה.
-            </p>
-
-            <div className="flex gap-3 sm:gap-4">
-              <button
-                onClick={handleDelete}
-                className="flex-1 bg-red-600 text-white py-3 rounded-xl font-bold"
-              >
-                {deleting ? "מוחק..." : "מחק"}
-              </button>
-
-              <button
-                onClick={() => setConfirmOpen(false)}
-                className="flex-1 bg-slate-200 py-3 rounded-xl font-bold"
-              >
-                ביטול
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-    </div>
     </div>
   );
 };

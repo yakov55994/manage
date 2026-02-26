@@ -1,10 +1,11 @@
 import { useEffect, useRef, useState } from "react";
-import { Hash, Calendar, CreditCard, Building2, AlertCircle } from "lucide-react";
+import { Hash, Calendar, CreditCard, Building2, AlertCircle, icons, CreditCardIcon } from "lucide-react";
 import { toast } from "sonner";
 
 const METHODS = [
   { value: "check", label: "צ׳ק", icon: CreditCard },
   { value: "bank_transfer", label: "העברה בנקאית", icon: Building2 },
+  { value: "Credit_card", label: "כרטיס אשראי", icon: CreditCardIcon}
 ];
 
 export default function PaymentCaptureModal({

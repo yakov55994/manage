@@ -833,6 +833,7 @@ const CreateInvoice = () => {
                 <option value="">בחר אמצעי תשלום...</option>
                 <option value="bank_transfer">העברה בנקאית</option>
                 <option value="check">צ'ק</option>
+                <option value="credit_card">כרטיס אשראי</option>
               </select>
             </div>
           )}
