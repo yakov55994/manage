@@ -24,9 +24,9 @@ export default {
         select: "invoiceNumber supplierId totalAmount createdAt paid paymentDate",
         populate: { path: "supplierId", select: "name" }
       })
-      .populate("linkedSalaries", "employeeName totalAmount finalAmount month year")
+      .populate("linkedSalaries", "employeeName totalAmount finalAmount netAmount baseAmount month year")
       .populate("linkedOrders", "orderNumber projectName sum status")
-      .sort({ createdAt: -1 });
+      .sort({ date: -1 });
 
     return incomes;
   },
@@ -43,7 +43,7 @@ export default {
         select: "invoiceNumber supplierId totalAmount createdAt paid paymentDate",
         populate: { path: "supplierId", select: "name" }
       })
-      .populate("linkedSalaries", "employeeName totalAmount finalAmount month year")
+      .populate("linkedSalaries", "employeeName totalAmount finalAmount netAmount baseAmount month year")
       .populate("linkedOrders", "orderNumber projectName sum status");
 
     if (!income) {
@@ -150,7 +150,7 @@ export default {
       .populate("invoiceId", "invoiceNumber projectName")
       .populate("supplierId", "name")
       .populate("linkedIncomeId", "description amount date")
-      .sort({ createdAt: -1 })
+      .sort({ date: -1 })
       .limit(100);
 
     return incomes;
@@ -183,7 +183,7 @@ export default {
 
     if (salaryIds && salaryIds.length > 0) {
       const salaries = await Salary.find({ _id: { $in: salaryIds } });
-      totalLinkedAmount += salaries.reduce((sum, sal) => sum + (Number(sal.finalAmount) || Number(sal.totalAmount) || 0), 0);
+      totalLinkedAmount += salaries.reduce((sum, sal) => sum + (Number(sal.netAmount) || Number(sal.baseAmount) || Number(sal.finalAmount) || 0), 0);
     }
 
     if (orderIds && orderIds.length > 0) {
@@ -221,7 +221,7 @@ export default {
         select: "invoiceNumber supplierId totalAmount createdAt paid paymentDate",
         populate: { path: "supplierId", select: "name" }
       })
-      .populate("linkedSalaries", "employeeName totalAmount finalAmount month year")
+      .populate("linkedSalaries", "employeeName totalAmount finalAmount netAmount baseAmount month year")
       .populate("linkedOrders", "orderNumber projectName sum status");
 
     return populatedIncome;

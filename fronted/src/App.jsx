@@ -1,3 +1,4 @@
+import { useEffect } from "react";
 import {
   BrowserRouter as Router,
   Route,
@@ -48,67 +49,29 @@ import ExportDataPage from "./pages/ExportDataPage.jsx";
 import { AuthProvider, useAuth } from "./context/AuthContext.jsx";
 import { Toaster } from "sonner";
 import { toast } from "sonner";
-import { ArrowRightCircle, KeyRound } from "lucide-react";
 import "./App.css";
 
 const AppContent = () => {
-  const { user, isAuthenticated, logout } = useAuth();
+  const { inactivityLogout, clearInactivityFlag } = useAuth();
   const navigate = useNavigate();
 
-  const handleLogout = async () => {
-    const result = await logout();
-    if (result.success) {
-      toast.success("ההתנתקות בוצעה בהצלחה, להתראות 👋", {
-        duration: 5000,
-        className: "sonner-toast success rtl",
+  // מצב שינה - התנתקות אוטומטית אחרי 7 שעות ללא פעילות
+  useEffect(() => {
+    if (inactivityLogout) {
+      clearInactivityFlag();
+      toast.info("ההפעלה הסתיימה עקב חוסר פעילות, יש להתחבר מחדש", {
+        duration: 8000,
+        className: "sonner-toast info rtl",
       });
       navigate("/login");
-    } else {
-      toast.error("שגיאה בהתנתקות");
     }
-  };
+  }, [inactivityLogout, clearInactivityFlag, navigate]);
 
   return (
     <div className="min-h-screen flex flex-col">
       <div className="flex flex-1">
         <Sidebar />
         <div className="flex-1 p-6 mt-20 ml-10">
-          <div className="mb-0 mr-auto max-w-60 top-1 z-50 flex items-center gap-4 text-white p-2">
-            <div
-              className={`flex items-center gap-2 px-4 py-2 rounded-2xl font-semibold text-sm tracking-wide shadow-lg ${
-                isAuthenticated
-                  ? "bg-green-600 text-white"
-                  : "bg-red-600 text-white"
-              }`}
-            >
-              <div
-                className={`w-2 h-2 rounded-full shadow-lg ${
-                  isAuthenticated ? "bg-green-200" : "bg-red-200"
-                }`}
-              ></div>
-              <b>{isAuthenticated ? "מחובר/ת" : "מנותק/ת"}</b>
-              {user && <span className="mr-2">({user.username})</span>}
-            </div>
-
-            <button
-              className={`flex items-center gap-2 px-4 py-2 rounded-2xl font-semibold text-sm tracking-wide transition-all hover:scale-105 ${
-                isAuthenticated
-                  ? "bg-red-600 text-white hover:bg-red-500 shadow-red-600/30"
-                  : "bg-green-600 text-white hover:bg-green-500 shadow-green-600/30"
-              } shadow-lg`}
-              onClick={
-                isAuthenticated ? handleLogout : () => navigate("/login")
-              }
-            >
-              {isAuthenticated ? (
-                <ArrowRightCircle className="w-4 h-4" />
-              ) : (
-                <KeyRound className="w-4 h-4" />
-              )}
-              <span>{isAuthenticated ? "התנתק" : "התחברות"}</span>
-            </button>
-          </div>
-
           <Routes>
             <Route path="*" element={<Home />} />
             <Route path="/login" element={<Login />} />

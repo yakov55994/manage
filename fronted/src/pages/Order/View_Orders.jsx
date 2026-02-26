@@ -198,14 +198,14 @@ const OrdersPage = () => {
         const projectsData = Array.isArray(projectsRes.data?.data)
           ? projectsRes.data.data
           : Array.isArray(projectsRes.data)
-          ? projectsRes.data
-          : [];
+            ? projectsRes.data
+            : [];
 
         const suppliersData = Array.isArray(suppliersRes.data?.data)
           ? suppliersRes.data.data
           : Array.isArray(suppliersRes.data)
-          ? suppliersRes.data
-          : [];
+            ? suppliersRes.data
+            : [];
 
         setProjectsForPrint(projectsData);
         setSuppliersForPrint(suppliersData);
@@ -359,11 +359,11 @@ const OrdersPage = () => {
     // מציאת שמות לפילטרים
     const selectedProjectName = selectedProjectForPrint
       ? projectsForPrint.find((p) => p._id === selectedProjectForPrint)?.name ||
-        ""
+      ""
       : "";
     const selectedSupplierName = selectedSupplierForPrint
       ? suppliersForPrint.find((s) => s._id === selectedSupplierForPrint)
-          ?.name || ""
+        ?.name || ""
       : "";
 
     const printWindow = window.open("", "_blank");
@@ -573,53 +573,48 @@ const OrdersPage = () => {
           </div>
           <h1>📋 דוח הזמנות</h1>
           <div class="date">תאריך הפקה: ${new Date().toLocaleDateString(
-            "he-IL",
-            {
-              year: "numeric",
-              month: "long",
-              day: "numeric",
-              hour: "2-digit",
-              minute: "2-digit",
-            }
-          )}</div>
+      "he-IL",
+      {
+        year: "numeric",
+        month: "long",
+        day: "numeric",
+        hour: "2-digit",
+        minute: "2-digit",
+      }
+    )}</div>
         </div>
 
-        ${
-          selectedProjectName ||
-          selectedSupplierName ||
-          fromDatePrint ||
-          toDatePrint
-            ? `
+        ${selectedProjectName ||
+        selectedSupplierName ||
+        fromDatePrint ||
+        toDatePrint
+        ? `
         <div class="filters">
           <h3>🔍 פילטרים</h3>
-          ${
-            selectedProjectName
-              ? `<p><strong>פרויקט:</strong> ${selectedProjectName}</p>`
-              : ""
-          }
-          ${
-            selectedSupplierName
-              ? `<p><strong>ספק:</strong> ${selectedSupplierName}</p>`
-              : ""
-          }
-          ${
+          ${selectedProjectName
+          ? `<p><strong>פרויקט:</strong> ${selectedProjectName}</p>`
+          : ""
+        }
+          ${selectedSupplierName
+          ? `<p><strong>ספק:</strong> ${selectedSupplierName}</p>`
+          : ""
+        }
+          ${fromDatePrint
+          ? `<p><strong>מתאריך:</strong> ${new Date(
             fromDatePrint
-              ? `<p><strong>מתאריך:</strong> ${new Date(
-                  fromDatePrint
-                ).toLocaleDateString("he-IL")}</p>`
-              : ""
-          }
-          ${
+          ).toLocaleDateString("he-IL")}</p>`
+          : ""
+        }
+          ${toDatePrint
+          ? `<p><strong>עד תאריך:</strong> ${new Date(
             toDatePrint
-              ? `<p><strong>עד תאריך:</strong> ${new Date(
-                  toDatePrint
-                ).toLocaleDateString("he-IL")}</p>`
-              : ""
-          }
+          ).toLocaleDateString("he-IL")}</p>`
+          : ""
+        }
         </div>
         `
-            : ""
-        }
+        : ""
+      }
 
         <table>
           <thead>
@@ -635,8 +630,8 @@ const OrdersPage = () => {
           </thead>
           <tbody>
             ${filteredForPrint
-              .map(
-                (order, idx) => `
+        .map(
+          (order, idx) => `
               <tr>
                 <td><strong>${idx + 1}</strong></td>
                 <td><strong>${order.orderNumber || "-"}</strong></td>
@@ -646,8 +641,8 @@ const OrdersPage = () => {
                 <td>${formatDate(order.createdAt)}</td>
                 <td>${order.status || "-"}</td>
               </tr>`
-              )
-              .join("")}
+        )
+        .join("")}
           </tbody>
         </table>
 
@@ -847,20 +842,28 @@ const OrdersPage = () => {
   const filteredOrders = searchTerm
     ? getFilteredOrders()
     : selectedStatus
-    ? orders.filter((order) => order.status === selectedStatus)
-    : orders;
+      ? orders.filter((order) => order.status === selectedStatus)
+      : orders;
+
+  const getOrderDate = (order) => {
+    if (!order?.createdAt) return new Date(0);
+    return new Date(order.createdAt);
+  };
 
   const sortedOrders = [...filteredOrders].sort((a, b) => {
     if (sortBy === "sum") {
       return sortOrder === "asc" ? a.sum - b.sum : b.sum - a.sum;
     }
+
     if (sortBy === "createdAt") {
       return sortOrder === "asc"
-        ? new Date(a.createdAt) - new Date(b.createdAt)
-        : new Date(b.createdAt) - new Date(a.createdAt);
+        ? getOrderDate(a) - getOrderDate(b)
+        : getOrderDate(b) - getOrderDate(a);
     }
+
     return 0;
   });
+
 
   // Multi-select functions
   const toggleSelectOrder = (order, event = null) => {
@@ -926,10 +929,10 @@ const OrdersPage = () => {
     Array.isArray(res?.data?.data)
       ? res.data.data
       : Array.isArray(res?.data)
-      ? res.data
-      : Array.isArray(res)
-      ? res
-      : [];
+        ? res.data
+        : Array.isArray(res)
+          ? res
+          : [];
 
   const authUser = JSON.parse(localStorage.getItem("user") || "{}");
   const selectedProjectId = authUser?.selectedProject;
@@ -1037,10 +1040,10 @@ const OrdersPage = () => {
         const ordersData = Array.isArray(res.data?.data)
           ? res.data.data
           : Array.isArray(res.data)
-          ? res.data
-          : [];
+            ? res.data
+            : [];
 
-       setAllOrders(ordersData);
+        setAllOrders(ordersData);
 
         setOrders(ordersData);
       } catch (error) {
@@ -1505,324 +1508,322 @@ const OrdersPage = () => {
             <div className="hidden lg:block bg-white/90 backdrop-blur-xl rounded-2xl shadow-xl border border-white/50 overflow-hidden">
               <div className="overflow-x-auto">
                 <table className="w-full">
-                <thead>
-                  <tr className="bg-gradient-to-r from-orange-500 via-amber-500 to-yellow-500">
-                    <th className="px-4 py-4 text-sm font-bold text-center text-white w-12">
-                      <input
-                        type="checkbox"
-                        checked={selectedOrders.length === sortedOrders.length && sortedOrders.length > 0}
-                        onChange={(e) => {
-                          e.stopPropagation();
-                          if (selectedOrders.length === sortedOrders.length) {
-                            selectNoneOrders();
-                          } else {
-                            selectAllOrders();
-                          }
-                        }}
-                        className="w-4 h-4 rounded border-white/50 text-orange-600 focus:ring-orange-500 cursor-pointer"
-                      />
-                    </th>
-                    <th className="px-6 py-4 text-sm font-bold text-center text-white">
-                      מספר הזמנה
-                    </th>
-                    <th className="px-6 py-4 text-sm font-bold text-center text-white">
-                      שם מזמין
-                    </th>
-                    <th className="px-6 py-4 text-sm font-bold text-center text-white">
-                      סכום
-                    </th>
-                    <th className="px-6 py-4 text-sm font-bold text-center text-white">
-                      סטטוס
-                    </th>
-                    <th className="px-6 py-4 text-sm font-bold text-center text-white">
-                      שם פרויקט
-                    </th>
-                    <th className="px-6 py-4 text-sm font-bold text-center text-white">
-                      תאריך יצירה
-                    </th>
-                    <th className="px-6 py-4 text-sm font-bold text-center text-white">
-                      קבצים
-                    </th>
-                    <th className="px-6 py-4 text-sm font-bold text-center text-white">
-                      חשבונית/קבלה/זיכוי
-                    </th>
-                    {(isAdmin || canEditOrders) && (
-                      <th className="px-6 py-4 text-sm font-bold text-center text-white">
-                        פעולות
-                      </th>
-                    )}
-                  </tr>
-                </thead>
-                <tbody>
-                  {sortedOrders.map((order, index) => (
-                    <tr
-                      key={order._id}
-                      onClick={() => handleView(order._id)}
-                      className={`cursor-pointer border-t border-orange-100 hover:bg-orange-50 transition-colors ${
-                        isOrderSelected(order) ? "bg-orange-100" : ""
-                      }`}
-                    >
-                      <td className="px-4 py-4 text-center" onClick={(e) => e.stopPropagation()}>
+                  <thead>
+                    <tr className="bg-gradient-to-r from-orange-500 via-amber-500 to-yellow-500">
+                      <th className="px-4 py-4 text-sm font-bold text-center text-white w-12">
                         <input
                           type="checkbox"
-                          checked={isOrderSelected(order)}
+                          checked={selectedOrders.length === sortedOrders.length && sortedOrders.length > 0}
                           onChange={(e) => {
                             e.stopPropagation();
-                            toggleSelectOrder(order, e);
+                            if (selectedOrders.length === sortedOrders.length) {
+                              selectNoneOrders();
+                            } else {
+                              selectAllOrders();
+                            }
                           }}
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            toggleSelectOrder(order, e);
-                          }}
-                          className="w-4 h-4 rounded border-orange-300 text-orange-600 focus:ring-orange-500 cursor-pointer"
+                          className="w-4 h-4 rounded border-white/50 text-orange-600 focus:ring-orange-500 cursor-pointer"
                         />
-                      </td>
-                      <td className="px-6 py-4 text-sm font-bold text-center text-slate-900">
-                        {order.orderNumber}
-                      </td>
-
-                      <td className="px-6 py-4 text-sm font-medium text-center text-slate-900">
-                        {order.invitingName || "-"}
-                      </td>
-
-                      <td className="px-6 py-4 text-sm font-bold text-center text-slate-900">
-                        {formatNumber(order.sum)} ₪
-                      </td>
-
-                      <td className="px-6 py-4 text-sm font-medium text-center text-slate-900">
-                        {order.status}
-                      </td>
-
-                      <td className="px-6 py-4 text-sm font-medium text-center text-slate-900">
-                        {order.projectName}
-                      </td>
-
-                      <td className="px-6 py-4 text-sm font-medium text-center text-slate-900">
-                        {formatDate(order.createdAt)}
-                      </td>
-
-                      {/* 🆕 עמודת קבצים */}
-                      <td className="px-6 py-4 text-center">
-                        <div className="flex items-center justify-center gap-2">
-                          <Paperclip className="w-4 h-4 text-orange-500" />
-                          <span className="font-bold text-slate-900">
-                            {getOrderFilesCount(order)}
-                          </span>
-                        </div>
-                      </td>
-
-                      {/* ✅ עמודת חשבונית/קבלה/זיכוי */}
-                      <td className="px-6 py-4 text-center">
-                        <div className="flex items-center justify-center gap-3">
-                          {/* אינדיקטור חשבונית */}
-                          <div className="flex flex-col items-center gap-1">
-                            {order.invoiceNumber || (order.invoiceFiles && order.invoiceFiles.length > 0) ? (
-                              <div className="flex items-center gap-1 px-2 py-1 rounded-lg bg-blue-100">
-                                <FileText className="w-4 h-4 text-blue-600" />
-                                <span className="text-xs font-bold text-blue-700">חשבונית</span>
-                              </div>
-                            ) : (
-                              <div className="flex items-center gap-1 px-2 py-1 rounded-lg bg-slate-100">
-                                <FileText className="w-4 h-4 text-slate-400" />
-                                <span className="text-xs text-slate-400">-</span>
-                              </div>
-                            )}
-                          </div>
-
-                          {/* אינדיקטור קבלה */}
-                          <div className="flex flex-col items-center gap-1">
-                            {order.receiptNumber || (order.receiptFiles && order.receiptFiles.length > 0) ? (
-                              <div className="flex items-center gap-1 px-2 py-1 rounded-lg bg-green-100">
-                                <FileText className="w-4 h-4 text-green-600" />
-                                <span className="text-xs font-bold text-green-700">קבלה</span>
-                              </div>
-                            ) : (
-                              <div className="flex items-center gap-1 px-2 py-1 rounded-lg bg-slate-100">
-                                <FileText className="w-4 h-4 text-slate-400" />
-                                <span className="text-xs text-slate-400">-</span>
-                              </div>
-                            )}
-                          </div>
-
-                          {/* אינדיקטור זיכוי */}
-                          <div className="flex flex-col items-center gap-1">
-                            {order.isCredited ? (
-                              <div className="flex items-center gap-1 px-2 py-1 rounded-lg bg-purple-100">
-                                <CheckSquare className="w-4 h-4 text-purple-600" />
-                                <span className="text-xs font-bold text-purple-700">זוכה</span>
-                              </div>
-                            ) : (
-                              <div className="flex items-center gap-1 px-2 py-1 rounded-lg bg-slate-100">
-                                <Square className="w-4 h-4 text-slate-400" />
-                                <span className="text-xs text-slate-400">-</span>
-                              </div>
-                            )}
-                          </div>
-                        </div>
-                      </td>
-
+                      </th>
+                      <th className="px-6 py-4 text-sm font-bold text-center text-white">
+                        מספר הזמנה
+                      </th>
+                      <th className="px-6 py-4 text-sm font-bold text-center text-white">
+                        שם מזמין
+                      </th>
+                      <th className="px-6 py-4 text-sm font-bold text-center text-white">
+                        סכום
+                      </th>
+                      <th className="px-6 py-4 text-sm font-bold text-center text-white">
+                        סטטוס
+                      </th>
+                      <th className="px-6 py-4 text-sm font-bold text-center text-white">
+                        שם פרויקט
+                      </th>
+                      <th className="px-6 py-4 text-sm font-bold text-center text-white">
+                        תאריך יצירה
+                      </th>
+                      <th className="px-6 py-4 text-sm font-bold text-center text-white">
+                        קבצים
+                      </th>
+                      <th className="px-6 py-4 text-sm font-bold text-center text-white">
+                        חשבונית/קבלה/זיכוי
+                      </th>
                       {(isAdmin || canEditOrders) && (
-                        <td className="px-6 py-4">
-                          <div className="flex justify-center gap-2">
-                            {canEditOrders && (
-                              <button
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  handleEdit(order._id);
-                                }}
-                                className="p-2 text-orange-600 hover:bg-orange-100 rounded-lg transition-all"
-                              >
-                                <Edit2 className="w-5 h-5" />
-                              </button>
-                            )}
-
-                            {isAdmin && (
-                              <button
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  setOrderToDelete(order._id);
-                                  setShowModal(true);
-                                }}
-                                className="p-2 text-red-600 hover:bg-red-100 rounded-lg transition-all"
-                              >
-                                <Trash2 className="w-5 h-5" />
-                              </button>
-                            )}
-                          </div>
-                        </td>
+                        <th className="px-6 py-4 text-sm font-bold text-center text-white">
+                          פעולות
+                        </th>
                       )}
                     </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          </div>
-
-          {/* Mobile Cards */}
-          <div className="lg:hidden space-y-4">
-            {sortedOrders.map((order, index) => (
-              <div
-                key={order._id}
-                onClick={() => handleView(order._id)}
-                className={`bg-white/90 backdrop-blur-xl rounded-xl shadow-lg border border-white/50 p-4 cursor-pointer hover:shadow-xl transition-all active:scale-[0.98] ${
-                  isOrderSelected(order) ? "ring-2 ring-orange-500 bg-orange-50/50" : ""
-                }`}
-              >
-                <div className="flex items-start justify-between mb-3">
-                  <div className="flex items-center gap-3">
-                    <input
-                      type="checkbox"
-                      checked={isOrderSelected(order)}
-                      onChange={(e) => {
-                        e.stopPropagation();
-                        toggleSelectOrder(order, e);
-                      }}
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        toggleSelectOrder(order, e);
-                      }}
-                      className="w-5 h-5 rounded border-orange-300 text-orange-600 focus:ring-orange-500 cursor-pointer"
-                    />
-                    <div>
-                      <div className="text-xs text-slate-500 mb-1">מספר הזמנה</div>
-                      <div className="text-lg font-bold text-slate-900">{order.orderNumber}</div>
-                    </div>
-                  </div>
-                  <div className="text-left">
-                    <div className="text-xs text-slate-500 mb-1">סכום</div>
-                    <div className="text-lg font-bold text-orange-600">{formatNumber(order.sum)} ₪</div>
-                  </div>
-                </div>
-
-                <div className="grid grid-cols-2 gap-3 mb-3">
-                  <div>
-                    <div className="text-xs text-slate-500 mb-1">שם מזמין</div>
-                    <div className="text-sm font-medium text-slate-900">{order.invitingName || "-"}</div>
-                  </div>
-                  <div>
-                    <div className="text-xs text-slate-500 mb-1">סטטוס</div>
-                    <div className="text-sm font-medium text-slate-900">{order.status}</div>
-                  </div>
-                </div>
-
-                <div className="grid grid-cols-2 gap-3 mb-3">
-                  <div>
-                    <div className="text-xs text-slate-500 mb-1">פרויקט</div>
-                    <div className="text-sm font-medium text-slate-900">{order.projectName}</div>
-                  </div>
-                  <div>
-                    <div className="text-xs text-slate-500 mb-1">תאריך יצירה</div>
-                    <div className="text-sm font-medium text-slate-900">{formatDate(order.createdAt)}</div>
-                  </div>
-                </div>
-
-                <div className="mb-3">
-                  <div className="text-xs text-slate-500 mb-1">קבצים</div>
-                  <div className="flex items-center gap-1">
-                    <Paperclip className="w-3 h-3 text-orange-500" />
-                    <span className="text-sm font-bold text-slate-900">{getOrderFilesCount(order)}</span>
-                  </div>
-                </div>
-
-                {/* חשבונית/קבלה/זיכוי */}
-                <div className="flex flex-wrap gap-2 mb-3">
-                  {order.invoiceNumber || (order.invoiceFiles && order.invoiceFiles.length > 0) ? (
-                    <div className="flex items-center gap-1 px-2 py-1 rounded-lg bg-blue-100">
-                      <FileText className="w-3 h-3 text-blue-600" />
-                      <span className="text-xs font-bold text-blue-700">חשבונית</span>
-                    </div>
-                  ) : null}
-
-                  {order.receiptNumber || (order.receiptFiles && order.receiptFiles.length > 0) ? (
-                    <div className="flex items-center gap-1 px-2 py-1 rounded-lg bg-green-100">
-                      <FileText className="w-3 h-3 text-green-600" />
-                      <span className="text-xs font-bold text-green-700">קבלה</span>
-                    </div>
-                  ) : null}
-
-                  {order.isCredited ? (
-                    <div className="flex items-center gap-1 px-2 py-1 rounded-lg bg-purple-100">
-                      <CheckSquare className="w-3 h-3 text-purple-600" />
-                      <span className="text-xs font-bold text-purple-700">זוכה</span>
-                    </div>
-                  ) : null}
-                </div>
-
-                {/* Action Buttons */}
-                {(isAdmin || canEditOrders) && (
-                  <div className="flex gap-2 pt-3 border-t border-slate-200">
-                    {canEditOrders && (
-                      <button
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          handleEdit(order._id);
-                        }}
-                        className="flex-1 flex items-center justify-center gap-2 px-3 py-2 text-orange-600 bg-orange-50 hover:bg-orange-100 rounded-lg transition-all font-medium text-sm"
+                  </thead>
+                  <tbody>
+                    {sortedOrders.map((order, index) => (
+                      <tr
+                        key={order._id}
+                        onClick={() => handleView(order._id)}
+                        className={`cursor-pointer border-t border-orange-100 hover:bg-orange-50 transition-colors ${isOrderSelected(order) ? "bg-orange-100" : ""
+                          }`}
                       >
-                        <Edit2 className="w-4 h-4" />
-                        <span>עריכה</span>
-                      </button>
-                    )}
+                        <td className="px-4 py-4 text-center" onClick={(e) => e.stopPropagation()}>
+                          <input
+                            type="checkbox"
+                            checked={isOrderSelected(order)}
+                            onChange={(e) => {
+                              e.stopPropagation();
+                              toggleSelectOrder(order, e);
+                            }}
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              toggleSelectOrder(order, e);
+                            }}
+                            className="w-4 h-4 rounded border-orange-300 text-orange-600 focus:ring-orange-500 cursor-pointer"
+                          />
+                        </td>
+                        <td className="px-6 py-4 text-sm font-bold text-center text-slate-900">
+                          {order.orderNumber}
+                        </td>
 
-                    {isAdmin && (
-                      <button
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          setOrderToDelete(order._id);
-                          setShowModal(true);
-                        }}
-                        className="flex-1 flex items-center justify-center gap-2 px-3 py-2 text-red-600 bg-red-50 hover:bg-red-100 rounded-lg transition-all font-medium text-sm"
-                      >
-                        <Trash2 className="w-4 h-4" />
-                        <span>מחיקה</span>
-                      </button>
-                    )}
-                  </div>
-                )}
+                        <td className="px-6 py-4 text-sm font-medium text-center text-slate-900">
+                          {order.invitingName || "-"}
+                        </td>
+
+                        <td className="px-6 py-4 text-sm font-bold text-center text-slate-900">
+                          {formatNumber(order.sum)} ₪
+                        </td>
+
+                        <td className="px-6 py-4 text-sm font-medium text-center text-slate-900">
+                          {order.status}
+                        </td>
+
+                        <td className="px-6 py-4 text-sm font-medium text-center text-slate-900">
+                          {order.projectName}
+                        </td>
+
+                        <td className="px-6 py-4 text-sm font-medium text-center text-slate-900">
+                          {formatDate(order.createdAt)}
+                        </td>
+
+                        {/* 🆕 עמודת קבצים */}
+                        <td className="px-6 py-4 text-center">
+                          <div className="flex items-center justify-center gap-2">
+                            <Paperclip className="w-4 h-4 text-orange-500" />
+                            <span className="font-bold text-slate-900">
+                              {getOrderFilesCount(order)}
+                            </span>
+                          </div>
+                        </td>
+
+                        {/* ✅ עמודת חשבונית/קבלה/זיכוי */}
+                        <td className="px-6 py-4 text-center">
+                          <div className="flex items-center justify-center gap-3">
+                            {/* אינדיקטור חשבונית */}
+                            <div className="flex flex-col items-center gap-1">
+                              {order.invoiceNumber || (order.invoiceFiles && order.invoiceFiles.length > 0) ? (
+                                <div className="flex items-center gap-1 px-2 py-1 rounded-lg bg-blue-100">
+                                  <FileText className="w-4 h-4 text-blue-600" />
+                                  <span className="text-xs font-bold text-blue-700">חשבונית</span>
+                                </div>
+                              ) : (
+                                <div className="flex items-center gap-1 px-2 py-1 rounded-lg bg-slate-100">
+                                  <FileText className="w-4 h-4 text-slate-400" />
+                                  <span className="text-xs text-slate-400">-</span>
+                                </div>
+                              )}
+                            </div>
+
+                            {/* אינדיקטור קבלה */}
+                            <div className="flex flex-col items-center gap-1">
+                              {order.receiptNumber || (order.receiptFiles && order.receiptFiles.length > 0) ? (
+                                <div className="flex items-center gap-1 px-2 py-1 rounded-lg bg-green-100">
+                                  <FileText className="w-4 h-4 text-green-600" />
+                                  <span className="text-xs font-bold text-green-700">קבלה</span>
+                                </div>
+                              ) : (
+                                <div className="flex items-center gap-1 px-2 py-1 rounded-lg bg-slate-100">
+                                  <FileText className="w-4 h-4 text-slate-400" />
+                                  <span className="text-xs text-slate-400">-</span>
+                                </div>
+                              )}
+                            </div>
+
+                            {/* אינדיקטור זיכוי */}
+                            <div className="flex flex-col items-center gap-1">
+                              {order.isCredited ? (
+                                <div className="flex items-center gap-1 px-2 py-1 rounded-lg bg-purple-100">
+                                  <CheckSquare className="w-4 h-4 text-purple-600" />
+                                  <span className="text-xs font-bold text-purple-700">זוכה</span>
+                                </div>
+                              ) : (
+                                <div className="flex items-center gap-1 px-2 py-1 rounded-lg bg-slate-100">
+                                  <Square className="w-4 h-4 text-slate-400" />
+                                  <span className="text-xs text-slate-400">-</span>
+                                </div>
+                              )}
+                            </div>
+                          </div>
+                        </td>
+
+                        {(isAdmin || canEditOrders) && (
+                          <td className="px-6 py-4">
+                            <div className="flex justify-center gap-2">
+                              {canEditOrders && (
+                                <button
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    handleEdit(order._id);
+                                  }}
+                                  className="p-2 text-orange-600 hover:bg-orange-100 rounded-lg transition-all"
+                                >
+                                  <Edit2 className="w-5 h-5" />
+                                </button>
+                              )}
+
+                              {isAdmin && (
+                                <button
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    setOrderToDelete(order._id);
+                                    setShowModal(true);
+                                  }}
+                                  className="p-2 text-red-600 hover:bg-red-100 rounded-lg transition-all"
+                                >
+                                  <Trash2 className="w-5 h-5" />
+                                </button>
+                              )}
+                            </div>
+                          </td>
+                        )}
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
               </div>
-            ))}
-          </div>
-        </>
+            </div>
+
+            {/* Mobile Cards */}
+            <div className="lg:hidden space-y-4">
+              {sortedOrders.map((order, index) => (
+                <div
+                  key={order._id}
+                  onClick={() => handleView(order._id)}
+                  className={`bg-white/90 backdrop-blur-xl rounded-xl shadow-lg border border-white/50 p-4 cursor-pointer hover:shadow-xl transition-all active:scale-[0.98] ${isOrderSelected(order) ? "ring-2 ring-orange-500 bg-orange-50/50" : ""
+                    }`}
+                >
+                  <div className="flex items-start justify-between mb-3">
+                    <div className="flex items-center gap-3">
+                      <input
+                        type="checkbox"
+                        checked={isOrderSelected(order)}
+                        onChange={(e) => {
+                          e.stopPropagation();
+                          toggleSelectOrder(order, e);
+                        }}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          toggleSelectOrder(order, e);
+                        }}
+                        className="w-5 h-5 rounded border-orange-300 text-orange-600 focus:ring-orange-500 cursor-pointer"
+                      />
+                      <div>
+                        <div className="text-xs text-slate-500 mb-1">מספר הזמנה</div>
+                        <div className="text-lg font-bold text-slate-900">{order.orderNumber}</div>
+                      </div>
+                    </div>
+                    <div className="text-left">
+                      <div className="text-xs text-slate-500 mb-1">סכום</div>
+                      <div className="text-lg font-bold text-orange-600">{formatNumber(order.sum)} ₪</div>
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-3 mb-3">
+                    <div>
+                      <div className="text-xs text-slate-500 mb-1">שם מזמין</div>
+                      <div className="text-sm font-medium text-slate-900">{order.invitingName || "-"}</div>
+                    </div>
+                    <div>
+                      <div className="text-xs text-slate-500 mb-1">סטטוס</div>
+                      <div className="text-sm font-medium text-slate-900">{order.status}</div>
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-3 mb-3">
+                    <div>
+                      <div className="text-xs text-slate-500 mb-1">פרויקט</div>
+                      <div className="text-sm font-medium text-slate-900">{order.projectName}</div>
+                    </div>
+                    <div>
+                      <div className="text-xs text-slate-500 mb-1">תאריך יצירה</div>
+                      <div className="text-sm font-medium text-slate-900">{formatDate(order.createdAt)}</div>
+                    </div>
+                  </div>
+
+                  <div className="mb-3">
+                    <div className="text-xs text-slate-500 mb-1">קבצים</div>
+                    <div className="flex items-center gap-1">
+                      <Paperclip className="w-3 h-3 text-orange-500" />
+                      <span className="text-sm font-bold text-slate-900">{getOrderFilesCount(order)}</span>
+                    </div>
+                  </div>
+
+                  {/* חשבונית/קבלה/זיכוי */}
+                  <div className="flex flex-wrap gap-2 mb-3">
+                    {order.invoiceNumber || (order.invoiceFiles && order.invoiceFiles.length > 0) ? (
+                      <div className="flex items-center gap-1 px-2 py-1 rounded-lg bg-blue-100">
+                        <FileText className="w-3 h-3 text-blue-600" />
+                        <span className="text-xs font-bold text-blue-700">חשבונית</span>
+                      </div>
+                    ) : null}
+
+                    {order.receiptNumber || (order.receiptFiles && order.receiptFiles.length > 0) ? (
+                      <div className="flex items-center gap-1 px-2 py-1 rounded-lg bg-green-100">
+                        <FileText className="w-3 h-3 text-green-600" />
+                        <span className="text-xs font-bold text-green-700">קבלה</span>
+                      </div>
+                    ) : null}
+
+                    {order.isCredited ? (
+                      <div className="flex items-center gap-1 px-2 py-1 rounded-lg bg-purple-100">
+                        <CheckSquare className="w-3 h-3 text-purple-600" />
+                        <span className="text-xs font-bold text-purple-700">זוכה</span>
+                      </div>
+                    ) : null}
+                  </div>
+
+                  {/* Action Buttons */}
+                  {(isAdmin || canEditOrders) && (
+                    <div className="flex gap-2 pt-3 border-t border-slate-200">
+                      {canEditOrders && (
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleEdit(order._id);
+                          }}
+                          className="flex-1 flex items-center justify-center gap-2 px-3 py-2 text-orange-600 bg-orange-50 hover:bg-orange-100 rounded-lg transition-all font-medium text-sm"
+                        >
+                          <Edit2 className="w-4 h-4" />
+                          <span>עריכה</span>
+                        </button>
+                      )}
+
+                      {isAdmin && (
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setOrderToDelete(order._id);
+                            setShowModal(true);
+                          }}
+                          className="flex-1 flex items-center justify-center gap-2 px-3 py-2 text-red-600 bg-red-50 hover:bg-red-100 rounded-lg transition-all font-medium text-sm"
+                        >
+                          <Trash2 className="w-4 h-4" />
+                          <span>מחיקה</span>
+                        </button>
+                      )}
+                    </div>
+                  )}
+                </div>
+              ))}
+            </div>
+          </>
         ) : (
           <div className="bg-white/90 backdrop-blur-xl rounded-2xl shadow-xl border border-white/50 p-12 text-center">
             <ShoppingCart className="w-16 h-16 text-slate-300 mx-auto mb-4" />
@@ -1968,147 +1969,147 @@ const OrdersPage = () => {
         )}
 
         {/* 🆕 Payment Export Modal - בחירת סוג ייצוא */}
-       {showPaymentExportModal && (
-  <div className="fixed inset-0 z-50">
-    {/* רקע כהה */}
-    <div
-      className="absolute inset-0 bg-black/60 backdrop-blur-sm"
-      onClick={() => setShowPaymentExportModal(false)}
-    />
-
-    {/* מרכז המסך */}
-    <div className="fixed inset-0 flex items-center justify-center p-4 overflow-y-auto">
-      <div
-        className="relative w-full max-w-4xl mt-20"
-        onClick={(e) => e.stopPropagation()}
-      >
-        {/* אפקט זוהר */}
-        <div className="pointer-events-none absolute -inset-2 bg-gradient-to-r from-emerald-500 to-teal-500 rounded-3xl opacity-20 blur-xl"></div>
-
-        {/* קונטיינר המודל */}
-        <div className="relative bg-white rounded-3xl shadow-2xl overflow-hidden">
-
-          {/* HEADER */}
-          <div className="bg-gradient-to-r from-emerald-600 to-teal-600 text-white p-6 flex items-center justify-between">
-            <div className="flex items-center gap-3">
-              <div className="bg-white/20 p-2 rounded-lg">
-                <FileSpreadsheet className="w-7 h-7 text-white" />
-              </div>
-              <h3 className="text-2xl font-bold">בחר סוג ייצוא לתשלום</h3>
-            </div>
-
-            <button
+        {showPaymentExportModal && (
+          <div className="fixed inset-0 z-50">
+            {/* רקע כהה */}
+            <div
+              className="absolute inset-0 bg-black/60 backdrop-blur-sm"
               onClick={() => setShowPaymentExportModal(false)}
-              className="text-white hover:bg-white/20 rounded-lg p-2 transition"
-            >
-              <X className="w-6 h-6" />
-            </button>
-          </div>
+            />
 
-          {/* גוף המודל + scroll פנימי */}
-          <div className="max-h-[calc(85vh-8rem)] overflow-y-auto p-8">
-
-            {/* מרכז עליון */}
-            <div className="text-center mb-10">
-              <div className="mx-auto w-20 h-20 rounded-full bg-gradient-to-br from-emerald-500 to-teal-500 flex items-center justify-center mb-4">
-                <FileSpreadsheet className="w-10 h-10 text-white" />
-              </div>
-              <p className="text-slate-600 text-md">
-                כיצד תרצה לארגן את הנתונים?
-              </p>
-            </div>
-
-            {/* אופציות בחירה */}
-            <div className="space-y-6">
-
-              {/* אופציה 1 */}
-              <button
-                onClick={exportPaymentBySupplier}
-                className="w-full group p-6 rounded-2xl border-2 border-emerald-200 hover:border-emerald-500 hover:bg-emerald-50 transition-all text-right"
+            {/* מרכז המסך */}
+            <div className="fixed inset-0 flex items-center justify-center p-4 overflow-y-auto">
+              <div
+                className="relative w-full max-w-4xl mt-20"
+                onClick={(e) => e.stopPropagation()}
               >
-                <div className="flex items-start gap-4">
-                  <div className="p-4 rounded-xl bg-emerald-100 group-hover:bg-emerald-200 transition">
-                    <svg
-                      className="w-7 h-7 text-emerald-600"
-                      fill="none"
-                      viewBox="0 0 24 24"
-                      stroke="currentColor"
+                {/* אפקט זוהר */}
+                <div className="pointer-events-none absolute -inset-2 bg-gradient-to-r from-emerald-500 to-teal-500 rounded-3xl opacity-20 blur-xl"></div>
+
+                {/* קונטיינר המודל */}
+                <div className="relative bg-white rounded-3xl shadow-2xl overflow-hidden">
+
+                  {/* HEADER */}
+                  <div className="bg-gradient-to-r from-emerald-600 to-teal-600 text-white p-6 flex items-center justify-between">
+                    <div className="flex items-center gap-3">
+                      <div className="bg-white/20 p-2 rounded-lg">
+                        <FileSpreadsheet className="w-7 h-7 text-white" />
+                      </div>
+                      <h3 className="text-2xl font-bold">בחר סוג ייצוא לתשלום</h3>
+                    </div>
+
+                    <button
+                      onClick={() => setShowPaymentExportModal(false)}
+                      className="text-white hover:bg-white/20 rounded-lg p-2 transition"
                     >
-                      <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        strokeWidth={2}
-                        d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"
-                      />
-                    </svg>
+                      <X className="w-6 h-6" />
+                    </button>
                   </div>
 
-                  <div className="flex-1">
-                    <h4 className="text-xl font-bold text-slate-900 mb-2">
-                      מרוכז לפי ספק
-                    </h4>
-                    <p className="text-sm text-slate-600 leading-relaxed">
-                      כל ספק בשורה אחת עם סכום כולל, רשימת הזמנות ופרויקטים.
-                    </p>
-                    <div className="mt-3 text-xs text-emerald-600 font-medium">
-                      ✓ מתאים להעברות בנקאיות
+                  {/* גוף המודל + scroll פנימי */}
+                  <div className="max-h-[calc(85vh-8rem)] overflow-y-auto p-8">
+
+                    {/* מרכז עליון */}
+                    <div className="text-center mb-10">
+                      <div className="mx-auto w-20 h-20 rounded-full bg-gradient-to-br from-emerald-500 to-teal-500 flex items-center justify-center mb-4">
+                        <FileSpreadsheet className="w-10 h-10 text-white" />
+                      </div>
+                      <p className="text-slate-600 text-md">
+                        כיצד תרצה לארגן את הנתונים?
+                      </p>
                     </div>
+
+                    {/* אופציות בחירה */}
+                    <div className="space-y-6">
+
+                      {/* אופציה 1 */}
+                      <button
+                        onClick={exportPaymentBySupplier}
+                        className="w-full group p-6 rounded-2xl border-2 border-emerald-200 hover:border-emerald-500 hover:bg-emerald-50 transition-all text-right"
+                      >
+                        <div className="flex items-start gap-4">
+                          <div className="p-4 rounded-xl bg-emerald-100 group-hover:bg-emerald-200 transition">
+                            <svg
+                              className="w-7 h-7 text-emerald-600"
+                              fill="none"
+                              viewBox="0 0 24 24"
+                              stroke="currentColor"
+                            >
+                              <path
+                                strokeLinecap="round"
+                                strokeLinejoin="round"
+                                strokeWidth={2}
+                                d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"
+                              />
+                            </svg>
+                          </div>
+
+                          <div className="flex-1">
+                            <h4 className="text-xl font-bold text-slate-900 mb-2">
+                              מרוכז לפי ספק
+                            </h4>
+                            <p className="text-sm text-slate-600 leading-relaxed">
+                              כל ספק בשורה אחת עם סכום כולל, רשימת הזמנות ופרויקטים.
+                            </p>
+                            <div className="mt-3 text-xs text-emerald-600 font-medium">
+                              ✓ מתאים להעברות בנקאיות
+                            </div>
+                          </div>
+                        </div>
+                      </button>
+
+                      {/* אופציה 2 */}
+                      <button
+                        onClick={exportPaymentDetailed}
+                        className="w-full group p-6 rounded-2xl border-2 border-blue-200 hover:border-blue-500 hover:bg-blue-50 transition-all text-right"
+                      >
+                        <div className="flex items-start gap-4">
+                          <div className="p-4 rounded-xl bg-blue-100 group-hover:bg-blue-200 transition">
+                            <svg
+                              className="w-7 h-7 text-blue-600"
+                              fill="none"
+                              viewBox="0 0 24 24"
+                              stroke="currentColor"
+                            >
+                              <path
+                                strokeLinecap="round"
+                                strokeLinejoin="round"
+                                strokeWidth={2}
+                                d="M4 6h16M4 10h16M4 14h16M4 18h16"
+                              />
+                            </svg>
+                          </div>
+
+                          <div className="flex-1">
+                            <h4 className="text-xl font-bold text-slate-900 mb-2">
+                              מפורט לפי הזמנה
+                            </h4>
+                            <p className="text-sm text-slate-600 leading-relaxed">
+                              כל הזמנה בשורה נפרדת עם כל הפרטים המלאים.
+                            </p>
+                            <div className="mt-3 text-xs text-blue-600 font-medium">
+                              ✓ מעולה למעקב מלא
+                            </div>
+                          </div>
+                        </div>
+                      </button>
+
+                    </div>
+
+                    {/* כפתור ביטול */}
+                    <button
+                      onClick={() => setShowPaymentExportModal(false)}
+                      className="w-full mt-10 px-6 py-4 bg-slate-200 text-slate-700 font-bold rounded-xl hover:bg-slate-300 transition"
+                    >
+                      ביטול
+                    </button>
+
                   </div>
                 </div>
-              </button>
-
-              {/* אופציה 2 */}
-              <button
-                onClick={exportPaymentDetailed}
-                className="w-full group p-6 rounded-2xl border-2 border-blue-200 hover:border-blue-500 hover:bg-blue-50 transition-all text-right"
-              >
-                <div className="flex items-start gap-4">
-                  <div className="p-4 rounded-xl bg-blue-100 group-hover:bg-blue-200 transition">
-                    <svg
-                      className="w-7 h-7 text-blue-600"
-                      fill="none"
-                      viewBox="0 0 24 24"
-                      stroke="currentColor"
-                    >
-                      <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        strokeWidth={2}
-                        d="M4 6h16M4 10h16M4 14h16M4 18h16"
-                      />
-                    </svg>
-                  </div>
-
-                  <div className="flex-1">
-                    <h4 className="text-xl font-bold text-slate-900 mb-2">
-                      מפורט לפי הזמנה
-                    </h4>
-                    <p className="text-sm text-slate-600 leading-relaxed">
-                      כל הזמנה בשורה נפרדת עם כל הפרטים המלאים.
-                    </p>
-                    <div className="mt-3 text-xs text-blue-600 font-medium">
-                      ✓ מעולה למעקב מלא
-                    </div>
-                  </div>
-                </div>
-              </button>
-
+              </div>
             </div>
-
-            {/* כפתור ביטול */}
-            <button
-              onClick={() => setShowPaymentExportModal(false)}
-              className="w-full mt-10 px-6 py-4 bg-slate-200 text-slate-700 font-bold rounded-xl hover:bg-slate-300 transition"
-            >
-              ביטול
-            </button>
-
           </div>
-        </div>
-      </div>
-    </div>
-  </div>
-)}
+        )}
 
 
         {/* Report Modal */}
@@ -2370,11 +2371,10 @@ const OrdersPage = () => {
                         {availableColumns.map((column) => (
                           <label
                             key={column.key}
-                            className={`flex items-center gap-3 p-3 rounded-xl border-2 cursor-pointer transition-all ${
-                              exportColumns[column.key]
+                            className={`flex items-center gap-3 p-3 rounded-xl border-2 cursor-pointer transition-all ${exportColumns[column.key]
                                 ? "bg-gradient-to-br from-orange-50 to-amber-50 border-orange-400"
                                 : "bg-gray-50 border-gray-200 hover:border-gray-300"
-                            }`}
+                              }`}
                           >
                             <input
                               type="checkbox"
@@ -2383,11 +2383,10 @@ const OrdersPage = () => {
                               className="w-5 h-5 text-orange-600 rounded focus:ring-2 focus:ring-orange-500"
                             />
                             <span
-                              className={`text-sm font-medium ${
-                                exportColumns[column.key]
+                              className={`text-sm font-medium ${exportColumns[column.key]
                                   ? "text-gray-900"
                                   : "text-gray-600"
-                              }`}
+                                }`}
                             >
                               {column.label}
                             </span>

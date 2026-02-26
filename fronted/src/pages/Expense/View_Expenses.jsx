@@ -51,6 +51,10 @@ export default function ViewExpenses() {
     }
   };
 
+  const getExpenseDate = (expense) => {
+    return new Date(expense?.date || expense?.createdAt || 0);
+  };
+
   const filteredExpenses = expenses
     .filter((expense) => {
       if (!searchTerm) return true;
@@ -66,10 +70,12 @@ export default function ViewExpenses() {
       let comparison = 0;
 
       if (sortBy === "createdAt") {
-        comparison = new Date(b.createdAt) - new Date(a.createdAt);
-      } else if (sortBy === "date") {
-        comparison = new Date(b.date) - new Date(a.date);
-      } else if (sortBy === "amount") {
+        comparison = getExpenseDate(b) - getExpenseDate(a);
+      }
+      else if (sortBy === "date") {
+        comparison = getExpenseDate(b) - getExpenseDate(a);
+      }
+      else if (sortBy === "amount") {
         comparison = parseFloat(a.amount || 0) - parseFloat(b.amount || 0);
       } else if (sortBy === "description") {
         comparison = (a.description || "").localeCompare(b.description || "");
@@ -82,7 +88,7 @@ export default function ViewExpenses() {
     return expenses.reduce((acc, expense) => {
       if (!expense.createdAt) return acc;
 
-      const date = new Date(expense.createdAt);
+      const date = getExpenseDate(expense);
       const key = `${date.getFullYear()}-${date.getMonth()}`;
 
       if (!acc[key]) {
@@ -121,7 +127,7 @@ export default function ViewExpenses() {
         let comparison = 0;
 
         if (sortBy === "createdAt") {
-          comparison = new Date(a.createdAt) - new Date(b.createdAt);
+          comparison = getExpenseDate(a) - getExpenseDate(b);
         } else if (sortBy === "date") {
           comparison = new Date(a.date) - new Date(b.date);
         } else if (sortBy === "amount") {
@@ -337,7 +343,7 @@ export default function ViewExpenses() {
                   }`}
               >
                 <Calendar className="w-4 h-4" />
-                תאריך יצירה
+                תאריך פעולה
                 <ArrowUpDown className="w-4 h-4" />
               </button>
 

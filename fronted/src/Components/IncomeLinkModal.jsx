@@ -586,7 +586,7 @@ export default function IncomeLinkModal({
                       </div>
                       <div className="text-right">
                         <div className="font-bold text-orange-600">
-                          {formatCurrency(salary.finalAmount || salary.totalAmount)}
+                          {formatCurrency(salary.netAmount || salary.baseAmount || salary.finalAmount)}
                         </div>
                       </div>
                     </div>

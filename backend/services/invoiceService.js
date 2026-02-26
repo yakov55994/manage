@@ -9,6 +9,7 @@ import Supplier from "../models/Supplier.js";
 import Salary from "../models/Salary.js";
 import { sendPaymentConfirmationEmail } from "./emailService.js";
 import notificationService from "./notificationService.js";
+import mongoose from "mongoose";
 
 // ===================================================
 // עוזר לחישוב סכומים
@@ -138,22 +139,25 @@ async function searchInvoices(query) {
 async function getInvoices(user) {
   let query = {};
 
-  // אדמין ו-accountant רואים הכל
-  if (user.role === "admin" || user.role === "accountant") {
-    // אין סינון - רואה הכל
-  } else {
-    // משתמש רגיל - סנן לפי הרשאות
+  if (user.role !== "admin" && user.role !== "accountant") {
+
+    console.log("USER PERMISSIONS:", user.permissions);
+
     const allowed = user.permissions.map(
-      (p) => String(p.project?._id || p.project)
+      (p) => new mongoose.Types.ObjectId(p.project?._id || p.project)
     );
 
-    // סנן לפי פרויקטים במערך projects או לפי fundedFromProjectId
+    console.log("ALLOWED IDS:", allowed);
+
+
     query = {
       $or: [
         { "projects.projectId": { $in: allowed } },
         { fundedFromProjectId: { $in: allowed } }
       ]
     };
+    console.log("QUERY:", query);
+
   }
 
   const invoices = await Invoice.find(query)
@@ -161,9 +165,11 @@ async function getInvoices(user) {
     .populate("projects.projectId", "name")
     .populate("fundedFromProjectId", "name")
     .sort({ createdAt: -1 });
+  console.log("FOUND INVOICES:", invoices.length);
 
   return invoices;
 }
+
 
 // ===============================================
 // GET INVOICE BY ID
@@ -177,22 +183,53 @@ async function getInvoiceById(user, invoiceId) {
 
   if (!invoice) return null;
 
-  // אדמין ו-accountant רואים הכל
+  // אדמין ורואת חשבון רואים הכל
   if (user.role === "admin" || user.role === "accountant") {
     return invoice;
   }
 
-  // משתמש רגיל - בדוק הרשאות
-  const allowed = user.permissions.map(
-    (p) => String(p.project?._id || p.project)
-  );
+  // רשימת כל הפרויקטים שהמשתמש מורשה עליהם
+  const allowed = user.permissions.map(p => String(p.project?._id || p.project));
 
-  const projectIds = invoice.projects.map((p) =>
-    String(p.projectId._id || p.projectId)
-  );
+  // ────────────────────────────────────────────────
+  // אסוף את כל הפרויקטים הרלוונטיים לחשבונית
+  // ────────────────────────────────────────────────
+  const relevantIds = new Set();
 
-  const canView = projectIds.some((id) => allowed.includes(id));
-  if (!canView) throw new Error("אין לך הרשאה לצפות במסמך זה");
+  // 1. פרויקטים רגילים (מערך projects)
+  (invoice.projects || []).forEach(p => {
+    const pid = String(p.projectId?._id || p.projectId);
+    if (pid) relevantIds.add(pid);
+  });
+
+  // 2. fundedFromProjectId ← זה החלק החסר!
+  if (invoice.fundedFromProjectId) {
+    const fid = String(invoice.fundedFromProjectId._id || invoice.fundedFromProjectId);
+    if (fid) relevantIds.add(fid);
+  }
+
+  // 3. אם יש מערך fundedFromProjectIds (גרסה חדשה יותר)
+  if (invoice.fundedFromProjectIds && Array.isArray(invoice.fundedFromProjectIds)) {
+    invoice.fundedFromProjectIds.forEach(f => {
+      const fid = String(f._id || f);
+      if (fid) relevantIds.add(fid);
+    });
+  }
+
+  // 4. submittedToProjectId (אם רלוונטי)
+  if (invoice.submittedToProjectId) {
+    const sid = String(invoice.submittedToProjectId._id || invoice.submittedToProjectId);
+    if (sid) relevantIds.add(sid);
+  }
+
+  // ────────────────────────────────────────────────
+  // האם יש לפחות פרויקט אחד שהמשתמש מורשה עליו?
+  // ────────────────────────────────────────────────
+  const hasAccess = Array.from(relevantIds).some(id => allowed.includes(id));
+
+  if (!hasAccess) {
+    throw new Error("אין לך הרשאה לצפות במסמך זה");
+  }
 
   return invoice;
 }
@@ -274,6 +311,20 @@ async function createSalaryInvoice(user, data) {
 
   // 📌 7) חישוב תקציב
   await recalculateRemainingBudget(fundedFromProjectId);
+
+  // 📝 תיעוד היסטוריית יצירה
+  try {
+    invoice.editHistory = [{
+      userId: user._id,
+      userName: user.username || user.name,
+      action: 'created',
+      changes: 'חשבונית משכורת נוצרה',
+      timestamp: new Date()
+    }];
+    await invoice.save();
+  } catch (historyError) {
+    console.error("❌ Failed to save edit history:", historyError);
+  }
 
   return invoice;
 }
@@ -365,6 +416,20 @@ async function createInvoice(user, data) {
         console.error("❌ Failed to send payment confirmation email on create:", emailError);
       }
     }
+  }
+
+  // 📝 תיעוד היסטוריית יצירה
+  try {
+    invoice.editHistory = [{
+      userId: user._id,
+      userName: user.username || user.name,
+      action: 'created',
+      changes: 'חשבונית נוצרה',
+      timestamp: new Date()
+    }];
+    await invoice.save();
+  } catch (historyError) {
+    console.error("❌ Failed to save edit history:", historyError);
   }
 
   // 🔔 שליחת התראה על חשבונית חדשה
@@ -475,11 +540,49 @@ async function updateInvoice(user, invoiceId, data) {
     updateFields.fundedFromProjectIds = fundedFromProjectIds;
   }
 
+  // 📝 בניית תיאור שינויים להיסטוריה
+  const changesList = [];
+  if (invoice.totalAmount !== updateFields.totalAmount) {
+    changesList.push(`סכום שונה מ-${invoice.totalAmount?.toLocaleString("he-IL")} ל-${updateFields.totalAmount?.toLocaleString("he-IL")}`);
+  }
+  if (basic.detail !== undefined && basic.detail !== invoice.detail) {
+    changesList.push('פירוט עודכן');
+  }
+  if (basic.documentType !== undefined && basic.documentType !== invoice.documentType) {
+    changesList.push(`סוג מסמך שונה ל: ${basic.documentType}`);
+  }
+  if (basic.invoiceDate !== undefined && String(basic.invoiceDate) !== String(invoice.invoiceDate)) {
+    changesList.push('תאריך חשבונית עודכן');
+  }
+  if (basic.paid !== undefined && basic.paid !== invoice.paid) {
+    changesList.push(`סטטוס תשלום שונה ל: ${basic.paid}`);
+  }
+  if (status !== undefined && status !== invoice.status) {
+    changesList.push(`סטטוס הגשה שונה ל: ${status}`);
+  }
+  const oldProjectNames = invoice.projects.map(p => p.projectName).join(", ");
+  const newProjectNames = projectsWithNames.map(p => p.projectName).join(", ");
+  if (oldProjectNames !== newProjectNames) {
+    changesList.push(`פרויקטים שונו: ${newProjectNames}`);
+  }
+  if (changesList.length === 0) {
+    changesList.push('חשבונית עודכנה');
+  }
+
+  const historyEntry = {
+    userId: user._id,
+    userName: user.username || user.name,
+    action: 'updated',
+    changes: changesList.join(', '),
+    timestamp: new Date()
+  };
+
   const updated = await Invoice.findByIdAndUpdate(
     invoiceId,
     {
       $set: updateFields,
       ...(Object.keys(unsetFields).length ? { $unset: unsetFields } : {}),
+      $push: { editHistory: historyEntry },
     },
     { new: true }
   );
@@ -601,6 +704,9 @@ async function moveInvoiceToMultipleProjects(user, invoice, targetProjects, fund
     throw new Error("פרויקט מילגה דורש בחירת לפחות פרויקט ממומן אחד");
   }
 
+  // שמור שמות פרויקטים ישנים לפני ההחלפה (לצורך היסטוריה)
+  const oldNames = invoice.projects?.map(p => p.projectName).join(", ") || "";
+
   // בנה את מערך הפרויקטים החדש
   const newProjects = [];
   for (const tp of targetProjects) {
@@ -616,6 +722,7 @@ async function moveInvoiceToMultipleProjects(user, invoice, targetProjects, fund
 
   // עדכן את החשבונית
   invoice.projects = newProjects;
+  invoice.markModified('projects');
   invoice.totalAmount = totalAllocated;
 
   // עדכן את fundedFromProjectIds או fundedFromProjectId (תמיכה לאחור)
@@ -630,6 +737,17 @@ async function moveInvoiceToMultipleProjects(user, invoice, targetProjects, fund
     invoice.fundedFromProjectId = null;
     invoice.fundedFromProjectIds = [];
   }
+
+  // 📝 תיעוד העברה בהיסטוריה
+  const newNames = newProjects.map(p => p.projectName).join(", ");
+  invoice.editHistory = invoice.editHistory || [];
+  invoice.editHistory.push({
+    userId: user._id,
+    userName: user.username || user.name,
+    action: 'moved',
+    changes: `חשבונית הועברה מ: ${oldNames} ל: ${newNames}`,
+    timestamp: new Date()
+  });
 
   // שמור
   await invoice.save();
@@ -818,6 +936,17 @@ async function moveInvoice(user, invoiceId, fromProjectId, toProjectId, fundedFr
     0
   );
 
+  // 📝 תיעוד העברה בהיסטוריה
+  const fromProject = await Project.findById(fromProjectId).select("name");
+  invoice.editHistory = invoice.editHistory || [];
+  invoice.editHistory.push({
+    userId: user._id,
+    userName: user.username || user.name,
+    action: 'moved',
+    changes: `חשבונית הועברה מ: ${fromProject?.name || fromProjectId} ל: ${newProject.name}`,
+    timestamp: new Date()
+  });
+
   // שמור את השינויים
   await invoice.save();
 
@@ -890,7 +1019,24 @@ async function updatePaymentStatus(
     updateData.checkDate = null;
   }
 
-  const updatedInvoice = await Invoice.findByIdAndUpdate(invoiceId, updateData, {
+  // 📝 תיעוד שינוי סטטוס תשלום בהיסטוריה
+  const statusText = status === "כן" ? "שולם" : status === "יצא לתשלום" ? "יצא לתשלום" : status === "לא לתשלום" ? "לא לתשלום" : "לא שולם";
+  let paymentChanges = `סטטוס תשלום שונה ל: ${statusText}`;
+  if (date) paymentChanges += `, תאריך תשלום: ${new Date(date).toLocaleDateString("he-IL")}`;
+  if (method === "check" && checkNumber) paymentChanges += `, צ׳ק מס: ${checkNumber}`;
+
+  const updatedInvoice = await Invoice.findByIdAndUpdate(invoiceId, {
+    ...updateData,
+    $push: {
+      editHistory: {
+        userId: user._id,
+        userName: user.username || user.name,
+        action: 'payment_status_changed',
+        changes: paymentChanges,
+        timestamp: new Date()
+      }
+    }
+  }, {
     new: true,
   }).populate("supplierId", "name phone email bankDetails");
 

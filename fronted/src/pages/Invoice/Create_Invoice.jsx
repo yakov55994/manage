@@ -51,27 +51,37 @@ const CreateInvoice = () => {
   );
   const [projectSearch, setProjectSearch] = useState("");
 
-  const [form, setForm] = useState(
-    draft?.form || {
+  const [form, setForm] = useState(() => {
+    if (draft?.form) {
+      return {
+        ...draft.form,
+        // אפס שדות שלא צריכים לעבור מטיוטה
+        documentType: "",
+        invoiceNumber: "",
+      };
+    }
+    return {
       invoiceNumber: "",
       supplierId: "",
       invitingName: "",
       documentType: "",
       invoiceDate: "",
       detail: "",
+      internalNotes: "",
       paid: "לא",
       paymentDate: "",
       paymentMethod: "",
       checkNumber: "",
       checkDate: "",
-      status: "לא הוגש", // ✅ סטטוס הגשה
-      submittedToProjectId: null, // ✅ פרויקט שאליו הוגשה החשבונית
-      submittedAt: null, // ✅ תאריך הגשה
+      status: "לא הוגש",
+      submittedToProjectId: null,
+      submittedAt: null,
       files: [],
-    }
-  );
+    };
+  });
 
   const [rows, setRows] = useState(draft?.rows || []);
+  const [declaredTotal, setDeclaredTotal] = useState(draft?.declaredTotal || "");
   const [fundedFromProjectId, setFundedFromProjectId] = useState("");
   const [fundedFromProjectIds, setFundedFromProjectIds] = useState(draft?.fundedFromProjectIds || []);
 
@@ -84,11 +94,12 @@ const CreateInvoice = () => {
       form,
       selectedProjects,
       rows,
+      declaredTotal,
       fundedFromProjectId, // ← הוספנו
       fundedFromProjectIds, // ← הוספנו
     };
     localStorage.setItem("invoiceDraft", JSON.stringify(dataToSave));
-  }, [form, selectedProjects, rows, fundedFromProjectId, fundedFromProjectIds]);
+  }, [form, selectedProjects, rows, declaredTotal, fundedFromProjectId, fundedFromProjectIds]);
 
   const [loading, setLoading] = useState(false);
   const [showPaymentModal, setShowPaymentModal] = useState(false);
@@ -287,6 +298,14 @@ const CreateInvoice = () => {
           return toast.error(`יש להזין סכום תקין לפרויקט "${row.projectName}"`);
         }
       }
+
+      // ולידציה: סכום כולל מול סכומי הפרויקטים - רק כשיש יותר מפרויקט אחד
+      if (rows.length > 1 && declaredTotal !== "" && Number(declaredTotal) > 0) {
+        const rowsTotal = rows.reduce((acc, r) => acc + Number(r.sum || 0), 0);
+        if (Math.abs(rowsTotal - Number(declaredTotal)) > 0.01) {
+          return toast.error("סכומי הפרויקטים לא תואמים את הסכום הכולל שהוזן");
+        }
+      }
     }
 
     setLoading(true);
@@ -314,6 +333,8 @@ const CreateInvoice = () => {
             size: file.size,
             publicId: res.data.file.publicId,
             resourceType: res.data.file.resourceType,
+            documentType: file.documentType || "",
+            documentNumber: file.documentNumber || "",
           });
         } else {
           uploadedFiles.push(file);
@@ -339,6 +360,7 @@ const CreateInvoice = () => {
         invitingName: form.invitingName,
         invoiceDate: form.invoiceDate,
         detail: form.detail,
+        internalNotes: form.internalNotes,
 
         paid: form.paid,
         paymentDate: form.paid === "כן" ? form.paymentDate : "",
@@ -642,8 +664,9 @@ const CreateInvoice = () => {
           <div>
             <label>מספר חשבונית</label>
             <input
-              className="w-full p-3 border rounded-xl"
+              className={`w-full p-3 border rounded-xl ${form.documentType === "אין צורך" ? "bg-gray-100 text-gray-500" : ""}`}
               value={form.invoiceNumber}
+              readOnly={form.documentType === "אין צורך"}
               onChange={(e) =>
                 setForm((prev) => ({
                   ...prev,
@@ -651,6 +674,9 @@ const CreateInvoice = () => {
                 }))
               }
             />
+            {form.documentType === "אין צורך" && (
+              <p className="text-xs text-slate-500 mt-1">מספר סידורי אוטומטי</p>
+            )}
           </div>
 
           {/* תאריך החשבונית */}
@@ -699,6 +725,18 @@ const CreateInvoice = () => {
                   setRows([]);
                 } else {
                   setIsSalary(false);
+                }
+
+                // אם "אין צורך" – שלוף מספר סידורי אוטומטי כמספר חשבונית
+                if (value === "אין צורך") {
+                  api.get("/invoices/next-no-doc-serial").then(({ data }) => {
+                    if (data.success) {
+                      setForm((prev) => ({ ...prev, invoiceNumber: data.serial }));
+                    }
+                  }).catch(() => {});
+                } else if (form.documentType === "אין צורך") {
+                  // נקה את המספר הסידורי רק כשעוברים מ"אין צורך" לסוג אחר
+                  setForm((prev) => ({ ...prev, invoiceNumber: "" }));
                 }
               }}
             >
@@ -763,25 +801,27 @@ const CreateInvoice = () => {
               onChange={(e) => {
                 const value = e.target.value;
 
-                if (value === "לא") {
-                  // אם בחרו "לא" - אפס את פרטי התשלום
-                  setForm((prev) => ({
-                    ...prev,
-                    paid: "לא",
-                    paymentDate: "",
-                    paymentMethod: "",
-                  }));
-                } else {
-                  // אם בחרו "כן" - רק עדכן את paid
+                if (value === "כן") {
                   setForm((prev) => ({
                     ...prev,
                     paid: "כן",
+                  }));
+                } else {
+                  // "לא" או "לא לתשלום" - אפס את פרטי התשלום
+                  setForm((prev) => ({
+                    ...prev,
+                    paid: value,
+                    paymentDate: "",
+                    paymentMethod: "",
+                    checkNumber: "",
+                    checkDate: "",
                   }));
                 }
               }}
             >
               <option value="לא">לא שולם</option>
               <option value="כן">שולם</option>
+              <option value="לא לתשלום">לא לתשלום</option>
             </select>
           </div>
 
@@ -899,12 +939,73 @@ const CreateInvoice = () => {
               }
             ></textarea>
           </div>
+
+          {/* הערות פנימיות */}
+          <div className="col-span-2">
+            <label className="flex items-center gap-2">
+              הערות פנימיות
+              <span className="text-xs text-slate-400 font-normal">(לשימוש המשרד בלבד)</span>
+            </label>
+            <textarea
+              className="w-full p-3 border rounded-xl bg-yellow-50/50 border-yellow-200 focus:border-yellow-400 focus:outline-none"
+              value={form.internalNotes}
+              onChange={(e) =>
+                setForm((prev) => ({
+                  ...prev,
+                  internalNotes: e.target.value,
+                }))
+              }
+              placeholder="הערות פנימיות..."
+              rows={2}
+            ></textarea>
+          </div>
         </div>
 
         {/* sumS PER PROJECT */}
         {!isSalary && (
           <div className="bg-white rounded-2xl sm:rounded-3xl shadow-xl p-4 sm:p-5 md:p-6 mb-8">
             <h2 className="text-xl font-bold mb-4">סכומים לפי פרויקט</h2>
+
+            {/* שדה סכום כולל */}
+            {rows.length > 1 && (
+              <div className="border-2 border-dashed border-orange-300 rounded-xl p-4 mb-5 bg-orange-50/50">
+                <div className="flex flex-wrap items-center gap-4">
+                  <div className="flex-1 min-w-[200px]">
+                    <label className="block font-bold mb-2 text-orange-800">
+                      סכום כולל לחשבונית
+                    </label>
+                    <input
+                      type="number"
+                      placeholder="הזן את הסכום הכולל..."
+                      className="w-full p-3 border border-orange-300 rounded-xl focus:ring-2 focus:ring-orange-500 focus:border-orange-500"
+                      value={declaredTotal}
+                      onChange={(e) => setDeclaredTotal(e.target.value)}
+                    />
+                  </div>
+                  {declaredTotal !== "" && Number(declaredTotal) > 0 && (() => {
+                    const currentRowsTotal = rows.reduce((acc, r) => acc + Number(r.sum || 0), 0);
+                    const diff = Number(declaredTotal) - currentRowsTotal;
+                    const isMatch = Math.abs(diff) <= 0.01;
+                    return (
+                      <div
+                        className={`mt-6 px-4 py-3 rounded-xl font-bold text-sm ${
+                          isMatch
+                            ? "bg-green-100 text-green-700 border border-green-300"
+                            : "bg-red-100 text-red-700 border border-red-300"
+                        }`}
+                      >
+                        <div>סה"כ שורות: {currentRowsTotal.toLocaleString("he-IL")} ש"ח</div>
+                        <div>
+                          {isMatch
+                            ? "✓ הסכומים תואמים"
+                            : `הפרש: ${diff.toLocaleString("he-IL")} ש"ח`}
+                        </div>
+                      </div>
+                    );
+                  })()}
+                </div>
+              </div>
+            )}
 
             {rows.map((row, index) => (
               <div
@@ -935,19 +1036,35 @@ const CreateInvoice = () => {
             <FileText className="text-orange-600" /> קבצים לחשבונית
           </h2>
 
-          <FileUploader onUploadSuccess={handleFiles} folder="invoices" />
+          <FileUploader
+            onUploadSuccess={handleFiles}
+            folder="invoices"
+            askForDocumentType={true}
+            isExistingInvoice={true}
+            documentType={form.documentType}
+          />
 
           {form.files.length > 0 && (
             <div className="mt-4 space-y-2">
               {form.files.map((file, i) => (
                 <div
                   key={i}
-                  className="flex justify-between items-center bg-orange-50 border border-orange-200 rounded-xl px-4 py-2"
+                  className="flex justify-between items-center bg-orange-50 border border-orange-200 rounded-xl px-4 py-3 gap-3"
                 >
-                  <span>{file.name}</span>
+                  <div className="flex-1 min-w-0">
+                    <span className="block truncate text-sm font-medium">{file.name}</span>
+                    <div className="flex gap-3 mt-1 text-xs text-slate-500">
+                      {file.documentType && (
+                        <span>סוג: <span className="font-bold text-slate-700">{file.documentType}</span></span>
+                      )}
+                      {file.documentNumber && (
+                        <span>מס׳: <span className="font-bold text-slate-700">{file.documentNumber}</span></span>
+                      )}
+                    </div>
+                  </div>
                   <button
                     onClick={() => removeFile(i)}
-                    className="text-red-600"
+                    className="text-red-600 text-sm flex-shrink-0"
                   >
                     הסר
                   </button>
@@ -960,8 +1077,18 @@ const CreateInvoice = () => {
         <div className="flex justify-center">
           {/* SUBMIT */}
           <button
-            className="w-44 p-4 rounded-xl bg-orange-600 text-white font-bold shadow-xl ml-5"
-            disabled={loading}
+            className="w-44 p-4 rounded-xl bg-orange-600 text-white font-bold shadow-xl ml-5 disabled:opacity-50"
+            disabled={
+              loading ||
+              (!isSalary &&
+                rows.length > 1 &&
+                declaredTotal !== "" &&
+                Number(declaredTotal) > 0 &&
+                Math.abs(
+                  rows.reduce((acc, r) => acc + Number(r.sum || 0), 0) -
+                    Number(declaredTotal)
+                ) > 0.01)
+            }
             onClick={handleSubmit}
           >
             {loading ? "שומר..." : "צור חשבונית"}

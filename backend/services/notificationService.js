@@ -1,7 +1,7 @@
 import mongoose from "mongoose";
 import Notification from "../models/Notification.js";
 import User from "../models/User.js";
-import { emitToUser, emitToAdmins } from "../config/socket.js";
+import { emitToUser, emitToAdmins, emitToAll } from "../config/socket.js";
 import { sendPushNotification } from "./pushService.js";
 
 const notificationService = {
@@ -47,13 +47,20 @@ const notificationService = {
   /**
    * התראת חריגת תקציב
    */
-  async checkBudgetThreshold(project, oldRemaining, newRemaining) {
+  async checkBudgetThreshold(project, oldRemaining, newRemaining, changedByUserId = null) {
     try {
       if (!project.budget || project.budget <= 0) return;
 
       const thresholds = [80, 90, 95, 100];
       const oldPercent = Math.round(((project.budget - oldRemaining) / project.budget) * 100);
       const newPercent = Math.round(((project.budget - newRemaining) / project.budget) * 100);
+
+      // שליפת שם מבצע הפעולה
+      let actorName = null;
+      if (changedByUserId) {
+        const actor = await User.findById(changedByUserId).select("username name");
+        actorName = actor?.username || actor?.name || null;
+      }
 
       // מחפשים האם עברנו סף חדש
       for (const threshold of thresholds) {
@@ -75,6 +82,9 @@ const notificationService = {
             ? `התקציב בפרויקט ${project.name} נוצל במלואו (${newPercent}%)`
             : `נוצלו ${newPercent}% מהתקציב בפרויקט ${project.name}`;
 
+          // יצירת groupId משותף לכל ההתראות
+          const groupId = new mongoose.Types.ObjectId();
+
           for (const user of users) {
             await this.createNotification(user._id, {
               type: "budget_threshold",
@@ -82,12 +92,14 @@ const notificationService = {
               message,
               entityType: "project",
               entityId: project._id,
+              groupId,
               metadata: {
                 threshold,
                 percentUsed: newPercent,
                 projectName: project.name,
                 budget: project.budget,
-                remaining: newRemaining
+                remaining: newRemaining,
+                ...(actorName && { actorName })
               }
             });
           }
@@ -117,7 +129,19 @@ const notificationService = {
         ]
       });
 
-      const statusText = newStatus === "כן" ? "שולם" : newStatus === "יצא לתשלום" ? "יצא לתשלום" : "לא שולם";
+      // שליפת שם מבצע הפעולה
+      let actorName = null;
+      if (changedByUserId) {
+        const actor = await User.findById(changedByUserId).select("username name");
+        actorName = actor?.username || actor?.name || null;
+      }
+
+      const statusText = newStatus === "כן" ? "שולם" : newStatus === "יצא לתשלום" ? "יצא לתשלום" : newStatus === "לא לתשלום" ? "לא לתשלום" : "לא שולם";
+      const projectNames = invoice.projects?.map(p => p.projectName).join(", ") || "";
+      const supplierName = invoice.supplierId?.name || null;
+
+      // יצירת groupId משותף לכל ההתראות
+      const groupId = new mongoose.Types.ObjectId();
 
       for (const user of users) {
         await this.createNotification(user._id, {
@@ -126,10 +150,14 @@ const notificationService = {
           message: `סטטוס התשלום עודכן ל: ${statusText}`,
           entityType: "invoice",
           entityId: invoice._id,
+          groupId,
           metadata: {
             invoiceNumber: invoice.invoiceNumber,
             newStatus,
-            totalAmount: invoice.totalAmount
+            totalAmount: invoice.totalAmount,
+            projectNames,
+            ...(supplierName && { supplierName }),
+            ...(actorName && { actorName })
           }
         });
       }
@@ -143,7 +171,24 @@ const notificationService = {
    */
   async notifyNewInvoice(invoice, createdByUserId) {
     try {
-      const projectIds = invoice.projects?.map(p => p.projectId) || [];
+      // שליפת שם מבצע הפעולה
+      let actorName = null;
+      if (createdByUserId) {
+        const actor = await User.findById(createdByUserId).select("username name");
+        actorName = actor?.username || actor?.name || null;
+      }
+
+      // שליפת שם ספק
+      let supplierName = null;
+      if (invoice.supplierId) {
+        if (typeof invoice.supplierId === "object" && invoice.supplierId.name) {
+          supplierName = invoice.supplierId.name;
+        } else {
+          const Supplier = (await import("../models/Supplier.js")).default;
+          const supplier = await Supplier.findById(invoice.supplierId).select("name");
+          supplierName = supplier?.name || null;
+        }
+      }
 
       // שולחים לכל האדמינים ומנהלי חשבונות (כולל היוצר)
       const users = await User.find({
@@ -164,11 +209,13 @@ const notificationService = {
           message: `נוצרה חשבונית חדשה על סך ${invoice.totalAmount?.toLocaleString("he-IL")} ש״ח`,
           entityType: "invoice",
           entityId: invoice._id,
-          groupId, // קישור לקבוצה
+          groupId,
           metadata: {
             invoiceNumber: invoice.invoiceNumber,
             totalAmount: invoice.totalAmount,
-            projectNames: invoice.projects?.map(p => p.projectName).join(", ")
+            projectNames: invoice.projects?.map(p => p.projectName).join(", "),
+            ...(supplierName && { supplierName }),
+            ...(actorName && { actorName })
           }
         });
       }
@@ -182,6 +229,25 @@ const notificationService = {
    */
   async notifyNewOrder(order, createdByUserId) {
     try {
+      // שליפת שם מבצע הפעולה
+      let actorName = null;
+      if (createdByUserId) {
+        const actor = await User.findById(createdByUserId).select("username name");
+        actorName = actor?.username || actor?.name || null;
+      }
+
+      // שליפת שם ספק
+      let supplierName = null;
+      if (order.supplierId) {
+        if (typeof order.supplierId === "object" && order.supplierId.name) {
+          supplierName = order.supplierId.name;
+        } else {
+          const Supplier = (await import("../models/Supplier.js")).default;
+          const supplier = await Supplier.findById(order.supplierId).select("name");
+          supplierName = supplier?.name || null;
+        }
+      }
+
       // שולחים לכל האדמינים
       const users = await User.find({
         isActive: true,
@@ -198,11 +264,13 @@ const notificationService = {
           message: `נוצרה הזמנה חדשה על סך ${order.sum?.toLocaleString("he-IL")} ש״ח`,
           entityType: "order",
           entityId: order._id,
-          groupId, // קישור לקבוצה
+          groupId,
           metadata: {
             orderNumber: order.orderNumber,
             sum: order.sum,
-            projectName: order.projectName
+            projectName: order.projectName,
+            ...(supplierName && { supplierName }),
+            ...(actorName && { actorName })
           }
         });
       }
@@ -212,9 +280,74 @@ const notificationService = {
   },
 
   /**
+   * סנכרון התראות לאדמין חדש - מעתיק התראות שחסרות לו מאדמינים אחרים
+   */
+  async syncAdminNotifications(userId) {
+    try {
+      // בדיקה אם יש כבר התראות למשתמש
+      const userNotifCount = await Notification.countDocuments({ userId });
+      if (userNotifCount > 5) return; // כבר מסונכרן
+
+      // איסוף groupIds שכבר קיימים למשתמש
+      const existingGroupIds = await Notification.distinct("groupId", { userId });
+
+      // מציאת התראות מאדמינים אחרים שחסרות למשתמש (30 יום אחרונים)
+      const thirtyDaysAgo = new Date();
+      thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+
+      const missingNotifications = await Notification.aggregate([
+        {
+          $match: {
+            userId: { $ne: new mongoose.Types.ObjectId(userId) },
+            groupId: { $nin: existingGroupIds, $ne: null },
+            createdAt: { $gte: thirtyDaysAgo }
+          }
+        },
+        // קבוצה לפי groupId - לקחת רק אחד מכל קבוצה
+        {
+          $group: {
+            _id: "$groupId",
+            doc: { $first: "$$ROOT" }
+          }
+        },
+        { $replaceRoot: { newRoot: "$doc" } },
+        { $sort: { createdAt: -1 } },
+        { $limit: 50 }
+      ]);
+
+      if (missingNotifications.length === 0) return;
+
+      // יצירת עותקים למשתמש החדש
+      const copies = missingNotifications.map(n => ({
+        userId,
+        type: n.type,
+        title: n.title,
+        message: n.message,
+        entityType: n.entityType,
+        entityId: n.entityId,
+        groupId: n.groupId,
+        read: false,
+        metadata: n.metadata,
+        createdAt: n.createdAt
+      }));
+
+      await Notification.insertMany(copies);
+      console.log(`Synced ${copies.length} notifications for admin ${userId}`);
+    } catch (error) {
+      console.error("Error syncing admin notifications:", error);
+    }
+  },
+
+  /**
    * קבלת התראות של משתמש
    */
   async getUserNotifications(userId, { page = 1, limit = 20, unreadOnly = false }) {
+    // סנכרון התראות לאדמינים חדשים
+    const user = await User.findById(userId).select("role");
+    if (user?.role === "admin") {
+      await this.syncAdminNotifications(userId);
+    }
+
     const query = { userId };
     if (unreadOnly) {
       query.read = false;
@@ -279,36 +412,94 @@ const notificationService = {
    * מחיקת התראה - מוחק גם לכל המנהלים אם יש groupId
    */
   async deleteNotification(userId, notificationId) {
-    // קודם מחפשים את ההתראה כדי לבדוק אם יש לה groupId
-    const notification = await Notification.findOne({ _id: notificationId, userId });
+    const notification = await Notification.findById(notificationId);
 
     if (!notification) return;
 
     if (notification.groupId) {
-      // מוחקים את כל ההתראות בקבוצה
-      const result = await Notification.deleteMany({ groupId: notification.groupId });
-
-      // מעדכנים את כל המנהלים
-      emitToAdmins("notification:group-deleted", {
-        groupId: notification.groupId,
-        notificationId
+      // מוצאים את כל המשתמשים המושפעים לפני המחיקה
+      const affectedUserIds = await Notification.distinct("userId", {
+        groupId: notification.groupId
       });
+
+      // מוחקים את כל ההתראות מהאירוע (לכל המשתמשים)
+      const result = await Notification.deleteMany({
+        groupId: notification.groupId
+      });
+
+      emitToAll("notification:deleted", {
+        groupId: notification.groupId
+      });
+
+      // עדכון ספירת ההתראות שלא נקראו לכל המשתמשים המושפעים
+      for (const affectedUserId of affectedUserIds) {
+        const unreadCount = await Notification.countDocuments({
+          userId: affectedUserId,
+          read: false
+        });
+        emitToUser(affectedUserId, "notification:unread_count", { unreadCount });
+      }
 
       return { deletedCount: result.deletedCount };
     } else {
-      // מחיקה רגילה
-      await Notification.findOneAndDelete({ _id: notificationId, userId });
+      // אין groupId - מוחקים רק את ההתראה הספציפית
+      await Notification.findByIdAndDelete(notificationId);
+
+      emitToUser(userId, "notification:unread_count", {
+        unreadCount: await Notification.countDocuments({ userId, read: false })
+      });
+
       return { deletedCount: 1 };
     }
   },
 
   /**
-   * מחיקת כל ההתראות של משתמש
+   * מחיקת כל ההתראות של משתמש - כולל סנכרון לשאר המשתמשים
    */
   async deleteAllNotifications(userId) {
-    const result = await Notification.deleteMany({ userId });
+    // איסוף כל ה-groupIds של ההתראות של המשתמש
+    const userNotifications = await Notification.find({ userId }).select("groupId");
+    const groupIds = [...new Set(
+      userNotifications.map(n => n.groupId).filter(Boolean).map(id => id.toString())
+    )];
+
+    // מחיקת כל ההתראות עם אותם groupIds (לכל המשתמשים)
+    let deletedCount = 0;
+    if (groupIds.length > 0) {
+      // מוצאים את כל המשתמשים המושפעים לפני המחיקה
+      const affectedUserIds = await Notification.distinct("userId", {
+        groupId: { $in: groupIds },
+        userId: { $ne: userId }
+      });
+
+      const result = await Notification.deleteMany({
+        $or: [
+          { userId },
+          { groupId: { $in: groupIds } }
+        ]
+      });
+      deletedCount = result.deletedCount;
+
+      // שליחת עדכון סנכרון לכל המשתמשים
+      for (const groupId of groupIds) {
+        emitToAll("notification:deleted", { groupId });
+      }
+
+      // עדכון ספירת ההתראות שלא נקראו לכל המשתמשים המושפעים
+      for (const affectedUserId of affectedUserIds) {
+        const unreadCount = await Notification.countDocuments({
+          userId: affectedUserId,
+          read: false
+        });
+        emitToUser(affectedUserId, "notification:unread_count", { unreadCount });
+      }
+    } else {
+      const result = await Notification.deleteMany({ userId });
+      deletedCount = result.deletedCount;
+    }
+
     emitToUser(userId, "notification:unread_count", { unreadCount: 0 });
-    return { deletedCount: result.deletedCount };
+    return { deletedCount };
   },
 
   /**

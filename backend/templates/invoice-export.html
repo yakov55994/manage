@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html dir="rtl" lang="he">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>סיכום חשבוניות - {{projectName}}</title>
+  {{css}}
+</head>
+<body>
+  <div class="container">
+    <!-- Header -->
+    <header class="header">
+      <h1>סיכום חשבוניות</h1>
+      <h2>{{projectName}}</h2>
+      <div class="meta">
+        <p>תאריך הפקה: {{generatedAt}}</p>
+        <p>מספר חשבוניות: {{count}}</p>
+      </div>
+    </header>
+
+    <!-- Table -->
+    <table class="invoice-table">
+      <thead>
+        <tr>
+          <th>#</th>
+          <th>מספר חשבונית</th>
+          <th>ספק</th>
+          <th>סוג מסמך</th>
+          <th>סכום</th>
+          <th>מצב תשלום</th>
+          <th>תאריך</th>
+          <th>פירוט</th>
+        </tr>
+      </thead>
+      <tbody>
+        {{rows}}
+      </tbody>
+      <tfoot>
+        <tr>
+          <td colspan="4"><strong>סה"כ:</strong></td>
+          <td><strong>₪{{totalAmount}}</strong></td>
+          <td></td>
+          <td></td>
+          <td></td>
+        </tr>
+      </tfoot>
+    </table>
+
+    <!-- Footer -->
+    <footer class="footer">
+      <p>מסמך זה הופק באופן אוטומטי על ידי מערכת ניהול הפרויקטים</p>
+      <p>&copy; {{year}} כל הזכויות שמורות</p>
+    </footer>
+  </div>
+</body>
+</html>

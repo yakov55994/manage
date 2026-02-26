@@ -29,6 +29,7 @@ const InvoiceEditPage = () => {
   const MILGA_ID = milgaProject?._id;
 
   const [rows, setRows] = useState([]);
+  const [declaredTotal, setDeclaredTotal] = useState("");
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
 
@@ -47,6 +48,7 @@ const InvoiceEditPage = () => {
     documentType: "",
     invoiceDate: "",
     detail: "",
+    internalNotes: "",
     paid: "לא",
     paymentDate: "",
     paymentMethod: "",
@@ -121,6 +123,7 @@ const InvoiceEditPage = () => {
                 ? invoice.invoiceDate.split("T")[0]
                 : new Date().toISOString().split("T")[0],
               detail: invoice.detail || "",
+              internalNotes: invoice.internalNotes || "",
               paid: invoice.paid || "לא",
               paymentDate: invoice.paymentDate
                 ? invoice.paymentDate.split("T")[0]
@@ -161,6 +164,11 @@ const InvoiceEditPage = () => {
               }));
 
             setRows(builtRows);
+
+            // -------- DECLARED TOTAL ----------
+            if (builtRows.length > 1 && invoice.totalAmount) {
+              setDeclaredTotal(String(invoice.totalAmount));
+            }
 
             // -------- FUNDING PROJECT MAP ----------
             // ✅ אם יש fundedFromProjectId או fundedFromProjectIds, טען את המיפוי
@@ -300,7 +308,7 @@ const InvoiceEditPage = () => {
   // GLOBAL FIELDS CHANGE
   // ===============================================================
   const updateGlobal = (field, value) => {
-    setGlobalFields({ ...globalFields, [field]: value });
+    setGlobalFields(prev => ({ ...prev, [field]: value }));
   };
 
 
@@ -361,6 +369,14 @@ const InvoiceEditPage = () => {
       }
     }
 
+    // ולידציה: סכום כולל מול סכומי הפרויקטים
+    if (declaredTotal !== "" && Number(declaredTotal) > 0) {
+      const rowsTotal = rows.reduce((acc, r) => acc + Number(r.sum || 0), 0);
+      if (Math.abs(rowsTotal - Number(declaredTotal)) > 0.01) {
+        return toast.error("סכומי הפרויקטים לא תואמים את הסכום הכולל שהוזן");
+      }
+    }
+
     setSaving(true);
 
     try {
@@ -384,6 +400,8 @@ const InvoiceEditPage = () => {
             size: file.size,
             publicId: res.data.file.publicId,
             resourceType: res.data.file.resourceType,
+            documentType: file.documentType || "",
+            documentNumber: file.documentNumber || "",
           });
         } else {
           // קובץ קיים - שמור אותו כמו שהוא
@@ -394,6 +412,8 @@ const InvoiceEditPage = () => {
             size: file.size,
             publicId: file.publicId,
             resourceType: file.resourceType,
+            documentType: file.documentType || "",
+            documentNumber: file.documentNumber || "",
           });
         }
       }
@@ -551,9 +571,13 @@ const InvoiceEditPage = () => {
             <input
               type="text"
               value={globalFields.invoiceNumber}
+              readOnly={globalFields.documentType === "אין צורך"}
               onChange={(e) => updateGlobal("invoiceNumber", e.target.value)}
-              className="w-full p-3 border rounded-xl"
+              className={`w-full p-3 border rounded-xl ${globalFields.documentType === "אין צורך" ? "bg-gray-100 text-gray-500" : ""}`}
             />
+            {globalFields.documentType === "אין צורך" && (
+              <p className="text-xs text-slate-500 mt-1">מספר סידורי אוטומטי</p>
+            )}
           </div>
 
           <DateField
@@ -568,7 +592,22 @@ const InvoiceEditPage = () => {
             <select
               className="w-full p-3 border rounded-xl"
               value={globalFields.documentType}
-              onChange={(e) => updateGlobal("documentType", e.target.value)}
+              onChange={(e) => {
+                const value = e.target.value;
+                const prevType = globalFields.documentType;
+                updateGlobal("documentType", value);
+                // אם "אין צורך" – שלוף מספר סידורי אוטומטי
+                if (value === "אין צורך") {
+                  api.get("/invoices/next-no-doc-serial").then(({ data }) => {
+                    if (data.success) {
+                      updateGlobal("invoiceNumber", data.serial);
+                    }
+                  }).catch(() => {});
+                } else if (prevType === "אין צורך") {
+                  // מחק מספר סידורי רק כשעוברים מ-"אין צורך" לסוג אחר
+                  updateGlobal("invoiceNumber", "");
+                }
+              }}
             >
               <option value="">בחר…</option>
               <option value="ח. עסקה">ח. עסקה</option>
@@ -660,6 +699,7 @@ const InvoiceEditPage = () => {
                 >
                   <option value="לא">לא</option>
                   <option value="כן">כן</option>
+                  <option value="לא לתשלום">לא לתשלום</option>
                 </select>
               </div>
 
@@ -740,6 +780,19 @@ const InvoiceEditPage = () => {
             />
           </div>
 
+          <div className="md:col-span-2">
+            <label className="font-bold mb-1 block flex items-center gap-2">
+              הערות פנימיות
+              <span className="text-xs text-slate-400 font-normal">(לשימוש המשרד בלבד)</span>
+            </label>
+            <textarea
+              value={globalFields.internalNotes}
+              onChange={(e) => updateGlobal("internalNotes", e.target.value)}
+              className="w-full p-3 border rounded-xl min-h-[80px] bg-yellow-50/50 border-yellow-200 focus:border-yellow-400 focus:outline-none"
+              placeholder="הערות פנימיות..."
+            />
+          </div>
+
           <div className="bg-white shadow-xl p-4 sm:p-5 md:p-6 mb-4 sm:mb-5 md:mb-6 sm:mb-8 md:mb-10">
             <FileUploader
               folder="invoices"
@@ -749,8 +802,6 @@ const InvoiceEditPage = () => {
                 setGlobalFields((prev) => ({
                   ...prev,
                   files: [...prev.files, ...files],
-                  // עדכן את סוג המסמך הראשי אם נבחר סוג מסמך בקובץ
-                  documentType: files[0]?.documentType || prev.documentType,
                 }));
               }}
             />
@@ -759,18 +810,28 @@ const InvoiceEditPage = () => {
               globalFields.files.map((file, index) => (
                 <div
                   key={index}
-                  className="flex justify-between items-center mt-2 p-2 bg-white border rounded-xl"
+                  className="flex justify-between items-center mt-2 p-3 bg-white border rounded-xl gap-3"
                 >
-                  <a
-                    href={file.url}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="truncate"
-                  >
-                    {file.name}
-                  </a>
+                  <div className="flex-1 min-w-0">
+                    <a
+                      href={file.url}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="truncate block text-sm font-medium text-blue-600 hover:underline"
+                    >
+                      {file.name}
+                    </a>
+                    <div className="flex gap-3 mt-1 text-xs text-slate-500">
+                      {file.documentType && (
+                        <span>סוג: <span className="font-bold text-slate-700">{file.documentType}</span></span>
+                      )}
+                      {file.documentNumber && (
+                        <span>מס׳: <span className="font-bold text-slate-700">{file.documentNumber}</span></span>
+                      )}
+                    </div>
+                  </div>
                   <button
-                    className="text-red-600"
+                    className="text-red-600 text-sm flex-shrink-0"
                     onClick={() => deleteGlobalFile(index)}
                   >
                     הסר
@@ -779,6 +840,49 @@ const InvoiceEditPage = () => {
               ))}
           </div>
         </div>
+
+        {/* סכום כולל */}
+        {rows.length > 1 && (
+          <div className="bg-white rounded-2xl sm:rounded-3xl shadow-xl p-4 sm:p-5 md:p-6 mb-6">
+            <div className="border-2 border-dashed border-orange-300 rounded-xl p-4 bg-orange-50/50">
+              <div className="flex flex-wrap items-center gap-4">
+                <div className="flex-1 min-w-[200px]">
+                  <label className="block font-bold mb-2 text-orange-800">
+                    סכום כולל לחשבונית
+                  </label>
+                  <input
+                    type="number"
+                    placeholder="הזן את הסכום הכולל..."
+                    className="w-full p-3 border border-orange-300 rounded-xl focus:ring-2 focus:ring-orange-500 focus:border-orange-500"
+                    value={declaredTotal}
+                    onChange={(e) => setDeclaredTotal(e.target.value)}
+                  />
+                </div>
+                {declaredTotal !== "" && Number(declaredTotal) > 0 && (() => {
+                  const currentRowsTotal = rows.reduce((acc, r) => acc + Number(r.sum || 0), 0);
+                  const diff = Number(declaredTotal) - currentRowsTotal;
+                  const isMatch = Math.abs(diff) <= 0.01;
+                  return (
+                    <div
+                      className={`mt-6 px-4 py-3 rounded-xl font-bold text-sm ${
+                        isMatch
+                          ? "bg-green-100 text-green-700 border border-green-300"
+                          : "bg-red-100 text-red-700 border border-red-300"
+                      }`}
+                    >
+                      <div>סה"כ שורות: {currentRowsTotal.toLocaleString("he-IL")} ש"ח</div>
+                      <div>
+                        {isMatch
+                          ? "✓ הסכומים תואמים"
+                          : `הפרש: ${diff.toLocaleString("he-IL")} ש"ח`}
+                      </div>
+                    </div>
+                  );
+                })()}
+              </div>
+            </div>
+          </div>
+        )}
 
         {/* ROWS PER PROJECT */}
         <div className="space-y-6">
@@ -807,8 +911,17 @@ const InvoiceEditPage = () => {
         <div className="mt-10 text-center">
           <button
             onClick={saveInvoice}
-            disabled={saving}
-            className="px-10 py-3 bg-orange-600 text-white font-bold text-lg rounded-xl shadow-xl hover:bg-orange-700"
+            disabled={
+              saving ||
+              (rows.length > 1 &&
+                declaredTotal !== "" &&
+                Number(declaredTotal) > 0 &&
+                Math.abs(
+                  rows.reduce((acc, r) => acc + Number(r.sum || 0), 0) -
+                    Number(declaredTotal)
+                ) > 0.01)
+            }
+            className="px-10 py-3 bg-orange-600 text-white font-bold text-lg rounded-xl shadow-xl hover:bg-orange-700 disabled:opacity-50"
           >
             {saving ? "שומר..." : "שמור שינויים"}
           </button>

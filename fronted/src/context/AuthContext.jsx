@@ -1,8 +1,16 @@
 // =============================
 // AuthContext.jsx – FIXED FULL VERSION
 // =============================
-import { createContext, useState, useContext, useEffect, useRef } from "react";
+import {
+  createContext,
+  useState,
+  useContext,
+  useEffect,
+  useRef,
+  useCallback,
+} from "react";
 import api from "../api/api.js";
+import useInactivityTimeout from "../hooks/useInactivityTimeout.js";
 
 const AuthContext = createContext();
 
@@ -133,6 +141,7 @@ const canAccessModule = (user, projectId, moduleName, required = "view") => {
 export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [inactivityLogout, setInactivityLogout] = useState(false);
   const logoutInProgress = useRef(false);
 
   // =========================
@@ -166,6 +175,21 @@ export const AuthProvider = ({ children }) => {
 
         api.defaults.headers.common["Authorization"] = `Bearer ${token}`;
         setUser(normalized);
+
+        // רענון נתוני משתמש מהשרת (תפקיד, הרשאות וכו')
+        api.get("/auth/me").then((res) => {
+          if (res.data?.success && res.data.user) {
+            const fresh = normalizeUser(res.data.user);
+            localStorage.setItem("user", JSON.stringify(fresh));
+            setUser(fresh);
+          }
+        }).catch(() => {
+          // token פג תוקף - נקה ותנתק
+          localStorage.removeItem("token");
+          localStorage.removeItem("user");
+          delete api.defaults.headers.common["Authorization"];
+          setUser(null);
+        });
       } catch (err) {
         console.error("❌ Error parsing user data:", err);
         localStorage.removeItem("token");
@@ -200,6 +224,25 @@ export const AuthProvider = ({ children }) => {
   const isAdmin = user?.role === "admin";
   const isLimited = user?.role === "limited";
   const isAuthenticated = !!user;
+
+  // =========================
+  // INACTIVITY TIMEOUT (7 שעות)
+  // =========================
+  const handleInactivityTimeout = useCallback(() => {
+    if (!user) return;
+    logoutInProgress.current = true;
+    localStorage.removeItem("token");
+    localStorage.removeItem("user");
+    delete api.defaults.headers.common["Authorization"];
+    setUser(null);
+    setInactivityLogout(true);
+  }, [user]);
+
+  useInactivityTimeout(handleInactivityTimeout, isAuthenticated);
+
+  const clearInactivityFlag = useCallback(() => {
+    setInactivityLogout(false);
+  }, []);
 
   // EXPORT TO CONTEXT
   // =========================
@@ -248,6 +291,10 @@ export const AuthProvider = ({ children }) => {
           canAccessModule(user, projectId, "files", "view"),
         canEditFiles: (projectId) =>
           canAccessModule(user, projectId, "files", "edit"),
+
+        // מצב שינה
+        inactivityLogout,
+        clearInactivityFlag,
       }}
     >
       {children}

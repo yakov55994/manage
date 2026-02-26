@@ -52,6 +52,25 @@ router.get("/", protect, invoiceController.getInvoices);
 // 📌 בדיקת כפילות — אין checkAccess
 router.get("/check/duplicate", protect, invoiceController.checkDuplicate);
 
+// 🔢 מספר סידורי הבא לחשבוניות "אין צורך"
+router.get("/next-no-doc-serial", protect, invoiceController.getNextNoDocSerial);
+
+// 🔢 מספר סידורי הבא למסמכים (קבצים) – אטומי (שורף מספר)
+router.get("/next-doc-serial", protect, invoiceController.getNextDocSerial);
+
+// 🔢 תצוגה מקדימה של מספר סידורי הבא (לא שורף!)
+router.get("/next-doc-serial/preview", protect, invoiceController.previewNextDocSerial);
+
+// 🔢 מילוי מספרים סידוריים לכל הקבצים שאין להם מספר מסמך
+router.post("/backfill-doc-serials", protect, requireAdmin, invoiceController.backfillDocSerials);
+
+// 🔢 מילוי מספרים סידוריים לחשבוניות "אין צורך" קיימות
+router.post("/backfill-no-doc-serials", protect, requireAdmin, invoiceController.backfillNoDocSerials);
+
+// 📄 ייצוא סיכום חשבוניות ל-PDF
+router.get("/export", protect, invoiceController.exportInvoices);
+router.post("/export", protect, invoiceController.exportInvoices);
+
 // 📌 חשבונית בודדת — משתמש ב־:id (מתוקן!)
 router.get("/:id", protect, checkAccess("invoices", "view"), invoiceController.getInvoiceById);
 
@@ -66,6 +85,9 @@ router.put("/:id/move", protect, checkAccess("invoices", "edit"), invoiceControl
 
 // 📌 עדכון סטטוס תשלום — משתמש ב־:id (מתוקן!)
 router.put("/:id/status", protect, checkAccess("invoices", "edit"), invoiceController.updatePaymentStatus);
+
+// 📎 הוספת קבצים לחשבונית
+router.put("/:id/files", protect, checkAccess("invoices", "edit"), invoiceController.addFilesToInvoice);
 
 // 📌 עדכון סטטוס מרובה (bulk update)
 router.put("/bulk/update-status", protect, checkAccess("invoices", "edit"), invoiceController.bulkUpdatePaymentStatus);

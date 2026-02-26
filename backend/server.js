@@ -24,6 +24,10 @@ import submissionRoutes from './routes/submissionRoutes.js';
 import analyticsRoutes from './routes/analyticsRoutes.js';
 import notificationRoutes from './routes/notificationRoutes.js';
 import exportRoutes from './routes/exportRoutes.js';
+import backupRoutes from './routes/backupRoutes.js';
+import kartesetRoutes from './routes/kartesetRoutes.js';
+import cron from 'node-cron';
+import { createScheduledBackup } from './controller/backupController.js';
 
 dotenv.config();
 const app = express();
@@ -159,6 +163,8 @@ app.use('/api/notifications', notificationRoutes);
 
 // Export routes
 app.use('/api/export', exportRoutes);
+app.use('/api/backup', backupRoutes);
+app.use('/api/karteset', kartesetRoutes);
 
 // Error handler
 app.use((err, req, res, next) => {
@@ -175,6 +181,13 @@ const connectDB = async () => {
     httpServer.listen(port, () => {
       console.log(`🚀 Server running on port ${port}`);
       console.log(`🔌 Socket.IO ready for connections`);
+
+      // ⏰ גיבוי אוטומטי כל יום בחצות
+      cron.schedule('00 00 * * *', async () => {
+        console.log('⏰ מתחיל גיבוי אוטומטי...');
+        await createScheduledBackup();
+      });
+      console.log('⏰ Scheduled backup cron job set for midnight');
     });
   } catch (err) {
     console.error('❌ Error connecting to MongoDB', err);

@@ -251,7 +251,7 @@ export default function UpdateIncome() {
 
                 {income && (
                   <IncomeLinkModal
-                    isOpen={isLinkModalOpen}
+                    open={isLinkModalOpen}
                     onClose={() => setIsLinkModalOpen(false)}
                     income={income}
                     onLinked={handleLinked}
