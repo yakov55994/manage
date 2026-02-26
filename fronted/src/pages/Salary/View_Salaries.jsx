@@ -1,4 +1,4 @@
-import { useEffect, useState, useRef } from "react";
+import { useEffect, useState, useRef, Fragment } from "react";
 import { useNavigate } from "react-router-dom";
 import api from "../../api/api";
 import { ClipLoader } from "react-spinners";
@@ -22,9 +22,25 @@ import {
   CheckSquare,
   Square,
   X,
+  ChevronDown,
 } from "lucide-react";
 import { toast } from "sonner";
 import ProjectSelector from "../../Components/ProjectSelector";
+
+const MONTHS_HE = ["ינואר", "פברואר", "מרץ", "אפריל", "מאי", "יוני", "יולי", "אוגוסט", "ספטמבר", "אוקטובר", "נובמבר", "דצמבר"];
+
+const groupSalariesByMonth = (salaries) => {
+  const groups = {};
+  salaries.forEach(salary => {
+    const date = new Date(salary.date);
+    const year = date.getFullYear();
+    const month = date.getMonth() + 1;
+    const key = `${year}-${String(month).padStart(2, '0')}`;
+    if (!groups[key]) groups[key] = { key, year, month, salaries: [] };
+    groups[key].salaries.push(salary);
+  });
+  return Object.values(groups).sort((a, b) => b.key.localeCompare(a.key));
+};
 
 export default function View_Salaries() {
   const navigate = useNavigate();
@@ -56,6 +72,11 @@ export default function View_Salaries() {
   const [uploadDepartment, setUploadDepartment] = useState("");
   const [uploadLoading, setUploadLoading] = useState(false);
   const [uploadResult, setUploadResult] = useState(null);
+
+  // ========== Monthly grouping state ==========
+  const [expandedMonths, setExpandedMonths] = useState({});
+  const [moveMonthModal, setMoveMonthModal] = useState({ open: false, salary: null, year: new Date().getFullYear(), month: new Date().getMonth() + 1 });
+  const [moveMonthLoading, setMoveMonthLoading] = useState(false);
 
   useEffect(() => {
     fetchSalaries();
@@ -297,6 +318,40 @@ export default function View_Salaries() {
     if (!dateString) return "—";
     return new Date(dateString).toLocaleDateString("he-IL");
   };
+
+  const toggleMonth = (key) => {
+    setExpandedMonths(prev => {
+      const isCurrentlyExpanded = prev[key] !== false;
+      return { ...prev, [key]: !isCurrentlyExpanded };
+    });
+  };
+
+  const handleMoveMonth = async () => {
+    const s = moveMonthModal.salary;
+    if (!s) return;
+    const newDate = new Date(moveMonthModal.year, moveMonthModal.month - 1, 1);
+    setMoveMonthLoading(true);
+    try {
+      await api.put(`/salaries/${s._id}`, {
+        employeeName: s.employeeName,
+        department: s.department,
+        baseAmount: s.baseAmount,
+        netAmount: s.netAmount,
+        overheadPercent: s.overheadPercent,
+        projectId: s.projectId?._id || s.projectId,
+        date: newDate.toISOString(),
+      });
+      toast.success(`המשכורת הועברה ל${MONTHS_HE[moveMonthModal.month - 1]} ${moveMonthModal.year}`, { className: "sonner-toast success rtl" });
+      setMoveMonthModal({ open: false, salary: null, year: new Date().getFullYear(), month: new Date().getMonth() + 1 });
+      fetchSalaries();
+    } catch (err) {
+      toast.error("שגיאה בשינוי חודש", { className: "sonner-toast error rtl" });
+    } finally {
+      setMoveMonthLoading(false);
+    }
+  };
+
+  const monthGroups = groupSalariesByMonth(filteredSalaries);
 
   if (loading) {
     return (
@@ -768,266 +823,336 @@ export default function View_Salaries() {
                       </tr>
                     </thead>
                     <tbody className="bg-white divide-y divide-orange-100">
-                      {filteredSalaries.map((salary, index) => (
-                        <tr
-                          key={salary._id}
-                          className={`hover:bg-orange-50/50 transition-colors cursor-pointer ${
-                            selectedSalaries.some(s => s._id === salary._id)
-                              ? "bg-blue-50/70"
-                              : index % 2 === 0 ? "bg-white" : "bg-orange-50/30"
-                          }`}
-                          onClick={() => navigate(`/salaries/${salary._id}`)}
-                        >
-                          <td className="px-2 py-1.5 text-center">
-                            <button
-                              onClick={(e) => { e.stopPropagation(); toggleSelectSalary(salary, e); }}
-                              className="hover:opacity-80 transition-opacity"
+                      {monthGroups.map((group) => {
+                        const isGroupExpanded = expandedMonths[group.key] !== false;
+                        const groupTotal = group.salaries.reduce((sum, s) => sum + (s.finalAmount || 0), 0);
+                        return (
+                          <Fragment key={group.key}>
+                            <tr
+                              className="cursor-pointer bg-gradient-to-r from-orange-50 to-amber-50 hover:from-orange-100 hover:to-amber-100 transition-colors border-y-2 border-orange-200"
+                              onClick={() => toggleMonth(group.key)}
                             >
-                              {selectedSalaries.some(s => s._id === salary._id) ? (
-                                <CheckSquare className="w-4 h-4 text-blue-600" />
-                              ) : (
-                                <Square className="w-4 h-4 text-slate-400" />
-                              )}
-                            </button>
-                          </td>
-                          <td className="px-2 py-1.5 truncate">
-                            <span className="font-bold text-slate-900 text-sm">
-                              {salary.employeeName}
-                            </span>
-                          </td>
-                          <td className="px-2 py-1.5 truncate">
-                            <span className="text-xs text-slate-600">
-                              {salary.department || "—"}
-                            </span>
-                          </td>
-                          <td className="px-2 py-1.5 truncate">
-                            <span className="text-xs text-slate-600">
-                              {salary.projectId?.name || "—"}
-                            </span>
-                          </td>
-                          <td className="px-2 py-1.5 whitespace-nowrap text-center">
-                            <span className="font-bold text-slate-700 text-xs">
-                              {formatCurrency(salary.baseAmount)}
-                            </span>
-                          </td>
-                          <td className="px-1 py-1.5 whitespace-nowrap text-center">
-                            <span className="font-bold text-amber-600 text-xs">
-                              {salary.netAmount ? formatCurrency(salary.netAmount) : "—"}
-                            </span>
-                          </td>
-                          <td className="px-1 py-1.5 whitespace-nowrap text-center">
-                            <span className="text-xs font-bold text-amber-700">
-                              {salary.overheadPercent || 0}%
-                            </span>
-                          </td>
-                          <td className="px-2 py-1.5 whitespace-nowrap text-center">
-                            <span className="font-bold text-orange-600 text-xs">
-                              {formatCurrency(salary.finalAmount)}
-                            </span>
-                          </td>
-                          <td className="px-2 py-1.5 whitespace-nowrap text-center text-xs text-slate-600">
-                            {formatDate(salary.date)}
-                          </td>
-                          <td className="px-2 py-1.5 truncate text-xs text-slate-600">
-                            {salary.createdByName || "—"}
-                          </td>
-                          <td className="px-1 py-1.5 text-center">
-                            {salaryToExpenseMap[salary._id]?.length > 0 ? (
-                              <div className="flex items-center justify-center gap-1 text-green-600">
-                                <Link className="w-3 h-3" />
-                                <span className="text-xs font-bold">
-                                  {salaryToExpenseMap[salary._id].length}
-                                </span>
-                              </div>
-                            ) : (
-                              <span className="text-slate-400 text-xs">—</span>
-                            )}
-                          </td>
-                          <td className="px-1 py-1.5 text-center">
-                            <div className="flex justify-center gap-0.5">
-                              <button
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  navigate(`/salaries/${salary._id}`);
-                                }}
-                                className="p-1 hover:bg-blue-100 rounded-lg transition-colors group"
-                                title="צפייה"
+                              <td colSpan={12} className="px-4 py-2.5">
+                                <div className="flex items-center gap-3">
+                                  <ChevronDown
+                                    className={`w-4 h-4 text-orange-600 transition-transform duration-200 ${isGroupExpanded ? "" : "-rotate-90"}`}
+                                  />
+                                  <span className="font-bold text-slate-800 text-sm">
+                                    {group.month} - {MONTHS_HE[group.month - 1]} {group.year}
+                                  </span>
+                                  <span className="mr-auto text-xs font-medium text-slate-500">
+                                    {group.salaries.length} משכורות | {formatCurrency(groupTotal)}
+                                  </span>
+                                </div>
+                              </td>
+                            </tr>
+                            {isGroupExpanded && group.salaries.map((salary, index) => (
+                              <tr
+                                key={salary._id}
+                                className={`hover:bg-orange-50/50 transition-colors cursor-pointer ${
+                                  selectedSalaries.some(s => s._id === salary._id)
+                                    ? "bg-blue-50/70"
+                                    : index % 2 === 0 ? "bg-white" : "bg-orange-50/30"
+                                }`}
+                                onClick={() => navigate(`/salaries/${salary._id}`)}
                               >
-                                <Eye className="w-3.5 h-3.5 text-blue-600 group-hover:text-blue-700" />
-                              </button>
-                              <button
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  navigate(`/update-salary/${salary._id}`);
-                                }}
-                                className="p-1 hover:bg-orange-100 rounded-lg transition-colors group"
-                                title="עריכה"
-                              >
-                                <Edit2 className="w-3.5 h-3.5 text-orange-600 group-hover:text-orange-700" />
-                              </button>
-                              <button
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  openDeleteModal(salary);
-                                }}
-                                className="p-1 hover:bg-red-100 rounded-lg transition-colors group"
-                                title="מחיקה"
-                              >
-                                <Trash2 className="w-3.5 h-3.5 text-red-600 group-hover:text-red-700" />
-                              </button>
-                            </div>
-                          </td>
-                        </tr>
-                      ))}
+                                <td className="px-2 py-1.5 text-center">
+                                  <button
+                                    onClick={(e) => { e.stopPropagation(); toggleSelectSalary(salary, e); }}
+                                    className="hover:opacity-80 transition-opacity"
+                                  >
+                                    {selectedSalaries.some(s => s._id === salary._id) ? (
+                                      <CheckSquare className="w-4 h-4 text-blue-600" />
+                                    ) : (
+                                      <Square className="w-4 h-4 text-slate-400" />
+                                    )}
+                                  </button>
+                                </td>
+                                <td className="px-2 py-1.5 truncate">
+                                  <span className="font-bold text-slate-900 text-sm">
+                                    {salary.employeeName}
+                                  </span>
+                                </td>
+                                <td className="px-2 py-1.5 truncate">
+                                  <span className="text-xs text-slate-600">
+                                    {salary.department || "—"}
+                                  </span>
+                                </td>
+                                <td className="px-2 py-1.5 truncate">
+                                  <span className="text-xs text-slate-600">
+                                    {salary.projectId?.name || "—"}
+                                  </span>
+                                </td>
+                                <td className="px-2 py-1.5 whitespace-nowrap text-center">
+                                  <span className="font-bold text-slate-700 text-xs">
+                                    {formatCurrency(salary.baseAmount)}
+                                  </span>
+                                </td>
+                                <td className="px-1 py-1.5 whitespace-nowrap text-center">
+                                  <span className="font-bold text-amber-600 text-xs">
+                                    {salary.netAmount ? formatCurrency(salary.netAmount) : "—"}
+                                  </span>
+                                </td>
+                                <td className="px-1 py-1.5 whitespace-nowrap text-center">
+                                  <span className="text-xs font-bold text-amber-700">
+                                    {salary.overheadPercent || 0}%
+                                  </span>
+                                </td>
+                                <td className="px-2 py-1.5 whitespace-nowrap text-center">
+                                  <span className="font-bold text-orange-600 text-xs">
+                                    {formatCurrency(salary.finalAmount)}
+                                  </span>
+                                </td>
+                                <td className="px-2 py-1.5 whitespace-nowrap text-center text-xs text-slate-600">
+                                  {formatDate(salary.date)}
+                                </td>
+                                <td className="px-2 py-1.5 truncate text-xs text-slate-600">
+                                  {salary.createdByName || "—"}
+                                </td>
+                                <td className="px-1 py-1.5 text-center">
+                                  {salaryToExpenseMap[salary._id]?.length > 0 ? (
+                                    <div className="flex items-center justify-center gap-1 text-green-600">
+                                      <Link className="w-3 h-3" />
+                                      <span className="text-xs font-bold">
+                                        {salaryToExpenseMap[salary._id].length}
+                                      </span>
+                                    </div>
+                                  ) : (
+                                    <span className="text-slate-400 text-xs">—</span>
+                                  )}
+                                </td>
+                                <td className="px-1 py-1.5 text-center">
+                                  <div className="flex justify-center gap-0.5">
+                                    <button
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        navigate(`/salaries/${salary._id}`);
+                                      }}
+                                      className="p-1 hover:bg-blue-100 rounded-lg transition-colors group"
+                                      title="צפייה"
+                                    >
+                                      <Eye className="w-3.5 h-3.5 text-blue-600 group-hover:text-blue-700" />
+                                    </button>
+                                    <button
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        navigate(`/update-salary/${salary._id}`);
+                                      }}
+                                      className="p-1 hover:bg-orange-100 rounded-lg transition-colors group"
+                                      title="עריכה"
+                                    >
+                                      <Edit2 className="w-3.5 h-3.5 text-orange-600 group-hover:text-orange-700" />
+                                    </button>
+                                    <button
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        openDeleteModal(salary);
+                                      }}
+                                      className="p-1 hover:bg-red-100 rounded-lg transition-colors group"
+                                      title="מחיקה"
+                                    >
+                                      <Trash2 className="w-3.5 h-3.5 text-red-600 group-hover:text-red-700" />
+                                    </button>
+                                    <button
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        const d = new Date(salary.date);
+                                        setMoveMonthModal({ open: true, salary, year: d.getFullYear(), month: d.getMonth() + 1 });
+                                      }}
+                                      className="p-1 hover:bg-purple-100 rounded-lg transition-colors group"
+                                      title="שינוי חודש"
+                                    >
+                                      <Calendar className="w-3.5 h-3.5 text-purple-600 group-hover:text-purple-700" />
+                                    </button>
+                                  </div>
+                                </td>
+                              </tr>
+                            ))}
+                          </Fragment>
+                        );
+                      })}
                     </tbody>
                   </table>
                 </div>
 
                 {/* Mobile Cards */}
                 <div className="lg:hidden space-y-4 p-4">
-                  {filteredSalaries.map((salary) => (
-                    <div
-                      key={salary._id}
-                      onClick={() => navigate(`/salaries/${salary._id}`)}
-                      className={`backdrop-blur-xl rounded-xl shadow-lg hover:shadow-xl transition-all border p-4 cursor-pointer active:scale-98 ${
-                        selectedSalaries.some(s => s._id === salary._id)
-                          ? "bg-blue-50/90 border-blue-200"
-                          : "bg-white/90 border-orange-100"
-                      }`}
-                    >
-                      {/* Header - Employee Name */}
-                      <div className="flex items-center justify-between mb-3 pb-3 border-b border-orange-100">
-                        <div className="flex items-center gap-2">
-                          <button
-                            onClick={(e) => { e.stopPropagation(); toggleSelectSalary(salary, e); }}
-                            className="hover:opacity-80 transition-opacity"
+                  {monthGroups.map((group) => {
+                    const isGroupExpanded = expandedMonths[group.key] !== false;
+                    const groupTotal = group.salaries.reduce((sum, s) => sum + (s.finalAmount || 0), 0);
+                    return (
+                      <Fragment key={group.key}>
+                        <div
+                          className="cursor-pointer bg-gradient-to-r from-orange-100 to-amber-100 border-2 border-orange-300 rounded-xl p-3 flex items-center gap-3"
+                          onClick={() => toggleMonth(group.key)}
+                        >
+                          <ChevronDown
+                            className={`w-5 h-5 text-orange-600 transition-transform duration-200 ${isGroupExpanded ? "" : "-rotate-90"}`}
+                          />
+                          <span className="font-bold text-slate-900">
+                            {group.month} - {MONTHS_HE[group.month - 1]} {group.year}
+                          </span>
+                          <span className="mr-auto text-sm text-slate-500">
+                            {group.salaries.length} | {formatCurrency(groupTotal)}
+                          </span>
+                        </div>
+                        {isGroupExpanded && group.salaries.map((salary) => (
+                          <div
+                            key={salary._id}
+                            onClick={() => navigate(`/salaries/${salary._id}`)}
+                            className={`backdrop-blur-xl rounded-xl shadow-lg hover:shadow-xl transition-all border p-4 cursor-pointer active:scale-98 ${
+                              selectedSalaries.some(s => s._id === salary._id)
+                                ? "bg-blue-50/90 border-blue-200"
+                                : "bg-white/90 border-orange-100"
+                            }`}
                           >
-                            {selectedSalaries.some(s => s._id === salary._id) ? (
-                              <CheckSquare className="w-5 h-5 text-blue-600" />
-                            ) : (
-                              <Square className="w-5 h-5 text-slate-400" />
-                            )}
-                          </button>
-                          <div className="p-2 rounded-lg bg-gradient-to-br from-orange-500 to-amber-500">
-                            <User className="w-4 h-4 text-white" />
-                          </div>
-                          <div>
-                            <div className="text-xs text-slate-500">שם עובד</div>
-                            <div className="text-lg font-bold text-slate-900">
-                              {salary.employeeName}
+                            {/* Header - Employee Name */}
+                            <div className="flex items-center justify-between mb-3 pb-3 border-b border-orange-100">
+                              <div className="flex items-center gap-2">
+                                <button
+                                  onClick={(e) => { e.stopPropagation(); toggleSelectSalary(salary, e); }}
+                                  className="hover:opacity-80 transition-opacity"
+                                >
+                                  {selectedSalaries.some(s => s._id === salary._id) ? (
+                                    <CheckSquare className="w-5 h-5 text-blue-600" />
+                                  ) : (
+                                    <Square className="w-5 h-5 text-slate-400" />
+                                  )}
+                                </button>
+                                <div className="p-2 rounded-lg bg-gradient-to-br from-orange-500 to-amber-500">
+                                  <User className="w-4 h-4 text-white" />
+                                </div>
+                                <div>
+                                  <div className="text-xs text-slate-500">שם עובד</div>
+                                  <div className="text-lg font-bold text-slate-900">
+                                    {salary.employeeName}
+                                  </div>
+                                </div>
+                              </div>
+                              <div className="text-right">
+                                <div className="text-xs text-slate-500">תאריך</div>
+                                <div className="text-sm font-medium text-slate-700">
+                                  {formatDate(salary.date)}
+                                </div>
+                              </div>
+                            </div>
+
+                            {/* Department & Project */}
+                            <div className="grid grid-cols-2 gap-3 mb-3">
+                              <div>
+                                <div className="flex items-center gap-1 text-xs text-slate-500 mb-1">
+                                  <Briefcase className="w-3 h-3" />
+                                  מחלקה
+                                </div>
+                                <div className="text-sm font-medium text-slate-700">
+                                  {salary.department || "—"}
+                                </div>
+                              </div>
+                              <div>
+                                <div className="flex items-center gap-1 text-xs text-slate-500 mb-1">
+                                  <Building2 className="w-3 h-3" />
+                                  פרויקט
+                                </div>
+                                <div className="text-sm font-medium text-slate-700">
+                                  {salary.projectId?.name || "—"}
+                                </div>
+                              </div>
+                            </div>
+
+                            {/* Amounts */}
+                            <div className="grid grid-cols-2 gap-2 mb-3 bg-orange-50 rounded-lg p-3">
+                              <div className="text-center">
+                                <div className="text-xs text-slate-600 mb-1">ברוטו</div>
+                                <div className="text-sm font-bold text-slate-900">
+                                  {formatCurrency(salary.baseAmount)}
+                                </div>
+                              </div>
+                              <div className="text-center">
+                                <div className="text-xs text-slate-600 mb-1">נטו</div>
+                                <div className="text-sm font-bold text-amber-600">
+                                  {salary.netAmount ? formatCurrency(salary.netAmount) : "—"}
+                                </div>
+                              </div>
+                              <div className="text-center">
+                                <div className="text-xs text-slate-600 mb-1">תקורה</div>
+                                <div className="inline-flex items-center px-2 py-1 rounded-full text-xs font-bold bg-amber-200 text-amber-800">
+                                  {salary.overheadPercent || 0}%
+                                </div>
+                              </div>
+                              <div className="text-center">
+                                <div className="text-xs text-slate-600 mb-1">סופי</div>
+                                <div className="text-sm font-bold bg-gradient-to-r from-orange-600 to-amber-600 bg-clip-text text-transparent">
+                                  {formatCurrency(salary.finalAmount)}
+                                </div>
+                              </div>
+                            </div>
+
+                            {/* Created By */}
+                            <div className="mb-3 text-xs text-slate-500">
+                              נוצר ע"י: <span className="font-medium text-slate-700">{salary.createdByName || "—"}</span>
+                            </div>
+
+                            {/* שיוך */}
+                            <div className="mb-3">
+                              <div className="text-xs text-slate-500 mb-1">שויך</div>
+                              {salaryToExpenseMap[salary._id]?.length > 0 ? (
+                                <span className="inline-flex items-center gap-1 px-2 py-1 bg-green-100 text-green-700 rounded-lg text-xs">
+                                  <Link className="w-3 h-3" />
+                                  {salaryToExpenseMap[salary._id].length} הוצאות
+                                </span>
+                              ) : (
+                                <span className="text-slate-400 text-sm">לא שויך</span>
+                              )}
+                            </div>
+
+                            {/* Action Buttons */}
+                            <div className="flex gap-2">
+                              <button
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  navigate(`/salaries/${salary._id}`);
+                                }}
+                                className="flex-1 flex items-center justify-center gap-2 px-4 py-2 bg-amber-500 text-white rounded-lg hover:bg-amber-600 transition-colors"
+                              >
+                                <Eye className="w-4 h-4" />
+                                <span>צפייה</span>
+                              </button>
+                              <button
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  navigate(`/update-salary/${salary._id}`);
+                                }}
+                                className="flex-1 flex items-center justify-center gap-2 px-4 py-2 bg-orange-500 text-white rounded-lg hover:bg-orange-600 transition-colors"
+                              >
+                                <Edit2 className="w-4 h-4" />
+                                <span>עריכה</span>
+                              </button>
+                              <button
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  openDeleteModal(salary);
+                                }}
+                                className="px-4 py-2 bg-red-500 text-white rounded-lg hover:bg-red-600 transition-colors"
+                              >
+                                <Trash2 className="w-4 h-4" />
+                              </button>
+                              <button
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  const d = new Date(salary.date);
+                                  setMoveMonthModal({ open: true, salary, year: d.getFullYear(), month: d.getMonth() + 1 });
+                                }}
+                                className="px-4 py-2 bg-purple-500 text-white rounded-lg hover:bg-purple-600 transition-colors"
+                                title="שינוי חודש"
+                              >
+                                <Calendar className="w-4 h-4" />
+                              </button>
                             </div>
                           </div>
-                        </div>
-                        <div className="text-right">
-                          <div className="text-xs text-slate-500">תאריך</div>
-                          <div className="text-sm font-medium text-slate-700">
-                            {formatDate(salary.date)}
-                          </div>
-                        </div>
-                      </div>
-
-                      {/* Department & Project */}
-                      <div className="grid grid-cols-2 gap-3 mb-3">
-                        <div>
-                          <div className="flex items-center gap-1 text-xs text-slate-500 mb-1">
-                            <Briefcase className="w-3 h-3" />
-                            מחלקה
-                          </div>
-                          <div className="text-sm font-medium text-slate-700">
-                            {salary.department || "—"}
-                          </div>
-                        </div>
-                        <div>
-                          <div className="flex items-center gap-1 text-xs text-slate-500 mb-1">
-                            <Building2 className="w-3 h-3" />
-                            פרויקט
-                          </div>
-                          <div className="text-sm font-medium text-slate-700">
-                            {salary.projectId?.name || "—"}
-                          </div>
-                        </div>
-                      </div>
-
-                      {/* Amounts */}
-                      <div className="grid grid-cols-2 gap-2 mb-3 bg-orange-50 rounded-lg p-3">
-                        <div className="text-center">
-                          <div className="text-xs text-slate-600 mb-1">ברוטו</div>
-                          <div className="text-sm font-bold text-slate-900">
-                            {formatCurrency(salary.baseAmount)}
-                          </div>
-                        </div>
-                        <div className="text-center">
-                          <div className="text-xs text-slate-600 mb-1">נטו</div>
-                          <div className="text-sm font-bold text-amber-600">
-                            {salary.netAmount ? formatCurrency(salary.netAmount) : "—"}
-                          </div>
-                        </div>
-                        <div className="text-center">
-                          <div className="text-xs text-slate-600 mb-1">תקורה</div>
-                          <div className="inline-flex items-center px-2 py-1 rounded-full text-xs font-bold bg-amber-200 text-amber-800">
-                            {salary.overheadPercent || 0}%
-                          </div>
-                        </div>
-                        <div className="text-center">
-                          <div className="text-xs text-slate-600 mb-1">סופי</div>
-                          <div className="text-sm font-bold bg-gradient-to-r from-orange-600 to-amber-600 bg-clip-text text-transparent">
-                            {formatCurrency(salary.finalAmount)}
-                          </div>
-                        </div>
-                      </div>
-
-                      {/* Created By */}
-                      <div className="mb-3 text-xs text-slate-500">
-                        נוצר ע"י: <span className="font-medium text-slate-700">{salary.createdByName || "—"}</span>
-                      </div>
-
-                      {/* שיוך */}
-                      <div className="mb-3">
-                        <div className="text-xs text-slate-500 mb-1">שויך</div>
-                        {salaryToExpenseMap[salary._id]?.length > 0 ? (
-                          <span className="inline-flex items-center gap-1 px-2 py-1 bg-green-100 text-green-700 rounded-lg text-xs">
-                            <Link className="w-3 h-3" />
-                            {salaryToExpenseMap[salary._id].length} הוצאות
-                          </span>
-                        ) : (
-                          <span className="text-slate-400 text-sm">לא שויך</span>
-                        )}
-                      </div>
-
-                      {/* Action Buttons */}
-                      <div className="flex gap-2">
-                        <button
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            navigate(`/salaries/${salary._id}`);
-                          }}
-                          className="flex-1 flex items-center justify-center gap-2 px-4 py-2 bg-amber-500 text-white rounded-lg hover:bg-amber-600 transition-colors"
-                        >
-                          <Eye className="w-4 h-4" />
-                          <span>צפייה</span>
-                        </button>
-                        <button
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            navigate(`/update-salary/${salary._id}`);
-                          }}
-                          className="flex-1 flex items-center justify-center gap-2 px-4 py-2 bg-orange-500 text-white rounded-lg hover:bg-orange-600 transition-colors"
-                        >
-                          <Edit2 className="w-4 h-4" />
-                          <span>עריכה</span>
-                        </button>
-                        <button
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            openDeleteModal(salary);
-                          }}
-                          className="px-4 py-2 bg-red-500 text-white rounded-lg hover:bg-red-600 transition-colors"
-                        >
-                          <Trash2 className="w-4 h-4" />
-                        </button>
-                      </div>
-                    </div>
-                  ))}
+                        ))}
+                      </Fragment>
+                    );
+                  })}
                 </div>
               </>
             )}
@@ -1258,6 +1383,64 @@ export default function View_Salaries() {
                     ביטול
                   </button>
                 </div>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Move Month Modal */}
+        {moveMonthModal.open && (
+          <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+            <div className="relative bg-white rounded-2xl shadow-2xl p-6 max-w-sm w-full">
+              <div className="text-center mb-6">
+                <div className="mx-auto w-16 h-16 rounded-full bg-gradient-to-br from-purple-500 to-indigo-500 flex items-center justify-center mb-4">
+                  <Calendar className="w-8 h-8 text-white" />
+                </div>
+                <h3 className="text-xl font-bold text-slate-900">שינוי חודש משכורת</h3>
+                <p className="text-slate-500 text-sm mt-1">{moveMonthModal.salary?.employeeName}</p>
+              </div>
+
+              <div className="space-y-4 mb-6">
+                <div>
+                  <label className="block text-sm font-bold text-slate-700 mb-2">חודש</label>
+                  <select
+                    value={moveMonthModal.month}
+                    onChange={(e) => setMoveMonthModal(prev => ({ ...prev, month: parseInt(e.target.value) }))}
+                    className="w-full p-3 border-2 border-purple-200 rounded-xl focus:border-purple-400 focus:outline-none"
+                  >
+                    {MONTHS_HE.map((name, i) => (
+                      <option key={i + 1} value={i + 1}>{i + 1} - {name}</option>
+                    ))}
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-sm font-bold text-slate-700 mb-2">שנה</label>
+                  <select
+                    value={moveMonthModal.year}
+                    onChange={(e) => setMoveMonthModal(prev => ({ ...prev, year: parseInt(e.target.value) }))}
+                    className="w-full p-3 border-2 border-purple-200 rounded-xl focus:border-purple-400 focus:outline-none"
+                  >
+                    {Array.from({ length: 5 }, (_, i) => new Date().getFullYear() - 2 + i).map(y => (
+                      <option key={y} value={y}>{y}</option>
+                    ))}
+                  </select>
+                </div>
+              </div>
+
+              <div className="flex gap-3">
+                <button
+                  onClick={handleMoveMonth}
+                  disabled={moveMonthLoading}
+                  className="flex-1 px-6 py-3 rounded-xl font-bold text-white bg-gradient-to-r from-purple-500 to-indigo-500 hover:from-purple-600 hover:to-indigo-600 transition-all shadow-lg disabled:opacity-50"
+                >
+                  {moveMonthLoading ? "מעביר..." : "העבר"}
+                </button>
+                <button
+                  onClick={() => setMoveMonthModal({ open: false, salary: null, year: new Date().getFullYear(), month: new Date().getMonth() + 1 })}
+                  className="flex-1 px-6 py-3 rounded-xl font-bold text-slate-700 bg-slate-100 hover:bg-slate-200 transition-all"
+                >
+                  ביטול
+                </button>
               </div>
             </div>
           </div>

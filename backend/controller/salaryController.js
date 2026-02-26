@@ -108,6 +108,7 @@ export async function updateSalary(req, res) {
       netAmount,
       overheadPercent,
       projectId,
+      date,
     } = req.body;
 
     const finalAmount =
@@ -121,6 +122,7 @@ export async function updateSalary(req, res) {
     salary.netAmount = netAmount !== undefined ? netAmount : salary.netAmount;
     salary.overheadPercent = overheadPercent || 0;
     salary.finalAmount = finalAmount;
+    if (date !== undefined) salary.date = date;
 
     if (projectId && projectId !== oldProjectId) {
       salary.projectId = projectId;

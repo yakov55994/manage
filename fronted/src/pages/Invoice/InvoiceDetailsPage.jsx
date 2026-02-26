@@ -323,9 +323,9 @@ const InvoiceDetailsPage = () => {
                     ? "יצא לתשלום"
                     : invoice.paid === "לא לתשלום"
                       ? "לא לתשלום"
-                      : invoice.paid ==="לא שולם"
-                      ? "לא שולם"
-                      : ""
+                      : invoice.paid === "לא שולם"
+                        ? "לא שולם"
+                        : ""
               }
             />
 
@@ -343,7 +343,9 @@ const InvoiceDetailsPage = () => {
                   ? "העברה בנקאית"
                   : invoice.paymentMethod === "check"
                     ? "צ'ק"
-                    : "—"
+                    : invoice.paymentMethod === "credit_card"
+                      ? "כרטיס אשראי"
+                      : "אחר"
               }
             />
 
@@ -401,51 +403,51 @@ const InvoiceDetailsPage = () => {
             {/* ✅ אם הוגש - הצג לאיזה פרויקט */}
             {invoice.status === "הוגש" && invoice.submittedToProjectId && (
               <DetailCard
-        label="הוגש לפרויקט"
-        icon={<Building2 />}
-        value={invoice.submittedToProjectId?.name || "טוען..."}
-      />
-    )
-  }
+                label="הוגש לפרויקט"
+                icon={<Building2 />}
+                value={invoice.submittedToProjectId?.name || "טוען..."}
+              />
+            )
+            }
 
-  {/* ✅ אם הוגש - הצג תאריך הגשה */ }
-  {
-    invoice.status === "הוגש" && invoice.submittedAt && (
-      <DetailCard
-        label="תאריך הגשה"
-        icon={<Calendar />}
-        value={formatDate(invoice.submittedAt)}
-      />
-    )
-  }
+            {/* ✅ אם הוגש - הצג תאריך הגשה */}
+            {
+              invoice.status === "הוגש" && invoice.submittedAt && (
+                <DetailCard
+                  label="תאריך הגשה"
+                  icon={<Calendar />}
+                  value={formatDate(invoice.submittedAt)}
+                />
+              )
+            }
 
-  {/* תווית מילגה - אם החשבונית יורדת מפרויקט מילגה */ }
-  {
-    invoice.fundedFromProjectId && (
-      <>
-        <DetailCard
-          label="סוג חשבונית"
-          icon={<Sparkles />}
-          value="מילגה 🎓"
-        />
-        <DetailCard
-          label="ממומן מפרויקט"
-          icon={<Building2 />}
-          value={
-            typeof invoice.fundedFromProjectId === "object"
-              ? invoice.fundedFromProjectId?.name || "—"
-              : invoice.projects?.find(
-                (p) => p.projectName !== "מילגה"
-              )?.projectName || "—"
-          }
-        />
-      </>
-    )
-  }
+            {/* תווית מילגה - אם החשבונית יורדת מפרויקט מילגה */}
+            {
+              invoice.fundedFromProjectId && (
+                <>
+                  <DetailCard
+                    label="סוג חשבונית"
+                    icon={<Sparkles />}
+                    value="מילגה 🎓"
+                  />
+                  <DetailCard
+                    label="ממומן מפרויקט"
+                    icon={<Building2 />}
+                    value={
+                      typeof invoice.fundedFromProjectId === "object"
+                        ? invoice.fundedFromProjectId?.name || "—"
+                        : invoice.projects?.find(
+                          (p) => p.projectName !== "מילגה"
+                        )?.projectName || "—"
+                    }
+                  />
+                </>
+              )
+            }
           </div >
 
-  {/* PROJECTS */ }
-  < div className = "mb-4 sm:mb-5 md:mb-6 sm:mb-8 md:mb-10" >
+          {/* PROJECTS */}
+          < div className="mb-4 sm:mb-5 md:mb-6 sm:mb-8 md:mb-10" >
             <h2 className="text-2xl font-bold flex items-center gap-2 mb-4">
               <Building2 className="w-6 h-6 text-orange-600" />
               פרויקטים בחשבונית
@@ -474,160 +476,160 @@ const InvoiceDetailsPage = () => {
             </div>
           </div >
 
-  {/* LINKED EXPENSES */ }
-{
-  linkedExpenses.length > 0 && (
-    <div className="mb-6 sm:mb-8 md:mb-10">
-      <h2 className="text-2xl font-bold flex items-center gap-2 mb-4">
-        <Link2 className="w-6 h-6 text-blue-600" />
-        הוצאות משויכות
-      </h2>
+          {/* LINKED EXPENSES */}
+          {
+            linkedExpenses.length > 0 && (
+              <div className="mb-6 sm:mb-8 md:mb-10">
+                <h2 className="text-2xl font-bold flex items-center gap-2 mb-4">
+                  <Link2 className="w-6 h-6 text-blue-600" />
+                  הוצאות משויכות
+                </h2>
 
-      <div className="space-y-3">
-        {linkedExpenses.map((expense) => (
-          <div
-            key={expense._id}
-            className="p-4 rounded-xl border-2 border-blue-200 bg-blue-50 flex justify-between items-center cursor-pointer hover:bg-blue-100 transition-colors"
-            onClick={() => navigate(`/expense/${expense._id}`)}
-          >
-            <div>
-              <p className="font-bold text-lg">{expense.description}</p>
-              <p className="text-sm text-slate-600">
-                {formatDate(expense.date)}
-                {expense.reference && ` • אסמכתא: ${expense.reference}`}
-              </p>
-            </div>
+                <div className="space-y-3">
+                  {linkedExpenses.map((expense) => (
+                    <div
+                      key={expense._id}
+                      className="p-4 rounded-xl border-2 border-blue-200 bg-blue-50 flex justify-between items-center cursor-pointer hover:bg-blue-100 transition-colors"
+                      onClick={() => navigate(`/expense/${expense._id}`)}
+                    >
+                      <div>
+                        <p className="font-bold text-lg">{expense.description}</p>
+                        <p className="text-sm text-slate-600">
+                          {formatDate(expense.date)}
+                          {expense.reference && ` • אסמכתא: ${expense.reference}`}
+                        </p>
+                      </div>
 
-            <div className="text-right font-bold text-blue-700">
-              {Number(expense.amount || 0).toLocaleString()} ₪
-            </div>
-          </div>
-        ))}
-      </div>
-    </div>
-  )
-}
+                      <div className="text-right font-bold text-blue-700">
+                        {Number(expense.amount || 0).toLocaleString()} ₪
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )
+          }
 
           {/* LINKED INCOMES */}
-  {linkedIncomes.length > 0 && (
-    <div className="mb-6 sm:mb-8 md:mb-10">
-      <h2 className="text-2xl font-bold flex items-center gap-2 mb-4">
-        <DollarSign className="w-6 h-6 text-green-600" />
-        הכנסות משויכות
-      </h2>
+          {linkedIncomes.length > 0 && (
+            <div className="mb-6 sm:mb-8 md:mb-10">
+              <h2 className="text-2xl font-bold flex items-center gap-2 mb-4">
+                <DollarSign className="w-6 h-6 text-green-600" />
+                הכנסות משויכות
+              </h2>
 
-      <div className="space-y-3">
-        {linkedIncomes.map((income) => (
-          <div
-            key={income._id}
-            className="p-4 rounded-xl border-2 border-green-200 bg-green-50 flex justify-between items-center cursor-pointer hover:bg-green-100 transition-colors"
-            onClick={() => navigate(`/incomes/${income._id}`)}
-          >
-            <div>
-              <p className="font-bold text-lg">{income.description}</p>
-              <p className="text-sm text-slate-600">
-                {formatDate(income.date)}
-              </p>
+              <div className="space-y-3">
+                {linkedIncomes.map((income) => (
+                  <div
+                    key={income._id}
+                    className="p-4 rounded-xl border-2 border-green-200 bg-green-50 flex justify-between items-center cursor-pointer hover:bg-green-100 transition-colors"
+                    onClick={() => navigate(`/incomes/${income._id}`)}
+                  >
+                    <div>
+                      <p className="font-bold text-lg">{income.description}</p>
+                      <p className="text-sm text-slate-600">
+                        {formatDate(income.date)}
+                      </p>
+                    </div>
+
+                    <div className="text-right font-bold text-green-700">
+                      {Number(income.amount || 0).toLocaleString()} ₪
+                    </div>
+                  </div>
+                ))}
+              </div>
             </div>
+          )}
 
-            <div className="text-right font-bold text-green-700">
-              {Number(income.amount || 0).toLocaleString()} ₪
+          {/* EDIT HISTORY */}
+          {invoice.editHistory && invoice.editHistory.length > 0 && (
+            <div className="mb-6 sm:mb-8 md:mb-10">
+              <h2 className="text-2xl font-bold flex items-center gap-2 mb-4">
+                <Clock className="w-6 h-6 text-indigo-600" />
+                היסטוריית שינויים
+              </h2>
+              <div className="relative border-r-2 border-indigo-200 mr-4 space-y-4">
+                {[...invoice.editHistory].reverse().map((entry, idx) => {
+                  const actionMap = {
+                    created: { label: "נוצרה", icon: <Plus className="w-4 h-4" />, color: "bg-green-500" },
+                    updated: { label: "עודכנה", icon: <RefreshCw className="w-4 h-4" />, color: "bg-blue-500" },
+                    payment_status_changed: { label: "סטטוס תשלום שונה", icon: <CreditCard className="w-4 h-4" />, color: "bg-orange-500" },
+                    moved: { label: "הועברה", icon: <ArrowLeftRight className="w-4 h-4" />, color: "bg-purple-500" },
+                    files_added: { label: "קבצים הועלו", icon: <Upload className="w-4 h-4" />, color: "bg-gray-500" },
+                    status_changed: { label: "סטטוס הגשה שונה", icon: <FileText className="w-4 h-4" />, color: "bg-teal-500" },
+                  };
+                  const action = actionMap[entry.action] || { label: entry.action, icon: <Clock className="w-4 h-4" />, color: "bg-gray-400" };
+                  return (
+                    <div key={idx} className="relative pr-8">
+                      <div className={`absolute -right-[11px] top-1 w-5 h-5 rounded-full ${action.color} text-white flex items-center justify-center`}>
+                        {action.icon}
+                      </div>
+                      <div className="bg-slate-50 border border-slate-200 rounded-xl p-3">
+                        <p className="font-bold text-slate-800 text-sm">{action.label}</p>
+                        {entry.changes && (
+                          <p className="text-sm text-slate-600 mt-1">{entry.changes}</p>
+                        )}
+                        <p className="text-xs text-slate-400 mt-2">
+                          {entry.userName} &bull; {new Date(entry.timestamp).toLocaleString("he-IL")}
+                        </p>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          )}
+
+          {/* FILES */}
+          <div>
+            <h2 className="text-2xl font-bold flex items-center gap-2 mb-4">
+              <Paperclip className="w-6 h-6 text-purple-600" />
+              קבצים מצורפים
+            </h2>
+
+            {invoice.files.length === 0 && (
+              <p className="text-slate-600 text-center py-6">אין קבצים</p>
+            )}
+
+            <div className="space-y-3">
+              {invoice.files.map((file, idx) => (
+                <FileItem key={idx} file={file} />
+              ))}
             </div>
           </div>
-        ))}
-      </div>
-    </div>
-  )}
+        </div>
 
-  {/* EDIT HISTORY */}
-  {invoice.editHistory && invoice.editHistory.length > 0 && (
-    <div className="mb-6 sm:mb-8 md:mb-10">
-      <h2 className="text-2xl font-bold flex items-center gap-2 mb-4">
-        <Clock className="w-6 h-6 text-indigo-600" />
-        היסטוריית שינויים
-      </h2>
-      <div className="relative border-r-2 border-indigo-200 mr-4 space-y-4">
-        {[...invoice.editHistory].reverse().map((entry, idx) => {
-          const actionMap = {
-            created: { label: "נוצרה", icon: <Plus className="w-4 h-4" />, color: "bg-green-500" },
-            updated: { label: "עודכנה", icon: <RefreshCw className="w-4 h-4" />, color: "bg-blue-500" },
-            payment_status_changed: { label: "סטטוס תשלום שונה", icon: <CreditCard className="w-4 h-4" />, color: "bg-orange-500" },
-            moved: { label: "הועברה", icon: <ArrowLeftRight className="w-4 h-4" />, color: "bg-purple-500" },
-            files_added: { label: "קבצים הועלו", icon: <Upload className="w-4 h-4" />, color: "bg-gray-500" },
-            status_changed: { label: "סטטוס הגשה שונה", icon: <FileText className="w-4 h-4" />, color: "bg-teal-500" },
-          };
-          const action = actionMap[entry.action] || { label: entry.action, icon: <Clock className="w-4 h-4" />, color: "bg-gray-400" };
-          return (
-            <div key={idx} className="relative pr-8">
-              <div className={`absolute -right-[11px] top-1 w-5 h-5 rounded-full ${action.color} text-white flex items-center justify-center`}>
-                {action.icon}
-              </div>
-              <div className="bg-slate-50 border border-slate-200 rounded-xl p-3">
-                <p className="font-bold text-slate-800 text-sm">{action.label}</p>
-                {entry.changes && (
-                  <p className="text-sm text-slate-600 mt-1">{entry.changes}</p>
-                )}
-                <p className="text-xs text-slate-400 mt-2">
-                  {entry.userName} &bull; {new Date(entry.timestamp).toLocaleString("he-IL")}
+        {/* DELETE MODAL */}
+        {
+          confirmOpen && (
+            <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50">
+              <div className="bg-white p-4 sm:p-4 sm:p-5 md:p-6 md:p-8 rounded-2xl shadow-xl max-w-md w-full">
+                <h3 className="text-2xl font-bold text-center mb-4">
+                  למחוק חשבונית?
+                </h3>
+                <p className="text-center text-slate-700 mb-4 sm:mb-5 md:mb-6">
+                  פעולה זו בלתי הפיכה.
                 </p>
+
+                <div className="flex gap-3 sm:gap-4">
+                  <button
+                    onClick={handleDelete}
+                    className="flex-1 bg-red-600 text-white py-3 rounded-xl font-bold"
+                  >
+                    {deleting ? "מוחק..." : "מחק"}
+                  </button>
+
+                  <button
+                    onClick={() => setConfirmOpen(false)}
+                    className="flex-1 bg-slate-200 py-3 rounded-xl font-bold"
+                  >
+                    ביטול
+                  </button>
+                </div>
               </div>
             </div>
-          );
-        })}
-      </div>
-    </div>
-  )}
-
-  {/* FILES */}
-  <div>
-    <h2 className="text-2xl font-bold flex items-center gap-2 mb-4">
-      <Paperclip className="w-6 h-6 text-purple-600" />
-      קבצים מצורפים
-    </h2>
-
-    {invoice.files.length === 0 && (
-      <p className="text-slate-600 text-center py-6">אין קבצים</p>
-    )}
-
-    <div className="space-y-3">
-      {invoice.files.map((file, idx) => (
-        <FileItem key={idx} file={file} />
-      ))}
-    </div>
-  </div>
-</div>
-
-{/* DELETE MODAL */ }
-{
-  confirmOpen && (
-    <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50">
-      <div className="bg-white p-4 sm:p-4 sm:p-5 md:p-6 md:p-8 rounded-2xl shadow-xl max-w-md w-full">
-        <h3 className="text-2xl font-bold text-center mb-4">
-          למחוק חשבונית?
-        </h3>
-        <p className="text-center text-slate-700 mb-4 sm:mb-5 md:mb-6">
-          פעולה זו בלתי הפיכה.
-        </p>
-
-        <div className="flex gap-3 sm:gap-4">
-          <button
-            onClick={handleDelete}
-            className="flex-1 bg-red-600 text-white py-3 rounded-xl font-bold"
-          >
-            {deleting ? "מוחק..." : "מחק"}
-          </button>
-
-          <button
-            onClick={() => setConfirmOpen(false)}
-            className="flex-1 bg-slate-200 py-3 rounded-xl font-bold"
-          >
-            ביטול
-          </button>
-        </div>
-      </div>
-    </div>
-  )
-}
+          )
+        }
       </div >
     </div >
   );
