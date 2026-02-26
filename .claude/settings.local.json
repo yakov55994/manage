@@ -46,7 +46,8 @@
       "Bash(wc:*)",
       "Bash(find:*)",
       "Bash(npx web-push:*)",
-      "Bash(npm uninstall:*)"
+      "Bash(npm uninstall:*)",
+      "Bash(git commit:*)"
     ]
   }
 }
