@@ -13,7 +13,7 @@ const router = express.Router();
 const uploadsDir = path.resolve('uploads');
 
 // יצירת תיקייה אם לא קיימת
-fs.access(uploadsDir).catch(() => fs.mkdir(uploadsDir));
+fs.mkdir(uploadsDir, { recursive: true });
 
 const storage = multer.diskStorage({
   destination: (req, file, cb) => cb(null, uploadsDir),

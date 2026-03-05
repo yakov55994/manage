@@ -6,7 +6,7 @@ import path from 'path';
 import fs from 'fs/promises';
 
 const uploadsDir = path.resolve('uploads');
-fs.access(uploadsDir).catch(() => fs.mkdir(uploadsDir));
+fs.mkdir(uploadsDir, { recursive: true });
 
 export const upload = multer({
     storage: multer.diskStorage({
