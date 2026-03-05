@@ -68,11 +68,17 @@ const hebrewSort = (strA, strB) => {
 
 // פונקציית עזר להצגת שמות פרויקטים ללא מילגה
 
+const getPaymentStatusText = (invoice) => {
+  if (invoice.paid !== "כן") return invoice.paid === "יצא לתשלום" ? "יצא לתשלום" : "לא שולם";
+  if (invoice.paymentMethod === "check") return "שולם בצ'ק";
+  if (invoice.paymentMethod === "credit_card") return "שולם באשראי";
+  return "שולם";
+};
+
 const getProjectNamesWithoutMilga = (projects) => {
-  return projects
-    .filter((p) => p.projectName !== "מילגה")
-    .map((p) => p.projectName)
-    .join(", ");
+  const milga = projects.find((p) => p.projectName === "מילגה");
+  if (milga) return "מילגה";
+  return projects.map((p) => p.projectName).join(", ");
 };
 
 const InvoicesPage = () => {
@@ -741,6 +747,11 @@ const InvoicesPage = () => {
         ? new Date(a.createdAt) - new Date(b.createdAt)
         : new Date(b.createdAt) - new Date(a.createdAt);
     }
+    if (sortBy === "paymentDate") {
+      const aDate = a.paymentDate ? new Date(a.paymentDate) : new Date(0);
+      const bDate = b.paymentDate ? new Date(b.paymentDate) : new Date(0);
+      return sortOrder === "asc" ? aDate - bDate : bDate - aDate;
+    }
     if (sortBy === "invoiceNumber") {
       return sortOrder === "asc"
         ? a.invoiceNumber - b.invoiceNumber
@@ -1333,8 +1344,7 @@ const InvoicesPage = () => {
             row[columnMapping.status] = invoice.status || "";
             break;
           case "paid":
-            row[columnMapping.paid] =
-              invoice.paid === "כן" ? "שולם" : "לא שולם";
+            row[columnMapping.paid] = getPaymentStatusText(invoice);
             break;
           case "createdAt":
             row[columnMapping.createdAt] = formatDate(invoice.createdAt);
@@ -1460,7 +1470,7 @@ const InvoicesPage = () => {
         "תאריך יצירה": formatDate(invoice.invoiceDate || invoice.createdAt),
         סכום: formatNumber(Number(invoice.totalAmount) || 0),
         "סטטוס הגשה": invoice.status || "",
-        "סטטוס תשלום": invoice.paid === "כן" ? "שולם" : "לא שולם",
+        "סטטוס תשלום": getPaymentStatusText(invoice),
         "תאריך תשלום":
           invoice.paid === "כן" && invoice.paymentDate
             ? formatDate(invoice.paymentDate)
@@ -2579,6 +2589,7 @@ const InvoicesPage = () => {
               >
                 <option value="totalAmount">סכום</option>
                 <option value="createdAt">תאריך יצירה</option>
+                <option value="paymentDate">תאריך תשלום</option>
                 <option value="invoiceNumber">מספר חשבונית</option>
                 <option value="projectName">שם פרוייקט</option>
                 <option value="supplierName">שם ספק (א-ב)</option>
@@ -3010,7 +3021,7 @@ const InvoicesPage = () => {
                           <td className="px-2 py-4 text-center">
                             {invoice.paid === "כן" ? (
                               <span className="bg-emerald-100 text-emerald-700 px-2 py-1 rounded-full text-xs font-bold border border-emerald-200 whitespace-nowrap">
-                                {invoice.paymentMethod === "check" ? "שולם בצ'ק" : "שולם"}
+                                {getPaymentStatusText(invoice)}
                               </span>
                             ) : invoice.paid === "יצא לתשלום" ? (
                               <span className="bg-blue-100 text-blue-700 px-2 py-1 rounded-full text-xs font-bold border border-blue-200 whitespace-nowrap">

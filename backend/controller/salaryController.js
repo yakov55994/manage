@@ -170,7 +170,7 @@ export async function deleteSalary(req, res) {
 // =======================================================
 export async function bulkUpdateSalaries(req, res) {
   try {
-    const { salaryIds, department, projectId, overheadPercent } = req.body;
+    const { salaryIds, department, projectId, overheadPercent, date } = req.body;
 
     if (!salaryIds || !Array.isArray(salaryIds) || salaryIds.length === 0) {
       return res.status(400).json({ success: false, error: "חייב לספק מערך של מזהי משכורות" });
@@ -179,6 +179,7 @@ export async function bulkUpdateSalaries(req, res) {
     const updateObj = {};
     if (department !== undefined) updateObj.department = department || null;
     if (projectId !== undefined) updateObj.projectId = projectId;
+    if (date !== undefined) updateObj.date = date;
 
     // אם יש עדכון תקורה – צריך לחשב מחדש finalAmount לכל משכורת
     if (overheadPercent !== undefined) {

@@ -62,6 +62,8 @@ export default function View_Salaries() {
   const [bulkDepartment, setBulkDepartment] = useState("");
   const [bulkProjectId, setBulkProjectId] = useState("");
   const [bulkOverhead, setBulkOverhead] = useState(0);
+  const [bulkMoveYear, setBulkMoveYear] = useState(new Date().getFullYear());
+  const [bulkMoveMonth, setBulkMoveMonth] = useState(new Date().getMonth() + 1);
   const [bulkLoading, setBulkLoading] = useState(false);
 
   // Upload Excel state
@@ -292,6 +294,7 @@ export default function View_Salaries() {
         if (bulkActionModal.type === "department") updateData.department = bulkDepartment;
         if (bulkActionModal.type === "project") updateData.projectId = bulkProjectId;
         if (bulkActionModal.type === "overhead") updateData.overheadPercent = parseFloat(bulkOverhead) || 0;
+        if (bulkActionModal.type === "moveMonth") updateData.date = new Date(bulkMoveYear, bulkMoveMonth - 1, 1).toISOString();
 
         await api.put("/salaries/bulk-update", updateData);
         toast.success(`עודכנו ${ids.length} משכורות`, { className: "sonner-toast success rtl" });
@@ -746,6 +749,13 @@ export default function View_Salaries() {
                 >
                   <Percent className="w-4 h-4" />
                   תקורה
+                </button>
+                <button
+                  onClick={() => { setBulkMoveYear(new Date().getFullYear()); setBulkMoveMonth(new Date().getMonth() + 1); setBulkActionModal({ open: true, type: "moveMonth" }); }}
+                  className="flex items-center gap-2 px-4 py-2 bg-purple-100 text-purple-700 rounded-xl font-bold hover:bg-purple-200 transition-all"
+                >
+                  <Calendar className="w-4 h-4" />
+                  העבר חודש
                 </button>
                 <button
                   onClick={() => setBulkActionModal({ open: true, type: "delete" })}
@@ -1277,18 +1287,22 @@ export default function View_Salaries() {
                   <div className={`mx-auto w-16 h-16 rounded-full flex items-center justify-center mb-4 ${
                     bulkActionModal.type === "delete"
                       ? "bg-gradient-to-br from-red-500 to-rose-500"
+                      : bulkActionModal.type === "moveMonth"
+                      ? "bg-gradient-to-br from-purple-500 to-indigo-500"
                       : "bg-gradient-to-br from-blue-500 to-indigo-500"
                   }`}>
                     {bulkActionModal.type === "department" && <Building2 className="w-8 h-8 text-white" />}
                     {bulkActionModal.type === "project" && <Briefcase className="w-8 h-8 text-white" />}
                     {bulkActionModal.type === "overhead" && <Percent className="w-8 h-8 text-white" />}
                     {bulkActionModal.type === "delete" && <Trash2 className="w-8 h-8 text-white" />}
+                    {bulkActionModal.type === "moveMonth" && <Calendar className="w-8 h-8 text-white" />}
                   </div>
                   <h3 className="text-2xl font-bold text-slate-900 mb-1">
                     {bulkActionModal.type === "department" && "עדכון מחלקה"}
                     {bulkActionModal.type === "project" && "עדכון פרויקט"}
                     {bulkActionModal.type === "overhead" && "עדכון תקורה"}
                     {bulkActionModal.type === "delete" && "מחיקה מרובה"}
+                    {bulkActionModal.type === "moveMonth" && "העברת חודש"}
                   </h3>
                   <p className="text-slate-500 text-sm">
                     {selectedSalaries.length} משכורות נבחרו
@@ -1363,6 +1377,35 @@ export default function View_Salaries() {
                   </div>
                 )}
 
+                {bulkActionModal.type === "moveMonth" && (
+                  <div className="mb-6 space-y-4">
+                    <div>
+                      <label className="block text-sm font-bold text-slate-700 mb-2">חודש</label>
+                      <select
+                        value={bulkMoveMonth}
+                        onChange={(e) => setBulkMoveMonth(parseInt(e.target.value))}
+                        className="w-full p-3 border-2 border-purple-200 rounded-xl focus:border-purple-400 focus:outline-none"
+                      >
+                        {MONTHS_HE.map((name, i) => (
+                          <option key={i + 1} value={i + 1}>{i + 1} - {name}</option>
+                        ))}
+                      </select>
+                    </div>
+                    <div>
+                      <label className="block text-sm font-bold text-slate-700 mb-2">שנה</label>
+                      <select
+                        value={bulkMoveYear}
+                        onChange={(e) => setBulkMoveYear(parseInt(e.target.value))}
+                        className="w-full p-3 border-2 border-purple-200 rounded-xl focus:border-purple-400 focus:outline-none"
+                      >
+                        {Array.from({ length: 5 }, (_, i) => new Date().getFullYear() - 2 + i).map(y => (
+                          <option key={y} value={y}>{y}</option>
+                        ))}
+                      </select>
+                    </div>
+                  </div>
+                )}
+
                 <div className="flex gap-3">
                   <button
                     onClick={handleBulkAction}
@@ -1370,10 +1413,12 @@ export default function View_Salaries() {
                     className={`flex-1 px-6 py-3 rounded-xl font-bold text-white transition-all shadow-lg disabled:opacity-50 ${
                       bulkActionModal.type === "delete"
                         ? "bg-gradient-to-r from-red-500 to-rose-500 hover:from-red-600 hover:to-rose-600"
+                        : bulkActionModal.type === "moveMonth"
+                        ? "bg-gradient-to-r from-purple-500 to-indigo-500 hover:from-purple-600 hover:to-indigo-600"
                         : "bg-gradient-to-r from-blue-500 to-indigo-500 hover:from-blue-600 hover:to-indigo-600"
                     }`}
                   >
-                    {bulkLoading ? "מעדכן..." : bulkActionModal.type === "delete" ? "מחק" : "עדכן"}
+                    {bulkLoading ? "מעדכן..." : bulkActionModal.type === "delete" ? "מחק" : bulkActionModal.type === "moveMonth" ? "העבר" : "עדכן"}
                   </button>
                   <button
                     onClick={() => setBulkActionModal({ open: false, type: null })}
