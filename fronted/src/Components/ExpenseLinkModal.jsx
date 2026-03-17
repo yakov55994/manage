@@ -125,12 +125,18 @@ export default function ExpenseLinkModal({
 
     // סינון לפי חודש
     if (salaryFilters.month) {
-      filtered = filtered.filter(sal => sal.month === parseInt(salaryFilters.month));
+      filtered = filtered.filter(sal => {
+        if (!sal.date) return false;
+        return new Date(sal.date).getMonth() + 1 === parseInt(salaryFilters.month);
+      });
     }
 
     // סינון לפי שנה
     if (salaryFilters.year) {
-      filtered = filtered.filter(sal => sal.year === parseInt(salaryFilters.year));
+      filtered = filtered.filter(sal => {
+        if (!sal.date) return false;
+        return new Date(sal.date).getFullYear() === parseInt(salaryFilters.year);
+      });
     }
 
     return filtered;
@@ -581,7 +587,7 @@ export default function ExpenseLinkModal({
                           {salary.employeeName}
                         </div>
                         <div className="text-sm text-slate-500">
-                          {salary.month}/{salary.year}
+                          {salary.date ? `${new Date(salary.date).getMonth() + 1}/${new Date(salary.date).getFullYear()}` : "-"}
                         </div>
                       </div>
                       <div className="text-right">
