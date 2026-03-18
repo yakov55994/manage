@@ -101,7 +101,7 @@ const Sidebar = () => {
       id: "projects",
       icon: Briefcase,
       text: "פרויקטים",
-      show: isAdmin || canViewAnyProject() || canEditModule(null, "projects"),
+      show: (isAdmin || canViewAnyProject() || canEditModule(null, "projects")) && user?.role !== "accountant",
       type: "dropdown",
       items: [
         {
@@ -164,18 +164,18 @@ const Sidebar = () => {
       id: "finance",
       icon: DollarSign,
       text: "תנועות בנק",
-      show: isAdmin, // רק מנהלים
+      show: isAdmin || user?.role === "accountant",
       type: "dropdown",
       items: [
         {
           text: "הכנסות",
           path: "/incomes",
-          show: isAdmin,
+          show: isAdmin || user?.role === "accountant",
         },
         {
           text: "הוצאות",
           path: "/expenses",
-          show: isAdmin,
+          show: isAdmin || user?.role === "accountant",
         },
         {
           text: "העלאת אקסל",
@@ -234,13 +234,13 @@ const Sidebar = () => {
       id: "admin",
       icon: ListTodo,
       text: "ניהול",
-      show: isAdmin,
+      show: isAdmin || user?.role === "accountant",
       type: "dropdown",
       items: [
         {
           text: "משימות",
           path: "/Notes",
-          show: isAdmin,
+          show: isAdmin || user?.role === "accountant",
         },
         {
           text: "ניהול משתמשים",

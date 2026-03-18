@@ -2415,7 +2415,7 @@ const InvoicesPage = () => {
           getProjectNamesWithoutMilga(invoice.projects || []),
         סכום: invoice.totalAmount || 0,
         "סוג מסמך": invoice.documentType || "לא זמין",
-        "תאריך חשבונית": formatDate(invoice.createdAt),
+        "תאריך חשבונית": formatDate(invoice.invoiceDate || invoice.createdAt),
         "תאריך תשלום": invoice.paymentDate ? formatDate(invoice.paymentDate) : "לא שולם",
         "צורת תשלום": translatePaymentMethod(invoice.paymentMethod),
         "שם בנק": supplier?.bankDetails?.bankName || "לא זמין",
