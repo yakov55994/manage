@@ -214,6 +214,13 @@ export const sendPaymentConfirmationEmail = async (supplierEmail, supplierName, 
       ? new Date(paymentDate).toLocaleDateString('he-IL')
       : new Date().toLocaleDateString('he-IL');
 
+    // בדיקה אם תאריך התשלום הוא מחר
+    const tomorrow = new Date();
+    tomorrow.setDate(tomorrow.getDate() + 1);
+    const tomorrowStr = tomorrow.toISOString().slice(0, 10);
+    const paymentDateStr = paymentDate ? new Date(paymentDate).toISOString().slice(0, 10) : null;
+    const isTomorrow = paymentDateStr === tomorrowStr;
+
     // פורמט סכום
     const formattedAmount = Number(totalAmount).toLocaleString('he-IL');
 
@@ -301,7 +308,17 @@ export const sendPaymentConfirmationEmail = async (supplierEmail, supplierName, 
 
         <tr>
           <td style="padding:10px 0; font-weight:bold;">תאריך תשלום:</td>
-          <td>${formattedDate}</td>
+          <td>
+            ${isTomorrow
+              ? `<span style="background:#fef3c7; border:2px solid #f59e0b; border-radius:6px; padding:3px 10px; font-weight:bold; color:#92400e; font-size:16px;">
+                  📅 ${formattedDate}
+                </span>
+                <div style="margin-top:6px; background:#fffbeb; border-right:4px solid #f59e0b; padding:8px 12px; border-radius:6px; font-size:14px; color:#92400e;">
+                  ⚠️ <strong>שים לב:</strong> התשלום בוצע היום — אך יופיע בחשבון הבנק רק <strong>מחר</strong>
+                </div>`
+              : `<strong style="font-size:15px;">${formattedDate}</strong>`
+            }
+          </td>
         </tr>
 
         <tr>

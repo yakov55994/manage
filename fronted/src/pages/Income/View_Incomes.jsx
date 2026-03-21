@@ -88,9 +88,9 @@ export default function ViewIncomes() {
 
   const groupIncomesByMonth = (incomes) => {
     return incomes.reduce((acc, income) => {
-      if (!income.createdAt) return acc;
+      if (!income.date) return acc;
 
-      const date = new Date(income.createdAt);
+      const date = new Date(income.date);
       const key = `${date.getFullYear()}-${date.getMonth()}`;
 
       if (!acc[key]) {

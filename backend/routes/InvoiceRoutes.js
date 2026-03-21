@@ -92,6 +92,9 @@ router.put("/:id/files", protect, checkAccess("invoices", "edit"), invoiceContro
 // 📌 עדכון סטטוס מרובה (bulk update)
 router.put("/bulk/update-status", protect, checkAccess("invoices", "edit"), invoiceController.bulkUpdatePaymentStatus);
 
+// 📌 עדכון סטטוס הגשה מרובה (bulk update submission)
+router.put("/bulk/update-submission-status", protect, checkAccess("invoices", "edit"), invoiceController.bulkUpdateSubmissionStatus);
+
 // 📌 מחיקה — משתמש ב־:id (מתוקן!)
 router.delete("/:id", protect, requireAdmin, checkAccess("invoices", "edit"), invoiceController.deleteInvoice);
 

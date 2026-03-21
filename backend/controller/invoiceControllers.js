@@ -249,6 +249,38 @@ const invoiceControllers = {
     }
   },
 
+  async bulkUpdateSubmissionStatus(req, res) {
+    try {
+      const { invoiceIds, status } = req.body;
+
+      if (!invoiceIds || !Array.isArray(invoiceIds) || invoiceIds.length === 0) {
+        return res.status(400).json({ success: false, error: "חייב לספק מערך של מזהי חשבוניות" });
+      }
+
+      if (!["הוגש", "לא הוגש", "בעיבוד"].includes(status)) {
+        return res.status(400).json({ success: false, error: "סטטוס הגשה לא תקין" });
+      }
+
+      const historyEntry = {
+        userId: req.user._id,
+        userName: req.user.username || req.user.name,
+        action: "submission_status_changed",
+        changes: `סטטוס הגשה שונה ל: ${status} (עדכון מרובה)`,
+        timestamp: new Date(),
+      };
+
+      const updated = await Invoice.updateMany(
+        { _id: { $in: invoiceIds } },
+        { $set: { status }, $push: { editHistory: historyEntry } }
+      );
+
+      res.json({ success: true, updated: updated.modifiedCount, message: `עודכנו ${updated.modifiedCount} חשבוניות` });
+    } catch (err) {
+      console.error("❌ BULK SUBMISSION UPDATE ERROR:", err);
+      res.status(400).json({ success: false, error: err.message });
+    }
+  },
+
   async bulkUpdatePaymentStatus(req, res) {
     try {
       const { invoiceIds, status, paymentDate, paymentMethod, checkNumber, checkDate } = req.body;

@@ -115,6 +115,8 @@ const InvoicesPage = () => {
   const [toPaymentDatePrint, setToPaymentDatePrint] = useState("");
   const [projectsForPrint, setProjectsForPrint] = useState([]);
   const [suppliersForPrint, setSuppliersForPrint] = useState([]);
+  const [projectSearchForPrint, setProjectSearchForPrint] = useState("");
+  const [supplierSearchForPrint, setSupplierSearchForPrint] = useState("");
 
   const [advancedFilters, setAdvancedFilters] = useState({
     dateFrom: "",
@@ -144,6 +146,7 @@ const InvoicesPage = () => {
     totalAmount: true,
     status: true,
     paid: true,
+    invoiceDate: true,
     createdAt: true,
     paymentDate: true,
     documentType: true,
@@ -161,6 +164,7 @@ const InvoicesPage = () => {
   const [allExpenses, setAllExpenses] = useState([]);
   const [showBulkDeleteModal, setShowBulkDeleteModal] = useState(false);
   const [showBulkPaymentModal, setShowBulkPaymentModal] = useState(false);
+  const [showBulkSubmissionModal, setShowBulkSubmissionModal] = useState(false);
   const [bulkPaymentDate, setBulkPaymentDate] = useState(new Date().toISOString().slice(0, 10));
   const [bulkPaymentMethod, setBulkPaymentMethod] = useState("");
   const [bulkCheckNumber, setBulkCheckNumber] = useState("");
@@ -273,6 +277,7 @@ const InvoicesPage = () => {
     { key: "invitingName", label: "שם המזמין" },
     { key: "totalAmount", label: "סכום" },
     { key: "status", label: "סטטוס הגשה" },
+    { key: "invoiceDate", label: "תאריך חשבונית" },
     { key: "createdAt", label: "תאריך יצירה" },
     { key: "detail", label: "פירוט" },
     { key: "paid", label: "סטטוס תשלום" },
@@ -1296,6 +1301,7 @@ const InvoicesPage = () => {
       totalAmount: "סכום",
       status: "סטטוס הגשה",
       paid: "סטטוס תשלום",
+      invoiceDate: "תאריך חשבונית",
       createdAt: "תאריך יצירה",
       paymentDate: "תאריך תשלום",
       detail: "פירוט",
@@ -1344,6 +1350,9 @@ const InvoicesPage = () => {
             break;
           case "paid":
             row[columnMapping.paid] = getPaymentStatusText(invoice);
+            break;
+          case "invoiceDate":
+            row[columnMapping.invoiceDate] = formatDate(invoice.invoiceDate || invoice.createdAt);
             break;
           case "createdAt":
             row[columnMapping.createdAt] = formatDate(invoice.createdAt);
@@ -1466,7 +1475,8 @@ const InvoicesPage = () => {
         "שם ספק": supplier?.name || "לא זמין",
         "שם מזמין": invoice.invitingName || "לא זמין",
         "שם איש קשר": invoice.projectId?.Contact_person || invoice.projects?.[0]?.projectId?.Contact_person || "לא זמין",
-        "תאריך יצירה": formatDate(invoice.invoiceDate || invoice.createdAt),
+        "תאריך חשבונית": formatDate(invoice.invoiceDate || invoice.createdAt),
+        "תאריך יצירה": formatDate(invoice.createdAt),
         סכום: formatNumber(Number(invoice.totalAmount) || 0),
         "סטטוס הגשה": invoice.status || "",
         "סטטוס תשלום": getPaymentStatusText(invoice),
@@ -1887,6 +1897,36 @@ const InvoicesPage = () => {
         invoice: null,
         defaultDate: "",
         defaultMethod: "",
+      });
+    }
+  };
+
+  const handleBulkSubmission = async () => {
+    try {
+      const invoiceIds = selectedInvoices.map(inv => inv._id);
+
+      await api.put("/invoices/bulk/update-submission-status", {
+        invoiceIds,
+        status: "הוגש",
+      });
+
+      setInvoices(prev =>
+        prev.map(inv => invoiceIds.includes(inv._id) ? { ...inv, status: "הוגש" } : inv)
+      );
+      setAllInvoices(prev =>
+        prev.map(inv => invoiceIds.includes(inv._id) ? { ...inv, status: "הוגש" } : inv)
+      );
+
+      toast.success(`${selectedInvoices.length} חשבוניות סומנו כהוגש`, {
+        className: "sonner-toast success rtl",
+      });
+
+      setShowBulkSubmissionModal(false);
+      setSelectedInvoices([]);
+    } catch (error) {
+      console.error(error);
+      toast.error("שגיאה בעדכון סטטוס הגשה", {
+        className: "sonner-toast error rtl",
       });
     }
   };
@@ -2374,7 +2414,7 @@ const InvoicesPage = () => {
           getProjectNamesWithoutMilga(invoice.projects || []),
         סכום: invoice.totalAmount || 0,
         "סוג מסמך": invoice.documentType || "לא זמין",
-        "תאריך חשבונית": formatDate(invoice.createdAt),
+        "תאריך חשבונית": formatDate(invoice.invoiceDate || invoice.createdAt),
         "תאריך תשלום": invoice.paymentDate ? formatDate(invoice.paymentDate) : "לא שולם",
         "צורת תשלום": translatePaymentMethod(invoice.paymentMethod),
         "שם בנק": supplier?.bankDetails?.bankName || "לא זמין",
@@ -2555,28 +2595,35 @@ const InvoicesPage = () => {
 
         {/* Controls Bar */}
         <div className="mb-6 bg-white/80 backdrop-blur-xl rounded-2xl shadow-lg p-6 border border-white/50">
-          <div className="flex flex-col lg:flex-row justify-between items-center gap-4 mb-4">
-            {selectedInvoices.length > 0 && canEditInvoices && isAdmin && (
-              <div className="flex gap-3">
-                <button
-                  onClick={() => setShowBulkDeleteModal(true)}
-                  className="flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-red-500 to-rose-500 text-white font-bold rounded-xl hover:from-red-600 hover:to-rose-600 transition-all shadow-lg animate-bounce-slow"
-                >
-                  <Trash2 className="w-5 h-5" />
-                  <span>מחק {selectedInvoices.length} נבחרות</span>
-                </button>
-                <button
-                  onClick={() => setShowBulkPaymentModal(true)}
-                  className="flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-green-500 to-emerald-500 text-white font-bold rounded-xl hover:from-green-600 hover:to-emerald-600 transition-all shadow-lg"
-                >
-                  <CheckSquare className="w-5 h-5" />
-                  <span>סמן {selectedInvoices.length} לתשלום</span>
-                </button>
-              </div>
-            )}
+          {/* Bulk Actions Row - shown only when items are selected */}
+          {selectedInvoices.length > 0 && canEditInvoices && isAdmin && (
+            <div className="flex flex-wrap gap-3 mb-4 pb-4 border-b border-slate-200">
+              <button
+                onClick={() => setShowBulkDeleteModal(true)}
+                className="flex items-center gap-2 px-5 py-2.5 bg-gradient-to-r from-red-500 to-rose-500 text-white font-bold rounded-xl hover:from-red-600 hover:to-rose-600 transition-all shadow-md"
+              >
+                <Trash2 className="w-4 h-4" />
+                <span>מחק {selectedInvoices.length} נבחרות</span>
+              </button>
+              <button
+                onClick={() => setShowBulkPaymentModal(true)}
+                className="flex items-center gap-2 px-5 py-2.5 bg-gradient-to-r from-green-500 to-emerald-500 text-white font-bold rounded-xl hover:from-green-600 hover:to-emerald-600 transition-all shadow-md"
+              >
+                <CheckSquare className="w-4 h-4" />
+                <span>סמן {selectedInvoices.length} לתשלום</span>
+              </button>
+              <button
+                onClick={() => setShowBulkSubmissionModal(true)}
+                className="flex items-center gap-2 px-5 py-2.5 bg-gradient-to-r from-blue-500 to-indigo-500 text-white font-bold rounded-xl hover:from-blue-600 hover:to-indigo-600 transition-all shadow-md"
+              >
+                <CheckSquare className="w-4 h-4" />
+                <span>סמן {selectedInvoices.length} כהוגש</span>
+              </button>
+            </div>
+          )}
 
-            {/* Sort & Filter Controls */}
-            <div className="flex flex-wrap items-center gap-4">
+          {/* Sort & Filter Controls Row */}
+          <div className="flex flex-wrap items-center gap-4 mb-4">
               <div className="flex items-center gap-2">
                 <ArrowUpDown className="text-orange-600 w-5 h-5" />
                 <span className="font-bold text-slate-700">מיין לפי:</span>
@@ -2678,10 +2725,10 @@ const InvoicesPage = () => {
                     נקה סינון
                   </button>
                 )}
-            </div>
+          </div>
 
-            {/* Export Buttons */}
-            <div className="grid grid-cols-2 md:grid-cols-3 gap-3 max-w-5xl mx-auto">
+          {/* Export Buttons Row */}
+          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3 pt-4 border-t border-slate-200">
               <button
                 onClick={() => setMasavModal(true)}
                 className="flex items-center justify-center gap-2 px-4 py-3 bg-gradient-to-r from-orange-500 to-amber-500 text-white font-bold rounded-full hover:from-orange-600 hover:to-amber-600 transition-all shadow-lg"
@@ -2740,7 +2787,6 @@ const InvoicesPage = () => {
                   <span className="text-sm">יצירת חשבונית</span>
                 </button>
               )}
-            </div>
           </div>
           {/* Results Count */}
           <div className="text-sm text-slate-600 font-medium flex items-center gap-4 flex-wrap">
@@ -3586,6 +3632,8 @@ const InvoicesPage = () => {
               setToDatePrint("");
               setFromPaymentDatePrint("");
               setToPaymentDatePrint("");
+              setProjectSearchForPrint("");
+              setSupplierSearchForPrint("");
             }}
           />
 
@@ -3630,8 +3678,18 @@ const InvoicesPage = () => {
                     <label className="block font-semibold text-slate-700 mb-3">
                       בחירת פרויקטים
                     </label>
+                    <div className="relative mb-2">
+                      <Search className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+                      <input
+                        type="text"
+                        placeholder="חיפוש פרויקט..."
+                        value={projectSearchForPrint}
+                        onChange={(e) => setProjectSearchForPrint(e.target.value)}
+                        className="w-full border-2 border-orange-200 rounded-xl py-2 pr-9 pl-3 text-sm focus:border-orange-500 focus:outline-none focus:ring-2 focus:ring-orange-500/20 transition-all"
+                      />
+                    </div>
                     <div className="max-h-48 overflow-y-auto border-2 border-orange-200 rounded-xl p-3 space-y-2">
-                      {projectsForPrint.map((p) => (
+                      {projectsForPrint.filter(p => !projectSearchForPrint || p.name?.includes(projectSearchForPrint)).map((p) => (
                         <label key={p._id} className="flex items-center gap-2 cursor-pointer hover:bg-orange-50 p-2 rounded-lg transition">
                           <input
                             type="checkbox"
@@ -3656,8 +3714,18 @@ const InvoicesPage = () => {
                     <label className="block font-semibold text-slate-700 mb-3">
                       בחירת ספקים
                     </label>
+                    <div className="relative mb-2">
+                      <Search className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+                      <input
+                        type="text"
+                        placeholder="חיפוש ספק..."
+                        value={supplierSearchForPrint}
+                        onChange={(e) => setSupplierSearchForPrint(e.target.value)}
+                        className="w-full border-2 border-orange-200 rounded-xl py-2 pr-9 pl-3 text-sm focus:border-orange-500 focus:outline-none focus:ring-2 focus:ring-orange-500/20 transition-all"
+                      />
+                    </div>
                     <div className="max-h-48 overflow-y-auto border-2 border-orange-200 rounded-xl p-3 space-y-2">
-                      {suppliersForPrint.map((s) => (
+                      {suppliersForPrint.filter(s => !supplierSearchForPrint || s.name?.includes(supplierSearchForPrint)).map((s) => (
                         <label key={s._id} className="flex items-center gap-2 cursor-pointer hover:bg-orange-50 p-2 rounded-lg transition">
                           <input
                             type="checkbox"
@@ -3759,6 +3827,8 @@ const InvoicesPage = () => {
                         setToDatePrint("");
                         setFromPaymentDatePrint("");
                         setToPaymentDatePrint("");
+                        setProjectSearchForPrint("");
+                        setSupplierSearchForPrint("");
                       }}
                     >
                       ביטול
@@ -4020,6 +4090,51 @@ const InvoicesPage = () => {
                 </button>
                 <button
                   onClick={() => setShowBulkDeleteModal(false)}
+                  className="flex-1 px-6 py-3 rounded-xl font-bold text-slate-700 bg-slate-100 hover:bg-slate-200 transition-all"
+                >
+                  ביטול
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {showBulkSubmissionModal && (
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+          <div className="relative">
+            <div className="absolute -inset-4 bg-gradient-to-r from-blue-500 to-indigo-500 rounded-3xl opacity-20 blur-2xl"></div>
+            <div className="relative bg-white rounded-3xl shadow-2xl p-8 max-w-md w-full">
+              <div className="text-center mb-6">
+                <div className="mx-auto w-16 h-16 rounded-full bg-gradient-to-br from-blue-500 to-indigo-500 flex items-center justify-center mb-4">
+                  <CheckSquare className="w-8 h-8 text-white" />
+                </div>
+                <h3 className="text-2xl font-bold text-slate-900 mb-2">סימון כהוגש</h3>
+                <p className="text-slate-600 mb-4">
+                  האם לסמן{" "}
+                  <span className="font-bold text-blue-600">{selectedInvoices.length} חשבוניות</span>{" "}
+                  כ-<span className="font-bold">הוגש</span>?
+                </p>
+                <div className="max-h-48 overflow-y-auto bg-blue-50 rounded-xl p-4 mb-4">
+                  <div className="text-right space-y-2">
+                    {selectedInvoices.map((inv) => (
+                      <div key={inv._id} className="text-sm text-slate-700 flex justify-between items-center border-b border-blue-200 pb-2">
+                        <span className="font-medium">חשבונית #{inv.invoiceNumber}</span>
+                        <span className="text-xs text-slate-500">{getProjectNamesWithoutMilga(inv.projects || [])}</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </div>
+              <div className="flex gap-3">
+                <button
+                  onClick={handleBulkSubmission}
+                  className="flex-1 px-6 py-3 rounded-xl font-bold text-white bg-gradient-to-r from-blue-500 to-indigo-500 hover:from-blue-600 hover:to-indigo-600 transition-all shadow-lg"
+                >
+                  אשר הגשה
+                </button>
+                <button
+                  onClick={() => setShowBulkSubmissionModal(false)}
                   className="flex-1 px-6 py-3 rounded-xl font-bold text-slate-700 bg-slate-100 hover:bg-slate-200 transition-all"
                 >
                   ביטול
