@@ -8,6 +8,7 @@ import api from "../api/api";
 const ProtectedRoute = ({
   children,
   adminOnly = false,
+  allowAccountant = false,
   module = null,
   requireEdit = false,
 }) => {
@@ -19,7 +20,10 @@ const ProtectedRoute = ({
     loading: authLoading,
     canViewModule,
     canEditModule,
+    user,
   } = useAuth();
+
+  const isAccountant = user?.role === "accountant";
 
   const [permissionCheck, setPermissionCheck] = useState({
     loading: true,
@@ -131,7 +135,7 @@ const ProtectedRoute = ({
   }
 
   // דרישת אדמין
-  if (adminOnly && !isAdmin) {
+  if (adminOnly && !isAdmin && !(allowAccountant && isAccountant)) {
     return <Navigate to="/no-access" replace />;
   }
 

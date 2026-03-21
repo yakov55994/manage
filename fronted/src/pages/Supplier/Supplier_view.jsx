@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useCallback } from "react";
 import { ClipLoader } from "react-spinners";
 import * as XLSX from "xlsx";
 import { saveAs } from "file-saver";
@@ -331,7 +331,7 @@ const SuppliersPage = () => {
     });
   };
 
-  const clearFilters = () => {
+  const clearFilters = useCallback(() => {
     setAdvancedFilters({
       dateFrom: "",
       dateTo: "",
@@ -341,30 +341,30 @@ const SuppliersPage = () => {
       supplierType: "all", // 🆕
     });
     setSearchTerm("");
-  };
+  }, []);
 
-  const toggleColumn = (columnKey) => {
+  const toggleColumn = useCallback((columnKey) => {
     setExportColumns((prev) => ({
       ...prev,
       [columnKey]: !prev[columnKey],
     }));
-  };
+  }, []);
 
-  const selectAllColumns = () => {
-    const newState = {};
-    Object.keys(exportColumns).forEach((key) => {
-      newState[key] = true;
+  const selectAllColumns = useCallback(() => {
+    setExportColumns(prev => {
+      const newState = {};
+      Object.keys(prev).forEach((key) => { newState[key] = true; });
+      return newState;
     });
-    setExportColumns(newState);
-  };
+  }, []);
 
-  const deselectAllColumns = () => {
-    const newState = {};
-    Object.keys(exportColumns).forEach((key) => {
-      newState[key] = false;
+  const deselectAllColumns = useCallback(() => {
+    setExportColumns(prev => {
+      const newState = {};
+      Object.keys(prev).forEach((key) => { newState[key] = false; });
+      return newState;
     });
-    setExportColumns(newState);
-  };
+  }, []);
 
   const arr = (res) =>
     Array.isArray(res?.data?.data)
@@ -403,7 +403,7 @@ const SuppliersPage = () => {
     fetchSuppliers();
   }, []);
 
-  const handleDelete = async () => {
+  const handleDelete = useCallback(async () => {
     if (!supplierToDelete) {
       toast.error("לא נבחר ספק למחיקה או שה-ID לא תקין", {
         className: "sonner-toast error rtl",
@@ -424,10 +424,10 @@ const SuppliersPage = () => {
       console.error("Error deleting supplier:", error);
       toast.error("שגיאה במחיקת ספק", { className: "sonner-toast error rtl" });
     }
-  };
+  }, [supplierToDelete]);
 
-  const handleEdit = (id) => navigate(`/update-supplier/${id}`);
-  const handleView = (id) => navigate(`/suppliers/${id}`);
+  const handleEdit = useCallback((id) => navigate(`/update-supplier/${id}`), [navigate]);
+  const handleView = useCallback((id) => navigate(`/suppliers/${id}`), [navigate]);
 
 if (loading) {
   return (

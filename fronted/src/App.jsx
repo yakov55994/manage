@@ -1,4 +1,4 @@
-import { useEffect } from "react";
+import { useEffect, lazy, Suspense } from "react";
 import {
   BrowserRouter as Router,
   Route,
@@ -6,50 +6,59 @@ import {
   useNavigate,
 } from "react-router-dom";
 import Sidebar from "./pages/NavBar";
-import CreateProject from "./pages/Project/Create_Project";
-import CreateInvoice from "./pages/Invoice/Create_Invoice";
-import CreateSalary from "./pages/Salary/Create_Salary.jsx";
-import ViewSalaries from "./pages/Salary/View_Salaries.jsx";
-import SalaryDetailsPage from "./pages/Salary/Salery_DetailsPage.jsx";
-import UpdateSalary from "./pages/Salary/Update_Salery.jsx";
-import CreateOrder from "./pages/Order/Create_Order.jsx";
-import Projects from "./pages/Project/View_Projects";
-import Invoices from "./pages/Invoice/View_Invoices";
-import Orders from "./pages/Order/View_Orders";
-import ProjectDetailsPage from "./pages/Project/ProjectDetailsPage";
-import InvoiceDetailsPage from "./pages/Invoice/InvoiceDetailsPage";
-import Order_Detail_Page from "./pages/Order/Orders_Details_Page.jsx";
-import UpdateProject from "./pages/Project/UpdateProject.jsx";
-import UpdateInvoice from "./pages/Invoice/UpdateInvoice.jsx";
-import AllSubmittedInvoices from "./pages/Invoice/AllSubmittedInvoices.jsx";
-import UpdateOrder from "./pages/Order/Update_Orders.jsx";
-import SearchResults from "./pages/Search/SearchResults.jsx";
-import Home from "./pages/Home.jsx";
-import SummaryPage from "./pages/Summary_Page.jsx";
-import Notes from "./pages/Notes.jsx";
-import Login from "./Auth/Login.jsx";
 import ProtectedRoute from "./Components/ProtectedRoute.jsx";
-import CreateSupplier from "./pages/Supplier/create_supplier.jsx";
-import SuppliersPage from "./pages/Supplier/Supplier_view.jsx";
-import SupplierDetailsPage from "./pages/Supplier/Supplier_details.jsx";
-import SupplierEditPage from "./pages/Supplier/Supplier_update.jsx";
-import UserManagement from "./pages/UserManagement.jsx";
-import CreateIncome from "./pages/Income/Create_Income.jsx";
-import ViewIncomes from "./pages/Income/View_Incomes.jsx";
-import IncomeDetailsPage from "./pages/Income/IncomeDetailsPage.jsx";
-import UpdateIncome from "./pages/Income/UpdateIncome.jsx";
-import CreateExpense from "./pages/Expense/Create_Expense.jsx";
-import ViewExpenses from "./pages/Expense/View_Expenses.jsx";
-import ExpenseDetailsPage from "./pages/Expense/ExpenseDetailsPage.jsx";
-import UpdateExpense from "./pages/Expense/Update_Expense.jsx";
-import ExcelUpload from "./pages/ExcelUpload/ExcelUpload.jsx";
-import NoAccess from "./pages/NoAccess.jsx";
-import ResetPassword from "./pages/ResetPassword.jsx";
-import ExportDataPage from "./pages/ExportDataPage.jsx";
 import { AuthProvider, useAuth } from "./context/AuthContext.jsx";
 import { Toaster } from "sonner";
 import { toast } from "sonner";
 import "./App.css";
+
+// Lazy loaded pages - נטענים רק כשצריך
+const CreateProject = lazy(() => import("./pages/Project/Create_Project"));
+const CreateInvoice = lazy(() => import("./pages/Invoice/Create_Invoice"));
+const CreateSalary = lazy(() => import("./pages/Salary/Create_Salary.jsx"));
+const ViewSalaries = lazy(() => import("./pages/Salary/View_Salaries.jsx"));
+const SalaryDetailsPage = lazy(() => import("./pages/Salary/Salery_DetailsPage.jsx"));
+const UpdateSalary = lazy(() => import("./pages/Salary/Update_Salery.jsx"));
+const CreateOrder = lazy(() => import("./pages/Order/Create_Order.jsx"));
+const Projects = lazy(() => import("./pages/Project/View_Projects"));
+const Invoices = lazy(() => import("./pages/Invoice/View_Invoices"));
+const Orders = lazy(() => import("./pages/Order/View_Orders"));
+const ProjectDetailsPage = lazy(() => import("./pages/Project/ProjectDetailsPage"));
+const InvoiceDetailsPage = lazy(() => import("./pages/Invoice/InvoiceDetailsPage"));
+const Order_Detail_Page = lazy(() => import("./pages/Order/Orders_Details_Page.jsx"));
+const UpdateProject = lazy(() => import("./pages/Project/UpdateProject.jsx"));
+const UpdateInvoice = lazy(() => import("./pages/Invoice/UpdateInvoice.jsx"));
+const AllSubmittedInvoices = lazy(() => import("./pages/Invoice/AllSubmittedInvoices.jsx"));
+const UpdateOrder = lazy(() => import("./pages/Order/Update_Orders.jsx"));
+const SearchResults = lazy(() => import("./pages/Search/SearchResults.jsx"));
+const Home = lazy(() => import("./pages/Home.jsx"));
+const SummaryPage = lazy(() => import("./pages/Summary_Page.jsx"));
+const Notes = lazy(() => import("./pages/Notes.jsx"));
+const Login = lazy(() => import("./Auth/Login.jsx"));
+const CreateSupplier = lazy(() => import("./pages/Supplier/create_supplier.jsx"));
+const SuppliersPage = lazy(() => import("./pages/Supplier/Supplier_view.jsx"));
+const SupplierDetailsPage = lazy(() => import("./pages/Supplier/Supplier_details.jsx"));
+const SupplierEditPage = lazy(() => import("./pages/Supplier/Supplier_update.jsx"));
+const UserManagement = lazy(() => import("./pages/UserManagement.jsx"));
+const CreateIncome = lazy(() => import("./pages/Income/Create_Income.jsx"));
+const ViewIncomes = lazy(() => import("./pages/Income/View_Incomes.jsx"));
+const IncomeDetailsPage = lazy(() => import("./pages/Income/IncomeDetailsPage.jsx"));
+const UpdateIncome = lazy(() => import("./pages/Income/UpdateIncome.jsx"));
+const CreateExpense = lazy(() => import("./pages/Expense/Create_Expense.jsx"));
+const ViewExpenses = lazy(() => import("./pages/Expense/View_Expenses.jsx"));
+const ExpenseDetailsPage = lazy(() => import("./pages/Expense/ExpenseDetailsPage.jsx"));
+const UpdateExpense = lazy(() => import("./pages/Expense/Update_Expense.jsx"));
+const ExcelUpload = lazy(() => import("./pages/ExcelUpload/ExcelUpload.jsx"));
+const NoAccess = lazy(() => import("./pages/NoAccess.jsx"));
+const ResetPassword = lazy(() => import("./pages/ResetPassword.jsx"));
+const ExportDataPage = lazy(() => import("./pages/ExportDataPage.jsx"));
+const MasavBroadcast = lazy(() => import("./pages/MasavBroadcast/MasavBroadcast.jsx"));
+
+const PageLoader = () => (
+  <div className="flex items-center justify-center h-64">
+    <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-blue-600"></div>
+  </div>
+);
 
 const AppContent = () => {
   const { inactivityLogout, clearInactivityFlag } = useAuth();
@@ -72,6 +81,7 @@ const AppContent = () => {
       <div className="flex flex-1">
         <Sidebar />
         <div className="flex-1 p-6 mt-20 ml-10">
+          <Suspense fallback={<PageLoader />}>
           <Routes>
             <Route path="*" element={<Home />} />
             <Route path="/login" element={<Login />} />
@@ -271,7 +281,7 @@ const AppContent = () => {
             <Route
               path="/incomes"
               element={
-                <ProtectedRoute adminOnly>
+                <ProtectedRoute adminOnly allowAccountant>
                   <ViewIncomes />
                 </ProtectedRoute>
               }
@@ -279,7 +289,7 @@ const AppContent = () => {
             <Route
               path="/incomes/:id"
               element={
-                <ProtectedRoute adminOnly>
+                <ProtectedRoute adminOnly allowAccountant>
                   <IncomeDetailsPage />
                 </ProtectedRoute>
               }
@@ -304,7 +314,7 @@ const AppContent = () => {
             <Route
               path="/expenses"
               element={
-                <ProtectedRoute adminOnly>
+                <ProtectedRoute adminOnly allowAccountant>
                   <ViewExpenses />
                 </ProtectedRoute>
               }
@@ -312,7 +322,7 @@ const AppContent = () => {
             <Route
               path="/expenses/:id"
               element={
-                <ProtectedRoute adminOnly>
+                <ProtectedRoute adminOnly allowAccountant>
                   <ExpenseDetailsPage />
                 </ProtectedRoute>
               }
@@ -346,7 +356,7 @@ const AppContent = () => {
             <Route
               path="/Notes"
               element={
-                <ProtectedRoute adminOnly>
+                <ProtectedRoute adminOnly allowAccountant>
                   <Notes />
                 </ProtectedRoute>
               }
@@ -367,7 +377,16 @@ const AppContent = () => {
                 </ProtectedRoute>
               }
             />
+            <Route
+              path="/masav-broadcast"
+              element={
+                <ProtectedRoute adminOnly allowAccountant>
+                  <MasavBroadcast />
+                </ProtectedRoute>
+              }
+            />
           </Routes>
+          </Suspense>
         </div>
       </div>
 

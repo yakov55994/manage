@@ -81,6 +81,11 @@ const expenseSchema = new mongoose.Schema({
   timestamps: true  // Mongoose will automatically manage createdAt and updatedAt
 });
 
+// Indexes לשיפור ביצועי שאילתות
+expenseSchema.index({ createdAt: -1 });
+expenseSchema.index({ date: -1 });
+expenseSchema.index({ description: "text", notes: "text", reference: "text" });
+
 const Expense = mongoose.model("Expense", expenseSchema);
 
 export default Expense;

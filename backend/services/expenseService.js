@@ -53,14 +53,7 @@ export default {
 
   // יצירת הוצאות מרובות (מקובץ אקסל)
   async createBulkExpenses(user, expensesData) {
-    const createdExpenses = [];
-
-    for (const expenseData of expensesData) {
-      const expense = await this.createExpense(user, expenseData);
-      createdExpenses.push(expense);
-    }
-
-    return createdExpenses;
+    return Promise.all(expensesData.map(expenseData => this.createExpense(user, expenseData)));
   },
 
   // עדכון הוצאה

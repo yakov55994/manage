@@ -1,4 +1,4 @@
-import { useEffect, useState, useRef, Fragment } from "react";
+import { useEffect, useState, useRef, Fragment, useMemo, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import api from "../../api/api";
 import { ClipLoader } from "react-spinners";
@@ -103,18 +103,19 @@ export default function View_Salaries() {
   };
 
   // מיפוי הוצאות למשכורות (reverse lookup)
-  const salaryToExpenseMap = {};
-  allExpenses.forEach(expense => {
-    if (expense.linkedSalaries && expense.linkedSalaries.length > 0) {
-      expense.linkedSalaries.forEach(salaryRef => {
-        const salaryId = salaryRef._id || salaryRef;
-        if (!salaryToExpenseMap[salaryId]) {
-          salaryToExpenseMap[salaryId] = [];
-        }
-        salaryToExpenseMap[salaryId].push(expense);
-      });
-    }
-  });
+  const salaryToExpenseMap = useMemo(() => {
+    const map = {};
+    allExpenses.forEach(expense => {
+      if (expense.linkedSalaries && expense.linkedSalaries.length > 0) {
+        expense.linkedSalaries.forEach(salaryRef => {
+          const salaryId = salaryRef._id || salaryRef;
+          if (!map[salaryId]) map[salaryId] = [];
+          map[salaryId].push(expense);
+        });
+      }
+    });
+    return map;
+  }, [allExpenses]);
 
   const fetchProjects = async () => {
     try {
@@ -190,13 +191,12 @@ export default function View_Salaries() {
     }
   };
 
-  const filteredSalaries = salaries
+  const filteredSalaries = useMemo(() => salaries
     .filter((salary) => {
       if (!searchTerm) return true;
 
       const q = searchTerm.toLowerCase();
 
-      // חיפוש בשדות טקסט
       const textFields = [
         salary.employeeName,
         salary.department,
@@ -204,14 +204,12 @@ export default function View_Salaries() {
         salary.createdByName,
       ].filter(Boolean).map(field => field.toLowerCase());
 
-      // חיפוש בסכומים (המרה למחרוזת)
       const numericFields = [
         salary.baseAmount?.toString(),
         salary.finalAmount?.toString(),
         salary.overheadPercent?.toString(),
       ].filter(Boolean);
 
-      // בדיקה אם החיפוש קיים באחד מהשדות
       return textFields.some(field => field.includes(q)) ||
              numericFields.some(field => field.includes(q));
     })
@@ -227,19 +225,19 @@ export default function View_Salaries() {
       }
 
       return sortOrder === "asc" ? comparison : -comparison;
-    });
+    }), [salaries, searchTerm, sortBy, sortOrder]);
 
-  const toggleSort = (field) => {
+  const toggleSort = useCallback((field) => {
     if (sortBy === field) {
-      setSortOrder(sortOrder === "asc" ? "desc" : "asc");
+      setSortOrder(prev => prev === "asc" ? "desc" : "asc");
     } else {
       setSortBy(field);
       setSortOrder("desc");
     }
-  };
+  }, [sortBy]);
 
   // ========== Multi-select functions ==========
-  const toggleSelectSalary = (salary, event) => {
+  const toggleSelectSalary = useCallback((salary, event) => {
     const currentId = salary._id;
     const currentIndex = filteredSalaries.findIndex(s => s._id === currentId);
     const lastId = lastSelectedIdRef.current;
@@ -264,23 +262,23 @@ export default function View_Salaries() {
       range.forEach(s => map.set(s._id, s));
       return Array.from(map.values());
     });
-  };
+  }, [filteredSalaries]);
 
-  const toggleSelectAll = () => {
+  const toggleSelectAll = useCallback(() => {
     if (selectedSalaries.length === filteredSalaries.length) {
       setSelectedSalaries([]);
       lastSelectedIdRef.current = null;
     } else {
       setSelectedSalaries([...filteredSalaries]);
     }
-  };
+  }, [selectedSalaries.length, filteredSalaries]);
 
-  const clearSelection = () => {
+  const clearSelection = useCallback(() => {
     setSelectedSalaries([]);
     lastSelectedIdRef.current = null;
-  };
+  }, []);
 
-  const handleBulkAction = async () => {
+  const handleBulkAction = useCallback(async () => {
     setBulkLoading(true);
     try {
       const ids = selectedSalaries.map(s => s._id);
@@ -310,7 +308,7 @@ export default function View_Salaries() {
     } finally {
       setBulkLoading(false);
     }
-  };
+  }, [selectedSalaries, bulkActionModal, bulkDepartment, bulkProjectId, bulkOverhead, bulkMoveYear, bulkMoveMonth]);
 
   const formatCurrency = (num) => {
     if (!num) return "₪0";

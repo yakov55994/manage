@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useMemo, useCallback } from "react";
 import { ClipLoader } from "react-spinners";
 import * as XLSX from "xlsx";
 import { saveAs } from "file-saver";
@@ -686,25 +686,25 @@ const OrdersPage = () => {
     setToDatePrint("");
   };
 
-  const toggleColumn = (columnKey) => {
+  const toggleColumn = useCallback((columnKey) => {
     setExportColumns((prev) => ({ ...prev, [columnKey]: !prev[columnKey] }));
-  };
+  }, []);
 
-  const selectAllColumns = () => {
-    const newState = {};
-    Object.keys(exportColumns).forEach((key) => {
-      newState[key] = true;
+  const selectAllColumns = useCallback(() => {
+    setExportColumns(prev => {
+      const newState = {};
+      Object.keys(prev).forEach((key) => { newState[key] = true; });
+      return newState;
     });
-    setExportColumns(newState);
-  };
+  }, []);
 
-  const deselectAllColumns = () => {
-    const newState = {};
-    Object.keys(exportColumns).forEach((key) => {
-      newState[key] = false;
+  const deselectAllColumns = useCallback(() => {
+    setExportColumns(prev => {
+      const newState = {};
+      Object.keys(prev).forEach((key) => { newState[key] = false; });
+      return newState;
     });
-    setExportColumns(newState);
-  };
+  }, []);
 
   const clearAdvancedFilters = () => {
     setAdvancedFilters({
@@ -839,18 +839,19 @@ const OrdersPage = () => {
     });
   };
 
-  const filteredOrders = searchTerm
+  const filteredOrders = useMemo(() => searchTerm
     ? getFilteredOrders()
     : selectedStatus
       ? orders.filter((order) => order.status === selectedStatus)
-      : orders;
+      : orders,
+  [searchTerm, selectedStatus, orders, allOrders, showReportModal, advancedFilters]);
 
   const getOrderDate = (order) => {
     if (!order?.createdAt) return new Date(0);
     return new Date(order.createdAt);
   };
 
-  const sortedOrders = [...filteredOrders].sort((a, b) => {
+  const sortedOrders = useMemo(() => [...filteredOrders].sort((a, b) => {
     if (sortBy === "sum") {
       return sortOrder === "asc" ? a.sum - b.sum : b.sum - a.sum;
     }
@@ -862,11 +863,11 @@ const OrdersPage = () => {
     }
 
     return 0;
-  });
+  }), [filteredOrders, sortBy, sortOrder]);
 
 
   // Multi-select functions
-  const toggleSelectOrder = (order, event = null) => {
+  const toggleSelectOrder = useCallback((order, event = null) => {
     const currentIndex = sortedOrders.findIndex(o => o._id === order._id);
 
     if (event?.shiftKey && lastSelectedIndex !== null && currentIndex !== -1) {
@@ -889,17 +890,17 @@ const OrdersPage = () => {
       });
     }
     setLastSelectedIndex(currentIndex);
-  };
+  }, [sortedOrders, lastSelectedIndex]);
 
-  const selectAllOrders = () => {
+  const selectAllOrders = useCallback(() => {
     setSelectedOrders([...sortedOrders]);
     setLastSelectedIndex(sortedOrders.length - 1);
-  };
+  }, [sortedOrders]);
 
-  const selectNoneOrders = () => {
+  const selectNoneOrders = useCallback(() => {
     setSelectedOrders([]);
     setLastSelectedIndex(null);
-  };
+  }, []);
 
   const isOrderSelected = (order) => selectedOrders.some((o) => o._id === order._id);
 

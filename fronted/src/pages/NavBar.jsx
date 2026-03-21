@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect, useMemo, useCallback } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import {
   LayoutDashboard,
@@ -38,6 +38,7 @@ const Sidebar = () => {
   const navigate = useNavigate();
 
   const { isAdmin, canViewModule, canEditModule, canViewAnyProject, user, isAuthenticated, logout } = useAuth();
+  const isAccountant = user?.role === "accountant";
 
   // סגירת popup אווטאר בלחיצה מחוץ לאלמנט
   useEffect(() => {
@@ -50,7 +51,7 @@ const Sidebar = () => {
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
-  const handleLogout = async () => {
+  const handleLogout = useCallback(async () => {
     setAvatarOpen(false);
     const result = await logout();
     if (result.success) {
@@ -62,33 +63,33 @@ const Sidebar = () => {
     } else {
       toast.error("שגיאה בהתנתקות");
     }
-  };
+  }, [logout, navigate]);
 
-  const handleMouseEnter = (groupId) => {
+  const handleMouseEnter = useCallback((groupId) => {
     if (closeTimeout) {
       clearTimeout(closeTimeout);
       setCloseTimeout(null);
     }
     setActiveDropdown(groupId);
-  };
+  }, [closeTimeout]);
 
-  const handleMouseLeave = () => {
+  const handleMouseLeave = useCallback(() => {
     const timeout = setTimeout(() => {
       setActiveDropdown(null);
     }, 300);
     setCloseTimeout(timeout);
-  };
+  }, []);
 
-  const handleSearch = () => {
+  const handleSearch = useCallback(() => {
     if (query.trim()) {
       navigate(`/search?query=${query}`);
     }
-  };
+  }, [query, navigate]);
 
   // ============================================
   // תפריט מקובץ עם dropdowns
   // ============================================
-  const menuGroups = [
+  const menuGroups = useMemo(() => [
     {
       id: "home",
       icon: LayoutDashboard,
@@ -101,7 +102,7 @@ const Sidebar = () => {
       id: "projects",
       icon: Briefcase,
       text: "פרויקטים",
-      show: isAdmin || canViewAnyProject() || canEditModule(null, "projects"),
+      show: !isAccountant && (isAdmin || canViewAnyProject() || canEditModule(null, "projects")),
       type: "dropdown",
       items: [
         {
@@ -139,6 +140,11 @@ const Sidebar = () => {
           show: isAdmin || user?.role === "accountant",
           onClick: () => setMasavHistoryOpen(true),
         },
+        {
+          text: "מסב ששודר",
+          path: "/masav-broadcast",
+          show: isAdmin || isAccountant,
+        },
       ],
     },
     {
@@ -164,18 +170,18 @@ const Sidebar = () => {
       id: "finance",
       icon: DollarSign,
       text: "תנועות בנק",
-      show: isAdmin, // רק מנהלים
+      show: isAdmin || isAccountant,
       type: "dropdown",
       items: [
         {
           text: "הכנסות",
           path: "/incomes",
-          show: isAdmin,
+          show: isAdmin || isAccountant,
         },
         {
           text: "הוצאות",
           path: "/expenses",
-          show: isAdmin,
+          show: isAdmin || isAccountant,
         },
         {
           text: "העלאת אקסל",
@@ -234,13 +240,13 @@ const Sidebar = () => {
       id: "admin",
       icon: ListTodo,
       text: "ניהול",
-      show: isAdmin,
+      show: isAdmin || isAccountant,
       type: "dropdown",
       items: [
         {
           text: "משימות",
           path: "/Notes",
-          show: isAdmin,
+          show: isAdmin || isAccountant,
         },
         {
           text: "ניהול משתמשים",
@@ -254,7 +260,7 @@ const Sidebar = () => {
         },
       ],
     },
-  ];
+  ], [isAdmin, isAccountant, canViewAnyProject, canViewModule, canEditModule, user]);
 
   return (
     <>

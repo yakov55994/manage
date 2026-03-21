@@ -1,4 +1,4 @@
-import { useEffect, useState, useRef } from "react";
+import { useEffect, useState, useRef, useMemo, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import api from "../../api/api";
 import { ClipLoader } from "react-spinners";
@@ -20,9 +20,12 @@ import {
 } from "lucide-react";
 import { toast } from "sonner";
 import IncomeLinkModal from "../../Components/IncomeLinkModal";
+import { useAuth } from "../../context/AuthContext";
 
 export default function ViewIncomes() {
   const navigate = useNavigate();
+  const { user } = useAuth();
+  const isAccountant = user?.role === "accountant";
   const [incomes, setIncomes] = useState([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
@@ -56,7 +59,7 @@ export default function ViewIncomes() {
     }
   };
 
-  const filteredIncomes = incomes
+  const filteredIncomes = useMemo(() => incomes
     .filter((income) => {
       if (!searchTerm) return true;
       const q = searchTerm.toLowerCase();
@@ -81,7 +84,7 @@ export default function ViewIncomes() {
       }
 
       return sortOrder === "asc" ? comparison : -comparison;
-    });
+    }), [incomes, searchTerm, sortBy, sortOrder]);
 
   const groupIncomesByMonth = (incomes) => {
     return incomes.reduce((acc, income) => {
@@ -117,9 +120,9 @@ export default function ViewIncomes() {
     "נובמבר",
     "דצמבר",
   ];
-  const groupedIncomes = groupIncomesByMonth(filteredIncomes);
+  const groupedIncomes = useMemo(() => groupIncomesByMonth(filteredIncomes), [filteredIncomes]);
 
-  const groupedByMonthSorted = Object.values(groupedIncomes)
+  const groupedByMonthSorted = useMemo(() => Object.values(groupedIncomes)
     .map(group => {
       const sortedGroupIncomes = [...group.incomes].sort((a, b) => {
         let comparison = 0;
@@ -146,17 +149,17 @@ export default function ViewIncomes() {
     // מיון חודשים – תמיד מהחדש לישן
     .sort(
       (a, b) => new Date(b.year, b.month) - new Date(a.year, a.month)
-    );
+    ), [groupedIncomes, sortBy, sortOrder]);
 
 
-  const toggleSort = (field) => {
+  const toggleSort = useCallback((field) => {
     if (sortBy === field) {
-      setSortOrder(sortOrder === "asc" ? "desc" : "asc");
+      setSortOrder(prev => prev === "asc" ? "desc" : "asc");
     } else {
       setSortBy(field);
       setSortOrder("desc");
     }
-  };
+  }, [sortBy]);
 
   const formatCurrency = (num) => {
     if (!num) return "₪0";
@@ -189,13 +192,13 @@ export default function ViewIncomes() {
   };
 
   // חישוב סה"כ
-  const totalAmount = filteredIncomes.reduce(
+  const totalAmount = useMemo(() => filteredIncomes.reduce(
     (sum, income) => sum + parseFloat(income.amount || 0),
     0
-  );
+  ), [filteredIncomes]);
 
   // Multi-select functions
-  const toggleSelectIncome = (income, event = null) => {
+  const toggleSelectIncome = useCallback((income, event = null) => {
     const currentId = income._id;
     const currentIndex = filteredIncomes.findIndex(i => i._id === currentId);
 
@@ -230,21 +233,21 @@ export default function ViewIncomes() {
     });
 
     // לא מעדכנים anchor כאן
-  };
+  }, [filteredIncomes]);
 
-  const selectAll = () => {
+  const selectAll = useCallback(() => {
     setSelectedIncomes([...filteredIncomes]);
-  };
+  }, [filteredIncomes]);
 
-  const selectNone = () => {
+  const selectNone = useCallback(() => {
     setSelectedIncomes([]);
     lastSelectedIdRef.current = null;
-  };
+  }, []);
 
-  const isSelected = (income) => selectedIncomes.some((i) => i._id === income._id);
+  const isSelected = useCallback((income) => selectedIncomes.some((i) => i._id === income._id), [selectedIncomes]);
 
   // Bulk notes update
-  const handleBulkNotesUpdate = async () => {
+  const handleBulkNotesUpdate = useCallback(async () => {
     if (selectedIncomes.length === 0) {
       toast.error("לא נבחרו הכנסות");
       return;
@@ -262,7 +265,7 @@ export default function ViewIncomes() {
       console.error("Bulk notes error:", err);
       toast.error("שגיאה בעדכון הערות");
     }
-  };
+  }, [selectedIncomes, bulkNotes]);
 
   // Get link display - returns JSX for multiple links
   const getLinkDisplay = (income) => {
@@ -355,13 +358,15 @@ export default function ViewIncomes() {
                     </p>
                   </div>
                 </div>
-                <button
-                  onClick={() => navigate("/create-income")}
-                  className="flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-orange-500 to-amber-600 text-white font-bold rounded-xl hover:from-orange-600 hover:to-amber-700 transition-all shadow-lg"
-                >
-                  <Plus className="w-5 h-5" />
-                  <span className="hidden sm:inline">הכנסה חדשה</span>
-                </button>
+                {!isAccountant && (
+                  <button
+                    onClick={() => navigate("/create-income")}
+                    className="flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-orange-500 to-amber-600 text-white font-bold rounded-xl hover:from-orange-600 hover:to-amber-700 transition-all shadow-lg"
+                  >
+                    <Plus className="w-5 h-5" />
+                    <span className="hidden sm:inline">הכנסה חדשה</span>
+                  </button>
+                )}
               </div>
 
               {/* Selection controls */}
@@ -577,36 +582,40 @@ export default function ViewIncomes() {
                               >
                                 <Eye className="w-4 h-4 text-blue-600" />
                               </button>
-                              <button
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  navigate(`/update-income/${income._id}`);
-                                }}
-                                className="p-2 hover:bg-orange-100 rounded-lg transition-colors"
-                                title="עריכה"
-                              >
-                                <Edit2 className="w-4 h-4 text-orange-600" />
-                              </button>
-                              <button
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  setLinkModal({ open: true, income: income });
-                                }}
-                                className="p-2 hover:bg-purple-100 rounded-lg transition-colors"
-                                title="שייך להזמנה"
-                              >
-                                <Link className="w-4 h-4 text-purple-600" />
-                              </button>
-                              <button
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  setDeleteModal({ open: true, incomeId: income._id });
-                                }}
-                                className="p-2 hover:bg-red-100 rounded-lg transition-colors"
-                                title="מחיקה"
-                              >
-                                <Trash2 className="w-4 h-4 text-red-600" />
-                              </button>
+                              {!isAccountant && (
+                                <>
+                                  <button
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      navigate(`/update-income/${income._id}`);
+                                    }}
+                                    className="p-2 hover:bg-orange-100 rounded-lg transition-colors"
+                                    title="עריכה"
+                                  >
+                                    <Edit2 className="w-4 h-4 text-orange-600" />
+                                  </button>
+                                  <button
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      setLinkModal({ open: true, income: income });
+                                    }}
+                                    className="p-2 hover:bg-purple-100 rounded-lg transition-colors"
+                                    title="שייך להזמנה"
+                                  >
+                                    <Link className="w-4 h-4 text-purple-600" />
+                                  </button>
+                                  <button
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      setDeleteModal({ open: true, incomeId: income._id });
+                                    }}
+                                    className="p-2 hover:bg-red-100 rounded-lg transition-colors"
+                                    title="מחיקה"
+                                  >
+                                    <Trash2 className="w-4 h-4 text-red-600" />
+                                  </button>
+                                </>
+                              )}
                             </div>
                           </td>
                         </tr>
@@ -689,35 +698,39 @@ export default function ViewIncomes() {
                           <Eye className="w-4 h-4" />
                           <span>צפייה</span>
                         </button>
-                        <button
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            navigate(`/update-income/${income._id}`);
-                          }}
-                          className="flex-1 flex items-center justify-center gap-2 px-4 py-2 bg-orange-500 text-white rounded-lg hover:bg-orange-600 transition-colors"
-                        >
-                          <Edit2 className="w-4 h-4" />
-                          <span>עריכה</span>
-                        </button>
-                        <button
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            setLinkModal({ open: true, income: income });
-                          }}
-                          className="px-4 py-2 bg-purple-500 text-white rounded-lg hover:bg-purple-600 transition-colors"
-                          title="שייך להזמנה"
-                        >
-                          <Link className="w-4 h-4" />
-                        </button>
-                        <button
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            setDeleteModal({ open: true, incomeId: income._id });
-                          }}
-                          className="px-4 py-2 bg-red-500 text-white rounded-lg hover:bg-red-600 transition-colors"
-                        >
-                          <Trash2 className="w-4 h-4" />
-                        </button>
+                        {!isAccountant && (
+                          <>
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                navigate(`/update-income/${income._id}`);
+                              }}
+                              className="flex-1 flex items-center justify-center gap-2 px-4 py-2 bg-orange-500 text-white rounded-lg hover:bg-orange-600 transition-colors"
+                            >
+                              <Edit2 className="w-4 h-4" />
+                              <span>עריכה</span>
+                            </button>
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setLinkModal({ open: true, income: income });
+                              }}
+                              className="px-4 py-2 bg-purple-500 text-white rounded-lg hover:bg-purple-600 transition-colors"
+                              title="שייך להזמנה"
+                            >
+                              <Link className="w-4 h-4" />
+                            </button>
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setDeleteModal({ open: true, incomeId: income._id });
+                              }}
+                              className="px-4 py-2 bg-red-500 text-white rounded-lg hover:bg-red-600 transition-colors"
+                            >
+                              <Trash2 className="w-4 h-4" />
+                            </button>
+                          </>
+                        )}
                       </div>
                     </div>
                   ))}

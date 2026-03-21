@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useMemo, useCallback } from "react";
 import api from "../../api/api.js";
 import { ClipLoader } from "react-spinners";
 import { useNavigate } from "react-router-dom";
@@ -995,9 +995,10 @@ const ProjectsPage = ({ initialProjects = [] }) => {
     return filtered;
   };
 
-  const filteredProjects = getFilteredProjects();
+  const filteredProjects = useMemo(() => getFilteredProjects(),
+    [allProjects, searchTerm, showReportModal, advancedFilters]);
 
-  const clearAdvancedFilters = () => {
+  const clearAdvancedFilters = useCallback(() => {
     setAdvancedFilters({
       dateFrom: "",
       dateTo: "",
@@ -1013,9 +1014,9 @@ const ProjectsPage = ({ initialProjects = [] }) => {
       paymentStatus: "",
       missingDocument: "",
     });
-  };
+  }, []);
 
-  const sortedProjects = [...(searchTerm ? filteredProjects : projects)].sort(
+  const sortedProjects = useMemo(() => [...(searchTerm ? filteredProjects : projects)].sort(
     (a, b) => {
       if (sortBy === "budget") {
         const aVal = a.budget || 0;
@@ -1039,7 +1040,7 @@ const ProjectsPage = ({ initialProjects = [] }) => {
       }
       return 0;
     }
-  );
+  ), [filteredProjects, projects, searchTerm, sortBy, sortOrder]);
 
   const calculateProjectStats = (project) => {
     const budgetUsed =
@@ -1447,7 +1448,7 @@ const ProjectsPage = ({ initialProjects = [] }) => {
     return () => window.removeEventListener("keydown", onKeyDown);
   }, [showReportModal]);
 
-  const handleDelete = async () => {
+  const handleDelete = useCallback(async () => {
     try {
       if (projectToDelete) {
         await api.delete(`/projects/${projectToDelete}`);
@@ -1471,11 +1472,11 @@ const ProjectsPage = ({ initialProjects = [] }) => {
         className: "sonner-toast error rtl",
       });
     }
-  };
+  }, [projectToDelete, projects]);
 
-  const handleEdit = (id) => {
+  const handleEdit = useCallback((id) => {
     navigate(`/update-project/${id}`);
-  };
+  }, [navigate]);
 
   const handleView = (id) => {
     navigate(`/projects/${id}`);

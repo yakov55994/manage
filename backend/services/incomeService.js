@@ -78,14 +78,7 @@ export default {
 
   // יצירת הכנסות מרובות (מקובץ אקסל)
   async createBulkIncomes(user, incomesData) {
-    const createdIncomes = [];
-
-    for (const incomeData of incomesData) {
-      const income = await this.createIncome(user, incomeData);
-      createdIncomes.push(income);
-    }
-
-    return createdIncomes;
+    return Promise.all(incomesData.map(incomeData => this.createIncome(user, incomeData)));
   },
 
   // עדכון הכנסה

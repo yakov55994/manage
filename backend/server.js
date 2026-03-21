@@ -18,6 +18,7 @@ import uploadRoute from './routes/uploadRoute.js';
 import suppliersRoutes from './routes/supplierRoutes.js';
 import documentsRoutes from './routes/documentRoutes.js';
 import masavRoutes from './routes/masavRoutes.js';
+import masavBroadcastRoutes from './routes/masavBroadcastRoutes.js';
 import incomeRoutes from './routes/incomeRoutes.js';
 import expenseRoutes from './routes/expenseRoutes.js';
 import submissionRoutes from './routes/submissionRoutes.js';
@@ -26,8 +27,6 @@ import notificationRoutes from './routes/notificationRoutes.js';
 import exportRoutes from './routes/exportRoutes.js';
 import backupRoutes from './routes/backupRoutes.js';
 import kartesetRoutes from './routes/kartesetRoutes.js';
-import cron from 'node-cron';
-import { createScheduledBackup } from './controller/backupController.js';
 
 dotenv.config();
 const app = express();
@@ -114,8 +113,8 @@ const io = new Server(httpServer, {
 initializeSocket(io);
 
 // Parsers
-app.use(express.json());
-app.use(express.urlencoded({ extended: true }));
+app.use(express.json({ limit: "50mb" }));
+app.use(express.urlencoded({ extended: true, limit: "50mb" }));
 
 // Auth
 app.use('/api/auth', authRoutes);
@@ -145,6 +144,7 @@ app.use('/api/upload', uploadRoute);
 app.use('/api/documents', documentsRoutes);
 
 app.use('/api/masav', masavRoutes);
+app.use('/api/masav-broadcast', masavBroadcastRoutes);
 
 // Incomes
 app.use('/api/incomes', incomeRoutes);
@@ -182,12 +182,6 @@ const connectDB = async () => {
       console.log(`🚀 Server running on port ${port}`);
       console.log(`🔌 Socket.IO ready for connections`);
 
-      // ⏰ גיבוי אוטומטי כל יום בחצות
-      cron.schedule('00 00 * * *', async () => {
-        console.log('⏰ מתחיל גיבוי אוטומטי...');
-        await createScheduledBackup();
-      });
-      console.log('⏰ Scheduled backup cron job set for midnight');
     });
   } catch (err) {
     console.error('❌ Error connecting to MongoDB', err);

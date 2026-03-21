@@ -1,4 +1,4 @@
-import { useEffect, useState, useRef } from "react";
+import { useEffect, useState, useRef, useMemo, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import api from "../../api/api";
 import { ClipLoader } from "react-spinners";
@@ -19,9 +19,12 @@ import {
 } from "lucide-react";
 import { toast } from "sonner";
 import ExpenseLinkModal from "../../Components/ExpenseLinkModal";
+import { useAuth } from "../../context/AuthContext";
 
 export default function ViewExpenses() {
   const navigate = useNavigate();
+  const { user } = useAuth();
+  const isAccountant = user?.role === "accountant";
   const [expenses, setExpenses] = useState([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
@@ -55,7 +58,7 @@ export default function ViewExpenses() {
     return new Date(expense?.date || expense?.createdAt || 0);
   };
 
-  const filteredExpenses = expenses
+  const filteredExpenses = useMemo(() => expenses
     .filter((expense) => {
       if (!searchTerm) return true;
       const q = searchTerm.toLowerCase();
@@ -82,7 +85,7 @@ export default function ViewExpenses() {
       }
 
       return sortOrder === "asc" ? comparison : -comparison;
-    });
+    }), [expenses, searchTerm, sortBy, sortOrder]);
 
   const groupExpensesByMonth = (expenses) => {
     return expenses.reduce((acc, expense) => {
@@ -119,9 +122,9 @@ export default function ViewExpenses() {
     "דצמבר",
   ];
 
-  const groupedExpenses = groupExpensesByMonth(filteredExpenses);
+  const groupedExpenses = useMemo(() => groupExpensesByMonth(filteredExpenses), [filteredExpenses]);
 
-  const groupedByMonthSorted = Object.values(groupedExpenses)
+  const groupedByMonthSorted = useMemo(() => Object.values(groupedExpenses)
     .map(group => {
       const sortedGroupExpenses = [...group.expenses].sort((a, b) => {
         let comparison = 0;
@@ -146,16 +149,16 @@ export default function ViewExpenses() {
     })
     .sort(
       (a, b) => new Date(b.year, b.month) - new Date(a.year, a.month)
-    );
+    ), [groupedExpenses, sortBy, sortOrder]);
 
-  const toggleSort = (field) => {
+  const toggleSort = useCallback((field) => {
     if (sortBy === field) {
-      setSortOrder(sortOrder === "asc" ? "desc" : "asc");
+      setSortOrder(prev => prev === "asc" ? "desc" : "asc");
     } else {
       setSortBy(field);
       setSortOrder("desc");
     }
-  };
+  }, [sortBy]);
 
   const formatCurrency = (num) => {
     if (!num) return "₪0";
@@ -180,7 +183,7 @@ export default function ViewExpenses() {
   };
 
   // פונקציות בחירה
-  const toggleSelectExpense = (expense, event = null) => {
+  const toggleSelectExpense = useCallback((expense, event = null) => {
     const currentId = expense._id;
     const currentIndex = filteredExpenses.findIndex(e => e._id === currentId);
 
@@ -215,24 +218,24 @@ export default function ViewExpenses() {
     });
 
     // לא מעדכנים anchor כאן
-  };
+  }, [filteredExpenses]);
 
-  const toggleSelectAll = () => {
+  const toggleSelectAll = useCallback(() => {
     if (selectedExpenses.length === filteredExpenses.length) {
       setSelectedExpenses([]);
       lastSelectedIdRef.current = null;
     } else {
       setSelectedExpenses(filteredExpenses);
     }
-  };
+  }, [selectedExpenses.length, filteredExpenses]);
 
-  const selectNone = () => {
+  const selectNone = useCallback(() => {
     setSelectedExpenses([]);
     lastSelectedIdRef.current = null;
-  };
+  }, []);
 
   // עדכון הערות מרוכז
-  const handleBulkNoteUpdate = async () => {
+  const handleBulkNoteUpdate = useCallback(async () => {
     try {
       const expenseIds = selectedExpenses.map(e => e._id);
       await api.put("/expenses/bulk/notes", { expenseIds, notes: bulkNote });
@@ -254,13 +257,13 @@ export default function ViewExpenses() {
       console.error("Bulk note error:", err);
       toast.error("שגיאה בעדכון ההערות");
     }
-  };
+  }, [selectedExpenses, bulkNote]);
 
   // חישוב סה"כ
-  const totalAmount = filteredExpenses.reduce(
+  const totalAmount = useMemo(() => filteredExpenses.reduce(
     (sum, expense) => sum + parseFloat(expense.amount || 0),
     0
-  );
+  ), [filteredExpenses]);
 
   if (loading) {
     return (
@@ -305,13 +308,13 @@ export default function ViewExpenses() {
                     </p>
                   </div>
                 </div>
-                <button
+                {!isAccountant && <button
                   onClick={() => navigate("/create-expense")}
                   className="flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-orange-500 to-amber-600 text-white font-bold rounded-xl hover:from-orange-600 hover:to-amber-700 transition-all shadow-lg"
                 >
                   <Plus className="w-5 h-5" />
                   <span className="hidden sm:inline">הוצאה חדשה</span>
-                </button>
+                </button>}
               </div>
 
               {/* Search */}
@@ -527,36 +530,40 @@ export default function ViewExpenses() {
                               >
                                 <Eye className="w-4 h-4 text-blue-600" />
                               </button>
-                              <button
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  navigate(`/update-expense/${expense._id}`);
-                                }}
-                                className="p-2 hover:bg-orange-100 rounded-lg transition-colors"
-                                title="עריכה"
-                              >
-                                <Edit2 className="w-4 h-4 text-red-600" />
-                              </button>
-                              <button
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  setLinkModal({ open: true, expense });
-                                }}
-                                className="p-2 hover:bg-purple-100 rounded-lg transition-colors"
-                                title="שיוך לחשבוניות/משכורות"
-                              >
-                                <Link className="w-4 h-4 text-purple-600" />
-                              </button>
-                              <button
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  setDeleteModal({ open: true, expenseId: expense._id });
-                                }}
-                                className="p-2 hover:bg-orange-100 rounded-lg transition-colors"
-                                title="מחיקה"
-                              >
-                                <Trash2 className="w-4 h-4 text-red-600" />
-                              </button>
+                              {!isAccountant && (
+                                <>
+                                  <button
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      navigate(`/update-expense/${expense._id}`);
+                                    }}
+                                    className="p-2 hover:bg-orange-100 rounded-lg transition-colors"
+                                    title="עריכה"
+                                  >
+                                    <Edit2 className="w-4 h-4 text-red-600" />
+                                  </button>
+                                  <button
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      setLinkModal({ open: true, expense });
+                                    }}
+                                    className="p-2 hover:bg-purple-100 rounded-lg transition-colors"
+                                    title="שיוך לחשבוניות/משכורות"
+                                  >
+                                    <Link className="w-4 h-4 text-purple-600" />
+                                  </button>
+                                  <button
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      setDeleteModal({ open: true, expenseId: expense._id });
+                                    }}
+                                    className="p-2 hover:bg-orange-100 rounded-lg transition-colors"
+                                    title="מחיקה"
+                                  >
+                                    <Trash2 className="w-4 h-4 text-red-600" />
+                                  </button>
+                                </>
+                              )}
                             </div>
                           </td>
                         </tr>
@@ -662,34 +669,38 @@ export default function ViewExpenses() {
                           <Eye className="w-4 h-4" />
                           <span>צפייה</span>
                         </button>
-                        <button
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            navigate(`/update-expense/${expense._id}`);
-                          }}
-                          className="flex-1 flex items-center justify-center gap-2 px-4 py-2 bg-red-500 text-white rounded-lg hover:bg-red-600 transition-colors"
-                        >
-                          <Edit2 className="w-4 h-4" />
-                          <span>עריכה</span>
-                        </button>
-                        <button
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            setLinkModal({ open: true, expense });
-                          }}
-                          className="px-4 py-2 bg-purple-500 text-white rounded-lg hover:bg-purple-600 transition-colors"
-                        >
-                          <Link className="w-4 h-4" />
-                        </button>
-                        <button
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            setDeleteModal({ open: true, expenseId: expense._id });
-                          }}
-                          className="px-4 py-2 bg-red-500 text-white rounded-lg hover:bg-red-600 transition-colors"
-                        >
-                          <Trash2 className="w-4 h-4" />
-                        </button>
+                        {!isAccountant && (
+                          <>
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                navigate(`/update-expense/${expense._id}`);
+                              }}
+                              className="flex-1 flex items-center justify-center gap-2 px-4 py-2 bg-red-500 text-white rounded-lg hover:bg-red-600 transition-colors"
+                            >
+                              <Edit2 className="w-4 h-4" />
+                              <span>עריכה</span>
+                            </button>
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setLinkModal({ open: true, expense });
+                              }}
+                              className="px-4 py-2 bg-purple-500 text-white rounded-lg hover:bg-purple-600 transition-colors"
+                            >
+                              <Link className="w-4 h-4" />
+                            </button>
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setDeleteModal({ open: true, expenseId: expense._id });
+                              }}
+                              className="px-4 py-2 bg-red-500 text-white rounded-lg hover:bg-red-600 transition-colors"
+                            >
+                              <Trash2 className="w-4 h-4" />
+                            </button>
+                          </>
+                        )}
                       </div>
                     </div>
                   ))}

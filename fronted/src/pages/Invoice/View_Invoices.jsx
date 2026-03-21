@@ -1,4 +1,4 @@
-import { useEffect, useState, useRef, useMemo } from "react";
+import { useEffect, useState, useRef, useMemo, useCallback } from "react";
 import { ClipLoader } from "react-spinners";
 import api from "../../api/api.js";
 import * as XLSX from "xlsx";
@@ -647,7 +647,8 @@ const InvoicesPage = () => {
     return filtered;
   };
 
-  const filteredInvoices = getFilteredInvoices();
+  const filteredInvoices = useMemo(() => getFilteredInvoices(),
+    [allInvoices, invoices, searchTerm, paymentFilter, statusFilter, documentStatusFilter, advancedFilters, showReportModal, isLimited]);
 
   const applyFilters = () => {
     let filteredResults = [...allInvoices];
@@ -676,7 +677,7 @@ const InvoicesPage = () => {
     setInvoices(filteredResults);
   };
 
-  const resetFilters = () => {
+  const resetFilters = useCallback(() => {
     setPaymentFilter([]);
     setStatusFilter([]);
     setSearchTerm("");
@@ -698,11 +699,10 @@ const InvoicesPage = () => {
       submissionStatus: "all",
       documentStatus: "all",
     });
-    // מחק את הסינון השמור
     localStorage.removeItem('invoiceFilters');
-  };
+  }, [allInvoices]);
 
-  const clearAdvancedFilters = () => {
+  const clearAdvancedFilters = useCallback(() => {
     setAdvancedFilters({
       dateFrom: "",
       dateTo: "",
@@ -719,9 +719,8 @@ const InvoicesPage = () => {
       submissionStatus: "all",
       documentStatus: "all",
     });
-    // מחק את הסינון השמור
     localStorage.removeItem('invoiceFilters');
-  };
+  }, []);
 
   useEffect(() => {
     if (allInvoices.length > 0) {
@@ -736,7 +735,7 @@ const InvoicesPage = () => {
     return () => window.removeEventListener("keydown", onKeyDown);
   }, [showReportModal]);
 
-  const sortedInvoices = [...filteredInvoices].sort((a, b) => {
+  const sortedInvoices = useMemo(() => [...filteredInvoices].sort((a, b) => {
     if (sortBy === "totalAmount") {
       return sortOrder === "asc"
         ? a.totalAmount - b.totalAmount
@@ -775,7 +774,7 @@ const InvoicesPage = () => {
     }
 
     return 0;
-  });
+  }), [filteredInvoices, sortBy, sortOrder]);
 
   // מיפוי הוצאות לחשבוניות (reverse lookup)
   const invoiceToExpenseMap = useMemo(() => {

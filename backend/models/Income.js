@@ -103,6 +103,12 @@ const incomeSchema = new mongoose.Schema({
   timestamps: true  // Mongoose will automatically manage createdAt and updatedAt
 });
 
+// Indexes לשיפור ביצועי שאילתות
+incomeSchema.index({ createdAt: -1 });
+incomeSchema.index({ date: -1 });
+incomeSchema.index({ description: "text", notes: "text" });
+incomeSchema.index({ isCredited: 1 });
+
 const Income = mongoose.model("Income", incomeSchema);
 
 export default Income;
