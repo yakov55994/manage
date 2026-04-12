@@ -193,6 +193,14 @@ const connectDB = async () => {
 
 connectDB();
 
+// Global error handlers to prevent crashes
+process.on('unhandledRejection', (reason, promise) => {
+  console.error('❌ Unhandled Rejection at:', promise, 'reason:', reason);
+});
+process.on('uncaughtException', (err) => {
+  console.error('❌ Uncaught Exception:', err);
+});
+
 // גיבוי אוטומטי יומי ל-Google Drive - כל יום ב-23:00
 cron.schedule('00 23 * * *', () => {
   console.log('⏰ מתחיל גיבוי אוטומטי יומי...');

@@ -165,33 +165,51 @@ const ExportDataPage = () => {
     }
   };
 
-  // הורדת גיבוי אוטומטי אחרון
+  // יצירת גיבוי טרי והורדתו
   const handleDownloadLatest = async () => {
     try {
       setLoadingLatest(true);
-      const response = await api.get("/backup/download-latest", {
+      const response = await api.get("/backup/create-and-download", {
         responseType: "blob",
         timeout: 300000,
       });
 
-      const url = window.URL.createObjectURL(new Blob([response.data]));
+      const date = new Date().toISOString().split("T")[0];
+      const fileName = `backup_${date}.zip`;
+      const blob = new Blob([response.data], { type: "application/zip" });
+
+      // שימוש ב-File System Access API אם זמין (Chrome/Edge) - מאפשר בחירת תיקייה
+      if (window.showSaveFilePicker) {
+        try {
+          const fileHandle = await window.showSaveFilePicker({
+            suggestedName: fileName,
+            types: [{ description: "ZIP Archive", accept: { "application/zip": [".zip"] } }],
+          });
+          const writable = await fileHandle.createWritable();
+          await writable.write(blob);
+          await writable.close();
+          toast.success("הגיבוי נשמר בהצלחה!", { className: "sonner-toast success rtl" });
+          return;
+        } catch (pickerError) {
+          if (pickerError.name === "AbortError") return; // המשתמש ביטל
+          // fallback להורדה רגילה
+        }
+      }
+
+      // fallback - הורדה רגילה לתיקיית Downloads
+      const url = window.URL.createObjectURL(blob);
       const link = document.createElement("a");
       link.href = url;
-      link.setAttribute("download", `backup_latest.zip`);
+      link.setAttribute("download", fileName);
       document.body.appendChild(link);
       link.click();
       link.remove();
       window.URL.revokeObjectURL(url);
 
-      toast.success("הגיבוי האוטומטי הורד בהצלחה!", {
-        className: "sonner-toast success rtl",
-      });
+      toast.success("הגיבוי הורד בהצלחה!", { className: "sonner-toast success rtl" });
     } catch (error) {
-      console.error("Download latest error:", error);
-      const isNotFound = error.response?.status === 404;
-      toast.error(isNotFound ? "אין גיבוי אוטומטי זמין" : "שגיאה בהורדת גיבוי", {
-        className: "sonner-toast error rtl",
-      });
+      console.error("Download backup error:", error);
+      toast.error("שגיאה בהורדת גיבוי", { className: "sonner-toast error rtl" });
     } finally {
       setLoadingLatest(false);
     }

@@ -49,13 +49,17 @@ io.on("connection", async (socket) => {
     socket.join(`role:${socket.userRole}`);
   }
 
-  // שליחת ספירת התראות שלא נקראו בלבד (לא דורס את הרשימה)
-  const unreadCount = await Notification.countDocuments({
-    userId: socket.userId,
-    read: false
-  });
+  try {
+    // שליחת ספירת התראות שלא נקראו בלבד (לא דורס את הרשימה)
+    const unreadCount = await Notification.countDocuments({
+      userId: socket.userId,
+      read: false
+    });
 
-  socket.emit("notification:unread_count", { unreadCount });
+    socket.emit("notification:unread_count", { unreadCount });
+  } catch (err) {
+    console.error("Socket connection handler error:", err.message);
+  }
 });
 
 

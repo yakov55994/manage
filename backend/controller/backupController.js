@@ -197,11 +197,17 @@ const downloadCloudinaryFilesToFolder = async (basePath) => {
           continue;
         }
 
-        let response = await fetch(file.url);
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 30000);
+        let response = await fetch(file.url, { signal: controller.signal });
+        clearTimeout(timeoutId);
 
         if (!response.ok && file.url.includes("/raw/upload/")) {
           const altUrl = file.url.replace("/raw/upload/", "/image/upload/");
-          response = await fetch(altUrl);
+          const controller2 = new AbortController();
+          const timeoutId2 = setTimeout(() => controller2.abort(), 30000);
+          response = await fetch(altUrl, { signal: controller2.signal });
+          clearTimeout(timeoutId2);
         }
 
         if (!response.ok) continue;
@@ -243,11 +249,17 @@ const downloadCloudinaryFilesToFolder = async (basePath) => {
           continue;
         }
 
-        let response = await fetch(file.url);
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 30000);
+        let response = await fetch(file.url, { signal: controller.signal });
+        clearTimeout(timeoutId);
 
         if (!response.ok && file.url.includes("/raw/upload/")) {
           const altUrl = file.url.replace("/raw/upload/", "/image/upload/");
-          response = await fetch(altUrl);
+          const controller2 = new AbortController();
+          const timeoutId2 = setTimeout(() => controller2.abort(), 30000);
+          response = await fetch(altUrl, { signal: controller2.signal });
+          clearTimeout(timeoutId2);
         }
 
         if (!response.ok) continue;
@@ -599,6 +611,55 @@ export const downloadLatestBackup = async (req, res) => {
   } catch (error) {
     console.error("Download latest backup error:", error);
     res.status(500).json({ message: "שגיאה בהורדת גיבוי" });
+  }
+};
+
+// ===============================================
+// יצירת גיבוי טרי והורדתו ישירות כ-ZIP
+// ===============================================
+export const createAndDownloadBackup = async (req, res) => {
+  try {
+    const date = new Date().toISOString().split("T")[0];
+    const backupsBase = path.join(process.cwd(), "tmp", "backups");
+    const backupDir = path.join(backupsBase, `backup_${date}`);
+
+    // מחיקת תיקיות גיבוי ישנות (שמירת 7 אחרונות)
+    if (fs.existsSync(backupsBase)) {
+      const existingDirs = fs.readdirSync(backupsBase)
+        .filter(f => f.startsWith("backup_") && fs.statSync(path.join(backupsBase, f)).isDirectory())
+        .sort()
+        .reverse();
+      for (const oldDir of existingDirs.slice(6)) {
+        fs.rmSync(path.join(backupsBase, oldDir), { recursive: true, force: true });
+      }
+    }
+
+    const { recordCounts, totalFilesCount } = await buildBackupToFolder(backupDir);
+
+    await BackupLog.create({
+      backupDate: new Date(),
+      type: "manual",
+      recordCounts,
+      filesCount: totalFilesCount,
+      status: "success",
+      filePath: backupDir,
+    }).catch(() => {});
+
+    // יצירת ZIP מהתיקייה והורדה ישירה
+    const zip = new JSZip();
+    addFolderToZip(zip, backupDir, "");
+    const zipContent = await zip.generateAsync({ type: "nodebuffer" });
+    const fileName = `backup_${date}.zip`;
+
+    res.writeHead(200, {
+      "Content-Type": "application/zip",
+      "Content-Disposition": `attachment; filename="${fileName}"`,
+      "Content-Length": zipContent.length,
+    });
+    res.end(zipContent);
+  } catch (error) {
+    console.error("Create and download backup error:", error);
+    res.status(500).json({ message: "שגיאה ביצירת והורדת גיבוי", error: error.message });
   }
 };
 
