@@ -1,3 +1,18 @@
 node_modules/
 .env
 .vercel
+
+# קבצי גיבוי
+backup*/
+backup_latest*/
+
+# קבצי אקסל, PDF ותמונות
+*.xlsx
+*.xls
+*.pdf
+*.jpeg
+*.jpg
+*.png
+
+# תיקיית tmp
+tmp/

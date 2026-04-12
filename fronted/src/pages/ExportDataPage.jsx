@@ -1,5 +1,5 @@
-import { useState, useEffect } from "react";
-import { DownloadCloud, FileSpreadsheet, FileText, Loader2, Calendar, Database, Clock, CheckCircle2, AlertCircle } from "lucide-react";
+import { useState, useEffect, useRef } from "react";
+import { DownloadCloud, FileSpreadsheet, FileText, Loader2, Calendar, Database, Clock, CheckCircle2, AlertCircle, Upload, ShieldAlert } from "lucide-react";
 import { toast } from "sonner";
 import api from "../api/api";
 
@@ -8,7 +8,12 @@ const ExportDataPage = () => {
   const [loadingPDF, setLoadingPDF] = useState(false);
   const [loadingBackup, setLoadingBackup] = useState(false);
   const [loadingLatest, setLoadingLatest] = useState(false);
+  const [loadingRestore, setLoadingRestore] = useState(false);
+  const [restoreFile, setRestoreFile] = useState(null);
+  const [restoreResults, setRestoreResults] = useState(null);
+  const [confirmRestore, setConfirmRestore] = useState(false);
   const [backupStatus, setBackupStatus] = useState(null);
+  const restoreInputRef = useRef(null);
   const currentYear = new Date().getFullYear();
   const [selectedYear, setSelectedYear] = useState(currentYear);
 
@@ -122,6 +127,41 @@ const ExportDataPage = () => {
       });
     } finally {
       setLoadingBackup(false);
+    }
+  };
+
+  // שחזור מגיבוי ZIP
+  const handleRestore = async () => {
+    if (!restoreFile) {
+      toast.error("יש לבחור קובץ גיבוי ZIP", { className: "sonner-toast error rtl" });
+      return;
+    }
+    if (!confirmRestore) {
+      toast.error("יש לאשר שהבנת שהנתונים הקיימים לא יימחקו", { className: "sonner-toast error rtl" });
+      return;
+    }
+
+    try {
+      setLoadingRestore(true);
+      setRestoreResults(null);
+      const formData = new FormData();
+      formData.append("backup", restoreFile);
+
+      const { data } = await api.post("/backup/restore", formData, {
+        headers: { "Content-Type": "multipart/form-data" },
+        timeout: 600000,
+      });
+
+      setRestoreResults(data.results);
+      toast.success("השחזור הושלם בהצלחה!", { className: "sonner-toast success rtl" });
+      setRestoreFile(null);
+      setConfirmRestore(false);
+      if (restoreInputRef.current) restoreInputRef.current.value = "";
+    } catch (error) {
+      console.error("Restore error:", error);
+      toast.error("שגיאה בשחזור הגיבוי", { className: "sonner-toast error rtl" });
+    } finally {
+      setLoadingRestore(false);
     }
   };
 
@@ -444,6 +484,126 @@ const ExportDataPage = () => {
               <Clock className="w-4 h-4" />
               גיבוי אוטומטי רץ כל יום בחצות
             </div>
+          </div>
+        </div>
+
+        {/* Restore Card */}
+        <div className="mt-6 bg-white rounded-3xl shadow-xl border-2 border-red-100 overflow-hidden">
+          <div className="bg-gradient-to-r from-red-600 to-rose-700 p-6">
+            <div className="flex items-center gap-3">
+              <div className="p-3 bg-white/20 rounded-xl">
+                <Upload className="w-8 h-8 text-white" />
+              </div>
+              <div>
+                <h2 className="text-xl font-bold text-white">שחזור מגיבוי</h2>
+                <p className="text-red-100 text-sm">העלה קובץ ZIP של גיבוי לשחזור הנתונים</p>
+              </div>
+            </div>
+          </div>
+
+          <div className="p-6">
+            {/* אזהרה */}
+            <div className="mb-5 p-4 bg-red-50 border border-red-200 rounded-xl flex items-start gap-3">
+              <ShieldAlert className="w-5 h-5 text-red-600 flex-shrink-0 mt-0.5" />
+              <p className="text-sm text-red-700">
+                <strong>חשוב:</strong> השחזור <strong>מוסיף</strong> נתונים מהגיבוי למסד הנתונים הקיים.
+                ספקים ופרויקטים עם מספר עוסק/שם זהה יידלגו. חשבוניות עם מספר זהה יידלגו.
+                הגיבוי אינו כולל סיסמאות משתמשים וקבצים מ-Cloudinary.
+              </p>
+            </div>
+
+            {/* בחירת קובץ */}
+            <div className="mb-4">
+              <label className="block text-sm font-bold text-slate-700 mb-2">בחר קובץ גיבוי (ZIP)</label>
+              <input
+                ref={restoreInputRef}
+                type="file"
+                accept=".zip"
+                onChange={(e) => {
+                  setRestoreFile(e.target.files[0] || null);
+                  setRestoreResults(null);
+                }}
+                className="block w-full text-sm text-slate-600 file:ml-4 file:py-2 file:px-4 file:rounded-xl file:border-0 file:font-bold file:bg-red-100 file:text-red-700 hover:file:bg-red-200 cursor-pointer border-2 border-dashed border-red-200 rounded-xl p-3"
+              />
+              {restoreFile && (
+                <p className="text-xs text-slate-500 mt-1">
+                  קובץ נבחר: <strong>{restoreFile.name}</strong> ({(restoreFile.size / 1024 / 1024).toFixed(1)} MB)
+                </p>
+              )}
+            </div>
+
+            {/* אישור */}
+            <label className="flex items-center gap-3 mb-5 cursor-pointer">
+              <input
+                type="checkbox"
+                checked={confirmRestore}
+                onChange={(e) => setConfirmRestore(e.target.checked)}
+                className="w-4 h-4 accent-red-600"
+              />
+              <span className="text-sm text-slate-600">
+                אני מבין/ה שהשחזור יוסיף נתונים מהגיבוי ואני רוצה להמשיך
+              </span>
+            </label>
+
+            <button
+              onClick={handleRestore}
+              disabled={loadingRestore || !restoreFile || !confirmRestore}
+              className="w-full py-4 bg-gradient-to-r from-red-600 to-rose-700 text-white rounded-2xl font-bold text-lg hover:from-red-700 hover:to-rose-800 disabled:opacity-40 disabled:cursor-not-allowed transition-all duration-300 shadow-lg hover:shadow-xl flex items-center justify-center gap-3"
+            >
+              {loadingRestore ? (
+                <>
+                  <Loader2 className="w-6 h-6 animate-spin" />
+                  מבצע שחזור... (עלול לקחת מספר דקות)
+                </>
+              ) : (
+                <>
+                  <Upload className="w-6 h-6" />
+                  שחזר נתונים מהגיבוי
+                </>
+              )}
+            </button>
+
+            {/* תוצאות שחזור */}
+            {restoreResults && (
+              <div className="mt-5 p-4 bg-green-50 border border-green-200 rounded-xl">
+                <div className="flex items-center gap-2 mb-3">
+                  <CheckCircle2 className="w-5 h-5 text-green-600" />
+                  <h4 className="font-bold text-green-800">תוצאות השחזור</h4>
+                </div>
+                <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 text-sm">
+                  {[
+                    { label: "ספקים", key: "suppliers" },
+                    { label: "פרויקטים", key: "projects" },
+                    { label: "חשבוניות", key: "invoices" },
+                    { label: "הזמנות", key: "orders" },
+                    { label: "משכורות", key: "salaries" },
+                    { label: "הכנסות", key: "incomes" },
+                    { label: "הוצאות", key: "expenses" },
+                    { label: "הערות", key: "notes" },
+                  ].map(({ label, key }) => {
+                    const r = restoreResults[key];
+                    if (!r) return null;
+                    const inserted = r.inserted ?? 0;
+                    const skipped = r.skipped ?? 0;
+                    return (
+                      <div key={key} className="bg-white rounded-lg p-2 border border-green-100">
+                        <div className="font-bold text-slate-700">{label}</div>
+                        <div className="text-green-700">נוספו: {inserted}</div>
+                        {skipped > 0 && <div className="text-slate-400">דולגו: {skipped}</div>}
+                      </div>
+                    );
+                  })}
+                </div>
+                {restoreResults.errors?.length > 0 && (
+                  <div className="mt-3 p-3 bg-amber-50 border border-amber-200 rounded-lg">
+                    <p className="text-xs font-bold text-amber-700 mb-1">שגיאות ({restoreResults.errors.length}):</p>
+                    <ul className="text-xs text-amber-600 space-y-0.5 max-h-24 overflow-y-auto">
+                      {restoreResults.errors.map((e, i) => <li key={i}>{e}</li>)}
+                    </ul>
+                  </div>
+                )}
+              </div>
+            )}
           </div>
         </div>
 

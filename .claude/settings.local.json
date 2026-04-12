@@ -47,7 +47,12 @@
       "Bash(find:*)",
       "Bash(npx web-push:*)",
       "Bash(npm uninstall:*)",
-      "Bash(git commit:*)"
+      "Bash(git commit:*)",
+      "Bash(node --input-type=module)",
+      "Read(//Users/yakovcohen/Downloads/**)",
+      "Bash(zip -r \"backup_restore.zip\" \"backup_latest \\(2\\)/\")",
+      "Bash(node --check controller/backupController.js)",
+      "Bash(node --check backend/routes/backupRoutes.js)"
     ]
   }
 }

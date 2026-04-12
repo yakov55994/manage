@@ -26,6 +26,8 @@ import analyticsRoutes from './routes/analyticsRoutes.js';
 import notificationRoutes from './routes/notificationRoutes.js';
 import exportRoutes from './routes/exportRoutes.js';
 import backupRoutes from './routes/backupRoutes.js';
+import cron from 'node-cron';
+import { createScheduledBackup } from './controller/backupController.js';
 import kartesetRoutes from './routes/kartesetRoutes.js';
 
 dotenv.config();
@@ -189,6 +191,12 @@ const connectDB = async () => {
 };
 
 connectDB();
+
+// גיבוי אוטומטי יומי ל-Google Drive - כל יום בחצות
+cron.schedule('0 0 * * *', () => {
+  console.log('⏰ מתחיל גיבוי אוטומטי יומי...');
+  createScheduledBackup();
+}, { timezone: 'Asia/Jerusalem' });
 
 export { io };
 export default app;

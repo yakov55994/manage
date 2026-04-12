@@ -2,6 +2,9 @@ import JSZip from "jszip";
 import xlsx from "xlsx";
 import fs from "fs";
 import path from "path";
+import { Readable } from "stream";
+import { google } from "googleapis";
+import mongoose from "mongoose";
 import Invoice from "../models/Invoice.js";
 import Project from "../models/Project.js";
 import User from "../models/User.js";
@@ -444,6 +447,55 @@ const addFolderToZip = (zip, folderPath, zipPath) => {
 };
 
 // ===============================================
+// Google Drive helpers
+// ===============================================
+const getDriveClient = () => {
+  const privateKey = process.env.GOOGLE_PRIVATE_KEY?.replace(/\\n/g, "\n");
+  const clientEmail = process.env.GOOGLE_SERVICE_ACCOUNT_EMAIL;
+
+  if (!privateKey || !clientEmail) {
+    throw new Error("חסרים פרטי Google Service Account בסביבה (GOOGLE_SERVICE_ACCOUNT_EMAIL, GOOGLE_PRIVATE_KEY)");
+  }
+
+  const auth = new google.auth.GoogleAuth({
+    credentials: { client_email: clientEmail, private_key: privateKey },
+    scopes: ["https://www.googleapis.com/auth/drive"],
+  });
+  return google.drive({ version: "v3", auth });
+};
+
+const uploadBackupToDrive = async (zipBuffer, fileName) => {
+  const drive = getDriveClient();
+  const folderId = process.env.GOOGLE_DRIVE_FOLDER_ID;
+
+  if (!folderId) throw new Error("חסר GOOGLE_DRIVE_FOLDER_ID בסביבה");
+
+  // מחיקת גיבויים ישנים מעל 7 (שמירת 7 אחרונים)
+  const list = await drive.files.list({
+    q: `'${folderId}' in parents and trashed=false and name contains 'backup_'`,
+    fields: "files(id, name, createdTime)",
+    orderBy: "createdTime desc",
+  });
+  const oldFiles = (list.data.files || []).slice(6);
+  for (const file of oldFiles) {
+    await drive.files.delete({ fileId: file.id }).catch(() => {});
+  }
+
+  // העלאה
+  const stream = new Readable();
+  stream.push(zipBuffer);
+  stream.push(null);
+
+  const response = await drive.files.create({
+    requestBody: { name: fileName, parents: [folderId] },
+    media: { mimeType: "application/zip", body: stream },
+    fields: "id, name, size",
+  });
+
+  return response.data;
+};
+
+// ===============================================
 // גיבוי מלא ידני (שמירה על השרת בלבד, בלי הורדה)
 // ===============================================
 export const createBackup = async (req, res) => {
@@ -499,38 +551,31 @@ export const createBackup = async (req, res) => {
 };
 
 // ===============================================
-// גיבוי אוטומטי (cron) - תיקייה יומית עם אינקרמנטלי
+// גיבוי אוטומטי (cron) - ZIP מלא + העלאה ל-Google Drive
 // ===============================================
 export const createScheduledBackup = async () => {
   try {
     const date = new Date().toISOString().split("T")[0];
-    const backupsBase = path.join(process.cwd(), "tmp", "backups");
-    const backupDir = path.join(backupsBase, `backup_${date}`);
+    console.log(`🔄 מתחיל גיבוי אוטומטי ל-Google Drive (${date})...`);
 
-    // מחיקת תיקיות גיבוי ישנות (שמירת 7 אחרונות)
-    if (fs.existsSync(backupsBase)) {
-      const existingDirs = fs.readdirSync(backupsBase)
-        .filter(f => f.startsWith("backup_") && fs.statSync(path.join(backupsBase, f)).isDirectory())
-        .sort()
-        .reverse();
+    // בניית ZIP מלא בזיכרון
+    const { zip, metadata } = await buildBackupZip();
+    const zipBuffer = await zip.generateAsync({ type: "nodebuffer" });
+    const fileName = `backup_${date}.zip`;
 
-      for (const oldDir of existingDirs.slice(6)) {
-        fs.rmSync(path.join(backupsBase, oldDir), { recursive: true, force: true });
-      }
-    }
-
-    const { recordCounts, newFilesCount, skippedCount, totalFilesCount } = await buildBackupToFolder(backupDir);
+    // העלאה ל-Google Drive
+    const driveFile = await uploadBackupToDrive(zipBuffer, fileName);
 
     await BackupLog.create({
       backupDate: new Date(),
       type: "scheduled",
-      recordCounts,
-      filesCount: totalFilesCount,
+      recordCounts: metadata.recordCounts,
+      filesCount: metadata.filesCount,
       status: "success",
-      filePath: backupDir,
+      filePath: `google-drive:${driveFile.id}`,
     });
 
-    console.log(`✅ גיבוי אוטומטי: ${newFilesCount} קבצים חדשים הורדו, ${skippedCount} קיימים דולגו`);
+    console.log(`✅ גיבוי אוטומטי הועלה ל-Drive: ${fileName} (${(zipBuffer.length / 1024 / 1024).toFixed(1)} MB)`);
   } catch (error) {
     console.error("❌ Scheduled backup error:", error);
 
@@ -611,5 +656,457 @@ export const downloadLatestBackup = async (req, res) => {
   } catch (error) {
     console.error("Download latest backup error:", error);
     res.status(500).json({ message: "שגיאה בהורדת גיבוי" });
+  }
+};
+
+// ===============================================
+// שמירת גיבוי לנתיב רשת
+// ===============================================
+export const saveBackupToPath = async (req, res) => {
+  try {
+    const { targetPath } = req.body;
+    if (!targetPath || typeof targetPath !== "string" || !targetPath.trim()) {
+      return res.status(400).json({ message: "יש לספק נתיב יעד תקין" });
+    }
+
+    const cleanPath = targetPath.trim();
+
+    // וידוא שהתיקייה קיימת
+    if (!fs.existsSync(cleanPath)) {
+      return res.status(400).json({ message: `הנתיב לא נמצא: ${cleanPath}` });
+    }
+
+    const stat = fs.statSync(cleanPath);
+    if (!stat.isDirectory()) {
+      return res.status(400).json({ message: "הנתיב חייב להיות תיקייה" });
+    }
+
+    // בניית ZIP מלא
+    const { zip, metadata } = await buildBackupZip();
+    const zipContent = await zip.generateAsync({ type: "nodebuffer" });
+
+    const date = new Date().toISOString().split("T")[0];
+    const fileName = `backup_${date}.zip`;
+    const fullPath = path.join(cleanPath, fileName);
+
+    fs.writeFileSync(fullPath, zipContent);
+
+    await BackupLog.create({
+      backupDate: new Date(),
+      type: "manual",
+      recordCounts: metadata.recordCounts,
+      filesCount: metadata.filesCount,
+      status: "success",
+      filePath: fullPath,
+    });
+
+    res.json({
+      success: true,
+      message: `הגיבוי נשמר בהצלחה`,
+      fileName,
+      fullPath,
+      sizeMB: (zipContent.length / 1024 / 1024).toFixed(1),
+      totalRecords: metadata.totalRecords,
+      filesCount: metadata.filesCount,
+    });
+  } catch (error) {
+    console.error("Save backup to path error:", error);
+    res.status(500).json({ message: "שגיאה בשמירת הגיבוי לנתיב", error: error.message });
+  }
+};
+
+// ===============================================
+// עזרים לשחזור
+// ===============================================
+
+/** המרת תאריך DD/MM/YYYY ל-Date */
+const parseHebrewDate = (str) => {
+  if (!str) return null;
+  const s = String(str).trim();
+  const parts = s.split("/");
+  if (parts.length !== 3) return null;
+  const [d, m, y] = parts;
+  const date = new Date(`${y}-${m.padStart(2, "0")}-${d.padStart(2, "0")}T12:00:00.000Z`);
+  return isNaN(date.getTime()) ? null : date;
+};
+
+/** קריאת גיליון אקסל מ-buffer */
+const readExcelSheet = (buffer) => {
+  const wb = xlsx.read(buffer, { type: "buffer" });
+  const ws = wb.Sheets[wb.SheetNames[0]];
+  return xlsx.utils.sheet_to_json(ws, { defval: "" });
+};
+
+// ===============================================
+// שחזור גיבוי מ-ZIP
+// ===============================================
+export const restoreFromBackup = async (req, res) => {
+  if (!req.file) {
+    return res.status(400).json({ message: "לא הועלה קובץ גיבוי" });
+  }
+
+  const results = {
+    suppliers: { inserted: 0, skipped: 0 },
+    projects: { inserted: 0, skipped: 0 },
+    invoices: { inserted: 0, skipped: 0 },
+    orders: { inserted: 0, skipped: 0 },
+    salaries: { inserted: 0, skipped: 0 },
+    incomes: { inserted: 0 },
+    expenses: { inserted: 0 },
+    notes: { inserted: 0 },
+    errors: [],
+  };
+
+  try {
+    const zip = await JSZip.loadAsync(req.file.buffer);
+
+    // --- עזר: קריאת קובץ מה-ZIP (תומך בתיקיית שורש כלשהי) ---
+    const readZipFile = async (name) => {
+      // ניסיון ישיר
+      let file = zip.file(`נתונים/${name}.xlsx`);
+      if (!file) {
+        // חיפוש בכל הנתיבים
+        const allFiles = Object.keys(zip.files);
+        const match = allFiles.find(
+          (p) => p.endsWith(`נתונים/${name}.xlsx`) || p.endsWith(`נתונים\\${name}.xlsx`)
+        );
+        if (match) file = zip.file(match);
+      }
+      if (!file) return null;
+      const buffer = await file.async("nodebuffer");
+      return readExcelSheet(buffer);
+    };
+
+    // =====================================
+    // 1. ספקים
+    // =====================================
+    const suppliersRows = await readZipFile("ספקים");
+    const supplierNameToId = {};
+
+    if (suppliersRows) {
+      for (const row of suppliersRows) {
+        const name = String(row["שם הספק"] || "").trim();
+        const business_tax = String(row["מספר עוסק"] || "").trim();
+        if (!name || !business_tax) continue;
+
+        const existing = await Supplier.findOne({ business_tax });
+        if (existing) {
+          supplierNameToId[name] = existing._id;
+          results.suppliers.skipped++;
+          continue;
+        }
+
+        const supplierData = { name, business_tax };
+        if (row["טלפון"]) supplierData.phone = String(row["טלפון"]);
+        if (row["אימייל"]) supplierData.email = String(row["אימייל"]);
+        if (row["בנק"] && row["סניף"] && row["חשבון"]) {
+          supplierData.bankDetails = {
+            bankName: String(row["בנק"]),
+            branchNumber: String(row["סניף"]),
+            accountNumber: String(row["חשבון"]),
+          };
+        }
+
+        const supplier = await Supplier.create(supplierData);
+        supplierNameToId[name] = supplier._id;
+        results.suppliers.inserted++;
+      }
+    }
+
+    // =====================================
+    // 2. פרויקטים
+    // =====================================
+    const projectsRows = await readZipFile("פרויקטים");
+    const projectNameToId = {};
+
+    if (projectsRows) {
+      for (const row of projectsRows) {
+        const name = String(row["שם פרויקט"] || "").trim();
+        if (!name) continue;
+
+        const existing = await Project.findOne({ name });
+        if (existing) {
+          projectNameToId[name] = existing._id;
+          results.projects.skipped++;
+          continue;
+        }
+
+        const typeMap = { regular: "regular", milga: "milga", salary: "salary" };
+        const rawType = String(row["סוג"] || "regular").trim();
+
+        const projectData = {
+          name,
+          budget: Number(row["תקציב"]) || 0,
+          remainingBudget: Number(row["תקציב שנותר"]) || 0,
+          invitingName: String(row["שם המזמין"] || "לא ידוע"),
+          Contact_person: String(row["איש קשר"] || "לא ידוע"),
+          type: typeMap[rawType] || "regular",
+        };
+
+        const project = await Project.create(projectData);
+        projectNameToId[name] = project._id;
+        results.projects.inserted++;
+      }
+    }
+
+    // =====================================
+    // 3. חשבוניות
+    // =====================================
+    const invoicesRows = await readZipFile("חשבוניות");
+    const validDocTypes = ["ח. עסקה", "ה. עבודה", "ד. תשלום", "חשבונית מס / קבלה", "משכורות", "אין צורך"];
+    const validPaid = ["כן", "לא", "יצא לתשלום", "לא לתשלום"];
+    const validStatus = ["הוגש", "לא הוגש", "בעיבוד"];
+
+    if (invoicesRows) {
+      for (const row of invoicesRows) {
+        const invoiceNumber = String(row["מספר חשבונית"] || "").trim();
+        if (!invoiceNumber) continue;
+
+        const existing = await Invoice.findOne({ invoiceNumber });
+        if (existing) {
+          results.invoices.skipped++;
+          continue;
+        }
+
+        try {
+          const supplierName = String(row["שם ספק"] || "").trim();
+          const supplierId = supplierNameToId[supplierName] || null;
+
+          const totalAmount = Number(row["סכום"]) || 0;
+          const projectNamesStr = String(row["פרויקטים"] || "").trim();
+          const projectNames = projectNamesStr
+            ? projectNamesStr.split(",").map((s) => s.trim()).filter(Boolean)
+            : [];
+
+          const projects = [];
+          if (projectNames.length > 0) {
+            const perSum = projectNames.length > 1 ? Math.round(totalAmount / projectNames.length) : totalAmount;
+            for (const pName of projectNames) {
+              const pId = projectNameToId[pName];
+              if (pId) {
+                projects.push({ projectId: pId, projectName: pName, sum: perSum });
+              }
+            }
+          }
+
+          // דרוש לפחות פרויקט אחד
+          if (projects.length === 0) {
+            // נחפש פרויקט כלשהו
+            const anyProject = await Project.findOne();
+            if (anyProject) {
+              projects.push({ projectId: anyProject._id, projectName: anyProject.name, sum: totalAmount });
+            } else {
+              results.errors.push(`חשבונית ${invoiceNumber}: לא נמצא פרויקט`);
+              results.invoices.skipped++;
+              continue;
+            }
+          }
+
+          const rawDocType = String(row["סוג מסמך"] || "").trim();
+          const documentType = validDocTypes.includes(rawDocType) ? rawDocType : "אין צורך";
+          const rawPaid = String(row["שולם"] || "לא").trim();
+          const paid = validPaid.includes(rawPaid) ? rawPaid : "לא";
+          const rawStatus = String(row["סטטוס"] || "לא הוגש").trim();
+          const status = validStatus.includes(rawStatus) ? rawStatus : "לא הוגש";
+
+          const createdAt = parseHebrewDate(String(row["תאריך יצירה"] || "")) || new Date();
+          const invoiceData = {
+            invoiceNumber,
+            documentType,
+            totalAmount,
+            status,
+            paid,
+            projects,
+            detail: String(row["פירוט"] || ""),
+            createdByName: String(row['נוצר ע"י'] || row["נוצר ע״י"] || ""),
+            createdAt,
+            updatedAt: createdAt,
+          };
+
+          if (supplierId) invoiceData.supplierId = supplierId;
+          const invoiceDate = parseHebrewDate(String(row["תאריך חשבונית"] || ""));
+          if (invoiceDate) invoiceData.invoiceDate = invoiceDate;
+
+          await Invoice.collection.insertOne(invoiceData);
+          results.invoices.inserted++;
+        } catch (err) {
+          results.errors.push(`חשבונית ${invoiceNumber}: ${err.message}`);
+        }
+      }
+    }
+
+    // =====================================
+    // 4. הזמנות
+    // =====================================
+    const ordersRows = await readZipFile("הזמנות");
+    const validOrderStatus = ["הוגש", "לא הוגש", "בעיבוד", "הוגש חלקי"];
+
+    if (ordersRows) {
+      for (const row of ordersRows) {
+        const orderNumber = Number(row["מספר הזמנה"]) || 0;
+        if (!orderNumber) continue;
+
+        const projectName = String(row["פרויקט"] || "").trim();
+        const projectId = projectNameToId[projectName];
+        if (!projectId) {
+          results.errors.push(`הזמנה ${orderNumber}: פרויקט "${projectName}" לא נמצא`);
+          results.orders.skipped++;
+          continue;
+        }
+
+        const existing = await Order.findOne({ orderNumber, projectName });
+        if (existing) {
+          results.orders.skipped++;
+          continue;
+        }
+
+        try {
+          const supplierName = String(row["שם ספק"] || "").trim();
+          const supplierId = supplierNameToId[supplierName] || null;
+          const rawStatus = String(row["סטטוס"] || "לא הוגש").trim();
+          const status = validOrderStatus.includes(rawStatus) ? rawStatus : "לא הוגש";
+
+          const orderCreatedAt = parseHebrewDate(String(row["תאריך יצירה"] || "")) || new Date();
+          const orderData = {
+            orderNumber,
+            projectName,
+            projectId,
+            sum: Number(row["סכום"]) || 0,
+            status,
+            invitingName: String(row["נוצר ע״י"] || row['נוצר ע"י'] || "לא ידוע"),
+            createdAt: orderCreatedAt,
+            updatedAt: orderCreatedAt,
+          };
+          if (supplierId) orderData.supplierId = supplierId;
+
+          await Order.collection.insertOne(orderData);
+          results.orders.inserted++;
+        } catch (err) {
+          results.errors.push(`הזמנה ${orderNumber}: ${err.message}`);
+        }
+      }
+    }
+
+    // =====================================
+    // 5. משכורות
+    // =====================================
+    const salariesRows = await readZipFile("משכורות");
+
+    if (salariesRows) {
+      for (const row of salariesRows) {
+        const employeeName = String(row["שם עובד"] || "").trim();
+        if (!employeeName) continue;
+
+        const projectName = String(row["פרויקט"] || "").trim();
+        const projectId = projectNameToId[projectName];
+        if (!projectId) {
+          results.errors.push(`משכורת ${employeeName}: פרויקט "${projectName}" לא נמצא`);
+          continue;
+        }
+
+        try {
+          const salaryData = {
+            employeeName,
+            projectId,
+            baseAmount: Number(row["סכום בסיס"]) || 0,
+            overheadPercent: Number(row["אחוז תקורה"]) || 0,
+            finalAmount: Number(row["סכום סופי"]) || 0,
+            date: parseHebrewDate(String(row["תאריך"] || "")) || new Date(),
+          };
+
+          await Salary.collection.insertOne(salaryData);
+          results.salaries.inserted++;
+        } catch (err) {
+          results.errors.push(`משכורת ${employeeName}: ${err.message}`);
+        }
+      }
+    }
+
+    // =====================================
+    // 6. הכנסות
+    // =====================================
+    const incomesRows = await readZipFile("הכנסות");
+
+    if (incomesRows) {
+      const dummyId = new mongoose.Types.ObjectId("000000000000000000000000");
+      const docs = incomesRows
+        .filter((r) => String(r["תיאור"] || "").trim())
+        .map((row) => ({
+          description: String(row["תיאור"]),
+          amount: String(row["סכום"] || "0"),
+          date: parseHebrewDate(String(row["תאריך"] || "")) || new Date(),
+          isCredited: String(row["שויך"] || "") === "כן" ? "כן" : "לא",
+          notes: String(row["הערות"] || ""),
+          createdBy: dummyId,
+          createdByName: "שחזור גיבוי",
+        }));
+
+      if (docs.length > 0) {
+        await Income.collection.insertMany(docs);
+        results.incomes.inserted = docs.length;
+      }
+    }
+
+    // =====================================
+    // 7. הוצאות
+    // =====================================
+    const expensesRows = await readZipFile("הוצאות");
+
+    if (expensesRows) {
+      const dummyId = new mongoose.Types.ObjectId("000000000000000000000000");
+      const docs = expensesRows
+        .filter((r) => String(r["תיאור"] || "").trim())
+        .map((row) => {
+          const expDate = parseHebrewDate(String(row["תאריך"] || "")) || new Date();
+          return {
+            description: String(row["תיאור"]),
+            amount: String(row["סכום"] || "0"),
+            date: expDate,
+            reference: String(row["אסמכתא"] || ""),
+            notes: String(row["הערות"] || ""),
+            createdBy: dummyId,
+            createdByName: "שחזור גיבוי",
+            createdAt: expDate,
+            updatedAt: expDate,
+          };
+        });
+
+      if (docs.length > 0) {
+        await Expense.collection.insertMany(docs);
+        results.expenses.inserted = docs.length;
+      }
+    }
+
+    // =====================================
+    // 8. הערות
+    // =====================================
+    const notesRows = await readZipFile("הערות");
+
+    if (notesRows) {
+      const docs = notesRows
+        .filter((r) => String(r["כותרת"] || r["תוכן"] || "").trim())
+        .map((row) => {
+          const title = String(row["כותרת"] || "").trim();
+          const content = String(row["תוכן"] || "").trim();
+          return {
+            text: title || content,
+            createdByName: String(row['נוצר ע"י'] || row["נוצר ע״י"] || "שחזור גיבוי"),
+          };
+        });
+
+      if (docs.length > 0) {
+        await Notes.collection.insertMany(docs);
+        results.notes.inserted = docs.length;
+      }
+    }
+
+    res.json({
+      success: true,
+      message: "השחזור הושלם בהצלחה",
+      results,
+    });
+  } catch (error) {
+    console.error("Restore error:", error);
+    res.status(500).json({ message: "שגיאה בשחזור הגיבוי", error: error.message });
   }
 };

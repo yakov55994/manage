@@ -89,8 +89,6 @@ export default function ViewExpenses() {
 
   const groupExpensesByMonth = (expenses) => {
     return expenses.reduce((acc, expense) => {
-      if (!expense.createdAt) return acc;
-
       const date = getExpenseDate(expense);
       const key = `${date.getFullYear()}-${date.getMonth()}`;
 
