@@ -2,8 +2,6 @@ import JSZip from "jszip";
 import xlsx from "xlsx";
 import fs from "fs";
 import path from "path";
-import { Readable } from "stream";
-import { google } from "googleapis";
 import mongoose from "mongoose";
 import Invoice from "../models/Invoice.js";
 import Project from "../models/Project.js";
@@ -172,81 +170,6 @@ const getSheetsList = (data) => [
 ];
 
 // הורדת קבצים מ-Cloudinary לתוך ה-ZIP (לגיבוי ידני)
-const downloadCloudinaryFilesToZip = async (zip) => {
-  let filesCount = 0;
-  const filesFolder = zip.folder("קבצים");
-
-  // קבצי חשבוניות
-  const invoices = await Invoice.find({ "files.0": { $exists: true } }).select("invoiceNumber files").lean();
-  const invoicesFolder = filesFolder.folder("חשבוניות");
-
-  for (const invoice of invoices) {
-    for (const file of invoice.files || []) {
-      try {
-        if (!file.url || (!file.url.startsWith("http://") && !file.url.startsWith("https://"))) continue;
-
-        let response = await fetch(file.url);
-
-        if (!response.ok && file.url.includes("/raw/upload/")) {
-          const altUrl = file.url.replace("/raw/upload/", "/image/upload/");
-          response = await fetch(altUrl);
-        }
-
-        if (!response.ok) continue;
-
-        const buffer = Buffer.from(await response.arrayBuffer());
-        const safeName = `${invoice.invoiceNumber}_${file.name}`.replace(/[^\u0590-\u05FF\w.-]/g, "_");
-        invoicesFolder.file(safeName, buffer);
-        filesCount++;
-      } catch (err) {
-        console.error(`❌ שגיאה בהורדת קובץ חשבונית ${invoice.invoiceNumber}:`, err.message);
-      }
-    }
-  }
-
-  // קבצי הזמנות
-  const orders = await Order.find({
-    $or: [
-      { "files.0": { $exists: true } },
-      { "invoiceFiles.0": { $exists: true } },
-      { "receiptFiles.0": { $exists: true } },
-    ]
-  }).select("orderNumber files invoiceFiles receiptFiles").lean();
-
-  const ordersFolder = filesFolder.folder("הזמנות");
-
-  for (const order of orders) {
-    const allFiles = [
-      ...(order.files || []),
-      ...(order.invoiceFiles || []),
-      ...(order.receiptFiles || []),
-    ];
-    for (const file of allFiles) {
-      try {
-        if (!file.url || (!file.url.startsWith("http://") && !file.url.startsWith("https://"))) continue;
-
-        let response = await fetch(file.url);
-
-        if (!response.ok && file.url.includes("/raw/upload/")) {
-          const altUrl = file.url.replace("/raw/upload/", "/image/upload/");
-          response = await fetch(altUrl);
-        }
-
-        if (!response.ok) continue;
-
-        const buffer = Buffer.from(await response.arrayBuffer());
-        const safeName = `${order.orderNumber}_${file.name}`.replace(/[^\u0590-\u05FF\w.-]/g, "_");
-        ordersFolder.file(safeName, buffer);
-        filesCount++;
-      } catch (err) {
-        console.error(`❌ שגיאה בהורדת קובץ הזמנה ${order.orderNumber}:`, err.message);
-      }
-    }
-  }
-
-  return filesCount;
-};
-
 // הורדת קבצים מ-Cloudinary לתיקייה (מדלג על קבצים שכבר קיימים)
 const downloadCloudinaryFilesToFolder = async (basePath) => {
   let newFilesCount = 0;
@@ -360,38 +283,6 @@ const fetchAllBackupData = async () => {
   return { invoices, projects, users, suppliers, orders, salaries, incomes, expenses, notes, notifications };
 };
 
-// בניית ZIP (לגיבוי ידני - הורדה ישירה)
-const buildBackupZip = async () => {
-  const zip = new JSZip();
-  const data = await fetchAllBackupData();
-
-  const recordCounts = {};
-  const sheets = getSheetsList(data);
-  const excelFolder = zip.folder("נתונים");
-
-  for (const sheet of sheets) {
-    const prepared = sheet.prepare(sheet.data);
-    const buffer = createExcelBuffer(prepared, sheet.name);
-    excelFolder.file(`${sheet.name}.xlsx`, buffer);
-    recordCounts[sheet.key] = sheet.data.length;
-  }
-
-  const filesCount = await downloadCloudinaryFilesToZip(zip);
-
-  const metadata = {
-    backupDate: new Date().toISOString(),
-    backupDateHebrew: new Date().toLocaleDateString("he-IL"),
-    type: "full",
-    recordCounts,
-    filesCount,
-    totalRecords: Object.values(recordCounts).reduce((a, b) => a + b, 0),
-  };
-
-  zip.file("_metadata.json", JSON.stringify(metadata, null, 2));
-
-  return { zip, metadata, recordCounts, filesCount };
-};
-
 // בניית גיבוי לתיקייה (אקסל מלא + קבצים חדשים בלבד)
 const buildBackupToFolder = async (backupDir) => {
   const data = await fetchAllBackupData();
@@ -447,55 +338,6 @@ const addFolderToZip = (zip, folderPath, zipPath) => {
 };
 
 // ===============================================
-// Google Drive helpers
-// ===============================================
-const getDriveClient = () => {
-  const privateKey = process.env.GOOGLE_PRIVATE_KEY?.replace(/\\n/g, "\n");
-  const clientEmail = process.env.GOOGLE_SERVICE_ACCOUNT_EMAIL;
-
-  if (!privateKey || !clientEmail) {
-    throw new Error("חסרים פרטי Google Service Account בסביבה (GOOGLE_SERVICE_ACCOUNT_EMAIL, GOOGLE_PRIVATE_KEY)");
-  }
-
-  const auth = new google.auth.GoogleAuth({
-    credentials: { client_email: clientEmail, private_key: privateKey },
-    scopes: ["https://www.googleapis.com/auth/drive"],
-  });
-  return google.drive({ version: "v3", auth });
-};
-
-const uploadBackupToDrive = async (zipBuffer, fileName) => {
-  const drive = getDriveClient();
-  const folderId = process.env.GOOGLE_DRIVE_FOLDER_ID;
-
-  if (!folderId) throw new Error("חסר GOOGLE_DRIVE_FOLDER_ID בסביבה");
-
-  // מחיקת גיבויים ישנים מעל 7 (שמירת 7 אחרונים)
-  const list = await drive.files.list({
-    q: `'${folderId}' in parents and trashed=false and name contains 'backup_'`,
-    fields: "files(id, name, createdTime)",
-    orderBy: "createdTime desc",
-  });
-  const oldFiles = (list.data.files || []).slice(6);
-  for (const file of oldFiles) {
-    await drive.files.delete({ fileId: file.id }).catch(() => {});
-  }
-
-  // העלאה
-  const stream = new Readable();
-  stream.push(zipBuffer);
-  stream.push(null);
-
-  const response = await drive.files.create({
-    requestBody: { name: fileName, parents: [folderId] },
-    media: { mimeType: "application/zip", body: stream },
-    fields: "id, name, size",
-  });
-
-  return response.data;
-};
-
-// ===============================================
 // גיבוי מלא ידני (שמירה על השרת בלבד, בלי הורדה)
 // ===============================================
 export const createBackup = async (req, res) => {
@@ -544,38 +386,139 @@ export const createBackup = async (req, res) => {
       type: "manual",
       status: "failed",
       error: error.message,
-    }).catch(() => {});
+    }).catch(() => { });
 
     res.status(500).json({ message: "שגיאה ביצירת גיבוי", error: error.message });
   }
 };
 
+// בניית ZIP אקסלים בלבד (ללא קבצי Cloudinary)
+const buildExcelOnlyZip = async () => {
+  const zip = new JSZip();
+  const data = await fetchAllBackupData();
+  const recordCounts = {};
+  const sheets = getSheetsList(data);
+  const excelFolder = zip.folder("נתונים");
+
+  for (const sheet of sheets) {
+    const prepared = sheet.prepare(sheet.data);
+    const buffer = createExcelBuffer(prepared, sheet.name);
+    excelFolder.file(`${sheet.name}.xlsx`, buffer);
+    recordCounts[sheet.key] = sheet.data.length;
+  }
+
+  const totalRecords = Object.values(recordCounts).reduce((a, b) => a + b, 0);
+  return { zip, recordCounts, totalRecords };
+};
+
+const HEBREW_LABELS = {
+  invoices: "חשבוניות",
+  projects: "פרויקטים",
+  orders: "הזמנות",
+  suppliers: "ספקים",
+  salaries: "משכורות",
+  incomes: "הכנסות",
+  expenses: "הוצאות",
+  users: "משתמשים",
+  notes: "הערות",
+  notifications: "התראות",
+};
+
+// שליחת גיבוי במייל דרך Brevo
+const sendBackupEmail = async (zipBuffer, fileName, recordCounts, totalRecords) => {
+  const { default: brevo } = await import("@getbrevo/brevo");
+  const logoUrl = `${process.env.SERVER_URL || "https://management-server-owna.onrender.com"}/logo.png`;
+  const apiInstance = new brevo.TransactionalEmailsApi();
+  apiInstance.authentications["apiKey"].apiKey = process.env.BREVO_API_KEY;
+
+  const date = new Date().toLocaleDateString("he-IL");
+  const toEmail = process.env.BACKUP_EMAIL || process.env.BREVO_SENDER_EMAIL;
+
+  const countsHtml = Object.entries(recordCounts)
+    .map(([key, val]) => `
+      <tr>
+        <td style="padding: 8px 16px; border-bottom: 1px solid #ffedd5; font-weight: bold; color: #c2410c;">
+          ${HEBREW_LABELS[key] || key}
+        </td>
+        <td style="padding: 8px 16px; border-bottom: 1px solid #ffedd5; color: #555; text-align: center;">
+          ${val.toLocaleString()}
+        </td>
+      </tr>`)
+    .join("");
+
+  await apiInstance.sendTransacEmail({
+    sender: { email: process.env.BREVO_SENDER_EMAIL, name: "ניהולון" },
+    to: [{ email: toEmail }],
+    subject: `ניהולון | גיבוי יומי - ${date}`,
+    htmlContent: `
+      <div dir="rtl" style="font-family: Arial, sans-serif; background: #fff7ed; padding: 30px; min-height: 10vh;">
+        <div style="max-width: 540px; margin: 0 auto; background: #fff; border-radius: 16px; overflow: hidden; box-shadow: 0 4px 24px rgba(234,88,12,0.10);">
+
+          <!-- Header -->
+          <div style="background: linear-gradient(135deg, #ea580c, #d97706); padding: 28px 32px; text-align: center;">
+            <h1 style="color: #fff; margin: 0; font-size: 22px; letter-spacing: 1px;">ניהולון</h1>
+            <p style="color: #fed7aa; margin: 6px 0 0; font-size: 14px;">מערכת ניהול עסקי</p>
+          </div>
+
+          <!-- Body -->
+          <div style="padding: 28px 32px;">
+            <h2 style="color: #c2410c; margin-top: 0;">גיבוי יומי אוטומטי</h2>
+            <p style="color: #555;">תאריך: <strong>${date}</strong></p>
+            <p style="color: #555;">מצורף קובץ ZIP עם כל גיליונות האקסל מהמערכת.</p>
+
+            <!-- Summary -->
+            <div style="background: #fff7ed; border-radius: 10px; padding: 16px; margin: 20px 0;">
+              <p style="margin: 0 0 12px; font-weight: bold; color: #c2410c;">סה"כ ${totalRecords.toLocaleString()} רשומות</p>
+              <table style="width: 100%; border-collapse: collapse;">
+                <thead>
+                  <tr style="background: #ffedd5;">
+                    <th style="padding: 8px 16px; text-align: right; color: #ea580c; font-size: 13px;">קטגוריה</th>
+                    <th style="padding: 8px 16px; text-align: center; color: #ea580c; font-size: 13px;">כמות</th>
+                  </tr>
+                </thead>
+                <tbody>${countsHtml}</tbody>
+              </table>
+            </div>
+          </div>
+
+          <!-- Footer -->
+          <div style="background: #fff7ed; padding: 16px 32px; text-align: center; border-top: 1px solid #ffedd5;">
+            <p style="color: #9ca3af; font-size: 12px; margin: 0;">
+              גיבוי זה נשלח אוטומטית כל יום ב-23:00 על ידי מערכת ניהולון
+            </p>
+          </div>
+
+        </div>
+      </div>
+    `,
+    attachment: [{ content: zipBuffer.toString("base64"), name: fileName }],
+  });
+};
+
 // ===============================================
-// גיבוי אוטומטי (cron) - ZIP מלא + העלאה ל-Google Drive
+// גיבוי אוטומטי (cron) - אקסלים במייל
 // ===============================================
 export const createScheduledBackup = async () => {
   try {
     const date = new Date().toISOString().split("T")[0];
-    console.log(`🔄 מתחיל גיבוי אוטומטי ל-Google Drive (${date})...`);
+    console.log(`🔄 מתחיל גיבוי אוטומטי - שליחת אקסלים במייל (${date})...`);
 
-    // בניית ZIP מלא בזיכרון
-    const { zip, metadata } = await buildBackupZip();
+    const { zip, recordCounts, totalRecords } = await buildExcelOnlyZip();
     const zipBuffer = await zip.generateAsync({ type: "nodebuffer" });
     const fileName = `backup_${date}.zip`;
 
-    // העלאה ל-Google Drive
-    const driveFile = await uploadBackupToDrive(zipBuffer, fileName);
+    await sendBackupEmail(zipBuffer, fileName, recordCounts, totalRecords);
 
     await BackupLog.create({
       backupDate: new Date(),
       type: "scheduled",
-      recordCounts: metadata.recordCounts,
-      filesCount: metadata.filesCount,
+      recordCounts,
+      filesCount: 0,
       status: "success",
-      filePath: `google-drive:${driveFile.id}`,
+      filePath: `email:${process.env.BACKUP_EMAIL || process.env.BREVO_SENDER_EMAIL}`,
     });
 
-    console.log(`✅ גיבוי אוטומטי הועלה ל-Drive: ${fileName} (${(zipBuffer.length / 1024 / 1024).toFixed(1)} MB)`);
+    console.log(`✅ גיבוי אוטומטי נשלח במייל: ${fileName} (${(zipBuffer.length / 1024 / 1024).toFixed(1)} MB)`);
   } catch (error) {
     console.error("❌ Scheduled backup error:", error);
 
@@ -584,7 +527,7 @@ export const createScheduledBackup = async () => {
       type: "scheduled",
       status: "failed",
       error: error.message,
-    }).catch(() => {});
+    }).catch(() => { });
   }
 };
 
@@ -656,62 +599,6 @@ export const downloadLatestBackup = async (req, res) => {
   } catch (error) {
     console.error("Download latest backup error:", error);
     res.status(500).json({ message: "שגיאה בהורדת גיבוי" });
-  }
-};
-
-// ===============================================
-// שמירת גיבוי לנתיב רשת
-// ===============================================
-export const saveBackupToPath = async (req, res) => {
-  try {
-    const { targetPath } = req.body;
-    if (!targetPath || typeof targetPath !== "string" || !targetPath.trim()) {
-      return res.status(400).json({ message: "יש לספק נתיב יעד תקין" });
-    }
-
-    const cleanPath = targetPath.trim();
-
-    // וידוא שהתיקייה קיימת
-    if (!fs.existsSync(cleanPath)) {
-      return res.status(400).json({ message: `הנתיב לא נמצא: ${cleanPath}` });
-    }
-
-    const stat = fs.statSync(cleanPath);
-    if (!stat.isDirectory()) {
-      return res.status(400).json({ message: "הנתיב חייב להיות תיקייה" });
-    }
-
-    // בניית ZIP מלא
-    const { zip, metadata } = await buildBackupZip();
-    const zipContent = await zip.generateAsync({ type: "nodebuffer" });
-
-    const date = new Date().toISOString().split("T")[0];
-    const fileName = `backup_${date}.zip`;
-    const fullPath = path.join(cleanPath, fileName);
-
-    fs.writeFileSync(fullPath, zipContent);
-
-    await BackupLog.create({
-      backupDate: new Date(),
-      type: "manual",
-      recordCounts: metadata.recordCounts,
-      filesCount: metadata.filesCount,
-      status: "success",
-      filePath: fullPath,
-    });
-
-    res.json({
-      success: true,
-      message: `הגיבוי נשמר בהצלחה`,
-      fileName,
-      fullPath,
-      sizeMB: (zipContent.length / 1024 / 1024).toFixed(1),
-      totalRecords: metadata.totalRecords,
-      filesCount: metadata.filesCount,
-    });
-  } catch (error) {
-    console.error("Save backup to path error:", error);
-    res.status(500).json({ message: "שגיאה בשמירת הגיבוי לנתיב", error: error.message });
   }
 };
 

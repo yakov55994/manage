@@ -116,6 +116,7 @@ initializeSocket(io);
 
 // Parsers
 app.use(express.json({ limit: "50mb" }));
+app.use('/logo.png', express.static(new URL('./logo.png', import.meta.url).pathname));
 app.use(express.urlencoded({ extended: true, limit: "50mb" }));
 
 // Auth
@@ -192,8 +193,8 @@ const connectDB = async () => {
 
 connectDB();
 
-// גיבוי אוטומטי יומי ל-Google Drive - כל יום בחצות
-cron.schedule('0 0 * * *', () => {
+// גיבוי אוטומטי יומי ל-Google Drive - כל יום ב-23:00
+cron.schedule('00 23 * * *', () => {
   console.log('⏰ מתחיל גיבוי אוטומטי יומי...');
   createScheduledBackup();
 }, { timezone: 'Asia/Jerusalem' });
