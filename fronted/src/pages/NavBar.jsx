@@ -258,6 +258,11 @@ const Sidebar = () => {
           path: "/export-data",
           show: isAdmin,
         },
+        {
+          text: "לוגים",
+          path: "/system-logs",
+          show: isAdmin,
+        },
       ],
     },
   ], [isAdmin, isAccountant, canViewAnyProject, canViewModule, canEditModule, user]);

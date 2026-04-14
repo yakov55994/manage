@@ -1,6 +1,7 @@
 import User from '../models/User.js';
 import jwt from 'jsonwebtoken';
-import dotenv from 'dotenv'
+import dotenv from 'dotenv';
+import { saveLog, getIp } from '../utils/logger.js';
 
 dotenv.config();
 
@@ -16,10 +17,6 @@ const generateToken = (userId) => {
 
 // התחברות
 export const login = async (req, res) => {
-
-
-  const user = await User.findOne({ username: req.body.username });
-
   try {
     const { username, password } = req.body;
 
@@ -35,6 +32,13 @@ export const login = async (req, res) => {
       .populate('permissions.project', 'name')
 
     if (!user) {
+      await saveLog({
+        type: 'login_failed',
+        message: `ניסיון כניסה כושל - משתמש לא קיים: ${username}`,
+        username,
+        ip: getIp(req),
+        userAgent: req.headers['user-agent']
+      });
       return res.status(401).json({
         success: false,
         message: 'שם משתמש או סיסמה שגויים'
@@ -43,6 +47,14 @@ export const login = async (req, res) => {
 
     // בדוק אם המשתמש פעיל
     if (!user.isActive) {
+      await saveLog({
+        type: 'login_failed',
+        message: `ניסיון כניסה למשתמש חסום: ${username}`,
+        username,
+        userId: user._id,
+        ip: getIp(req),
+        userAgent: req.headers['user-agent']
+      });
       return res.status(401).json({
         success: false,
         message: 'המשתמש חסום'
@@ -52,6 +64,14 @@ export const login = async (req, res) => {
     // בדוק סיסמה
     const isPasswordValid = await user.comparePassword(password);
     if (!isPasswordValid) {
+      await saveLog({
+        type: 'login_failed',
+        message: `ניסיון כניסה עם סיסמה שגויה: ${username}`,
+        username,
+        userId: user._id,
+        ip: getIp(req),
+        userAgent: req.headers['user-agent']
+      });
       return res.status(401).json({
         success: false,
         message: 'שם משתמש או סיסמה שגויים'
@@ -60,6 +80,16 @@ export const login = async (req, res) => {
 
     // צור טוקן
     const token = generateToken(user._id);
+
+    await saveLog({
+      type: 'login_success',
+      message: `כניסה מוצלחת: ${username}`,
+      username,
+      userId: user._id,
+      ip: getIp(req),
+      userAgent: req.headers['user-agent'],
+      meta: { role: user.role }
+    });
 
     res.json({
       success: true,

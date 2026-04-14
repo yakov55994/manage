@@ -53,6 +53,7 @@ const NoAccess = lazy(() => import("./pages/NoAccess.jsx"));
 const ResetPassword = lazy(() => import("./pages/ResetPassword.jsx"));
 const ExportDataPage = lazy(() => import("./pages/ExportDataPage.jsx"));
 const MasavBroadcast = lazy(() => import("./pages/MasavBroadcast/MasavBroadcast.jsx"));
+const SystemLogs = lazy(() => import("./pages/SystemLogs.jsx"));
 
 const PageLoader = () => (
   <div className="flex items-center justify-center h-64">
@@ -382,6 +383,14 @@ const AppContent = () => {
               element={
                 <ProtectedRoute adminOnly allowAccountant>
                   <MasavBroadcast />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/system-logs"
+              element={
+                <ProtectedRoute adminOnly>
+                  <SystemLogs />
                 </ProtectedRoute>
               }
             />

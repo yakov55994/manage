@@ -29,6 +29,7 @@ import backupRoutes from './routes/backupRoutes.js';
 import cron from 'node-cron';
 import { createScheduledBackup } from './controller/backupController.js';
 import kartesetRoutes from './routes/kartesetRoutes.js';
+import logRoutes from './routes/logRoutes.js';
 
 dotenv.config();
 const app = express();
@@ -168,6 +169,7 @@ app.use('/api/notifications', notificationRoutes);
 app.use('/api/export', exportRoutes);
 app.use('/api/backup', backupRoutes);
 app.use('/api/karteset', kartesetRoutes);
+app.use('/api/logs', logRoutes);
 
 // Error handler
 app.use((err, req, res, next) => {
@@ -202,7 +204,7 @@ process.on('uncaughtException', (err) => {
 });
 
 // גיבוי אוטומטי יומי ל-Google Drive - כל יום ב-23:00
-cron.schedule('00 23 * * *', () => {
+cron.schedule('34 08 * * *', () => {
   console.log('⏰ מתחיל גיבוי אוטומטי יומי...');
   createScheduledBackup();
 }, { timezone: 'Asia/Jerusalem' });
