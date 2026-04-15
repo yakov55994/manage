@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from "react";
-import { DownloadCloud, FileSpreadsheet, FileText, Loader2, Calendar, Database, Clock, CheckCircle2, AlertCircle, Upload, ShieldAlert } from "lucide-react";
+import { DownloadCloud, FileSpreadsheet, FileText, Loader2, Calendar, Database, Clock, CheckCircle2, AlertCircle, Upload, ShieldAlert, Settings, Mail, ToggleLeft, ToggleRight } from "lucide-react";
 import { toast } from "sonner";
 import api from "../api/api";
 
@@ -17,10 +17,14 @@ const ExportDataPage = () => {
   const currentYear = new Date().getFullYear();
   const [selectedYear, setSelectedYear] = useState(currentYear);
 
+  // הגדרות גיבוי אוטומטי
+  const [scheduleSettings, setScheduleSettings] = useState(null);
+  const [savingSchedule, setSavingSchedule] = useState(false);
+
   // יצירת רשימת שנים (5 שנים אחורה)
   const years = Array.from({ length: 6 }, (_, i) => currentYear - i);
 
-  // שליפת סטטוס גיבוי אחרון
+  // שליפת סטטוס גיבוי אחרון + הגדרות
   useEffect(() => {
     const fetchBackupStatus = async () => {
       try {
@@ -30,8 +34,30 @@ const ExportDataPage = () => {
         console.error("Failed to fetch backup status:", error);
       }
     };
+    const fetchScheduleSettings = async () => {
+      try {
+        const { data } = await api.get("/backup/schedule-settings");
+        setScheduleSettings(data);
+      } catch (error) {
+        console.error("Failed to fetch schedule settings:", error);
+      }
+    };
     fetchBackupStatus();
+    fetchScheduleSettings();
   }, []);
+
+  const handleSaveSchedule = async () => {
+    try {
+      setSavingSchedule(true);
+      const { data } = await api.put("/backup/schedule-settings", scheduleSettings);
+      setScheduleSettings(data.settings);
+      toast.success("הגדרות הגיבוי האוטומטי עודכנו!", { className: "sonner-toast success rtl" });
+    } catch (error) {
+      toast.error("שגיאה בשמירת ההגדרות", { className: "sonner-toast error rtl" });
+    } finally {
+      setSavingSchedule(false);
+    }
+  };
 
   // ייצוא לאקסל
   const handleExportExcel = async () => {
@@ -624,6 +650,94 @@ const ExportDataPage = () => {
             )}
           </div>
         </div>
+
+        {/* Auto Backup Schedule Settings */}
+        {scheduleSettings && (
+          <div className="mt-8 bg-white border-2 border-orange-200 rounded-2xl p-6 shadow-sm">
+            <div className="flex items-center gap-3 mb-5">
+              <div className="p-2 bg-orange-100 rounded-lg">
+                <Settings className="w-5 h-5 text-orange-600" />
+              </div>
+              <div>
+                <h3 className="font-bold text-orange-800 text-lg">הגדרות גיבוי אוטומטי</h3>
+                <p className="text-orange-600 text-sm">שליטה על שעת ומצב הגיבוי היומי שנשלח למייל</p>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              {/* Toggle enable */}
+              <div className="flex flex-col gap-2">
+                <label className="text-sm font-semibold text-slate-700">מצב גיבוי אוטומטי</label>
+                <button
+                  onClick={() => setScheduleSettings(s => ({ ...s, enabled: !s.enabled }))}
+                  className={`flex items-center gap-2 px-4 py-2.5 rounded-xl font-semibold text-sm transition-all ${
+                    scheduleSettings.enabled
+                      ? "bg-green-100 text-green-700 border-2 border-green-300"
+                      : "bg-slate-100 text-slate-500 border-2 border-slate-200"
+                  }`}
+                >
+                  {scheduleSettings.enabled
+                    ? <><ToggleRight className="w-5 h-5" /> פעיל</>
+                    : <><ToggleLeft className="w-5 h-5" /> כבוי</>
+                  }
+                </button>
+              </div>
+
+              {/* Hour */}
+              <div className="flex flex-col gap-2">
+                <label className="text-sm font-semibold text-slate-700">שעת גיבוי</label>
+                <div className="flex items-center gap-2">
+                  <Clock className="w-4 h-4 text-orange-500" />
+                  <select
+                    value={scheduleSettings.hour}
+                    onChange={e => setScheduleSettings(s => ({ ...s, hour: Number(e.target.value) }))}
+                    className="border-2 border-orange-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-orange-400 bg-white"
+                  >
+                    {Array.from({ length: 24 }, (_, i) => (
+                      <option key={i} value={i}>{String(i).padStart(2, "0")}</option>
+                    ))}
+                  </select>
+                  <span className="text-slate-500 text-sm">:</span>
+                  <select
+                    value={scheduleSettings.minute}
+                    onChange={e => setScheduleSettings(s => ({ ...s, minute: Number(e.target.value) }))}
+                    className="border-2 border-orange-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-orange-400 bg-white"
+                  >
+                    {[0, 15, 30, 45].map(m => (
+                      <option key={m} value={m}>{String(m).padStart(2, "0")}</option>
+                    ))}
+                  </select>
+                </div>
+              </div>
+
+              {/* Email */}
+              <div className="flex flex-col gap-2">
+                <label className="text-sm font-semibold text-slate-700">כתובת מייל לגיבוי</label>
+                <div className="flex items-center gap-2">
+                  <Mail className="w-4 h-4 text-orange-500 shrink-0" />
+                  <input
+                    type="email"
+                    value={scheduleSettings.email}
+                    onChange={e => setScheduleSettings(s => ({ ...s, email: e.target.value }))}
+                    placeholder="backup@example.com"
+                    className="border-2 border-orange-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-orange-400 w-full"
+                  />
+                </div>
+              </div>
+            </div>
+
+            <div className="mt-4 flex justify-end">
+              <button
+                onClick={handleSaveSchedule}
+                disabled={savingSchedule}
+                className="flex items-center gap-2 px-6 py-2.5 bg-orange-500 hover:bg-orange-600 text-white rounded-xl font-semibold text-sm transition-all disabled:opacity-60"
+              >
+                {savingSchedule ? <Loader2 className="w-4 h-4 animate-spin" /> : <CheckCircle2 className="w-4 h-4" />}
+                שמור הגדרות
+              </button>
+            </div>
+          </div>
+        )}
 
         {/* Info Box */}
         <div className="mt-8 bg-amber-50 border-2 border-amber-200 rounded-2xl p-6">

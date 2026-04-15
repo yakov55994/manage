@@ -203,11 +203,33 @@ process.on('uncaughtException', (err) => {
   console.error('❌ Uncaught Exception:', err);
 });
 
-// גיבוי אוטומטי יומי ל-Google Drive - כל יום ב-23:00
-cron.schedule('34 08 * * *', () => {
-  console.log('⏰ מתחיל גיבוי אוטומטי יומי...');
-  createScheduledBackup();
-}, { timezone: 'Asia/Jerusalem' });
+// גיבוי אוטומטי - אתחול מהגדרות DB
+const initBackupSchedule = async () => {
+  try {
+    const { default: BackupSettings } = await import('./models/BackupSettings.js');
+    let settings = await BackupSettings.findOne();
+    if (!settings) {
+      settings = await BackupSettings.create({});
+    }
+    if (settings.enabled) {
+      global.scheduledBackupTask = cron.schedule(
+        `${settings.minute} ${settings.hour} * * *`,
+        () => {
+          console.log('⏰ מתחיל גיבוי אוטומטי יומי...');
+          createScheduledBackup();
+        },
+        { timezone: 'Asia/Jerusalem' }
+      );
+      console.log(`✅ גיבוי אוטומטי מוגדר: ${settings.hour}:${String(settings.minute).padStart(2, '0')}`);
+    } else {
+      console.log('⏸ גיבוי אוטומטי כבוי');
+    }
+  } catch (err) {
+    console.error('❌ שגיאה באתחול גיבוי אוטומטי:', err);
+  }
+};
+
+initBackupSchedule();
 
 export { io };
 export default app;

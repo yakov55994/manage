@@ -14,6 +14,8 @@ import Expense from "../models/Expense.js";
 import Notes from "../models/Notes.js";
 import Notification from "../models/Notification.js";
 import BackupLog from "../models/BackupLog.js";
+import BackupSettings from "../models/BackupSettings.js";
+import cloudinary from "../config/cloudinary.js";
 
 // פונקציה לפורמט תאריך
 const formatDate = (date) => {
@@ -514,6 +516,12 @@ export const createScheduledBackup = async () => {
   try {
     const date = new Date().toISOString().split("T")[0];
     console.log(`🔄 מתחיל גיבוי אוטומטי - שליחת אקסלים במייל (${date})...`);
+
+    // קריאת מייל מה-settings אם קיים
+    const settings = await BackupSettings.findOne().catch(() => null);
+    if (settings?.email) {
+      process.env.BACKUP_EMAIL = settings.email;
+    }
 
     const { zip, recordCounts, totalRecords } = await buildExcelOnlyZip();
     const zipBuffer = await zip.generateAsync({ type: "nodebuffer" });
@@ -1048,6 +1056,128 @@ export const restoreFromBackup = async (req, res) => {
       }
     }
 
+    // =====================================
+    // 9. קבצי חשבוניות והזמנות
+    // =====================================
+    results.files = { invoices: { uploaded: 0, skipped: 0 }, orders: { uploaded: 0, skipped: 0 } };
+
+    const getMimeType = (fileName) => {
+      const ext = (fileName.split(".").pop() || "").toLowerCase();
+      const map = {
+        pdf: "application/pdf",
+        jpg: "image/jpeg", jpeg: "image/jpeg",
+        png: "image/png", gif: "image/gif", webp: "image/webp",
+        doc: "application/msword",
+        docx: "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+        xls: "application/vnd.ms-excel",
+        xlsx: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+      };
+      return map[ext] || "application/octet-stream";
+    };
+
+    const uploadBuffer = (buffer, folder) =>
+      new Promise((resolve, reject) => {
+        const stream = cloudinary.uploader.upload_stream(
+          { folder, resource_type: "auto" },
+          (err, result) => (err ? reject(err) : resolve(result))
+        );
+        stream.end(buffer);
+      });
+
+    const allZipPaths = Object.keys(zip.files).filter((p) => !zip.files[p].dir);
+
+    // --- קבצי חשבוניות ---
+    const allInvoices = await Invoice.find({}).select("_id invoiceNumber files").lean();
+
+    for (const invoice of allInvoices) {
+      const safePrefix = `${invoice.invoiceNumber}_`.replace(/[^\u0590-\u05FF\w.-]/g, "_");
+
+      const matchingPaths = allZipPaths.filter((p) => {
+        const fname = p.split("/").pop().split("\\").pop();
+        return (
+          fname.startsWith(safePrefix) &&
+          (p.includes("קבצים/חשבוניות") || p.includes("קבצים\\חשבוניות"))
+        );
+      });
+
+      for (const zipPath of matchingPaths) {
+        try {
+          const fname = zipPath.split("/").pop().split("\\").pop();
+          if (invoice.files?.some((f) => f.name === fname)) {
+            results.files.invoices.skipped++;
+            continue;
+          }
+
+          const fileBuffer = await zip.file(zipPath).async("nodebuffer");
+          const cloudResult = await uploadBuffer(fileBuffer, "invoices");
+          const originalName = fname.slice(safePrefix.length) || fname;
+
+          await Invoice.findByIdAndUpdate(invoice._id, {
+            $push: {
+              files: {
+                name: originalName,
+                url: cloudResult.secure_url,
+                publicId: cloudResult.public_id,
+                resourceType: cloudResult.resource_type,
+                type: getMimeType(fname),
+                size: fileBuffer.length,
+                folder: "invoices",
+              },
+            },
+          });
+          results.files.invoices.uploaded++;
+        } catch (err) {
+          results.errors.push(`קובץ חשבונית ${invoice.invoiceNumber}: ${err.message}`);
+        }
+      }
+    }
+
+    // --- קבצי הזמנות ---
+    const allOrders = await Order.find({}).select("_id orderNumber files").lean();
+
+    for (const order of allOrders) {
+      const safePrefix = `${order.orderNumber}_`.replace(/[^\u0590-\u05FF\w.-]/g, "_");
+
+      const matchingPaths = allZipPaths.filter((p) => {
+        const fname = p.split("/").pop().split("\\").pop();
+        return (
+          fname.startsWith(safePrefix) &&
+          (p.includes("קבצים/הזמנות") || p.includes("קבצים\\הזמנות"))
+        );
+      });
+
+      for (const zipPath of matchingPaths) {
+        try {
+          const fname = zipPath.split("/").pop().split("\\").pop();
+          if (order.files?.some((f) => f.name === fname)) {
+            results.files.orders.skipped++;
+            continue;
+          }
+
+          const fileBuffer = await zip.file(zipPath).async("nodebuffer");
+          const cloudResult = await uploadBuffer(fileBuffer, "orders");
+          const originalName = fname.slice(safePrefix.length) || fname;
+
+          await Order.findByIdAndUpdate(order._id, {
+            $push: {
+              files: {
+                name: originalName,
+                url: cloudResult.secure_url,
+                publicId: cloudResult.public_id,
+                resourceType: cloudResult.resource_type,
+                type: getMimeType(fname),
+                size: fileBuffer.length,
+                folder: "orders",
+              },
+            },
+          });
+          results.files.orders.uploaded++;
+        } catch (err) {
+          results.errors.push(`קובץ הזמנה ${order.orderNumber}: ${err.message}`);
+        }
+      }
+    }
+
     res.json({
       success: true,
       message: "השחזור הושלם בהצלחה",
@@ -1056,5 +1186,63 @@ export const restoreFromBackup = async (req, res) => {
   } catch (error) {
     console.error("Restore error:", error);
     res.status(500).json({ message: "שגיאה בשחזור הגיבוי", error: error.message });
+  }
+};
+
+// ===============================================
+// הגדרות גיבוי אוטומטי
+// ===============================================
+export const getBackupScheduleSettings = async (req, res) => {
+  try {
+    let settings = await BackupSettings.findOne();
+    if (!settings) {
+      settings = await BackupSettings.create({});
+    }
+    res.json(settings);
+  } catch (error) {
+    console.error("Get backup settings error:", error);
+    res.status(500).json({ message: "שגיאה בשליפת הגדרות גיבוי" });
+  }
+};
+
+export const updateBackupScheduleSettings = async (req, res) => {
+  try {
+    const { enabled, hour, minute, email } = req.body;
+
+    let settings = await BackupSettings.findOne();
+    if (!settings) {
+      settings = await BackupSettings.create({});
+    }
+
+    if (typeof enabled === "boolean") settings.enabled = enabled;
+    if (hour !== undefined) settings.hour = Number(hour);
+    if (minute !== undefined) settings.minute = Number(minute);
+    if (email !== undefined) settings.email = email;
+
+    await settings.save();
+
+    // עדכון ה-cron דינמית
+    if (global.scheduledBackupTask) {
+      global.scheduledBackupTask.stop();
+    }
+    if (settings.enabled) {
+      const cron = (await import("node-cron")).default;
+      global.scheduledBackupTask = cron.schedule(
+        `${settings.minute} ${settings.hour} * * *`,
+        () => {
+          console.log("⏰ מתחיל גיבוי אוטומטי יומי...");
+          createScheduledBackup();
+        },
+        { timezone: "Asia/Jerusalem" }
+      );
+      console.log(`✅ גיבוי אוטומטי עודכן: ${settings.hour}:${String(settings.minute).padStart(2, "0")}`);
+    } else {
+      console.log("⏸ גיבוי אוטומטי כובה");
+    }
+
+    res.json({ success: true, settings });
+  } catch (error) {
+    console.error("Update backup settings error:", error);
+    res.status(500).json({ message: "שגיאה בעדכון הגדרות גיבוי" });
   }
 };
