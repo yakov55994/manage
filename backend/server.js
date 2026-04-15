@@ -193,8 +193,6 @@ const connectDB = async () => {
   }
 };
 
-connectDB();
-
 // Global error handlers to prevent crashes
 process.on('unhandledRejection', (reason, promise) => {
   console.error('❌ Unhandled Rejection at:', promise, 'reason:', reason);
@@ -229,7 +227,7 @@ const initBackupSchedule = async () => {
   }
 };
 
-initBackupSchedule();
+connectDB().then(() => initBackupSchedule());
 
 export { io };
 export default app;

@@ -254,7 +254,7 @@ const Sidebar = () => {
           show: isAdmin,
         },
         {
-          text: "ייצוא נתונים",
+          text: "ייצוא / שחזור נתונים",
           path: "/export-data",
           show: isAdmin,
         },

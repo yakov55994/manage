@@ -689,22 +689,22 @@ const ExportDataPage = () => {
                 <div className="flex items-center gap-2">
                   <Clock className="w-4 h-4 text-orange-500" />
                   <select
+                    value={scheduleSettings.minute}
+                    onChange={e => setScheduleSettings(s => ({ ...s, minute: Number(e.target.value) }))}
+                    className="border-2 border-orange-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-orange-400 bg-white"
+                  >
+                    {Array.from({ length: 60 }, (_, m) => (
+                      <option key={m} value={m}>{String(m).padStart(2, "0")}</option>
+                    ))}
+                  </select>
+                  <span className="text-slate-500 text-sm">:</span>
+                  <select
                     value={scheduleSettings.hour}
                     onChange={e => setScheduleSettings(s => ({ ...s, hour: Number(e.target.value) }))}
                     className="border-2 border-orange-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-orange-400 bg-white"
                   >
                     {Array.from({ length: 24 }, (_, i) => (
                       <option key={i} value={i}>{String(i).padStart(2, "0")}</option>
-                    ))}
-                  </select>
-                  <span className="text-slate-500 text-sm">:</span>
-                  <select
-                    value={scheduleSettings.minute}
-                    onChange={e => setScheduleSettings(s => ({ ...s, minute: Number(e.target.value) }))}
-                    className="border-2 border-orange-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-orange-400 bg-white"
-                  >
-                    {[0, 15, 30, 45].map(m => (
-                      <option key={m} value={m}>{String(m).padStart(2, "0")}</option>
                     ))}
                   </select>
                 </div>
