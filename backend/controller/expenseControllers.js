@@ -1,5 +1,6 @@
 import expenseService from "../services/expenseService.js";
 import { sendError } from "../utils/sendError.js";
+import { saveLog, getIp } from "../utils/logger.js";
 
 const expenseController = {
   // חיפוש הוצאות
@@ -10,6 +11,7 @@ const expenseController = {
       res.json(results);
     } catch (e) {
       console.error("searchExpenses ERROR:", e);
+      saveLog({ type: 'error', message: `שגיאה בחיפוש הוצאות — ${e.message}`, username: req.user?.username || req.user?.name, userId: req.user?._id, ip: getIp(req), meta: { query: req.query.q } });
       res.status(500).json({ message: "Search failed" });
     }
   },
@@ -20,7 +22,7 @@ const expenseController = {
       const expenses = await expenseService.getAllExpenses(req.user);
       res.json({ success: true, data: expenses });
     } catch (e) {
-      sendError(res, e);
+      sendError(res, e, req);
     }
   },
 
@@ -33,7 +35,7 @@ const expenseController = {
       );
       res.json({ success: true, data: expense });
     } catch (e) {
-      sendError(res, e);
+      sendError(res, e, req);
     }
   },
 
@@ -43,7 +45,7 @@ const expenseController = {
       const expense = await expenseService.createExpense(req.user, req.body);
       res.status(201).json({ success: true, data: expense });
     } catch (e) {
-      sendError(res, e);
+      sendError(res, e, req);
     }
   },
 
@@ -57,7 +59,7 @@ const expenseController = {
       );
       res.json({ success: true, data: expense });
     } catch (e) {
-      sendError(res, e);
+      sendError(res, e, req);
     }
   },
 
@@ -67,7 +69,7 @@ const expenseController = {
       await expenseService.deleteExpense(req.user, req.params.expenseId);
       res.json({ success: true, message: "הוצאה נמחקה בהצלחה" });
     } catch (e) {
-      sendError(res, e);
+      sendError(res, e, req);
     }
   },
 
@@ -81,7 +83,7 @@ const expenseController = {
       const result = await expenseService.bulkUpdateNotes(req.user, expenseIds, notes);
       res.json({ success: true, data: result, message: `עודכנו ${result.modifiedCount} הוצאות` });
     } catch (e) {
-      sendError(res, e);
+      sendError(res, e, req);
     }
   },
 
@@ -98,7 +100,7 @@ const expenseController = {
       );
       res.json({ success: true, data: expense });
     } catch (e) {
-      sendError(res, e);
+      sendError(res, e, req);
     }
   },
 };

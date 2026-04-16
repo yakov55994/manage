@@ -11,6 +11,8 @@ import invoiceService, {
 import { sendPaymentConfirmationEmail } from "../services/emailService.js";
 import { generateInvoiceExportPDF } from "../services/invoicePdfService.js";
 import fs from "fs";
+import { saveLog, getIp } from "../utils/logger.js";
+import { sendError } from "../utils/sendError.js";
 
 const invoiceControllers = {
   // ===============================================
@@ -73,6 +75,7 @@ const invoiceControllers = {
 
     } catch (err) {
       console.error("getInvoices ERROR:", err);
+      saveLog({ type: 'error', message: `שגיאה בשליפת חשבוניות — ${err.message}`, username: req.user?.username || req.user?.name, userId: req.user?._id, ip: getIp(req) });
       return res.status(500).json({ success: false, error: err.message });
     }
   },
@@ -103,6 +106,7 @@ const invoiceControllers = {
       res.json({ success: true, data: invoice });
     } catch (err) {
       console.error("❌ CREATE ERROR:", err);
+      saveLog({ type: 'error', message: `שגיאה ביצירת חשבונית — ${err.message}`, username: req.user?.username || req.user?.name, userId: req.user?._id, ip: getIp(req), meta: { path: req.path, body: req.body } });
       res.status(400).json({ success: false, error: err.message });
     }
   },
@@ -120,6 +124,7 @@ const invoiceControllers = {
       res.json({ success: true, data: updated });
     } catch (err) {
       console.error("❌ UPDATE ERROR:", err);
+      saveLog({ type: 'error', message: `שגיאה בעדכון חשבונית ${req.params.id} — ${err.message}`, username: req.user?.username || req.user?.name, userId: req.user?._id, ip: getIp(req), meta: { invoiceId: req.params.id } });
       res.status(400).json({ success: false, error: err.message });
     }
   },
@@ -144,6 +149,7 @@ const invoiceControllers = {
       res.json({ success: true, data: updated });
     } catch (err) {
       console.error("❌ PAYMENT UPDATE ERROR:", err);
+      saveLog({ type: 'error', message: `שגיאה בעדכון סטטוס תשלום לחשבונית ${req.params.id} — ${err.message}`, username: req.user?.username || req.user?.name, userId: req.user?._id, ip: getIp(req), meta: { invoiceId: req.params.id, status: req.body.status } });
       res.status(400).json({ success: false, error: err.message });
     }
   },
@@ -168,6 +174,7 @@ const invoiceControllers = {
       res.json({ success: true, data: updated });
     } catch (err) {
       console.error("❌ MOVE ERROR:", err);
+      saveLog({ type: 'error', message: `שגיאה בהעברת חשבונית ${req.params.id} — ${err.message}`, username: req.user?.username || req.user?.name, userId: req.user?._id, ip: getIp(req), meta: { invoiceId: req.params.id } });
       res.status(400).json({ success: false, error: err.message });
     }
   },
@@ -181,6 +188,7 @@ const invoiceControllers = {
       res.json({ success: true });
     } catch (err) {
       console.error("❌ DELETE ERROR:", err);
+      saveLog({ type: 'error', message: `שגיאה במחיקת חשבונית ${req.params.id} — ${err.message}`, username: req.user?.username || req.user?.name, userId: req.user?._id, ip: getIp(req), meta: { invoiceId: req.params.id } });
       res.status(400).json({ success: false, error: err.message });
     }
   },
@@ -189,7 +197,7 @@ const invoiceControllers = {
       const result = await invoiceService.checkDuplicate(req.query);
       res.json({ success: true, duplicate: result });
     } catch (e) {
-      sendError(res, e);
+      sendError(res, e, req);
     }
   },
 
@@ -245,6 +253,7 @@ const invoiceControllers = {
       res.json({ success: true, data: populated });
     } catch (err) {
       console.error("❌ ADD FILES ERROR:", err);
+      saveLog({ type: 'error', message: `שגיאה בהוספת קבצים לחשבונית ${req.params.id} — ${err.message}`, username: req.user?.username || req.user?.name, userId: req.user?._id, ip: getIp(req), meta: { invoiceId: req.params.id } });
       res.status(400).json({ success: false, error: err.message });
     }
   },
@@ -277,6 +286,7 @@ const invoiceControllers = {
       res.json({ success: true, updated: updated.modifiedCount, message: `עודכנו ${updated.modifiedCount} חשבוניות` });
     } catch (err) {
       console.error("❌ BULK SUBMISSION UPDATE ERROR:", err);
+      saveLog({ type: 'error', message: `שגיאה בעדכון מצב הגשה מרובה — ${err.message}`, username: req.user?.username || req.user?.name, userId: req.user?._id, ip: getIp(req), meta: { invoiceIds: req.body.invoiceIds } });
       res.status(400).json({ success: false, error: err.message });
     }
   },
@@ -383,6 +393,7 @@ const invoiceControllers = {
       });
     } catch (err) {
       console.error("❌ BULK UPDATE ERROR:", err);
+      saveLog({ type: 'error', message: `שגיאה בעדכון תשלום מרובה — ${err.message}`, username: req.user?.username || req.user?.name, userId: req.user?._id, ip: getIp(req), meta: { invoiceIds: req.body.invoiceIds, status: req.body.status } });
       res.status(400).json({ success: false, error: err.message });
     }
   },
@@ -597,6 +608,7 @@ const invoiceControllers = {
       });
     } catch (err) {
       console.error("EXPORT INVOICES ERROR:", err);
+      saveLog({ type: 'error', message: `שגיאה בייצוא חשבוניות PDF — ${err.message}`, username: req.user?.username || req.user?.name, userId: req.user?._id, ip: getIp(req), meta: { projectId: req.body.projectId || req.query.projectId } });
       res.status(500).json({ success: false, error: err.message });
     }
   },

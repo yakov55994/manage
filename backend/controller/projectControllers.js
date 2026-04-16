@@ -3,6 +3,7 @@ import Order from "../models/Order.js";
 import Project from "../models/Project.js";
 import projectService from "../services/projectService.js";
 import { sendError } from "../utils/sendError.js";
+import { saveLog, getIp } from "../utils/logger.js";
 
 const projectController = {
 
@@ -13,6 +14,7 @@ const projectController = {
     res.json(results);
   } catch (e) {
     console.error("❌ searchProjects ERROR:", e);
+    saveLog({ type: 'error', message: `שגיאה בחיפוש פרויקטים — ${e.message}`, username: req.user?.username || req.user?.name, userId: req.user?._id, ip: getIp(req), meta: { query: req.query.q } });
     res.status(500).json({ message: "Search failed" });
   }
 },
@@ -23,7 +25,7 @@ const projectController = {
       const projects = await projectService.getAllProjects(req.user);
       res.json({ success: true, data: projects });
     } catch (e) {
-      sendError(res, e);
+      sendError(res, e, req);
     }
   },
 
@@ -53,7 +55,7 @@ const projectController = {
       );
       res.status(201).json({ success: true, data: invoices });
     } catch (e) {
-      sendError(res, e);
+      sendError(res, e, req);
     }
   },
 
@@ -62,7 +64,7 @@ const projectController = {
       const project = await projectService.createProject(req.user, req.body);
       res.status(201).json({ success: true, data: project });
     } catch (e) {
-      sendError(res, e);
+      sendError(res, e, req);
     }
   },
 
@@ -75,7 +77,7 @@ const projectController = {
       );
       res.json({ success: true, data: updated });
     } catch (e) {
-      sendError(res, e);
+      sendError(res, e, req);
     }
   },
 
@@ -84,7 +86,7 @@ const projectController = {
       await projectService.deleteProject(req.user, req.params.projectId);
       res.json({ success: true, message: "נמחק" });
     } catch (e) {
-      sendError(res, e);
+      sendError(res, e, req);
     }
   }
 };

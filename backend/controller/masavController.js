@@ -7,6 +7,7 @@ import { generateMasavPDF } from "../services/masavPdfService.js";
 import { generateMasavFile, validatePayments } from "../services/masavService.js";
 import fs from "fs";
 import MasavHistory from "../models/MasavHistory.js";
+import { saveLog, getIp } from "../utils/logger.js";
 
 // ===============================================
 // פונקציית עזר לסידור עברי (א'-ב')
@@ -54,8 +55,8 @@ async generateMasav(req, res) {
 
       if (supplierMap.has(key)) {
         const existing = supplierMap.get(key);
-        // צבירת סכומים
-        existing.amount += payment.amount;
+        // צבירת סכומים - חיבור מספרי מפורש למניעת שרשור מחרוזות
+        existing.amount = Number(existing.amount) + Number(payment.amount);
         // איחוד מספרי חשבוניות
         if (payment.invoiceNumbers) {
           existing.invoiceNumbers = existing.invoiceNumbers
@@ -137,6 +138,7 @@ async generateMasav(req, res) {
       });
     } catch (historyErr) {
       console.error("Failed to save MASAV history:", historyErr);
+      saveLog({ type: 'error', message: `שגיאה בשמירת היסטוריית מסב — ${historyErr.message}`, username: req.user?.username || req.user?.name, userId: req.user?._id, ip: getIp(req), meta: { executionDate, totalPayments: sortedPayments.length } });
     }
 
     // קידוד UTF-8 לשם הקובץ בעברית
@@ -152,6 +154,7 @@ async generateMasav(req, res) {
 
   } catch (err) {
     console.error("MASAV ERROR:", err);
+    saveLog({ type: 'error', message: `שגיאה ביצירת קובץ מסב — ${err.message}`, username: req.user?.username || req.user?.name, userId: req.user?._id, ip: getIp(req), meta: { executionDate: req.body?.executionDate, totalPayments: req.body?.payments?.length } });
     if (!res.headersSent) res.status(500).json({ error: err.message });
 
   } finally {
@@ -190,6 +193,7 @@ async getMasavHistory(req, res) {
     res.json({ success: true, data: history });
   } catch (err) {
     console.error("Error fetching MASAV history:", err);
+    saveLog({ type: 'error', message: `שגיאה בשליפת היסטוריית מסב — ${err.message}`, username: req.user?.username || req.user?.name, userId: req.user?._id, ip: getIp(req) });
     res.status(500).json({ error: err.message });
   }
 },
@@ -231,6 +235,7 @@ async downloadMasavHistory(req, res) {
     res.end(zipContent);
   } catch (err) {
     console.error("Error downloading MASAV history:", err);
+    saveLog({ type: 'error', message: `שגיאה בהורדת מסב מהיסטוריה — ${err.message}`, username: req.user?.username || req.user?.name, userId: req.user?._id, ip: getIp(req), meta: { recordId: req.params.id } });
     if (!res.headersSent) res.status(500).json({ error: err.message });
   }
 }

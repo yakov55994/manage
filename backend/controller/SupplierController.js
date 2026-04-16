@@ -1,6 +1,7 @@
 import Supplier from "../models/Supplier.js";
 import supplierService from "../services/SupplierService.js";
 import { sendError } from "../utils/sendError.js";
+import { saveLog, getIp } from "../utils/logger.js";
 
 const supplierController = {
 
@@ -10,6 +11,7 @@ const supplierController = {
       const suppliers = await supplierService.searchSuppliers(q);
       res.json({ suppliers });
     } catch (err) {
+      saveLog({ type: 'error', message: `שגיאה בחיפוש ספקים — ${err.message}`, username: req.user?.username || req.user?.name, userId: req.user?._id, ip: getIp(req) });
       res.status(500).json({ message: err.message });
     }
   },
@@ -21,6 +23,7 @@ const supplierController = {
       const suppliers = await supplierService.getAllSuppliers(type);
       res.json({ success: true, data: suppliers });
     } catch (err) {
+      saveLog({ type: 'error', message: `שגיאה בשליפת ספקים — ${err.message}`, username: req.user?.username || req.user?.name, userId: req.user?._id, ip: getIp(req) });
       res.status(500).json({ success: false, message: err.message });
     }
   },
@@ -30,7 +33,7 @@ const supplierController = {
       const suppliers = await Supplier.find();
       res.json({ success: true, data: suppliers });
     } catch (e) {
-      sendError(res, e);
+      sendError(res, e, req);
     }
   },
 
@@ -52,7 +55,7 @@ const supplierController = {
       );
       res.json({ success: true, data: suppliers });
     } catch (e) {
-      sendError(res, e);
+      sendError(res, e, req);
     }
   },
 
@@ -62,7 +65,7 @@ const supplierController = {
       if (!supplier) throw new Error("לא נמצא");
       res.json({ success: true, data: supplier });
     } catch (e) {
-      sendError(res, e);
+      sendError(res, e, req);
     }
   },
 
@@ -71,7 +74,7 @@ const supplierController = {
       const supplier = await supplierService.createSupplier(req.user, req.body);
       res.status(201).json({ success: true, data: supplier });
     } catch (e) {
-      sendError(res, e);
+      sendError(res, e, req);
     }
   },
 
@@ -80,7 +83,7 @@ const supplierController = {
       const supplier = await supplierService.updateSupplier(req.user, req.params.supplierId, req.body);
       res.json({ success: true, data: supplier });
     } catch (e) {
-      sendError(res, e);
+      sendError(res, e, req);
     }
   },
 
@@ -89,7 +92,7 @@ const supplierController = {
       await supplierService.deleteSupplier(req.user, req.params.supplierId);
       res.json({ success: true, message: "נמחק" });
     } catch (e) {
-      sendError(res, e);
+      sendError(res, e, req);
     }
   }
 

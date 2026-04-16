@@ -1,8 +1,11 @@
-export const sendError = (res, err) => {
+import { saveLog, getIp } from './logger.js';
+
+export const sendError = (res, err, req = null) => {
   const msg = err?.message || "שגיאה לא ידועה";
 
   // 🔐 הרשאות
   if (msg === "אין הרשאה") {
+    if (req) saveLog({ type: 'error', message: `גישה נדחתה: ${req.method} ${req.path}`, username: req.user?.username || req.user?.name, userId: req.user?._id, ip: getIp(req), meta: { status: 403, path: req.path, method: req.method } });
     return res.status(403).json({ success: false, message: msg });
   }
 
@@ -23,5 +26,6 @@ export const sendError = (res, err) => {
 
   // 🔴 שגיאת DB או אחרת
   console.error("❌ SERVER ERROR:", err);
+  if (req) saveLog({ type: 'error', message: `שגיאת שרת: ${req.method} ${req.path} — ${msg}`, username: req.user?.username || req.user?.name, userId: req.user?._id, ip: getIp(req), meta: { status: 500, path: req.path, method: req.method, errorMessage: msg } });
   return res.status(500).json({ success: false, message: "שגיאת שרת" });
 };

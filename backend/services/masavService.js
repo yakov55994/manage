@@ -139,8 +139,7 @@ export function generateMasavFile(companyInfo, payments, executionDate) {
   // =====================================================
   // דוגמה: 192982289000000002053900000004702120515754364שלוה מיזמי שילוב00000009698000000000000000000113300000000000006000000000000000000
   payments.forEach(p => {
-    const cleanAmount = String(p.amount).replace(/[^0-9]/g, '');
-    const amountInAgorot = Number(cleanAmount);
+    const amountInAgorot = Math.round(Number(p.amount));
     totalAmount += amountInAgorot;
 
     let row1 = '';

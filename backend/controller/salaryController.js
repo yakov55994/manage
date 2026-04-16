@@ -4,6 +4,7 @@ import { recalculateRemainingBudget } from "../services/invoiceService.js";
 import { generateSalaryExportPDF } from "../services/salaryPdfService.js";
 import fs from "fs";
 import xlsx from "xlsx";
+import { saveLog, getIp } from "../utils/logger.js";
 
 // =======================================================
 // CREATE SALARY
@@ -46,6 +47,7 @@ export async function createSalary(req, res) {
     res.status(201).json({ success: true, data: salary });
   } catch (err) {
     console.error("CREATE SALARY ERROR:", err);
+    saveLog({ type: 'error', message: `שגיאה ביצירת משכורת — ${err.message}`, username: req.user?.username || req.user?.name, userId: req.user?._id, ip: getIp(req), meta: { projectId: req.body.projectId, employeeName: req.body.employeeName } });
     res.status(500).json({ success: false, error: err.message });
   }
 }
@@ -136,6 +138,7 @@ export async function updateSalary(req, res) {
     res.json({ success: true, data: salary });
   } catch (err) {
     console.error("UPDATE SALARY ERROR:", err);
+    saveLog({ type: 'error', message: `שגיאה בעדכון משכורת ${req.params.id} — ${err.message}`, username: req.user?.username || req.user?.name, userId: req.user?._id, ip: getIp(req), meta: { salaryId: req.params.id } });
     res.status(500).json({ success: false, error: err.message });
   }
 }
@@ -161,6 +164,7 @@ export async function deleteSalary(req, res) {
     res.json({ success: true });
   } catch (err) {
     console.error("DELETE SALARY ERROR:", err);
+    saveLog({ type: 'error', message: `שגיאה במחיקת משכורת ${req.params.id} — ${err.message}`, username: req.user?.username || req.user?.name, userId: req.user?._id, ip: getIp(req), meta: { salaryId: req.params.id } });
     res.status(500).json({ success: false, error: err.message });
   }
 }
@@ -236,6 +240,7 @@ export async function bulkUpdateSalaries(req, res) {
     return res.json({ success: true, message: "אין שינויים", updated: 0 });
   } catch (err) {
     console.error("BULK UPDATE SALARIES ERROR:", err);
+    saveLog({ type: 'error', message: `שגיאה בעדכון משכורות מרובות — ${err.message}`, username: req.user?.username || req.user?.name, userId: req.user?._id, ip: getIp(req), meta: { count: req.body.salaryIds?.length } });
     res.status(500).json({ success: false, error: err.message });
   }
 }
@@ -267,6 +272,7 @@ export async function bulkDeleteSalaries(req, res) {
     });
   } catch (err) {
     console.error("BULK DELETE SALARIES ERROR:", err);
+    saveLog({ type: 'error', message: `שגיאה במחיקת משכורות מרובות — ${err.message}`, username: req.user?.username || req.user?.name, userId: req.user?._id, ip: getIp(req), meta: { count: req.body.salaryIds?.length } });
     res.status(500).json({ success: false, error: err.message });
   }
 }
@@ -335,7 +341,7 @@ export async function exportSalaries(req, res) {
     });
   } catch (err) {
     console.error("❌ EXPORT SALARIES ERROR:", err);
-    console.error("Error stack:", err.stack);
+    saveLog({ type: 'error', message: `שגיאה בייצוא משכורות PDF — ${err.message}`, username: req.user?.username || req.user?.name, userId: req.user?._id, ip: getIp(req), meta: { projectIds: req.body.projectIds || req.query.projectIds } });
     res.status(500).json({ success: false, error: err.message });
   }
 }
@@ -432,6 +438,7 @@ export async function uploadSalariesExcel(req, res) {
     });
   } catch (err) {
     console.error("UPLOAD SALARIES EXCEL ERROR:", err);
+    saveLog({ type: 'error', message: `שגיאה בהעלאת אקסל משכורות — ${err.message}`, username: req.user?.username || req.user?.name, userId: req.user?._id, ip: getIp(req), meta: { projectId: req.body.projectId, fileName: req.file?.originalname } });
     res.status(500).json({ success: false, error: err.message });
   }
 }

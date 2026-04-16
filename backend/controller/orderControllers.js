@@ -9,7 +9,7 @@ const orderController = {
       const results = await orderService.searchOrders(q);
       res.json(results);
     } catch (e) {
-      sendError(res, e);
+      sendError(res, e, req);
     }
   },
 
@@ -18,7 +18,7 @@ const orderController = {
       const data = await orderService.getOrders(req.user);
       res.json({ success: true, data });
     } catch (e) {
-      sendError(res, e);
+      sendError(res, e, req);
     }
   },
 
@@ -35,7 +35,7 @@ const orderController = {
       res.json({ success: true, data: order });
 
     } catch (e) {
-      sendError(res, e);
+      sendError(res, e, req);
     }
   },
 
@@ -44,7 +44,7 @@ const orderController = {
       const orders = await orderService.createBulkOrders(req.user, req.body.orders);
       res.json({ success: true, data: orders });
     } catch (e) {
-      sendError(res, e);
+      sendError(res, e, req);
     }
   },
   async createOrder(req, res) {
@@ -89,7 +89,7 @@ const orderController = {
       const newOrder = await orderService.createOrder(req.user, orderData);
       res.status(201).json({ success: true, data: newOrder });
     } catch (e) {
-      sendError(res, e);
+      sendError(res, e, req);
     }
   },
 
@@ -143,7 +143,7 @@ const orderController = {
       res.json({ success: true, data: updated });
     } catch (e) {
       console.error('❌ Controller error:', e);
-      sendError(res, e);
+      sendError(res, e, req);
     }
   },
 
@@ -157,7 +157,7 @@ const orderController = {
       );
       res.json({ success: true, data: result });
     } catch (e) {
-      sendError(res, e);
+      sendError(res, e, req);
     }
   },
 
@@ -166,7 +166,7 @@ const orderController = {
       await orderService.deleteOrder(req.user, req.params.orderId);
       res.json({ success: true, message: "נמחק" });
     } catch (e) {
-      sendError(res, e);
+      sendError(res, e, req);
     }
   },
 
@@ -185,7 +185,7 @@ const orderController = {
 
       res.json({ success: true, data: result });
     } catch (e) {
-      sendError(res, e);
+      sendError(res, e, req);
     }
   }
 };
