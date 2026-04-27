@@ -19,6 +19,7 @@ import {
   AlertTriangle,
   CheckSquare,
   Square,
+  Upload,
 } from "lucide-react";
 import { toast } from "sonner";
 import MoveInvoiceModal from "../../Components/MoveInvoiceModal.jsx";
@@ -160,6 +161,7 @@ const InvoicesPage = () => {
   });
   const [masavModal, setMasavModal] = useState(false);
   const [masavHistoryModal, setMasavHistoryModal] = useState(false);
+  const [showMilgaExcelModal, setShowMilgaExcelModal] = useState(false);
   const [selectedInvoices, setSelectedInvoices] = useState([]);
   const [allExpenses, setAllExpenses] = useState([]);
   const [showBulkDeleteModal, setShowBulkDeleteModal] = useState(false);
@@ -2777,6 +2779,17 @@ const InvoicesPage = () => {
                 <span className="text-sm">ייצוא משכורות</span>
               </button>
 
+              {/* כפתור העלאת אקסל מילגה - לא מוצג לרואת חשבון */}
+              {user?.role !== "accountant" && (
+                <button
+                  onClick={() => setShowMilgaExcelModal(true)}
+                  className="flex items-center justify-center gap-2 px-4 py-3 bg-gradient-to-r from-green-500 to-emerald-500 text-white font-bold rounded-full hover:from-green-600 hover:to-emerald-600 transition-all shadow-lg"
+                >
+                  <Upload className="w-5 h-5 flex-shrink-0" />
+                  <span className="text-sm">מילגות מאקסל</span>
+                </button>
+              )}
+
               {/* כפתור יצירת חשבונית - לא מוצג לרואת חשבון */}
               {user?.role !== "accountant" && (
                 <button
@@ -4287,8 +4300,246 @@ const InvoicesPage = () => {
           </div>
         </div>
       )}
+
+      {/* מודל העלאת אקסל מילגה */}
+      {showMilgaExcelModal && (
+        <MilgaExcelModal
+          projects={projectsForPrint}
+          onClose={() => setShowMilgaExcelModal(false)}
+          onSuccess={() => {
+            setShowMilgaExcelModal(false);
+            fetchInvoices();
+          }}
+        />
+      )}
     </div>
   );
 };
+
+// ============================================================
+// קומפוננט מודל העלאת אקסל מילגה
+// ============================================================
+function MilgaExcelModal({ projects, onClose, onSuccess }) {
+  const [excelFile, setExcelFile] = useState(null);
+  const [fundedProjectId, setFundedProjectId] = useState("");
+  const [globalAmount, setGlobalAmount] = useState("");
+  const [invoiceDate, setInvoiceDate] = useState(new Date().toISOString().split("T")[0]);
+  const [loading, setLoading] = useState(false);
+  const [result, setResult] = useState(null);
+
+  const nonMilgaProjects = projects.filter(
+    (p) => p.name !== "מילגה" && p.type !== "salary"
+  );
+
+  const downloadTemplate = () => {
+    const ws = XLSX.utils.aoa_to_sheet([
+      ["שם", "מזהות", "בנק", "סניף", "חשבון", "סטטוס", "סכום"],
+      ["ישראל ישראלי", "123456789", "12", "001", "12345678", "", "1500"],
+    ]);
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, "מילגות");
+    const buffer = XLSX.write(wb, { bookType: "xlsx", type: "array" });
+    saveAs(new Blob([buffer]), "תבנית_מילגות.xlsx");
+  };
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    if (!excelFile) return toast.error("נא להעלות קובץ Excel");
+    if (!fundedProjectId) return toast.error("נא לבחור פרויקט מממן");
+
+    setLoading(true);
+    setResult(null);
+
+    try {
+      const formData = new FormData();
+      formData.append("file", excelFile);
+      formData.append("fundedProjectId", fundedProjectId);
+      formData.append("globalAmount", globalAmount);
+      formData.append("invoiceDate", invoiceDate);
+
+      const res = await api.post("/invoices/upload-excel-milga", formData, {
+        headers: { "Content-Type": "multipart/form-data" },
+      });
+
+      setResult(res.data);
+      toast.success(res.data.message);
+    } catch (err) {
+      toast.error(err.response?.data?.message || "שגיאה בהעלאת הקובץ");
+      setResult({ success: false, message: err.response?.data?.message });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return (
+    <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+      <div className="bg-white rounded-2xl shadow-2xl max-w-lg w-full max-h-[90vh] overflow-y-auto" dir="rtl">
+        {/* Header */}
+        <div className="p-6 border-b border-gray-200 flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <div className="p-2 bg-green-100 rounded-xl">
+              <Upload className="w-6 h-6 text-green-600" />
+            </div>
+            <div>
+              <h2 className="text-xl font-bold text-gray-800">יצירת חשבוניות מילגה מאקסל</h2>
+              <p className="text-sm text-gray-500">כל שורה תיצור חשבונית מילגה אחת</p>
+            </div>
+          </div>
+          <button onClick={onClose} className="p-2 hover:bg-gray-100 rounded-xl transition-colors">
+            <X className="w-5 h-5 text-gray-500" />
+          </button>
+        </div>
+
+        <form onSubmit={handleSubmit} className="p-6 space-y-5">
+          {/* הוראות */}
+          <div className="p-4 bg-blue-50 border border-blue-200 rounded-xl text-sm text-blue-800">
+            <div className="flex justify-between items-start mb-2">
+              <p className="font-bold">פורמט הקובץ הנדרש:</p>
+              <button
+                type="button"
+                onClick={downloadTemplate}
+                className="px-3 py-1 bg-blue-600 text-white rounded-lg text-xs hover:bg-blue-700 transition-colors"
+              >
+                הורד תבנית
+              </button>
+            </div>
+            <p className="mt-1">עמודות: <strong>שם, מזהות, בנק, סניף, חשבון, סטטוס, סכום</strong></p>
+            <p className="mt-1 text-xs text-blue-600">אם עמודת "סכום" ריקה – ישתמש בסכום גלובלי שמוזן למטה</p>
+          </div>
+
+          {/* בחירת פרויקט מממן */}
+          <div>
+            <label className="block font-bold text-sm text-gray-700 mb-2">
+              פרויקט מממן <span className="text-red-500">*</span>
+            </label>
+            <select
+              className="w-full p-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-green-500"
+              value={fundedProjectId}
+              onChange={(e) => setFundedProjectId(e.target.value)}
+              required
+            >
+              <option value="">בחר פרויקט...</option>
+              {nonMilgaProjects.map((p) => (
+                <option key={p._id} value={p._id}>{p.name}</option>
+              ))}
+            </select>
+          </div>
+
+          {/* סכום גלובלי */}
+          <div>
+            <label className="block font-bold text-sm text-gray-700 mb-2">
+              סכום גלובלי לכל שורה (אם אין עמודת סכום בקובץ)
+            </label>
+            <input
+              type="number"
+              className="w-full p-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-green-500"
+              value={globalAmount}
+              onChange={(e) => setGlobalAmount(e.target.value)}
+              placeholder="לדוגמה: 1500"
+              min="0"
+            />
+          </div>
+
+          {/* תאריך חשבונית */}
+          <div>
+            <label className="block font-bold text-sm text-gray-700 mb-2">תאריך חשבונית</label>
+            <input
+              type="date"
+              className="w-full p-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-green-500 cursor-pointer"
+              value={invoiceDate}
+              onChange={(e) => setInvoiceDate(e.target.value)}
+            />
+          </div>
+
+          {/* העלאת קובץ */}
+          <div>
+            <label className="block font-bold text-sm text-gray-700 mb-2">
+              קובץ Excel <span className="text-red-500">*</span>
+            </label>
+            <label
+              htmlFor="milga-excel-file"
+              className="flex items-center justify-center gap-3 p-4 border-2 border-dashed border-green-300 rounded-xl hover:border-green-500 hover:bg-green-50 transition-all cursor-pointer"
+            >
+              <FileSpreadsheet className="w-6 h-6 text-green-500" />
+              <span className="font-medium text-gray-700">
+                {excelFile ? excelFile.name : "לחץ להעלאת קובץ Excel"}
+              </span>
+            </label>
+            <input
+              id="milga-excel-file"
+              type="file"
+              accept=".xlsx,.xls"
+              className="hidden"
+              onChange={(e) => setExcelFile(e.target.files[0] || null)}
+            />
+          </div>
+
+          {/* תוצאה */}
+          {result && (
+            <div className={`p-4 rounded-xl ${result.success ? "bg-green-50 border border-green-200" : "bg-red-50 border border-red-200"}`}>
+              <p className={`font-bold ${result.success ? "text-green-800" : "text-red-800"}`}>
+                {result.message}
+              </p>
+              {result.created?.length > 0 && (
+                <div className="mt-2 text-sm text-green-700">
+                  <p className="font-semibold">נוצרו {result.created.length} חשבוניות:</p>
+                  <ul className="mt-1 space-y-1 max-h-32 overflow-y-auto">
+                    {result.created.map((c, i) => (
+                      <li key={i} className="flex justify-between">
+                        <span>{c.name}</span>
+                        <span className="font-bold">{c.amount.toLocaleString("he-IL")} ₪</span>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+              {result.errors?.length > 0 && (
+                <div className="mt-2 text-sm text-red-700">
+                  <p className="font-semibold">{result.errors.length} שורות עם שגיאה:</p>
+                  <ul className="mt-1">
+                    {result.errors.map((e, i) => (
+                      <li key={i}>שורה {e.row}: {e.name || ""} – {e.reason}</li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* כפתורים */}
+          <div className="flex gap-3 pt-2">
+            {result?.success ? (
+              <button
+                type="button"
+                onClick={onSuccess}
+                className="flex-1 py-3 bg-green-600 text-white font-bold rounded-xl hover:bg-green-700 transition-colors"
+              >
+                סגור ורענן
+              </button>
+            ) : (
+              <>
+                <button
+                  type="submit"
+                  disabled={loading}
+                  className="flex-1 py-3 bg-green-600 text-white font-bold rounded-xl hover:bg-green-700 disabled:opacity-50 transition-colors flex items-center justify-center gap-2"
+                >
+                  <Upload className="w-4 h-4" />
+                  {loading ? "יוצר חשבוניות..." : "העלה וצור חשבוניות"}
+                </button>
+                <button
+                  type="button"
+                  onClick={onClose}
+                  className="flex-1 py-3 bg-gray-100 text-gray-700 font-bold rounded-xl hover:bg-gray-200 transition-colors"
+                >
+                  ביטול
+                </button>
+              </>
+            )}
+          </div>
+        </form>
+      </div>
+    </div>
+  );
+}
 
 export default InvoicesPage;

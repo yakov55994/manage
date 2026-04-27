@@ -4,6 +4,7 @@
 
 import Invoice from "../models/Invoice.js";
 import Project from "../models/Project.js";
+import Supplier from "../models/Supplier.js";
 import Counter from "../models/Counter.js";
 import invoiceService, {
   recalculateRemainingBudget
@@ -11,6 +12,7 @@ import invoiceService, {
 import { sendPaymentConfirmationEmail } from "../services/emailService.js";
 import { generateInvoiceExportPDF } from "../services/invoicePdfService.js";
 import fs from "fs";
+import xlsx from "xlsx";
 import { saveLog, getIp } from "../utils/logger.js";
 import { sendError } from "../utils/sendError.js";
 
@@ -677,5 +679,141 @@ async function checkDuplicateDocNumbers(docNumbers) {
   }
   return Array.from(existingNumbers);
 }
+
+// ===============================================
+// העלאת אקסל מילגה – יצירת חשבוניות אוטומטית
+// ===============================================
+invoiceControllers.uploadExcelMilga = async (req, res) => {
+  try {
+    if (!req.file) {
+      return res.status(400).json({ success: false, message: "לא הועלה קובץ" });
+    }
+
+    const { fundedProjectId, globalAmount, invoiceDate } = req.body;
+
+    if (!fundedProjectId) {
+      return res.status(400).json({ success: false, message: "חובה לבחור פרויקט מממן" });
+    }
+
+    // 1. קרא את האקסל מהזיכרון
+    const workbook = xlsx.read(req.file.buffer, { type: "buffer" });
+    const sheetName = workbook.SheetNames[0];
+    const sheet = workbook.Sheets[sheetName];
+    const rows = xlsx.utils.sheet_to_json(sheet, { defval: "" });
+
+    if (!rows.length) {
+      return res.status(400).json({ success: false, message: "הקובץ ריק" });
+    }
+
+    // 2. מצא פרויקט מילגה
+    const milgaProject = await Project.findOne({ name: "מילגה" });
+    if (!milgaProject) {
+      return res.status(400).json({ success: false, message: "פרויקט מילגה לא נמצא במערכת" });
+    }
+
+    // 3. מצא פרויקט מממן
+    const fundedProject = await Project.findById(fundedProjectId);
+    if (!fundedProject) {
+      return res.status(400).json({ success: false, message: "פרויקט מממן לא נמצא" });
+    }
+
+    // 4. מצא או צור ספק גנרי "מילגה"
+    let milgaSupplier = await Supplier.findOne({ name: "מילגה", business_tax: "000000000" });
+    if (!milgaSupplier) {
+      milgaSupplier = await Supplier.create({
+        name: "מילגה",
+        business_tax: "000000000",
+        createdBy: req.user._id,
+      });
+    }
+
+    // 5. עבור על כל שורה וצור חשבונית
+    const created = [];
+    const errors = [];
+
+    for (let i = 0; i < rows.length; i++) {
+      const row = rows[i];
+
+      // שם – חובה
+      const name = (row["שם"] || row["שם "] || "").toString().trim();
+      if (!name) {
+        errors.push({ row: i + 2, reason: "חסר שם" });
+        continue;
+      }
+
+      // סכום – מהאקסל או מהשדה הגלובלי
+      const rowAmount = row["סכום"] || row["סכום "] || row["amount"] || "";
+      const amount = Number(rowAmount) || Number(globalAmount) || 0;
+      if (!amount || amount <= 0) {
+        errors.push({ row: i + 2, name, reason: "חסר סכום תקין" });
+        continue;
+      }
+
+      // פרטי בנק לפירוט
+      const idNumber = (row["מזהות"] || row["מספר זהות"] || row["ת.ז"] || "").toString().trim();
+      const bank = (row["בנק"] || "").toString().trim();
+      const branch = (row["סניף"] || "").toString().trim();
+      const account = (row["חשבון"] || "").toString().trim();
+      const status = (row["סטטוס"] || row["פטור"] || "").toString().trim();
+
+      const detail = [
+        idNumber && `מזהות: ${idNumber}`,
+        bank && `בנק: ${bank}`,
+        branch && `סניף: ${branch}`,
+        account && `חשבון: ${account}`,
+        status && `סטטוס: ${status}`,
+      ].filter(Boolean).join(" | ");
+
+      // מספר חשבונית אוטומטי (אותה מערכת כמו "אין צורך")
+      const invoiceNumber = await getNextAinTsorchSerial();
+
+      const invoice = await Invoice.create({
+        invoiceNumber,
+        type: "invoice",
+        supplierId: milgaSupplier._id,
+        documentType: "אין צורך",
+        invitingName: name,
+        detail,
+        invoiceDate: invoiceDate ? new Date(invoiceDate) : new Date(),
+        paid: "לא",
+        totalAmount: amount,
+        projects: [
+          { projectId: milgaProject._id, projectName: milgaProject.name, sum: 0 },
+          { projectId: fundedProject._id, projectName: fundedProject.name, sum: amount },
+        ],
+        fundedFromProjectId: fundedProject._id,
+        files: [],
+        createdBy: req.user._id,
+        createdByName: req.user.username || req.user.name,
+      });
+
+      // שיוך לפרויקטים
+      await Project.findByIdAndUpdate(milgaProject._id, { $push: { invoices: invoice._id } });
+      await Project.findByIdAndUpdate(fundedProject._id, { $push: { invoices: invoice._id } });
+      await Supplier.findByIdAndUpdate(milgaSupplier._id, { $push: { invoices: invoice._id } });
+      await recalculateRemainingBudget(fundedProject._id);
+
+      created.push({ name, amount, invoiceNumber });
+    }
+
+    saveLog({
+      type: "info",
+      message: `העלאת אקסל מילגה: נוצרו ${created.length} חשבוניות, ${errors.length} שגיאות`,
+      username: req.user?.username || req.user?.name,
+      userId: req.user?._id,
+      ip: getIp(req),
+    });
+
+    return res.json({
+      success: true,
+      message: `נוצרו ${created.length} חשבוניות מילגה בהצלחה`,
+      created,
+      errors,
+    });
+  } catch (err) {
+    console.error("❌ uploadExcelMilga ERROR:", err);
+    return res.status(500).json({ success: false, message: err.message });
+  }
+};
 
 export default invoiceControllers;

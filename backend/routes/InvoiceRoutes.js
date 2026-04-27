@@ -34,11 +34,13 @@
 
 
 import express from "express";
+import multer from "multer";
 import { protect, checkAccess, requireAdmin } from "../middleware/auth.js";
 import invoiceController from "../controller/invoiceControllers.js";
 import analyticsController from "../controller/analyticsControllers.js";
 
 const router = express.Router();
+const upload = multer({ storage: multer.memoryStorage(), limits: { fileSize: 10 * 1024 * 1024 } });
 
 // 🔍 חיפוש — אין checkAccess
 router.get("/search", protect, invoiceController.searchInvoices);
@@ -70,6 +72,9 @@ router.post("/backfill-no-doc-serials", protect, requireAdmin, invoiceController
 // 📄 ייצוא סיכום חשבוניות ל-PDF
 router.get("/export", protect, invoiceController.exportInvoices);
 router.post("/export", protect, invoiceController.exportInvoices);
+
+// 📊 העלאת אקסל מילגה – יצירת חשבוניות
+router.post("/upload-excel-milga", protect, checkAccess("invoices", "edit"), upload.single("file"), invoiceController.uploadExcelMilga);
 
 // 📌 חשבונית בודדת — משתמש ב־:id (מתוקן!)
 router.get("/:id", protect, checkAccess("invoices", "view"), invoiceController.getInvoiceById);

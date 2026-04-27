@@ -31,7 +31,7 @@ export default function MasavBroadcast() {
   const [form, setForm] = useState({
     month: new Date().toISOString().slice(0, 7),
     notes: "",
-    file: null,
+    files: [],
   });
 
   const fileInputRef = useRef(null);
@@ -61,39 +61,53 @@ export default function MasavBroadcast() {
     setExpandedMonths((prev) => ({ ...prev, [month]: !prev[month] }));
 
   const handleFileChange = (e) => {
-    const file = e.target.files[0];
-    if (file) setForm((f) => ({ ...f, file }));
-  };
-
-  const resetForm = () => {
-    setForm({ month: new Date().toISOString().slice(0, 7), notes: "", file: null });
+    const newFiles = Array.from(e.target.files);
+    if (newFiles.length > 0) {
+      setForm((f) => ({ ...f, files: [...f.files, ...newFiles] }));
+    }
     if (fileInputRef.current) fileInputRef.current.value = "";
   };
 
+  const removeFile = (index) => {
+    setForm((f) => ({ ...f, files: f.files.filter((_, i) => i !== index) }));
+  };
+
+  const resetForm = () => {
+    setForm({ month: new Date().toISOString().slice(0, 7), notes: "", files: [] });
+    if (fileInputRef.current) fileInputRef.current.value = "";
+  };
+
+  const readFileAsBase64 = (file) =>
+    new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = (e) => resolve(e.target.result.split(",")[1]);
+      reader.onerror = reject;
+      reader.readAsDataURL(file);
+    });
+
   const handleUpload = async () => {
-    if (!form.file || !form.month) { toast.error("יש לבחור קובץ וחודש"); return; }
+    if (form.files.length === 0 || !form.month) { toast.error("יש לבחור קובץ וחודש"); return; }
     setUploading(true);
     try {
-      const reader = new FileReader();
-      reader.onload = async (e) => {
-        const base64 = e.target.result.split(",")[1];
+      for (const file of form.files) {
+        const base64 = await readFileAsBase64(file);
         await api.post("/masav-broadcast/upload", {
           month: form.month,
-          fileName: form.file.name,
+          fileName: file.name,
           fileBase64: base64,
-          fileType: form.file.type || "application/octet-stream",
-          fileSize: form.file.size,
+          fileType: file.type || "application/octet-stream",
+          fileSize: file.size,
           notes: form.notes,
         });
-        toast.success("הקובץ הועלה בהצלחה");
-        setUploadModal(false);
-        setExpandedMonths((prev) => ({ ...prev, [form.month]: true }));
-        resetForm();
-        fetchRecords();
-      };
-      reader.readAsDataURL(form.file);
+      }
+      toast.success(form.files.length === 1 ? "הקובץ הועלה בהצלחה" : `${form.files.length} קבצים הועלו בהצלחה`);
+      setUploadModal(false);
+      setExpandedMonths((prev) => ({ ...prev, [form.month]: true }));
+      resetForm();
+      fetchRecords();
     } catch (err) {
       toast.error(err.response?.data?.error || "שגיאה בהעלאת הקובץ");
+    } finally {
       setUploading(false);
     }
   };
@@ -263,29 +277,38 @@ export default function MasavBroadcast() {
                 />
               </div>
 
-              {/* בחירת קובץ */}
+              {/* בחירת קבצים */}
               <div>
                 <label className="block text-sm font-medium text-slate-700 mb-1">
-                  קובץ <span className="text-red-500">*</span>
+                  קבצים <span className="text-red-500">*</span>
                 </label>
                 <div
                   onClick={() => fileInputRef.current?.click()}
-                  className="w-full px-4 py-6 bg-slate-50 border-2 border-dashed border-slate-300 rounded-xl text-center cursor-pointer hover:border-orange-500 hover:bg-orange-50/30 transition-all"
+                  className="w-full px-4 py-5 bg-slate-50 border-2 border-dashed border-slate-300 rounded-xl text-center cursor-pointer hover:border-orange-500 hover:bg-orange-50/30 transition-all"
                 >
-                  {form.file ? (
-                    <div>
-                      <FileText size={24} className="mx-auto text-orange-500 mb-2" />
-                      <p className="text-sm text-slate-800 font-medium">{form.file.name}</p>
-                      <p className="text-xs text-slate-500 mt-1">{formatFileSize(form.file.size)}</p>
-                    </div>
-                  ) : (
-                    <div>
-                      <Upload size={24} className="mx-auto text-slate-400 mb-2" />
-                      <p className="text-sm text-slate-500">לחץ לבחירת קובץ</p>
-                    </div>
-                  )}
+                  <Upload size={22} className="mx-auto text-slate-400 mb-1" />
+                  <p className="text-sm text-slate-500">לחץ להוספת קבצים</p>
                 </div>
-                <input ref={fileInputRef} type="file" onChange={handleFileChange} className="hidden" />
+                <input ref={fileInputRef} type="file" multiple onChange={handleFileChange} className="hidden" />
+                {form.files.length > 0 && (
+                  <div className="mt-2 space-y-1.5">
+                    {form.files.map((file, index) => (
+                      <div key={index} className="flex items-center justify-between bg-orange-50 border border-orange-200 rounded-lg px-3 py-2">
+                        <div className="flex items-center gap-2 min-w-0">
+                          <FileText size={16} className="text-orange-500 flex-shrink-0" />
+                          <span className="text-sm text-slate-800 font-medium truncate">{file.name}</span>
+                          <span className="text-xs text-slate-400 flex-shrink-0">{formatFileSize(file.size)}</span>
+                        </div>
+                        <button
+                          onClick={() => removeFile(index)}
+                          className="p-1 rounded hover:bg-red-100 text-slate-400 hover:text-red-500 transition-all flex-shrink-0 mr-1"
+                        >
+                          <X size={14} />
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                )}
               </div>
 
               {/* הערות */}
@@ -306,7 +329,7 @@ export default function MasavBroadcast() {
             <div className="flex gap-3 p-5 border-t border-slate-200">
               <button
                 onClick={handleUpload}
-                disabled={uploading || !form.file}
+                disabled={uploading || form.files.length === 0}
                 className="flex-1 flex items-center justify-center gap-2 py-2.5 bg-gradient-to-r from-orange-500 to-orange-600 text-white font-bold rounded-xl hover:from-orange-600 hover:to-orange-700 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 {uploading ? (

@@ -79,6 +79,14 @@ const incomeController = {
         );
       }
 
+      // אם עדיין לא נמצא, חפש לפי 'תאריך' + 'חובה' (פורמט ייצוא בנק ישראלי)
+      if (headerRowIndex === -1) {
+        headerRowIndex = rawData.findIndex(row =>
+          row && row.some(cell => cell && cell.toString().includes('תאריך')) &&
+                row.some(cell => cell && cell.toString().includes('חובה'))
+        );
+      }
+
       // אם עדיין לא נמצא, נסה מהשורה הראשונה
       // if (headerRowIndex === -1) {
       //   console.log("⚠️  לא נמצאה שורת כותרת, משתמש בשורה 0");
@@ -150,7 +158,16 @@ const incomeController = {
         if (typeof dateRaw === 'number') {
           date = excelDateToJSDate(dateRaw);
         } else if (dateRaw) {
-          date = new Date(dateRaw);
+          const str = dateRaw.toString().trim();
+          // פורמט DD/MM/YY או DD/MM/YYYY (ייצוא בנק ישראלי)
+          const ddmmyy = str.match(/^(\d{1,2})\/(\d{1,2})\/(\d{2,4})$/);
+          if (ddmmyy) {
+            const [, d, m, y] = ddmmyy;
+            const fullYear = y.length === 2 ? `20${y}` : y;
+            date = new Date(`${fullYear}-${m.padStart(2,"0")}-${d.padStart(2,"0")}`);
+          } else {
+            date = new Date(dateRaw);
+          }
         }
 
         // ניקוי ופרסור סכומים
@@ -160,10 +177,12 @@ const incomeController = {
           return parseFloat(val.toString().replace(/[^\d.-]/g, '')) || 0;
         };
 
-        let credit = parseVal(row["זכות"] || row["סכום"] || row["Amount"] || row["amount"] || row["AMOUNT"] || row["סכום זכות"]);
+        let credit = parseVal(row["זכות"] || row["זמת"] || row["סכום"] || row["Amount"] || row["amount"] || row["AMOUNT"] || row["סכום זכות"]);
         let debit = parseVal(row["חובה"] || row["Debit"] || row["סכום חובה"]);
 
         const description =
+          row["סוג תנועה"] ||
+          row["סוג התנועה"] ||
           row["תאור"] ||
           row["תיאור"] ||
           row["Description"] ||

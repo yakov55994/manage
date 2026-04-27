@@ -56,7 +56,10 @@
       "Bash(curl -s -o /dev/null -w \"%{http_code}\" http://localhost:3000/api/backup/status -H \"Authorization: Bearer invalid\")",
       "Bash(curl -s -w \"\\\\n%{http_code}\" http://localhost:3000/api/backup/create -X POST -H \"Content-Type: application/json\" -H \"Authorization: Bearer invalid_token_test\")",
       "Bash(ps -p 5319 -o pid,ppid,etime,stat,command)",
-      "Bash(curl -v http://localhost:3000/api/backup/download-latest -H \"Authorization: Bearer test\")"
+      "Bash(curl -v http://localhost:3000/api/backup/download-latest -H \"Authorization: Bearer test\")",
+      "Bash(node --input-type=module --eval \"import\\('./controller/invoiceControllers.js'\\).then\\(\\(\\) => console.log\\('OK'\\)\\).catch\\(e => console.error\\('ERROR:', e.message\\)\\)\")",
+      "Bash(node --input-type=module --eval \"import\\('./routes/InvoiceRoutes.js'\\).then\\(\\(\\) => console.log\\('OK'\\)\\).catch\\(e => console.error\\('ERROR:', e.message\\)\\)\")",
+      "Bash(node --input-type=module --eval \"import\\('./controller/incomeControllers.js'\\).then\\(\\(\\) => console.log\\('OK'\\)\\).catch\\(e => console.error\\('ERROR:', e.message\\)\\)\")"
     ]
   }
 }
