@@ -1,3 +1,13 @@
+import api from '../api/api.js';
+
+/**
+ * שליחת לוג שגיאת ולידציה מהפרונטאנד לבקאנד
+ * Fire-and-forget — לא חוסם את ה-UI
+ */
+export const logClientError = (message, page = '', meta = {}) => {
+  api.post('/logs/client', { message, page, meta }).catch(() => {});
+};
+
 /**
  * פונקציית עזר לולידציה של שדות טופס
  * מחזירה אובייקט עם isValid (boolean) ו-errors (מערך של הודעות שגיאה)

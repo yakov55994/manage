@@ -4,6 +4,7 @@ import { toast } from "sonner";
 import { Upload, FileSpreadsheet, Plus, ArrowLeft, DollarSign } from "lucide-react";
 import api from "../../api/api";
 import OrderSelector from "../../Components/OrderSelector";
+import { logClientError } from "../../utils/validation.jsx";
 
 export default function CreateIncome() {
   const navigate = useNavigate();
@@ -72,18 +73,23 @@ export default function CreateIncome() {
   const handleSubmitSingle = async (e) => {
     e.preventDefault();
 
+    const errToast = (msg) => {
+      logClientError(msg, 'יצירת תנועת זכות');
+      toast.error(msg);
+    };
+
     if (!singleIncome.date) {
-      toast.error("יש לבחור תאריך");
+      errToast("יש לבחור תאריך");
       return;
     }
 
     if (!singleIncome.amount?.trim()) {
-      toast.error("יש להזין סכום");
+      errToast("יש להזין סכום");
       return;
     }
 
     if (!singleIncome.description?.trim()) {
-      toast.error("יש להזין תיאור");
+      errToast("יש להזין תיאור");
       return;
     }
 

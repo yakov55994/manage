@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import api from "../../api/api.js";
 import FileUploader from "../../Components/FileUploader";
 import { toast } from "sonner";
+import { logClientError } from "../../utils/validation.jsx";
 import { useModulePermission } from "../../hooks/useModulePermission";
 import {
   ShoppingCart,
@@ -298,17 +299,18 @@ const CreateOrder = () => {
   };
 
   const validateSubmission = () => {
+    const errToast = (msg) => {
+      logClientError(msg, 'יצירת הזמנה');
+      toast.error(msg, { className: "sonner-toast error rtl" });
+    };
+
     if (!selectedProject) {
-      toast.error("יש לבחור פרויקט תחילה", {
-        className: "sonner-toast error rtl",
-      });
+      errToast("יש לבחור פרויקט תחילה");
       return false;
     }
 
     if (orders.length === 0) {
-      toast.error("יש להוסיף לפחות הזמנה אחת", {
-        className: "sonner-toast error rtl",
-      });
+      errToast("יש להוסיף לפחות הזמנה אחת");
       return false;
     }
 
@@ -317,51 +319,37 @@ const CreateOrder = () => {
       const orderNumber = i + 1;
 
       if (!order.orderNumber) {
-        toast.error(`הזמנה מספר ${orderNumber}: חסר מספר הזמנה`, {
-          className: "sonner-toast error rtl",
-        });
+        errToast(`הזמנה מספר ${orderNumber}: חסר מספר הזמנה`);
         return false;
       }
 
       if (!order.invitingName || order.invitingName.trim() === "") {
-        toast.error(`הזמנה מספר ${orderNumber}: חסר שם המזמין/ספק`, {
-          className: "sonner-toast error rtl",
-        });
+        errToast(`הזמנה מספר ${orderNumber}: חסר שם המזמין/ספק`);
         return false;
       }
 
       if (!order.sum || order.sum <= 0) {
-        toast.error(`הזמנה מספר ${orderNumber}: חסר סכום או שהסכום לא תקין`, {
-          className: "sonner-toast error rtl",
-        });
+        errToast(`הזמנה מספר ${orderNumber}: חסר סכום או שהסכום לא תקין`);
         return false;
       }
 
       // if (!order.detail || order.detail.trim() === "") {
-      //   toast.error(`הזמנה מספר ${orderNumber}: חסר פירוט ההזמנה`, {
-      //     className: "sonner-toast error rtl",
-      //   });
+      //   errToast(`הזמנה מספר ${orderNumber}: חסר פירוט ההזמנה`);
       //   return false;
       // }
 
       // if (!order.Contact_person || order.Contact_person.trim() === "") {
-      //   toast.error(`הזמנה מספר ${orderNumber}: חסר איש קשר`, {
-      //     className: "sonner-toast error rtl",
-      //   });
+      //   errToast(`הזמנה מספר ${orderNumber}: חסר איש קשר`);
       //   return false;
       // }
 
       if (!order.status) {
-        toast.error(`הזמנה מספר ${orderNumber}: חסר סטטוס ההזמנה`, {
-          className: "sonner-toast error rtl",
-        });
+        errToast(`הזמנה מספר ${orderNumber}: חסר סטטוס ההזמנה`);
         return false;
       }
 
       if (!order.createdAt) {
-        toast.error(`הזמנה מספר ${orderNumber}: חסר תאריך יצירת ההזמנה`, {
-          className: "sonner-toast error rtl",
-        });
+        errToast(`הזמנה מספר ${orderNumber}: חסר תאריך יצירת ההזמנה`);
         return false;
       }
     }

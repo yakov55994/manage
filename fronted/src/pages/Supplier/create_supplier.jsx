@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import api from "../../api/api.js";
 import { toast } from "sonner";
+import { logClientError } from "../../utils/validation.jsx";
 import {
   UserPlus,
   Building2,
@@ -69,14 +70,17 @@ const CreateSupplier = () => {
   };
 
   const validateForm = () => {
+    const errToast = (msg) => {
+      logClientError(msg, 'יצירת ספק');
+      toast.error(msg, { className: "sonner-toast error rtl" });
+    };
+
     const requiredFields = ["name", "business_tax", "phone", "supplierType"];
 
     for (let field of requiredFields) {
       if (field === "phone") continue;
       if (!supplier[field]) {
-        toast.error(`יש למלא את השדה: ${getFieldName(field)}`, {
-          className: "sonner-toast error rtl",
-        });
+        errToast(`יש למלא את השדה: ${getFieldName(field)}`);
         return false;
       }
     }
@@ -84,7 +88,7 @@ const CreateSupplier = () => {
     if (supplier.email && supplier.email.trim() !== "") {
       const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
       if (!emailRegex.test(supplier.email)) {
-        toast.error("אימייל לא תקין", { className: "sonner-toast error rtl" });
+        errToast("אימייל לא תקין");
         return false;
       }
     }
@@ -94,9 +98,7 @@ const CreateSupplier = () => {
 
     if (hasBankInfo) {
       if (!bankName || !branchNumber || !accountNumber) {
-        toast.error("אם מזינים פרטי בנק, יש למלא את כל השדות", {
-          className: "sonner-toast error rtl",
-        });
+        errToast("אם מזינים פרטי בנק, יש למלא את כל השדות");
         return false;
       }
     }

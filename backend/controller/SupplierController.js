@@ -72,6 +72,7 @@ const supplierController = {
   async createSupplier(req, res) {
     try {
       const supplier = await supplierService.createSupplier(req.user, req.body);
+      saveLog({ type: 'info', message: `ספק נוצר — ${supplier.name || supplier._id}`, username: req.user?.username || req.user?.name, userId: req.user?._id, ip: getIp(req), meta: { supplierId: supplier._id, supplierName: supplier.name } });
       res.status(201).json({ success: true, data: supplier });
     } catch (e) {
       sendError(res, e, req);
@@ -81,6 +82,7 @@ const supplierController = {
   async updateSupplier(req, res) {
     try {
       const supplier = await supplierService.updateSupplier(req.user, req.params.supplierId, req.body);
+      saveLog({ type: 'info', message: `ספק עודכן — ${supplier.name || req.params.supplierId}`, username: req.user?.username || req.user?.name, userId: req.user?._id, ip: getIp(req), meta: { supplierId: req.params.supplierId } });
       res.json({ success: true, data: supplier });
     } catch (e) {
       sendError(res, e, req);
@@ -90,6 +92,7 @@ const supplierController = {
   async deleteSupplier(req, res) {
     try {
       await supplierService.deleteSupplier(req.user, req.params.supplierId);
+      saveLog({ type: 'info', message: `ספק נמחק — מזהה: ${req.params.supplierId}`, username: req.user?.username || req.user?.name, userId: req.user?._id, ip: getIp(req), meta: { supplierId: req.params.supplierId } });
       res.json({ success: true, message: "נמחק" });
     } catch (e) {
       sendError(res, e, req);

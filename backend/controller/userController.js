@@ -3,6 +3,7 @@ import dotenv from 'dotenv';
 import User from "../models/User.js";
 import jwt from 'jsonwebtoken';
 import crypto from 'crypto'; // ← הוסף את זה!
+import { saveLog, getIp } from "../utils/logger.js";
 
 dotenv.config();
 
@@ -86,7 +87,7 @@ export const getAllUsers = async (req, res) => {
 export const createUser = async (req, res) => {
   try {
     const newUser = await userService.createNewUser(req.body);
-
+    saveLog({ type: 'info', message: `משתמש חדש נוצר — ${newUser.username} (${newUser.role})`, username: req.user?.username || req.user?.name, userId: req.user?._id, ip: getIp(req), meta: { newUserId: newUser._id, newUsername: newUser.username, role: newUser.role } });
 
     res.status(201).json({
       success: true,
@@ -99,6 +100,7 @@ export const createUser = async (req, res) => {
     console.error("Error message:", error.message);
     console.error("Error stack:", error.stack);
     console.error("=".repeat(50));
+    saveLog({ type: 'error', message: `שגיאה ביצירת משתמש — ${error.message}`, username: req.user?.username || req.user?.name, userId: req.user?._id, ip: getIp(req), meta: { body: req.body?.username } });
 
     res.status(500).json({
       success: false,
@@ -114,9 +116,11 @@ export const updateUser = async (req, res) => {
     if (!updated)
       return res.status(404).json({ message: "משתמש לא נמצא" });
 
+    saveLog({ type: 'info', message: `משתמש עודכן — ${updated.username}`, username: req.user?.username || req.user?.name, userId: req.user?._id, ip: getIp(req), meta: { targetUserId: req.params.id, targetUsername: updated.username } });
     res.json({ success: true, data: updated });
 
   } catch (err) {
+    saveLog({ type: 'error', message: `שגיאה בעדכון משתמש ${req.params.id} — ${err.message}`, username: req.user?.username || req.user?.name, userId: req.user?._id, ip: getIp(req) });
     res.status(500).json({ message: err.message });
   }
 };
@@ -128,9 +132,11 @@ export const deleteUser = async (req, res) => {
     if (!result.success)
       return res.status(400).json({ message: result.message });
 
+    saveLog({ type: 'info', message: `משתמש נמחק — מזהה: ${req.params.id}`, username: req.user?.username || req.user?.name, userId: req.user?._id, ip: getIp(req), meta: { targetUserId: req.params.id } });
     res.json({ success: true, message: result.message });
 
   } catch (err) {
+    saveLog({ type: 'error', message: `שגיאה במחיקת משתמש ${req.params.id} — ${err.message}`, username: req.user?.username || req.user?.name, userId: req.user?._id, ip: getIp(req) });
     res.status(500).json({ message: err.message });
   }
 };

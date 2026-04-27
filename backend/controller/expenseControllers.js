@@ -43,6 +43,7 @@ const expenseController = {
   async createExpense(req, res) {
     try {
       const expense = await expenseService.createExpense(req.user, req.body);
+      saveLog({ type: 'info', message: `תנועת חובה נוצרה — ${expense.description || ''}, סכום: ${expense.amount}`, username: req.user?.username || req.user?.name, userId: req.user?._id, ip: getIp(req), meta: { expenseId: expense._id, amount: expense.amount } });
       res.status(201).json({ success: true, data: expense });
     } catch (e) {
       sendError(res, e, req);
@@ -57,6 +58,7 @@ const expenseController = {
         req.params.expenseId,
         req.body
       );
+      saveLog({ type: 'info', message: `תנועת חובה עודכנה — מזהה: ${req.params.expenseId}`, username: req.user?.username || req.user?.name, userId: req.user?._id, ip: getIp(req), meta: { expenseId: req.params.expenseId } });
       res.json({ success: true, data: expense });
     } catch (e) {
       sendError(res, e, req);
@@ -67,6 +69,7 @@ const expenseController = {
   async deleteExpense(req, res) {
     try {
       await expenseService.deleteExpense(req.user, req.params.expenseId);
+      saveLog({ type: 'info', message: `תנועת חובה נמחקה — מזהה: ${req.params.expenseId}`, username: req.user?.username || req.user?.name, userId: req.user?._id, ip: getIp(req), meta: { expenseId: req.params.expenseId } });
       res.json({ success: true, message: "הוצאה נמחקה בהצלחה" });
     } catch (e) {
       sendError(res, e, req);
@@ -81,6 +84,7 @@ const expenseController = {
         return res.status(400).json({ success: false, message: "לא נבחרו הוצאות" });
       }
       const result = await expenseService.bulkUpdateNotes(req.user, expenseIds, notes);
+      saveLog({ type: 'info', message: `עודכנו הערות ל-${result.modifiedCount} תנועות חובה`, username: req.user?.username || req.user?.name, userId: req.user?._id, ip: getIp(req), meta: { count: result.modifiedCount } });
       res.json({ success: true, data: result, message: `עודכנו ${result.modifiedCount} הוצאות` });
     } catch (e) {
       sendError(res, e, req);
@@ -98,6 +102,7 @@ const expenseController = {
         salaryIds || [],
         orderIds || []
       );
+      saveLog({ type: 'info', message: `תנועת חובה שויכה — מזהה: ${req.params.expenseId}`, username: req.user?.username || req.user?.name, userId: req.user?._id, ip: getIp(req), meta: { expenseId: req.params.expenseId, invoiceIds, salaryIds, orderIds } });
       res.json({ success: true, data: expense });
     } catch (e) {
       sendError(res, e, req);

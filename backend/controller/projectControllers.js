@@ -42,7 +42,7 @@ const projectController = {
     res.json({ success: true, data: project });
 
   } catch (e) {
-    sendError(res, e);
+    sendError(res, e, req);
   }
 },
 
@@ -53,6 +53,7 @@ const projectController = {
         req.params.projectId,
         req.body.invoices
       );
+      saveLog({ type: 'info', message: `נוצרו ${invoices.length} חשבוניות בפרויקט ${req.params.projectId}`, username: req.user?.username || req.user?.name, userId: req.user?._id, ip: getIp(req), meta: { projectId: req.params.projectId, count: invoices.length } });
       res.status(201).json({ success: true, data: invoices });
     } catch (e) {
       sendError(res, e, req);
@@ -62,6 +63,7 @@ const projectController = {
   async createProject(req, res) {
     try {
       const project = await projectService.createProject(req.user, req.body);
+      saveLog({ type: 'info', message: `פרויקט נוצר — ${project.name || project._id}`, username: req.user?.username || req.user?.name, userId: req.user?._id, ip: getIp(req), meta: { projectId: project._id, projectName: project.name } });
       res.status(201).json({ success: true, data: project });
     } catch (e) {
       sendError(res, e, req);
@@ -75,6 +77,7 @@ const projectController = {
         req.params.projectId,
         req.body
       );
+      saveLog({ type: 'info', message: `פרויקט עודכן — ${updated.name || req.params.projectId}`, username: req.user?.username || req.user?.name, userId: req.user?._id, ip: getIp(req), meta: { projectId: req.params.projectId, projectName: updated.name } });
       res.json({ success: true, data: updated });
     } catch (e) {
       sendError(res, e, req);
@@ -84,6 +87,7 @@ const projectController = {
   async deleteProject(req, res) {
     try {
       await projectService.deleteProject(req.user, req.params.projectId);
+      saveLog({ type: 'info', message: `פרויקט נמחק — מזהה: ${req.params.projectId}`, username: req.user?.username || req.user?.name, userId: req.user?._id, ip: getIp(req), meta: { projectId: req.params.projectId } });
       res.json({ success: true, message: "נמחק" });
     } catch (e) {
       sendError(res, e, req);

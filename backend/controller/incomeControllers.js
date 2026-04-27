@@ -1,6 +1,7 @@
 import incomeService from "../services/incomeService.js";
 import expenseService from "../services/expenseService.js";
 import { sendError } from "../utils/sendError.js";
+import { saveLog, getIp } from "../utils/logger.js";
 import xlsx from "xlsx";
 
 const incomeController = {
@@ -12,6 +13,7 @@ const incomeController = {
       res.json(results);
     } catch (e) {
       console.error("❌ searchIncomes ERROR:", e);
+      saveLog({ type: 'error', message: `שגיאה בחיפוש תנועות עו"ש — ${e.message}`, username: req.user?.username || req.user?.name, userId: req.user?._id, ip: getIp(req) });
       res.status(500).json({ message: "Search failed" });
     }
   },
@@ -22,7 +24,7 @@ const incomeController = {
       const incomes = await incomeService.getAllIncomes(req.user);
       res.json({ success: true, data: incomes });
     } catch (e) {
-      sendError(res, e);
+      sendError(res, e, req);
     }
   },
 
@@ -35,7 +37,7 @@ const incomeController = {
       );
       res.json({ success: true, data: income });
     } catch (e) {
-      sendError(res, e);
+      sendError(res, e, req);
     }
   },
 
@@ -43,9 +45,10 @@ const incomeController = {
   async createIncome(req, res) {
     try {
       const income = await incomeService.createIncome(req.user, req.body);
+      saveLog({ type: 'info', message: `תנועת זכות נוצרה — ${income.description || ''}, סכום: ${income.amount}`, username: req.user?.username || req.user?.name, userId: req.user?._id, ip: getIp(req), meta: { incomeId: income._id, amount: income.amount } });
       res.status(201).json({ success: true, data: income });
     } catch (e) {
-      sendError(res, e);
+      sendError(res, e, req);
     }
   },
 
@@ -262,6 +265,7 @@ const incomeController = {
         results.expenses = await expenseService.createBulkExpenses(req.user, expensesData);
       }
 
+      saveLog({ type: 'info', message: `קובץ אקסל עו"ש הועלה — ${results.incomes.length} זכויות, ${results.expenses.length} חובות`, username: req.user?.username || req.user?.name, userId: req.user?._id, ip: getIp(req), meta: { incomes: results.incomes.length, expenses: results.expenses.length } });
       res.status(201).json({
         success: true,
         message: `הועלו בהצלחה: ${results.incomes.length} הכנסות, ${results.expenses.length} הוצאות`,
@@ -269,7 +273,8 @@ const incomeController = {
       });
     } catch (e) {
       console.error("Excel upload error:", e);
-      sendError(res, e);
+      saveLog({ type: 'error', message: `שגיאה בהעלאת קובץ אקסל עו"ש — ${e.message}`, username: req.user?.username || req.user?.name, userId: req.user?._id, ip: getIp(req) });
+      sendError(res, e, req);
     }
   },
 
@@ -282,9 +287,10 @@ const incomeController = {
         req.params.incomeId,
         req.body
       );
+      saveLog({ type: 'info', message: `תנועת זכות עודכנה — מזהה: ${req.params.incomeId}`, username: req.user?.username || req.user?.name, userId: req.user?._id, ip: getIp(req), meta: { incomeId: req.params.incomeId } });
       res.json({ success: true, data: income });
     } catch (e) {
-      sendError(res, e);
+      sendError(res, e, req);
     }
   },
 
@@ -292,9 +298,10 @@ const incomeController = {
   async deleteIncome(req, res) {
     try {
       await incomeService.deleteIncome(req.user, req.params.incomeId);
+      saveLog({ type: 'info', message: `תנועת זכות נמחקה — מזהה: ${req.params.incomeId}`, username: req.user?.username || req.user?.name, userId: req.user?._id, ip: getIp(req), meta: { incomeId: req.params.incomeId } });
       res.json({ success: true, message: "הכנסה נמחקה בהצלחה" });
     } catch (e) {
-      sendError(res, e);
+      sendError(res, e, req);
     }
   },
 
@@ -306,9 +313,10 @@ const incomeController = {
         return res.status(400).json({ success: false, message: "לא נבחרו הכנסות" });
       }
       const result = await incomeService.bulkUpdateNotes(req.user, incomeIds, notes);
+      saveLog({ type: 'info', message: `עודכנו הערות ל-${result.modifiedCount} תנועות זכות`, username: req.user?.username || req.user?.name, userId: req.user?._id, ip: getIp(req), meta: { count: result.modifiedCount } });
       res.json({ success: true, data: result, message: `עודכנו ${result.modifiedCount} הכנסות` });
     } catch (e) {
-      sendError(res, e);
+      sendError(res, e, req);
     }
   },
 
@@ -323,9 +331,10 @@ const incomeController = {
         salaryIds || [],
         orderIds || []
       );
+      saveLog({ type: 'info', message: `תנועת זכות שויכה — מזהה: ${req.params.incomeId}`, username: req.user?.username || req.user?.name, userId: req.user?._id, ip: getIp(req), meta: { incomeId: req.params.incomeId, invoiceIds, salaryIds, orderIds } });
       res.json({ success: true, data: income });
     } catch (e) {
-      sendError(res, e);
+      sendError(res, e, req);
     }
   },
 };

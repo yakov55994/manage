@@ -1,5 +1,6 @@
 import orderService from "../services/orderService.js";
 import { sendError } from "../utils/sendError.js";
+import { saveLog, getIp } from "../utils/logger.js";
 
 const orderController = {
 
@@ -9,6 +10,7 @@ const orderController = {
       const results = await orderService.searchOrders(q);
       res.json(results);
     } catch (e) {
+      saveLog({ type: 'error', message: `שגיאה בחיפוש הזמנות — ${e.message}`, username: req.user?.username || req.user?.name, userId: req.user?._id, ip: getIp(req) });
       sendError(res, e, req);
     }
   },
@@ -42,6 +44,7 @@ const orderController = {
   async createBulkOrders(req, res) {
     try {
       const orders = await orderService.createBulkOrders(req.user, req.body.orders);
+      saveLog({ type: 'info', message: `נוצרו ${orders.length} הזמנות בבת אחת`, username: req.user?.username || req.user?.name, userId: req.user?._id, ip: getIp(req), meta: { count: orders.length } });
       res.json({ success: true, data: orders });
     } catch (e) {
       sendError(res, e, req);
@@ -87,6 +90,7 @@ const orderController = {
       }
 
       const newOrder = await orderService.createOrder(req.user, orderData);
+      saveLog({ type: 'info', message: `הזמנה נוצרה בהצלחה — מזהה: ${newOrder._id}`, username: req.user?.username || req.user?.name, userId: req.user?._id, ip: getIp(req), meta: { orderId: newOrder._id } });
       res.status(201).json({ success: true, data: newOrder });
     } catch (e) {
       sendError(res, e, req);
@@ -139,7 +143,7 @@ const orderController = {
       }
 
       const updated = await orderService.updateOrder(req.user, orderId, updateData);
-
+      saveLog({ type: 'info', message: `הזמנה עודכנה — מזהה: ${orderId}`, username: req.user?.username || req.user?.name, userId: req.user?._id, ip: getIp(req), meta: { orderId } });
       res.json({ success: true, data: updated });
     } catch (e) {
       console.error('❌ Controller error:', e);
@@ -155,6 +159,7 @@ const orderController = {
         req.body.status,
         req.body.paymentDate
       );
+      saveLog({ type: 'info', message: `סטטוס תשלום הזמנה עודכן — מזהה: ${req.params.orderId}, סטטוס: ${req.body.status}`, username: req.user?.username || req.user?.name, userId: req.user?._id, ip: getIp(req), meta: { orderId: req.params.orderId, status: req.body.status } });
       res.json({ success: true, data: result });
     } catch (e) {
       sendError(res, e, req);
@@ -164,6 +169,7 @@ const orderController = {
   async deleteOrder(req, res) {
     try {
       await orderService.deleteOrder(req.user, req.params.orderId);
+      saveLog({ type: 'info', message: `הזמנה נמחקה — מזהה: ${req.params.orderId}`, username: req.user?.username || req.user?.name, userId: req.user?._id, ip: getIp(req), meta: { orderId: req.params.orderId } });
       res.json({ success: true, message: "נמחק" });
     } catch (e) {
       sendError(res, e, req);
@@ -182,7 +188,7 @@ const orderController = {
         salaryIds,
         orderIds
       );
-
+      saveLog({ type: 'info', message: `הזמנה שויכה — מזהה: ${orderId}`, username: req.user?.username || req.user?.name, userId: req.user?._id, ip: getIp(req), meta: { orderId, invoiceIds, salaryIds, orderIds } });
       res.json({ success: true, data: result });
     } catch (e) {
       sendError(res, e, req);

@@ -18,6 +18,7 @@ import {
   Save,
   Sparkles,
 } from "lucide-react";
+import { logClientError } from "../../utils/validation.jsx";
 
 const CreateInvoice = () => {
   // ============================
@@ -246,56 +247,62 @@ const CreateInvoice = () => {
   // ============================
 
   const handleSubmit = async () => {
+    // עזר פנימי: הצג toast + שלח לוג לבקאנד
+    const errToast = (msg) => {
+      logClientError(msg, 'יצירת חשבונית');
+      toast.error(msg);
+    };
+
     // ולידציות עם הודעות ברורות
     if (!form.invoiceNumber?.trim()) {
-      return toast.error("יש להזין מספר חשבונית");
+      return errToast("יש להזין מספר חשבונית");
     }
 
     if (!isSalary && !form.supplierId) {
-      return toast.error("יש לבחור ספק");
+      return errToast("יש לבחור ספק");
     }
 
     if (!isSalary && rows.length === 0) {
-      return toast.error("יש לבחור לפחות פרויקט אחד");
+      return errToast("יש לבחור לפחות פרויקט אחד");
     }
 
     if (!form.documentType) {
-      return toast.error("יש לבחור סוג מסמך");
+      return errToast("יש לבחור סוג מסמך");
     }
 
     if (form.paid === "כן" && !form.paymentMethod) {
-      return toast.error("יש לבחור אמצעי תשלום");
+      return errToast("יש לבחור אמצעי תשלום");
     }
 
     if (form.paid === "כן" && form.paymentMethod === "check" && !form.checkNumber?.trim()) {
-      return toast.error("יש להזין מספר צ'ק");
+      return errToast("יש להזין מספר צ'ק");
     }
 
     // ✅ בדיקה עבור הגשה
     if (form.status === "הוגש" && !form.submittedToProjectId) {
-      return toast.error("יש לבחור פרויקט להגשה");
+      return errToast("יש לבחור פרויקט להגשה");
     }
 
     if (isSalary && !fundedFromProjectId) {
-      return toast.error("יש לבחור פרויקט ממנו יורד התקציב למשכורות");
+      return errToast("יש לבחור פרויקט ממנו יורד התקציב למשכורות");
     }
 
     if (isSalary && !salaryEmployeeName?.trim()) {
-      return toast.error("יש להזין שם מקבל השכר");
+      return errToast("יש להזין שם מקבל השכר");
     }
 
     if (isSalary && (!salaryBaseAmount || Number(salaryBaseAmount) <= 0)) {
-      return toast.error("יש להזין סכום בסיס תקין");
+      return errToast("יש להזין סכום בסיס תקין");
     }
 
     if (selectedProjects.some((p) => p._id === MILGA_ID) && fundedFromProjectIds.length === 0) {
-      return toast.error("יש לבחור לפחות פרויקט אחד ממנו יורד התקציב למילגה");
+      return errToast("יש לבחור לפחות פרויקט אחד ממנו יורד התקציב למילגה");
     }
 
     if (!isSalary) {
       for (const row of rows) {
         if (!row.sum || Number(row.sum) <= 0) {
-          return toast.error(`יש להזין סכום תקין לפרויקט "${row.projectName}"`);
+          return errToast(`יש להזין סכום תקין לפרויקט "${row.projectName}"`);
         }
       }
 
@@ -303,7 +310,7 @@ const CreateInvoice = () => {
       if (rows.length > 1 && declaredTotal !== "" && Number(declaredTotal) > 0) {
         const rowsTotal = rows.reduce((acc, r) => acc + Number(r.sum || 0), 0);
         if (Math.abs(rowsTotal - Number(declaredTotal)) > 0.01) {
-          return toast.error("סכומי הפרויקטים לא תואמים את הסכום הכולל שהוזן");
+          return errToast("סכומי הפרויקטים לא תואמים את הסכום הכולל שהוזן");
         }
       }
     }

@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import api from "../../api/api";
 import { TrendingDown, Save, ArrowRight, Calendar, FileText } from "lucide-react";
 import { toast } from "sonner";
+import { logClientError } from "../../utils/validation.jsx";
 
 export default function CreateExpense() {
   const navigate = useNavigate();
@@ -27,18 +28,23 @@ export default function CreateExpense() {
   const handleSubmit = async (e) => {
     e.preventDefault();
 
+    const errToast = (msg) => {
+      logClientError(msg, 'יצירת הוצאה');
+      toast.error(msg);
+    };
+
     if (!formData.date) {
-      toast.error("יש לבחור תאריך");
+      errToast("יש לבחור תאריך");
       return;
     }
 
     if (!formData.amount?.trim()) {
-      toast.error("יש להזין סכום");
+      errToast("יש להזין סכום");
       return;
     }
 
     if (!formData.description?.trim()) {
-      toast.error("יש להזין תיאור");
+      errToast("יש להזין תיאור");
       return;
     }
 
