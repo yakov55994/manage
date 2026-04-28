@@ -717,17 +717,7 @@ invoiceControllers.uploadExcelMilga = async (req, res) => {
       return res.status(400).json({ success: false, message: "פרויקט מממן לא נמצא" });
     }
 
-    // 4. מצא או צור ספק גנרי "מילגה"
-    let milgaSupplier = await Supplier.findOne({ name: "מילגה", business_tax: "000000000" });
-    if (!milgaSupplier) {
-      milgaSupplier = await Supplier.create({
-        name: "מילגה",
-        business_tax: "000000000",
-        createdBy: req.user._id,
-      });
-    }
-
-    // 5. עבור על כל שורה וצור חשבונית
+    // 4. עבור על כל שורה וצור חשבונית
     const created = [];
     const errors = [];
 
@@ -764,13 +754,23 @@ invoiceControllers.uploadExcelMilga = async (req, res) => {
         status && `סטטוס: ${status}`,
       ].filter(Boolean).join(" | ");
 
+      // מצא או צור ספק עם שם המקבל
+      let rowSupplier = await Supplier.findOne({ name, business_tax: idNumber || "000000000" });
+      if (!rowSupplier) {
+        rowSupplier = await Supplier.create({
+          name,
+          business_tax: idNumber || "000000000",
+          createdBy: req.user._id,
+        });
+      }
+
       // מספר חשבונית אוטומטי (אותה מערכת כמו "אין צורך")
       const invoiceNumber = await getNextAinTsorchSerial();
 
       const invoice = await Invoice.create({
         invoiceNumber,
         type: "invoice",
-        supplierId: milgaSupplier._id,
+        supplierId: rowSupplier._id,
         documentType: "אין צורך",
         invitingName: name,
         detail,
@@ -790,7 +790,7 @@ invoiceControllers.uploadExcelMilga = async (req, res) => {
       // שיוך לפרויקטים
       await Project.findByIdAndUpdate(milgaProject._id, { $push: { invoices: invoice._id } });
       await Project.findByIdAndUpdate(fundedProject._id, { $push: { invoices: invoice._id } });
-      await Supplier.findByIdAndUpdate(milgaSupplier._id, { $push: { invoices: invoice._id } });
+      await Supplier.findByIdAndUpdate(rowSupplier._id, { $push: { invoices: invoice._id } });
       await recalculateRemainingBudget(fundedProject._id);
 
       created.push({ name, amount, invoiceNumber });
