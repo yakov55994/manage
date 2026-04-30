@@ -62,7 +62,8 @@
       "Bash(node --input-type=module --eval \"import\\('./controller/incomeControllers.js'\\).then\\(\\(\\) => console.log\\('OK'\\)\\).catch\\(e => console.error\\('ERROR:', e.message\\)\\)\")",
       "Skill(keybindings-help)",
       "Skill(keybindings-help:*)",
-      "Bash(node scripts/fixMilgaSupplierNames.js)"
+      "Bash(node scripts/fixMilgaSupplierNames.js)",
+      "Bash(node scripts/fixMilgaBankDetails.js)"
     ]
   }
 }

@@ -15,6 +15,14 @@ import fs from "fs";
 import xlsx from "xlsx";
 import { saveLog, getIp } from "../utils/logger.js";
 import { sendError } from "../utils/sendError.js";
+import { createRequire } from "module";
+const _require = createRequire(import.meta.url);
+const _banksData = _require("../data/banks_and_branches.json");
+// קוד בנק → שם בנק (למשל 20 → "בנק מזרחי טפחות בע"מ")
+const bankCodeToName = _banksData.reduce((map, b) => {
+  map[String(b.bankCode).trim()] = b.bankName.trim();
+  return map;
+}, {});
 
 const invoiceControllers = {
   // ===============================================
@@ -741,7 +749,9 @@ invoiceControllers.uploadExcelMilga = async (req, res) => {
 
       // פרטי בנק לפירוט
       const idNumber = (row["מזהות"] || row["מספר זהות"] || row["ת.ז"] || "").toString().trim();
-      const bank = (row["בנק"] || "").toString().trim();
+      const rawBank = (row["בנק"] || "").toString().trim();
+      // אם קיבלנו קוד מספרי — ממיר לשם בנק
+      const bank = bankCodeToName[rawBank] || rawBank;
       const branch = (row["סניף"] || "").toString().trim();
       const account = (row["חשבון"] || "").toString().trim();
       const status = (row["סטטוס"] || row["פטור"] || "").toString().trim();
@@ -756,12 +766,20 @@ invoiceControllers.uploadExcelMilga = async (req, res) => {
 
       // מצא או צור ספק עם שם המקבל
       let rowSupplier = await Supplier.findOne({ name, business_tax: idNumber || "000000000" });
+      const hasBankInfo = bank && branch && account;
       if (!rowSupplier) {
         rowSupplier = await Supplier.create({
           name,
           business_tax: idNumber || "000000000",
           createdBy: req.user._id,
+          ...(hasBankInfo && {
+            bankDetails: { bankName: bank, branchNumber: branch, accountNumber: account },
+          }),
         });
+      } else if (hasBankInfo && !rowSupplier.bankDetails?.bankName) {
+        // עדכן פרטי בנק אם חסרים
+        rowSupplier.bankDetails = { bankName: bank, branchNumber: branch, accountNumber: account };
+        await rowSupplier.save();
       }
 
       // מספר חשבונית אוטומטי (אותה מערכת כמו "אין צורך")
