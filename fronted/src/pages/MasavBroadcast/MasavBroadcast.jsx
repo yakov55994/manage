@@ -252,7 +252,7 @@ export default function MasavBroadcast() {
       {/* מודל העלאה */}
       {uploadModal && (
         <div className="fixed inset-0 bg-black/40 z-50 flex items-center justify-center p-4">
-          <div dir="rtl" className="bg-white rounded-2xl shadow-2xl w-full max-w-md border border-slate-200">
+          <div dir="rtl" className="bg-white rounded-2xl shadow-2xl w-full max-w-md border border-slate-200 flex flex-col max-h-[90vh]">
             <div className="flex items-center justify-between p-5 border-b border-slate-200">
               <h2 className="text-lg font-bold text-slate-800">העלאת קובץ מסב ששודר</h2>
               <button
@@ -263,7 +263,7 @@ export default function MasavBroadcast() {
               </button>
             </div>
 
-            <div className="p-5 space-y-4">
+            <div className="p-5 space-y-4 overflow-y-auto flex-1">
               {/* בחירת חודש */}
               <div>
                 <label className="block text-sm font-medium text-slate-700 mb-1">
@@ -291,7 +291,7 @@ export default function MasavBroadcast() {
                 </div>
                 <input ref={fileInputRef} type="file" multiple onChange={handleFileChange} className="hidden" />
                 {form.files.length > 0 && (
-                  <div className="mt-2 space-y-1.5">
+                  <div className="mt-2 space-y-1.5 max-h-48 overflow-y-auto">
                     {form.files.map((file, index) => (
                       <div key={index} className="flex items-center justify-between bg-orange-50 border border-orange-200 rounded-lg px-3 py-2">
                         <div className="flex items-center gap-2 min-w-0">
