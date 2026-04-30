@@ -748,7 +748,8 @@ invoiceControllers.uploadExcelMilga = async (req, res) => {
       }
 
       // פרטי בנק לפירוט
-      const idNumber = (row["מזהות"] || row["מספר זהות"] || row["ת.ז"] || "").toString().trim();
+      const idNumber = (row["מ זהות"] || row["מז זהות"] || row["מזהות"] || row["מספר זהות"] || row["ת.ז"] || row["id"] || "").toString().trim();
+      const email = (row["אימייל"] || row["דואל"] || row["email"] || row["Email"] || "").toString().trim();
       const rawBank = (row["בנק"] || "").toString().trim();
       // אם קיבלנו קוד מספרי — ממיר לשם בנק
       const bank = bankCodeToName[rawBank] || rawBank;
@@ -764,22 +765,37 @@ invoiceControllers.uploadExcelMilga = async (req, res) => {
         status && `סטטוס: ${status}`,
       ].filter(Boolean).join(" | ");
 
-      // מצא או צור ספק עם שם המקבל
-      let rowSupplier = await Supplier.findOne({ name, business_tax: idNumber || "000000000" });
+      // מצא ספק לפי שם (גם אם business_tax הוא 000000000 מהעלאה קודמת)
+      let rowSupplier = await Supplier.findOne({ name, business_tax: idNumber }) ||
+                        await Supplier.findOne({ name, business_tax: "000000000" }) ||
+                        await Supplier.findOne({ name });
       const hasBankInfo = bank && branch && account;
       if (!rowSupplier) {
         rowSupplier = await Supplier.create({
           name,
           business_tax: idNumber || "000000000",
+          ...(email && { email }),
           createdBy: req.user._id,
           ...(hasBankInfo && {
             bankDetails: { bankName: bank, branchNumber: branch, accountNumber: account },
           }),
         });
-      } else if (hasBankInfo && !rowSupplier.bankDetails?.bankName) {
-        // עדכן פרטי בנק אם חסרים
-        rowSupplier.bankDetails = { bankName: bank, branchNumber: branch, accountNumber: account };
-        await rowSupplier.save();
+      } else {
+        // עדכן שדות חסרים בספק קיים
+        let changed = false;
+        if (idNumber && (!rowSupplier.business_tax || /^0+$/.test(rowSupplier.business_tax))) {
+          rowSupplier.business_tax = idNumber;
+          changed = true;
+        }
+        if (email && !rowSupplier.email) {
+          rowSupplier.email = email;
+          changed = true;
+        }
+        if (hasBankInfo && !rowSupplier.bankDetails?.bankName) {
+          rowSupplier.bankDetails = { bankName: bank, branchNumber: branch, accountNumber: account };
+          changed = true;
+        }
+        if (changed) await rowSupplier.save();
       }
 
       // מספר חשבונית אוטומטי (אותה מערכת כמו "אין צורך")

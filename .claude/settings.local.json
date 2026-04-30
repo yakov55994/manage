@@ -63,7 +63,11 @@
       "Skill(keybindings-help)",
       "Skill(keybindings-help:*)",
       "Bash(node scripts/fixMilgaSupplierNames.js)",
-      "Bash(node scripts/fixMilgaBankDetails.js)"
+      "Bash(node scripts/fixMilgaBankDetails.js)",
+      "Bash(node scripts/showMissingBankDetails.js)",
+      "Bash(node scripts/debugMissingSuppliers.js)",
+      "Bash(node scripts/fixMilgaTaxIds.js)",
+      "Bash(node scripts/fixMilgaFromExcel.js \"/Users/yakovcohen/Downloads/חוברת1.xlsx\")"
     ]
   }
 }
