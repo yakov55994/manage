@@ -11,7 +11,7 @@ const METHODS = [
 export default function PaymentCaptureModal({
   open,
   onClose,
-  onSave, // (payload) => void   payload = { paymentDate, paymentMethod, checkNumber?, checkDate? }
+  onSave, // (payload) => void   payload = { paymentDate, paymentMethod, checkNumber?, checkDate?, sendEmail }
   defaultDate, // optional 'YYYY-MM-DD'
   defaultMethod, // optional 'check' | 'bank_transfer'
   title = "פרטי תשלום",
@@ -22,6 +22,7 @@ export default function PaymentCaptureModal({
   const [method, setMethod] = useState(defaultMethod || "");
   const [checkNumber, setCheckNumber] = useState("");
   const [checkDate, setCheckDate] = useState("");
+  const [sendEmail, setSendEmail] = useState(true);
   const [errors, setErrors] = useState({});
   const [isVisible, setIsVisible] = useState(false);
   const dialogRef = useRef(null);
@@ -33,6 +34,7 @@ export default function PaymentCaptureModal({
       setMethod(defaultMethod || "");
       setCheckNumber("");
       setCheckDate("");
+      setSendEmail(true);
       setErrors({});
       // Delay for animation
       requestAnimationFrame(() => {
@@ -106,6 +108,7 @@ export default function PaymentCaptureModal({
       paymentMethod: method,
       checkNumber: method === "check" ? checkNumber : undefined,
       checkDate: method === "check" ? checkDate : undefined,
+      sendEmail,
     });
   };
 
@@ -265,6 +268,31 @@ export default function PaymentCaptureModal({
               </div>
             </div>
           )}
+
+          {/* Send Email Toggle */}
+          <div
+            onClick={() => setSendEmail((v) => !v)}
+            className={`flex items-center gap-3 p-3 rounded-xl border-2 cursor-pointer transition-all duration-200 select-none ${
+              sendEmail
+                ? "border-blue-400 bg-blue-50"
+                : "border-slate-200 bg-slate-50"
+            }`}
+          >
+            <div
+              className={`w-5 h-5 rounded border-2 flex items-center justify-center flex-shrink-0 transition-colors ${
+                sendEmail ? "border-blue-500 bg-blue-500" : "border-slate-400 bg-white"
+              }`}
+            >
+              {sendEmail && (
+                <svg className="w-3 h-3 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+                </svg>
+              )}
+            </div>
+            <span className={`text-sm font-medium ${sendEmail ? "text-blue-700" : "text-slate-500"}`}>
+              שלח מייל אישור תשלום לספק
+            </span>
+          </div>
         </div>
 
         {/* Action Buttons */}

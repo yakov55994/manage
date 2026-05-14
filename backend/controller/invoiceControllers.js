@@ -144,7 +144,7 @@ const invoiceControllers = {
   // ===============================================
   async updatePaymentStatus(req, res) {
     try {
-      const { status, paymentDate, paymentMethod, checkNumber, checkDate } = req.body;
+      const { status, paymentDate, paymentMethod, checkNumber, checkDate, sendEmail } = req.body;
 
       const updated = await invoiceService.updatePaymentStatus(
         req.user,
@@ -153,7 +153,8 @@ const invoiceControllers = {
         paymentDate,
         paymentMethod,
         checkNumber,
-        checkDate
+        checkDate,
+        sendEmail !== false
       );
 
       res.json({ success: true, data: updated });
@@ -303,7 +304,7 @@ const invoiceControllers = {
 
   async bulkUpdatePaymentStatus(req, res) {
     try {
-      const { invoiceIds, status, paymentDate, paymentMethod, checkNumber, checkDate } = req.body;
+      const { invoiceIds, status, paymentDate, paymentMethod, checkNumber, checkDate, sendEmail } = req.body;
 
       if (!invoiceIds || !Array.isArray(invoiceIds) || invoiceIds.length === 0) {
         return res.status(400).json({
@@ -366,7 +367,7 @@ const invoiceControllers = {
       );
 
       // שליחת מיילים לספקים כשמעדכנים לשולם
-      if (status === "כן") {
+      if (sendEmail !== false && status === "כן") {
         try {
           const invoicesWithSuppliers = await Invoice.find({ _id: { $in: invoiceIds } })
             .populate("supplierId", "name email");

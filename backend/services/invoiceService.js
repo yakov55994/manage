@@ -395,29 +395,6 @@ async function createInvoice(user, data) {
     await recalculateRemainingBudget(invoice.fundedFromProjectId);
   }
 
-  // 📧 שליחת מייל אם החשבונית נוצרה עם סטטוס תשלום = כן
-  if (basic.paid === "כן") {
-    const supplier = await Supplier.findById(supplierId).select("name email");
-    if (supplier?.email) {
-      try {
-        await sendPaymentConfirmationEmail(
-          supplier.email,
-          supplier.name,
-          {
-            invoiceNumber: invoice.invoiceNumber,
-            totalAmount: invoice.totalAmount,
-            paymentDate: invoice.paymentDate || new Date(),
-            documentType: invoice.documentType,
-            detail: invoice.detail,
-            paymentMethod: invoice.paymentMethod,
-          }
-        );
-      } catch (emailError) {
-        console.error("❌ Failed to send payment confirmation email on create:", emailError);
-      }
-    }
-  }
-
   // 📝 תיעוד היסטוריית יצירה
   try {
     invoice.editHistory = [{
@@ -473,6 +450,7 @@ async function updateInvoice(user, invoiceId, data) {
     status,
     submittedToProjectId,
     submittedAt,
+    sendEmail = false,
     ...basic
   } = data;
 
@@ -625,7 +603,7 @@ async function updateInvoice(user, invoiceId, data) {
   }
 
   // 📧 שליחת מייל אם סטטוס התשלום השתנה ל-"כן"
-  if (basic.paid === "כן" && oldPaidStatus !== "כן" && invoice.supplierId?.email) {
+  if (sendEmail && basic.paid === "כן" && oldPaidStatus !== "כן" && invoice.supplierId?.email) {
     try {
       await sendPaymentConfirmationEmail(
         invoice.supplierId.email,
@@ -1003,7 +981,8 @@ async function updatePaymentStatus(
   date,
   method,
   checkNumber,
-  checkDate
+  checkDate,
+  sendEmail = true
 ) {
   const updateData = {
     paid: status,
@@ -1041,7 +1020,7 @@ async function updatePaymentStatus(
   }).populate("supplierId", "name phone email bankDetails");
 
   // שליחת מייל לספק כשמעדכנים לשולם
-  if (status === "כן" && updatedInvoice?.supplierId?.email) {
+  if (sendEmail && status === "כן" && updatedInvoice?.supplierId?.email) {
     try {
       await sendPaymentConfirmationEmail(
         updatedInvoice.supplierId.email,

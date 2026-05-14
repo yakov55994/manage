@@ -1856,6 +1856,7 @@ const InvoicesPage = () => {
     paymentMethod,
     checkNumber,
     checkDate,
+    sendEmail,
   }) => {
     const invoice = paymentCapture.invoice;
     if (!invoice) return;
@@ -1868,6 +1869,7 @@ const InvoicesPage = () => {
         paymentMethod,
         checkNumber,
         checkDate,
+        sendEmail: sendEmail !== false,
       });
 
       // ✅ השתמש בנתונים שחזרו מה-Backend

@@ -43,6 +43,10 @@ export default function ExpenseLinkModal({
   const [showSalaryFilters, setShowSalaryFilters] = useState(false);
   const [showOrderFilters, setShowOrderFilters] = useState(false);
 
+  const [initialInvoiceIds, setInitialInvoiceIds] = useState([]);
+  const [initialSalaryIds, setInitialSalaryIds] = useState([]);
+  const [initialOrderIds, setInitialOrderIds] = useState([]);
+
   // טעינת נתונים
   useEffect(() => {
     if (!open) return;
@@ -70,9 +74,15 @@ export default function ExpenseLinkModal({
   // איפוס בחירות בעת פתיחה
   useEffect(() => {
     if (open && expense) {
-      setSelectedInvoiceIds(expense.linkedInvoices?.map(inv => inv._id || inv) || []);
-      setSelectedSalaryIds(expense.linkedSalaries?.map(sal => sal._id || sal) || []);
-      setSelectedOrderIds(expense.linkedOrders?.map(ord => ord._id || ord) || []);
+      const invIds = expense.linkedInvoices?.map(inv => inv._id || inv) || [];
+      const salIds = expense.linkedSalaries?.map(sal => sal._id || sal) || [];
+      const ordIds = expense.linkedOrders?.map(ord => ord._id || ord) || [];
+      setSelectedInvoiceIds(invIds);
+      setSelectedSalaryIds(salIds);
+      setSelectedOrderIds(ordIds);
+      setInitialInvoiceIds(invIds);
+      setInitialSalaryIds(salIds);
+      setInitialOrderIds(ordIds);
     }
   }, [open, expense]);
 
@@ -452,8 +462,13 @@ export default function ExpenseLinkModal({
                         )}
                       </div>
                       <div className="flex-1 min-w-0">
-                        <div className="font-bold text-slate-900">
+                        <div className="font-bold text-slate-900 flex items-center gap-2">
                           {invoice.supplierId?.name || "ללא ספק"}
+                          {initialInvoiceIds.includes(invoice._id) && (
+                            <span className="px-1.5 py-0.5 rounded text-xs font-bold bg-green-100 text-green-700 border border-green-300">
+                              משויך
+                            </span>
+                          )}
                         </div>
                         <div className="text-sm text-slate-500">
                           חשבונית #{invoice.invoiceNumber}
@@ -583,8 +598,13 @@ export default function ExpenseLinkModal({
                         )}
                       </div>
                       <div className="flex-1 min-w-0">
-                        <div className="font-bold text-slate-900">
+                        <div className="font-bold text-slate-900 flex items-center gap-2">
                           {salary.employeeName}
+                          {initialSalaryIds.includes(salary._id) && (
+                            <span className="px-1.5 py-0.5 rounded text-xs font-bold bg-green-100 text-green-700 border border-green-300">
+                              משויך
+                            </span>
+                          )}
                         </div>
                         <div className="text-sm text-slate-500">
                           {salary.date ? `${new Date(salary.date).getMonth() + 1}/${new Date(salary.date).getFullYear()}` : "-"}
@@ -690,8 +710,13 @@ export default function ExpenseLinkModal({
                         )}
                       </div>
                       <div className="flex-1 min-w-0">
-                        <div className="font-bold text-slate-900">
+                        <div className="font-bold text-slate-900 flex items-center gap-2">
                           הזמנה #{order.orderNumber}
+                          {initialOrderIds.includes(order._id) && (
+                            <span className="px-1.5 py-0.5 rounded text-xs font-bold bg-green-100 text-green-700 border border-green-300">
+                              משויך
+                            </span>
+                          )}
                         </div>
                         <div className="text-sm text-slate-500">
                           {order.projectName}

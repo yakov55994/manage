@@ -166,32 +166,6 @@ export default {
       throw new Error("הכנסה לא נמצאה");
     }
 
-    // חישוב סכום כולל של פריטים משויכים
-    let totalLinkedAmount = 0;
-
-    if (invoiceIds && invoiceIds.length > 0) {
-      const invoices = await Invoice.find({ _id: { $in: invoiceIds } });
-      totalLinkedAmount += invoices.reduce((sum, inv) => sum + (Number(inv.totalAmount) || 0), 0);
-    }
-
-    if (salaryIds && salaryIds.length > 0) {
-      const salaries = await Salary.find({ _id: { $in: salaryIds } });
-      totalLinkedAmount += salaries.reduce((sum, sal) => sum + (Number(sal.netAmount) || Number(sal.baseAmount) || Number(sal.finalAmount) || 0), 0);
-    }
-
-    if (orderIds && orderIds.length > 0) {
-      const orders = await Order.find({ _id: { $in: orderIds } });
-      totalLinkedAmount += orders.reduce((sum, ord) => sum + (Number(ord.sum) || 0), 0);
-    }
-
-    // אימות סכום
-    const incomeAmount = Math.abs(Number(income.amount) || 0);
-    const tolerance = 0.01;
-
-    if (totalLinkedAmount > 0 && Math.abs(incomeAmount - totalLinkedAmount) > tolerance) {
-      throw new Error(`סכום ההכנסה (${incomeAmount.toLocaleString()} ₪) חייב להיות זהה לסכום הפריטים המשויכים (${totalLinkedAmount.toLocaleString()} ₪)`);
-    }
-
     // עדכון השיוכים
     income.linkedInvoices = invoiceIds || [];
     income.linkedSalaries = salaryIds || [];

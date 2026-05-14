@@ -122,32 +122,6 @@ export default {
       throw new Error("הוצאה לא נמצאה");
     }
 
-    // חישוב סכום כולל של חשבוניות, משכורות והזמנות משויכות
-    let totalLinkedAmount = 0;
-
-    if (invoiceIds && invoiceIds.length > 0) {
-      const invoices = await Invoice.find({ _id: { $in: invoiceIds } });
-      totalLinkedAmount += invoices.reduce((sum, inv) => sum + (Number(inv.totalAmount) || 0), 0);
-    }
-
-    if (salaryIds && salaryIds.length > 0) {
-      const salaries = await Salary.find({ _id: { $in: salaryIds } });
-      totalLinkedAmount += salaries.reduce((sum, sal) => sum + (Number(sal.netAmount) || Number(sal.baseAmount) || Number(sal.finalAmount) || 0), 0);
-    }
-
-    if (orderIds && orderIds.length > 0) {
-      const orders = await Order.find({ _id: { $in: orderIds } });
-      totalLinkedAmount += orders.reduce((sum, ord) => sum + (Number(ord.sum) || 0), 0);
-    }
-
-    // אימות שהסכום זהה (עם סטייה קטנה לסיכום שקלים)
-    const expenseAmount = Math.abs(Number(expense.amount) || 0);
-    const tolerance = 0.01; // סטייה מותרת של 1 אגורה
-
-    if (totalLinkedAmount > 0 && Math.abs(expenseAmount - totalLinkedAmount) > tolerance) {
-      throw new Error(`סכום ההוצאה (${expenseAmount.toLocaleString()} ₪) חייב להיות זהה לסכום הפריטים המשויכים (${totalLinkedAmount.toLocaleString()} ₪)`);
-    }
-
     expense.linkedInvoices = invoiceIds || [];
     expense.linkedSalaries = salaryIds || [];
     expense.linkedOrders = orderIds || [];
