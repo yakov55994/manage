@@ -33,6 +33,7 @@ export default function ViewIncomes() {
   const [sortOrder, setSortOrder] = useState("desc");
   const [deleteModal, setDeleteModal] = useState({ open: false, incomeId: null });
   const [linkModal, setLinkModal] = useState({ open: false, income: null });
+  const [linkFilter, setLinkFilter] = useState("all"); // "all" | "linked" | "unlinked"
 
   // Multi-select
   const [selectedIncomes, setSelectedIncomes] = useState([]);
@@ -61,14 +62,21 @@ export default function ViewIncomes() {
 
   const filteredIncomes = useMemo(() => incomes
     .filter((income) => {
-      if (!searchTerm) return true;
-      const q = searchTerm.toLowerCase();
-      return (
-        income.description?.toLowerCase().includes(q) ||
-        income.notes?.toLowerCase().includes(q) ||
-        income.orderNumber?.toString().includes(q) ||
-        income.amount?.toString().includes(q)
-      );
+      if (searchTerm) {
+        const q = searchTerm.toLowerCase();
+        const matchesSearch =
+          income.description?.toLowerCase().includes(q) ||
+          income.notes?.toLowerCase().includes(q) ||
+          income.orderNumber?.toString().includes(q) ||
+          income.amount?.toString().includes(q);
+        if (!matchesSearch) return false;
+      }
+      if (linkFilter !== "all") {
+        const isLinked = (income.linkedInvoices?.length > 0) || (income.linkedSalaries?.length > 0) || (income.linkedOrders?.length > 0);
+        if (linkFilter === "linked" && !isLinked) return false;
+        if (linkFilter === "unlinked" && isLinked) return false;
+      }
+      return true;
     })
     .sort((a, b) => {
       let comparison = 0;
@@ -84,7 +92,7 @@ export default function ViewIncomes() {
       }
 
       return sortOrder === "asc" ? comparison : -comparison;
-    }), [incomes, searchTerm, sortBy, sortOrder]);
+    }), [incomes, searchTerm, linkFilter, sortBy, sortOrder]);
 
   const groupIncomesByMonth = (incomes) => {
     return incomes.reduce((acc, income) => {
@@ -466,6 +474,29 @@ export default function ViewIncomes() {
               תיאור
               <ArrowUpDown className="w-4 h-4" />
             </button>
+
+            {/* סינון שיוך */}
+            <div className="flex items-center gap-1 mr-2">
+              <button
+                onClick={() => setLinkFilter("all")}
+                className={`px-3 py-2 rounded-xl text-sm font-bold transition-all ${linkFilter === "all" ? "bg-slate-700 text-white" : "bg-slate-100 text-slate-600 hover:bg-slate-200"}`}
+              >
+                הכל
+              </button>
+              <button
+                onClick={() => setLinkFilter("linked")}
+                className={`flex items-center gap-1 px-3 py-2 rounded-xl text-sm font-bold transition-all ${linkFilter === "linked" ? "bg-green-600 text-white" : "bg-green-100 text-green-700 hover:bg-green-200"}`}
+              >
+                <Link className="w-3 h-3" />
+                שויך
+              </button>
+              <button
+                onClick={() => setLinkFilter("unlinked")}
+                className={`px-3 py-2 rounded-xl text-sm font-bold transition-all ${linkFilter === "unlinked" ? "bg-red-500 text-white" : "bg-red-100 text-red-600 hover:bg-red-200"}`}
+              >
+                לא שויך
+              </button>
+            </div>
           </div>
         </div>
 

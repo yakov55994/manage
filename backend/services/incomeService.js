@@ -160,25 +160,16 @@ export default {
 
   // שיוך הכנסה לחשבוניות, משכורות והזמנות
   async linkIncome(user, incomeId, invoiceIds, salaryIds, orderIds) {
-    const income = await Income.findById(incomeId);
+    const exists = await Income.exists({ _id: incomeId });
+    if (!exists) throw new Error("הכנסה לא נמצאה");
 
-    if (!income) {
-      throw new Error("הכנסה לא נמצאה");
-    }
-
-    // עדכון השיוכים
-    income.linkedInvoices = invoiceIds || [];
-    income.linkedSalaries = salaryIds || [];
-    income.linkedOrders = orderIds || [];
-
-    // עדכון סטטוס שיוך
     const hasLinks = (invoiceIds?.length > 0) || (salaryIds?.length > 0) || (orderIds?.length > 0);
-    income.isCredited = hasLinks ? "כן" : "לא";
 
-    await income.save();
-
-    // החזר עם populate
-    const populatedIncome = await Income.findById(incomeId)
+    const populatedIncome = await Income.findByIdAndUpdate(
+      incomeId,
+      { $set: { linkedInvoices: invoiceIds || [], linkedSalaries: salaryIds || [], linkedOrders: orderIds || [], isCredited: hasLinks ? "כן" : "לא" } },
+      { new: true }
+    )
       .populate("orderId", "orderNumber projectName sum")
       .populate("invoiceId", "invoiceNumber projectName")
       .populate("supplierId", "name")

@@ -36,6 +36,7 @@ export default function ViewExpenses() {
   const [bulkNoteModal, setBulkNoteModal] = useState(false);
   const [bulkNote, setBulkNote] = useState("");
   const [linkModal, setLinkModal] = useState({ open: false, expense: null });
+  const [linkFilter, setLinkFilter] = useState("all"); // "all" | "linked" | "unlinked"
 
   useEffect(() => {
     fetchExpenses();
@@ -60,14 +61,21 @@ export default function ViewExpenses() {
 
   const filteredExpenses = useMemo(() => expenses
     .filter((expense) => {
-      if (!searchTerm) return true;
-      const q = searchTerm.toLowerCase();
-      return (
-        expense.description?.toLowerCase().includes(q) ||
-        expense.notes?.toLowerCase().includes(q) ||
-        expense.reference?.toString().includes(q) ||
-        expense.amount?.toString().includes(q)
-      );
+      if (searchTerm) {
+        const q = searchTerm.toLowerCase();
+        const matchesSearch =
+          expense.description?.toLowerCase().includes(q) ||
+          expense.notes?.toLowerCase().includes(q) ||
+          expense.reference?.toString().includes(q) ||
+          expense.amount?.toString().includes(q);
+        if (!matchesSearch) return false;
+      }
+      if (linkFilter !== "all") {
+        const isLinked = (expense.linkedInvoices?.length > 0) || (expense.linkedSalaries?.length > 0) || (expense.linkedOrders?.length > 0);
+        if (linkFilter === "linked" && !isLinked) return false;
+        if (linkFilter === "unlinked" && isLinked) return false;
+      }
+      return true;
     })
     .sort((a, b) => {
       let comparison = 0;
@@ -85,7 +93,7 @@ export default function ViewExpenses() {
       }
 
       return sortOrder === "asc" ? comparison : -comparison;
-    }), [expenses, searchTerm, sortBy, sortOrder]);
+    }), [expenses, searchTerm, linkFilter, sortBy, sortOrder]);
 
   const groupExpensesByMonth = (expenses) => {
     return expenses.reduce((acc, expense) => {
@@ -382,6 +390,29 @@ export default function ViewExpenses() {
                 <FileText className="w-4 h-4" />
                 תיאור
                 <ArrowUpDown className="w-4 h-4" />
+              </button>
+            </div>
+
+            {/* סינון שיוך */}
+            <div className="flex items-center gap-1">
+              <button
+                onClick={() => setLinkFilter("all")}
+                className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${linkFilter === "all" ? "bg-slate-700 text-white" : "bg-slate-100 text-slate-600 hover:bg-slate-200"}`}
+              >
+                הכל
+              </button>
+              <button
+                onClick={() => setLinkFilter("linked")}
+                className={`flex items-center gap-1 px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${linkFilter === "linked" ? "bg-green-600 text-white" : "bg-green-100 text-green-700 hover:bg-green-200"}`}
+              >
+                <Link className="w-3 h-3" />
+                שויך
+              </button>
+              <button
+                onClick={() => setLinkFilter("unlinked")}
+                className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${linkFilter === "unlinked" ? "bg-red-500 text-white" : "bg-red-100 text-red-600 hover:bg-red-200"}`}
+              >
+                לא שויך
               </button>
             </div>
 

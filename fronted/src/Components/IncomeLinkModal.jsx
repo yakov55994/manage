@@ -458,10 +458,10 @@ export default function IncomeLinkModal({
                       <div className="flex-1 min-w-0">
                         <div className="font-bold text-slate-900 flex items-center gap-2">
                           {invoice.supplierId?.name || "ללא ספק"}
-                          {initialInvoiceIds.includes(invoice._id) && (
-                            <span className="px-1.5 py-0.5 rounded text-xs font-bold bg-green-100 text-green-700 border border-green-300">
-                              משויך
-                            </span>
+                          {initialInvoiceIds.includes(invoice._id) ? (
+                            <span className="px-1.5 py-0.5 rounded text-xs font-bold bg-green-100 text-green-700 border border-green-300">שויך</span>
+                          ) : (
+                            <span className="px-1.5 py-0.5 rounded text-xs font-bold bg-slate-100 text-slate-400 border border-slate-200">לא שויך</span>
                           )}
                         </div>
                         <div className="text-sm text-slate-500">
@@ -594,10 +594,10 @@ export default function IncomeLinkModal({
                       <div className="flex-1 min-w-0">
                         <div className="font-bold text-slate-900 flex items-center gap-2">
                           {salary.employeeName}
-                          {initialSalaryIds.includes(salary._id) && (
-                            <span className="px-1.5 py-0.5 rounded text-xs font-bold bg-green-100 text-green-700 border border-green-300">
-                              משויך
-                            </span>
+                          {initialSalaryIds.includes(salary._id) ? (
+                            <span className="px-1.5 py-0.5 rounded text-xs font-bold bg-green-100 text-green-700 border border-green-300">שויך</span>
+                          ) : (
+                            <span className="px-1.5 py-0.5 rounded text-xs font-bold bg-slate-100 text-slate-400 border border-slate-200">לא שויך</span>
                           )}
                         </div>
                         <div className="text-sm text-slate-500">
@@ -706,10 +706,10 @@ export default function IncomeLinkModal({
                       <div className="flex-1 min-w-0">
                         <div className="font-bold text-slate-900 flex items-center gap-2">
                           הזמנה #{order.orderNumber}
-                          {initialOrderIds.includes(order._id) && (
-                            <span className="px-1.5 py-0.5 rounded text-xs font-bold bg-green-100 text-green-700 border border-green-300">
-                              משויך
-                            </span>
+                          {initialOrderIds.includes(order._id) ? (
+                            <span className="px-1.5 py-0.5 rounded text-xs font-bold bg-green-100 text-green-700 border border-green-300">שויך</span>
+                          ) : (
+                            <span className="px-1.5 py-0.5 rounded text-xs font-bold bg-slate-100 text-slate-400 border border-slate-200">לא שויך</span>
                           )}
                         </div>
                         <div className="text-sm text-slate-500">

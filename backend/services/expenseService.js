@@ -116,20 +116,14 @@ export default {
 
   // שיוך הוצאה לחשבוניות, משכורות והזמנות
   async linkExpense(user, expenseId, invoiceIds, salaryIds, orderIds) {
-    const expense = await Expense.findById(expenseId);
+    const exists = await Expense.exists({ _id: expenseId });
+    if (!exists) throw new Error("הוצאה לא נמצאה");
 
-    if (!expense) {
-      throw new Error("הוצאה לא נמצאה");
-    }
-
-    expense.linkedInvoices = invoiceIds || [];
-    expense.linkedSalaries = salaryIds || [];
-    expense.linkedOrders = orderIds || [];
-
-    await expense.save();
-
-    // החזר עם populate
-    const populatedExpense = await Expense.findById(expenseId)
+    const populatedExpense = await Expense.findByIdAndUpdate(
+      expenseId,
+      { $set: { linkedInvoices: invoiceIds || [], linkedSalaries: salaryIds || [], linkedOrders: orderIds || [] } },
+      { new: true }
+    )
       .populate({
         path: "linkedInvoices",
         select: "invoiceNumber supplierId totalAmount createdAt paid paymentDate",
