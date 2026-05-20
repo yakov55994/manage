@@ -177,30 +177,6 @@ app.use((err, req, res, next) => {
   res.status(500).json({ message: 'Internal Server Error', error: err.message });
 });
 
-// Start DB + Server
-const connectDB = async () => {
-  try {
-    await mongoose.connect(process.env.MONGO_URL);
-    console.log('✅ Connected to MongoDB...');
-    const port = process.env.PORT || 3000;
-    httpServer.listen(port, () => {
-      console.log(`🚀 Server running on port ${port}`);
-      console.log(`🔌 Socket.IO ready for connections`);
-
-    });
-  } catch (err) {
-    console.error('❌ Error connecting to MongoDB', err);
-  }
-};
-
-// Global error handlers to prevent crashes
-process.on('unhandledRejection', (reason, promise) => {
-  console.error('❌ Unhandled Rejection at:', promise, 'reason:', reason);
-});
-process.on('uncaughtException', (err) => {
-  console.error('❌ Uncaught Exception:', err);
-});
-
 // גיבוי אוטומטי - אתחול מהגדרות DB
 const initBackupSchedule = async () => {
   try {
@@ -227,7 +203,31 @@ const initBackupSchedule = async () => {
   }
 };
 
-connectDB().then(() => initBackupSchedule());
+// Start DB + Server
+const connectDB = async () => {
+  try {
+    await mongoose.connect(process.env.MONGO_URL);
+    console.log('✅ Connected to MongoDB...');
+    const port = process.env.PORT || 3000;
+    httpServer.listen(port, () => {
+      console.log(`🚀 Server running on port ${port}`);
+      console.log(`🔌 Socket.IO ready for connections`);
+    });
+    await initBackupSchedule();
+  } catch (err) {
+    console.error('❌ Error connecting to MongoDB', err);
+  }
+};
+
+// Global error handlers to prevent crashes
+process.on('unhandledRejection', (reason, promise) => {
+  console.error('❌ Unhandled Rejection at:', promise, 'reason:', reason);
+});
+process.on('uncaughtException', (err) => {
+  console.error('❌ Uncaught Exception:', err);
+});
+
+connectDB();
 
 export { io };
 export default app;

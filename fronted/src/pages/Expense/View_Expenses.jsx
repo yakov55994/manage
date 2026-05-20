@@ -41,16 +41,16 @@ export default function ViewExpenses() {
     fetchExpenses();
   }, []);
 
-  const fetchExpenses = async () => {
+  const fetchExpenses = async (silent = false) => {
     try {
-      setLoading(true);
+      if (!silent) setLoading(true);
       const response = await api.get("/expenses");
       setExpenses(response.data?.data || []);
     } catch (err) {
       console.error("Error fetching expenses:", err);
       toast.error("שגיאה בטעינת ההוצאות");
     } finally {
-      setLoading(false);
+      if (!silent) setLoading(false);
     }
   };
 
@@ -824,10 +824,8 @@ export default function ViewExpenses() {
         open={linkModal.open}
         onClose={() => setLinkModal({ open: false, expense: null })}
         expense={linkModal.expense}
-        onLinked={(updatedExpense) => {
-          setExpenses(prev =>
-            prev.map(exp => exp._id === updatedExpense._id ? updatedExpense : exp)
-          );
+        onLinked={() => {
+          fetchExpenses(true);
         }}
       />
     </div>

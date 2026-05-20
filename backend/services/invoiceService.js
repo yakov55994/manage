@@ -340,7 +340,7 @@ async function createInvoice(user, data) {
     return createSalaryInvoice(user, data);
   }
 
-  const { projects, files, fundedFromProjectId, fundedFromProjectIds, supplierId, ...basic } = data;
+  const { projects, files, fundedFromProjectId, fundedFromProjectIds, supplierId, sendEmail = false, ...basic } = data;
 
   if (!projects || !projects.length)
     throw new Error("חובה לבחור לפחות פרויקט אחד");
@@ -414,6 +414,29 @@ async function createInvoice(user, data) {
     await notificationService.notifyNewInvoice(invoice, user._id);
   } catch (notifError) {
     console.error("❌ Failed to send new invoice notification:", notifError);
+  }
+
+  // 📧 שליחת מייל לספק אם סומן וי ושולם
+  if (sendEmail && basic.paid === "כן") {
+    try {
+      const populated = await Invoice.findById(invoice._id).populate("supplierId", "name email");
+      if (populated?.supplierId?.email) {
+        await sendPaymentConfirmationEmail(
+          populated.supplierId.email,
+          populated.supplierId.name,
+          {
+            invoiceNumber: invoice.invoiceNumber,
+            totalAmount: invoice.totalAmount,
+            paymentDate: invoice.paymentDate || new Date(),
+            documentType: invoice.documentType,
+            detail: invoice.detail,
+            paymentMethod: invoice.paymentMethod,
+          }
+        );
+      }
+    } catch (emailError) {
+      console.error("❌ Failed to send payment confirmation email on create:", emailError);
+    }
   }
 
   return invoice;

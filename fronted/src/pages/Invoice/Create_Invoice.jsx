@@ -29,6 +29,8 @@ const CreateInvoice = () => {
   const milgaProject = projects.find((p) => p.name === "מילגה");
   const MILGA_ID = milgaProject?._id;
 
+  const [sendEmail, setSendEmail] = useState(false);
+
   const salaryProject = projects.find((p) => p.name === "משכורות");
   const SALARY_ID = salaryProject?._id;
 
@@ -391,6 +393,8 @@ const CreateInvoice = () => {
         // תמיכה בשתי הגרסאות - ישנה (יחיד) וחדשה (מרובה)
         fundedFromProjectId: fundedFromProjectId || null,
         fundedFromProjectIds: fundedFromProjectIds && fundedFromProjectIds.length > 0 ? fundedFromProjectIds : null,
+
+        sendEmail,
       };
 
       if (isSalary) {
@@ -815,6 +819,7 @@ const CreateInvoice = () => {
                   }));
                 } else {
                   // "לא" או "לא לתשלום" - אפס את פרטי התשלום
+                  setSendEmail(false);
                   setForm((prev) => ({
                     ...prev,
                     paid: value,
@@ -930,6 +935,29 @@ const CreateInvoice = () => {
                 />
               </div>
             </>
+          )}
+
+          {/* שלח מייל לספק - מופיע רק אם שולם */}
+          {form.paid === "כן" && (
+            <div
+              onClick={() => setSendEmail((v) => !v)}
+              className={`flex items-center gap-3 p-3 rounded-xl border-2 cursor-pointer transition-all duration-200 select-none ${
+                sendEmail ? "border-blue-400 bg-blue-50" : "border-slate-200 bg-slate-50"
+              }`}
+            >
+              <div className={`w-5 h-5 rounded border-2 flex items-center justify-center flex-shrink-0 transition-colors ${
+                sendEmail ? "border-blue-500 bg-blue-500" : "border-slate-400 bg-white"
+              }`}>
+                {sendEmail && (
+                  <svg className="w-3 h-3 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+                  </svg>
+                )}
+              </div>
+              <span className={`text-sm font-medium ${sendEmail ? "text-blue-700" : "text-slate-500"}`}>
+                שלח מייל אישור תשלום לספק
+              </span>
+            </div>
           )}
 
           {/* פירוט */}

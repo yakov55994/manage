@@ -67,7 +67,15 @@
       "Bash(node scripts/showMissingBankDetails.js)",
       "Bash(node scripts/debugMissingSuppliers.js)",
       "Bash(node scripts/fixMilgaTaxIds.js)",
-      "Bash(node scripts/fixMilgaFromExcel.js \"/Users/yakovcohen/Downloads/חוברת1.xlsx\")"
+      "Bash(node scripts/fixMilgaFromExcel.js \"/Users/yakovcohen/Downloads/חוברת1.xlsx\")",
+      "Bash(git -C /Users/yakovcohen/manage show 81d386f --stat)",
+      "Bash(git -C /Users/yakovcohen/manage show 81d386f -- backend/services/expenseService.js)",
+      "Bash(git -C /Users/yakovcohen/manage show 81d386f -- backend/services/incomeService.js)",
+      "Bash(git -C /Users/yakovcohen/manage show 81d386f -- fronted/src/Components/IncomeLinkModal.jsx)",
+      "Bash(git -C /Users/yakovcohen/manage diff backend/services/invoiceService.js)",
+      "Bash(git -C /Users/yakovcohen/manage diff backend/server.js)",
+      "Bash(git -C /Users/yakovcohen/manage log --oneline --all -5)",
+      "Bash(git -C /Users/yakovcohen/manage show 81d386f -- fronted/src/Components/ExpenseLinkModal.jsx)"
     ]
   }
 }

@@ -46,16 +46,16 @@ export default function ViewIncomes() {
     fetchIncomes();
   }, []);
 
-  const fetchIncomes = async () => {
+  const fetchIncomes = async (silent = false) => {
     try {
-      setLoading(true);
+      if (!silent) setLoading(true);
       const response = await api.get("/incomes");
       setIncomes(response.data?.data || []);
     } catch (err) {
       console.error("Error fetching incomes:", err);
       toast.error("שגיאה בטעינת ההכנסות");
     } finally {
-      setLoading(false);
+      if (!silent) setLoading(false);
     }
   };
 
@@ -184,11 +184,9 @@ export default function ViewIncomes() {
   };
 
   // טיפול בשיוך מוצלח
-  const handleLinked = (updatedIncome) => {
-    setIncomes(prev =>
-      prev.map(inc => inc._id === updatedIncome._id ? updatedIncome : inc)
-    );
+  const handleLinked = () => {
     setLinkModal({ open: false, income: null });
+    fetchIncomes(true);
   };
 
   // חישוב סה"כ
