@@ -7,6 +7,9 @@ const router = express.Router();
 // חיפוש הוצאות
 router.get("/search", protect, expenseController.searchExpenses);
 
+// כל ה-IDs שכבר שויכו לאיזשהי תנועה (הוצאה/הכנסה)
+router.get("/linked-ids", protect, expenseController.getAllLinkedIds);
+
 // קבלת כל ההוצאות
 router.get("/", protect, expenseController.getAllExpenses);
 

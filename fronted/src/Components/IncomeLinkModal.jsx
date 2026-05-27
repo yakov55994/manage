@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { X, Search, FileText, Users, Filter, CheckSquare, Square, ShoppingCart } from "lucide-react";
+import { X, Search, FileText, Users, Filter, CheckSquare, Square, ShoppingCart, AlertTriangle } from "lucide-react";
 import api from "../api/api.js";
 import { toast } from "sonner";
 
@@ -11,6 +11,7 @@ export default function IncomeLinkModal({
 }) {
   const [loading, setLoading] = useState(false);
   const [activeTab, setActiveTab] = useState("invoices"); // invoices | salaries | orders
+  const [amountWarningModal, setAmountWarningModal] = useState({ open: false, diff: 0, selected: 0, incomeAmt: 0 });
 
   // חשבוניות
   const [invoices, setInvoices] = useState([]);
@@ -47,21 +48,31 @@ export default function IncomeLinkModal({
   const [initialSalaryIds, setInitialSalaryIds] = useState([]);
   const [initialOrderIds, setInitialOrderIds] = useState([]);
 
+  // כל ה-IDs שכבר שויכו לאיזשהי תנועה במערכת
+  const [allLinkedInvoiceIds, setAllLinkedInvoiceIds] = useState([]);
+  const [allLinkedSalaryIds, setAllLinkedSalaryIds] = useState([]);
+  const [allLinkedOrderIds, setAllLinkedOrderIds] = useState([]);
+
   // טעינת נתונים
   useEffect(() => {
     if (!open) return;
 
     const fetchData = async () => {
       try {
-        const [invoicesRes, salariesRes, ordersRes] = await Promise.all([
+        const [invoicesRes, salariesRes, ordersRes, linkedIdsRes] = await Promise.all([
           api.get("/invoices"),
           api.get("/salaries"),
           api.get("/orders"),
+          api.get("/expenses/linked-ids"),
         ]);
 
         setInvoices(invoicesRes.data?.data || invoicesRes.data || []);
         setSalaries(salariesRes.data?.data || salariesRes.data || []);
         setOrders(ordersRes.data?.data || ordersRes.data || []);
+        const linked = linkedIdsRes.data?.data || {};
+        setAllLinkedInvoiceIds(linked.linkedInvoiceIds || []);
+        setAllLinkedSalaryIds(linked.linkedSalaryIds || []);
+        setAllLinkedOrderIds(linked.linkedOrderIds || []);
       } catch (err) {
         console.error(err);
         toast.error("שגיאה בטעינת נתונים");
@@ -168,6 +179,25 @@ export default function IncomeLinkModal({
     return filtered;
   }, [orders, orderSearch, orderFilters]);
 
+  // חישוב סכום נבחר בזמן אמת
+  const selectedTotal = useMemo(() => {
+    const inv = invoices
+      .filter((i) => selectedInvoiceIds.includes(i._id))
+      .reduce((s, i) => s + (parseFloat(i.totalAmount) || 0), 0);
+    const sal = salaries
+      .filter((i) => selectedSalaryIds.includes(i._id))
+      .reduce((s, i) => s + (parseFloat(i.netAmount || i.baseAmount || i.finalAmount) || 0), 0);
+    const ord = orders
+      .filter((i) => selectedOrderIds.includes(i._id))
+      .reduce((s, i) => s + (parseFloat(i.sum) || 0), 0);
+    return inv + sal + ord;
+  }, [invoices, salaries, orders, selectedInvoiceIds, selectedSalaryIds, selectedOrderIds]);
+
+  const incomeAmount = parseFloat(income?.amount) || 0;
+  const amountMatch = selectedInvoiceIds.length === 0 && selectedSalaryIds.length === 0 && selectedOrderIds.length === 0
+    ? null // אין בחירה
+    : Math.abs(selectedTotal - incomeAmount) <= 0.01;
+
   // Toggle בחירת חשבונית
   const toggleInvoice = (invoiceId) => {
     setSelectedInvoiceIds(prev =>
@@ -249,8 +279,8 @@ export default function IncomeLinkModal({
     setSelectedOrderIds(prev => prev.filter(id => !filteredIds.includes(id)));
   };
 
-  // שמירה
-  const handleSave = async () => {
+  // שמירה בפועל
+  const doSave = async () => {
     setLoading(true);
     try {
       const response = await api.put(`/incomes/${income._id}/link`, {
@@ -258,18 +288,35 @@ export default function IncomeLinkModal({
         salaryIds: selectedSalaryIds,
         orderIds: selectedOrderIds,
       });
-
       toast.success("השיוך נשמר בהצלחה");
       onLinked?.(response.data.data);
       onClose();
     } catch (err) {
       console.error(err);
-      // הצג את הודעת השגיאה מהשרת אם קיימת
       const errorMessage = err.response?.data?.message || "שגיאה בשמירת השיוך";
       toast.error(errorMessage);
     } finally {
       setLoading(false);
     }
+  };
+
+  // לחיצה על "שמור שיוך" - בודק סכום ואם חורג פותח אזהרה
+  const handleSave = () => {
+    const hasSelection =
+      selectedInvoiceIds.length > 0 ||
+      selectedSalaryIds.length > 0 ||
+      selectedOrderIds.length > 0;
+
+    if (!hasSelection) { doSave(); return; } // ניקוי שיוך - מותר תמיד
+
+    const totalSelected = selectedTotal;
+    const incomeAmount = parseFloat(income.amount) || 0;
+
+    if (Math.abs(totalSelected - incomeAmount) > 0.01) {
+      setAmountWarningModal({ open: true, diff: totalSelected - incomeAmount, selected: totalSelected, incomeAmt: incomeAmount });
+      return;
+    }
+    doSave();
   };
 
   const formatDate = (date) => {
@@ -459,7 +506,9 @@ export default function IncomeLinkModal({
                         <div className="font-bold text-slate-900 flex items-center gap-2">
                           {invoice.supplierId?.name || "ללא ספק"}
                           {initialInvoiceIds.includes(invoice._id) ? (
-                            <span className="px-1.5 py-0.5 rounded text-xs font-bold bg-green-100 text-green-700 border border-green-300">שויך</span>
+                            <span className="px-1.5 py-0.5 rounded text-xs font-bold bg-green-100 text-green-700 border border-green-300">שויך לתנועה זו</span>
+                          ) : allLinkedInvoiceIds.includes(invoice._id) ? (
+                            <span className="px-1.5 py-0.5 rounded text-xs font-bold bg-yellow-100 text-yellow-700 border border-yellow-300">שויך לתנועה אחרת</span>
                           ) : (
                             <span className="px-1.5 py-0.5 rounded text-xs font-bold bg-slate-100 text-slate-400 border border-slate-200">לא שויך</span>
                           )}
@@ -595,7 +644,9 @@ export default function IncomeLinkModal({
                         <div className="font-bold text-slate-900 flex items-center gap-2">
                           {salary.employeeName}
                           {initialSalaryIds.includes(salary._id) ? (
-                            <span className="px-1.5 py-0.5 rounded text-xs font-bold bg-green-100 text-green-700 border border-green-300">שויך</span>
+                            <span className="px-1.5 py-0.5 rounded text-xs font-bold bg-green-100 text-green-700 border border-green-300">שויך לתנועה זו</span>
+                          ) : allLinkedSalaryIds.includes(salary._id) ? (
+                            <span className="px-1.5 py-0.5 rounded text-xs font-bold bg-yellow-100 text-yellow-700 border border-yellow-300">שויך לתנועה אחרת</span>
                           ) : (
                             <span className="px-1.5 py-0.5 rounded text-xs font-bold bg-slate-100 text-slate-400 border border-slate-200">לא שויך</span>
                           )}
@@ -707,7 +758,9 @@ export default function IncomeLinkModal({
                         <div className="font-bold text-slate-900 flex items-center gap-2">
                           הזמנה #{order.orderNumber}
                           {initialOrderIds.includes(order._id) ? (
-                            <span className="px-1.5 py-0.5 rounded text-xs font-bold bg-green-100 text-green-700 border border-green-300">שויך</span>
+                            <span className="px-1.5 py-0.5 rounded text-xs font-bold bg-green-100 text-green-700 border border-green-300">שויך לתנועה זו</span>
+                          ) : allLinkedOrderIds.includes(order._id) ? (
+                            <span className="px-1.5 py-0.5 rounded text-xs font-bold bg-yellow-100 text-yellow-700 border border-yellow-300">שויך לתנועה אחרת</span>
                           ) : (
                             <span className="px-1.5 py-0.5 rounded text-xs font-bold bg-slate-100 text-slate-400 border border-slate-200">לא שויך</span>
                           )}
@@ -742,8 +795,16 @@ export default function IncomeLinkModal({
 
         {/* Footer */}
         <div className="border-t bg-slate-50 px-6 py-4 flex items-center justify-between">
-          <div className="text-sm text-slate-600">
-            נבחרו: {selectedInvoiceIds.length} חשבוניות, {selectedSalaryIds.length} משכורות, {selectedOrderIds.length} הזמנות
+          <div className="text-sm text-slate-600 space-y-1">
+            <div>
+              נבחרו: {selectedInvoiceIds.length} חשבוניות, {selectedSalaryIds.length} משכורות, {selectedOrderIds.length} הזמנות
+            </div>
+            {amountMatch !== null && (
+              <div className={`font-bold flex items-center gap-2 ${amountMatch ? "text-green-600" : "text-red-600"}`}>
+                סכום נבחר: {formatCurrency(selectedTotal)}
+                {amountMatch ? " ✓ תואם לתנועה" : ` ✗ לא תואם (תנועה: ${formatCurrency(incomeAmount)})`}
+              </div>
+            )}
           </div>
           <div className="flex items-center gap-3">
             <button
@@ -762,6 +823,53 @@ export default function IncomeLinkModal({
           </div>
         </div>
       </div>
+
+      {/* מודל אזהרת סכום חורג */}
+      {amountWarningModal.open && (
+        <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/60" dir="rtl">
+          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-sm mx-4 overflow-hidden">
+            {/* Header */}
+            <div className="bg-gradient-to-r from-amber-500 to-orange-500 px-6 py-4 flex items-center gap-3">
+              <AlertTriangle className="w-7 h-7 text-white flex-shrink-0" />
+              <h3 className="text-lg font-bold text-white">שים לב – סכום חורג</h3>
+            </div>
+            {/* Body */}
+            <div className="px-6 py-5 space-y-3 text-right">
+              <p className="text-slate-700">
+                סכום הפריטים הנבחרים{" "}
+                <span className="font-bold text-slate-900">{formatCurrency(amountWarningModal.selected)}</span>{" "}
+                אינו תואם לסכום התנועה{" "}
+                <span className="font-bold text-slate-900">{formatCurrency(amountWarningModal.incomeAmt)}</span>.
+              </p>
+              <p className="text-sm font-bold text-red-600">
+                {amountWarningModal.diff > 0
+                  ? `עודף של ${formatCurrency(Math.abs(amountWarningModal.diff))}`
+                  : `חסר של ${formatCurrency(Math.abs(amountWarningModal.diff))}`}
+              </p>
+              <p className="text-sm text-slate-500">האם לשמור את השיוך בכל זאת?</p>
+            </div>
+            {/* Footer */}
+            <div className="px-6 pb-5 flex gap-3 justify-end">
+              <button
+                onClick={() => setAmountWarningModal({ open: false, diff: 0, selected: 0, incomeAmt: 0 })}
+                className="px-5 py-2 border-2 border-slate-300 rounded-xl font-bold text-slate-700 hover:bg-slate-100 transition-colors"
+              >
+                ביטול
+              </button>
+              <button
+                onClick={() => {
+                  setAmountWarningModal({ open: false, diff: 0, selected: 0, incomeAmt: 0 });
+                  doSave();
+                }}
+                disabled={loading}
+                className="px-5 py-2 bg-gradient-to-r from-amber-500 to-orange-500 text-white rounded-xl font-bold hover:from-amber-600 hover:to-orange-600 transition-colors disabled:opacity-50"
+              >
+                {loading ? "שומר..." : "שמור בכל זאת"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

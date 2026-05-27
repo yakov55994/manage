@@ -1,4 +1,5 @@
 import Expense from "../models/Expense.js";
+import Income from "../models/Income.js";
 import Invoice from "../models/Invoice.js";
 import Salary from "../models/Salary.js";
 import Order from "../models/Order.js";
@@ -133,5 +134,29 @@ export default {
       .populate("linkedOrders", "orderNumber projectName sum status");
 
     return populatedExpense;
+  },
+
+  // כל ה-IDs שכבר שויכו לתנועה כלשהי (הוצאה או הכנסה)
+  async getAllLinkedIds() {
+    const [expenses, incomes] = await Promise.all([
+      Expense.find({}, "linkedInvoices linkedSalaries linkedOrders").lean(),
+      Income.find({}, "linkedInvoices linkedSalaries linkedOrders").lean(),
+    ]);
+
+    const invoiceIds = new Set();
+    const salaryIds = new Set();
+    const orderIds = new Set();
+
+    for (const doc of [...expenses, ...incomes]) {
+      (doc.linkedInvoices || []).forEach(id => invoiceIds.add(id.toString()));
+      (doc.linkedSalaries || []).forEach(id => salaryIds.add(id.toString()));
+      (doc.linkedOrders  || []).forEach(id => orderIds.add(id.toString()));
+    }
+
+    return {
+      linkedInvoiceIds: [...invoiceIds],
+      linkedSalaryIds:  [...salaryIds],
+      linkedOrderIds:   [...orderIds],
+    };
   },
 };

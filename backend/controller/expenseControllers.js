@@ -91,6 +91,16 @@ const expenseController = {
     }
   },
 
+  // כל ה-IDs שכבר שויכו לאיזשהי תנועה
+  async getAllLinkedIds(req, res) {
+    try {
+      const data = await expenseService.getAllLinkedIds();
+      res.json({ success: true, data });
+    } catch (e) {
+      sendError(res, e, req);
+    }
+  },
+
   // שיוך הוצאה לחשבוניות, משכורות והזמנות
   async linkExpense(req, res) {
     try {

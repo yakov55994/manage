@@ -76,7 +76,9 @@
       "Bash(git -C /Users/yakovcohen/manage diff backend/server.js)",
       "Bash(git -C /Users/yakovcohen/manage log --oneline --all -5)",
       "Bash(git -C /Users/yakovcohen/manage show 81d386f -- fronted/src/Components/ExpenseLinkModal.jsx)",
-      "Bash(npx tsc *)"
+      "Bash(npx tsc *)",
+      "WebSearch",
+      "Bash(node_modules/.bin/vite build *)"
     ]
   }
 }
