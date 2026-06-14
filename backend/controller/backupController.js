@@ -126,6 +126,24 @@ const prepareUsersData = (users) => {
   }));
 };
 
+// הכנת נתוני הפחתות תקציב לאקסל
+const prepareBudgetDeductionsData = (projects) => {
+  const rows = [];
+  for (const p of projects) {
+    for (const d of p.budgetDeductions || []) {
+      rows.push({
+        "שם פרויקט": p.name || "",
+        סיבה: d.reason || "",
+        סכום: d.amount || 0,
+        תאריך: formatDate(d.date),
+        הערות: d.notes || "",
+        "נוצר ע״י": d.createdBy || "",
+      });
+    }
+  }
+  return rows;
+};
+
 // הכנת נתוני הערות לאקסל
 const prepareNotesData = (notes) => {
   return notes.map((n) => ({
@@ -161,6 +179,7 @@ const createExcelBuffer = (data, sheetName) => {
 const getSheetsList = (data) => [
   { name: "חשבוניות", key: "invoices", prepare: prepareInvoicesData, data: data.invoices },
   { name: "פרויקטים", key: "projects", prepare: prepareProjectsData, data: data.projects },
+  { name: "הפחתות תקציב", key: "budgetDeductions", prepare: prepareBudgetDeductionsData, data: data.projects },
   { name: "הזמנות", key: "orders", prepare: prepareOrdersData, data: data.orders },
   { name: "ספקים", key: "suppliers", prepare: prepareSuppliersData, data: data.suppliers },
   { name: "משכורות", key: "salaries", prepare: prepareSalariesData, data: data.salaries },
@@ -802,6 +821,35 @@ export const restoreFromBackup = async (req, res) => {
         const project = await Project.create(projectData);
         projectNameToId[name] = project._id;
         results.projects.inserted++;
+      }
+    }
+
+    // =====================================
+    // 2ב. הפחתות תקציב
+    // =====================================
+    const budgetDeductionsRows = await readZipFile("הפחתות תקציב");
+
+    if (budgetDeductionsRows) {
+      for (const row of budgetDeductionsRows) {
+        const projectName = String(row["שם פרויקט"] || "").trim();
+        const reason = String(row["סיבה"] || "").trim();
+        const amount = Number(row["סכום"]) || 0;
+        if (!projectName || !reason) continue;
+
+        const projectId = projectNameToId[projectName];
+        if (!projectId) continue;
+
+        await Project.findByIdAndUpdate(projectId, {
+          $push: {
+            budgetDeductions: {
+              reason,
+              amount,
+              date: parseHebrewDate(String(row["תאריך"] || "")) || new Date(),
+              notes: String(row["הערות"] || ""),
+              createdBy: String(row["נוצר ע״י"] || row['נוצר ע"י'] || ""),
+            },
+          },
+        });
       }
     }
 
