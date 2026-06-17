@@ -1,5 +1,5 @@
 import { useEffect, useState, useRef, useMemo, useCallback } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import api from "../../api/api";
 import { ClipLoader } from "react-spinners";
 import {
@@ -24,6 +24,9 @@ import { useAuth } from "../../context/AuthContext";
 
 export default function ViewIncomes() {
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const bank = searchParams.get("bank") || "pagi";
+  const bankLabel = bank === "mizrahi" ? "מזרחי" : "פאגי";
   const { user } = useAuth();
   const isAccountant = user?.role === "accountant";
   const [incomes, setIncomes] = useState([]);
@@ -45,12 +48,12 @@ export default function ViewIncomes() {
 
   useEffect(() => {
     fetchIncomes();
-  }, []);
+  }, [bank]);
 
   const fetchIncomes = async (silent = false) => {
     try {
       if (!silent) setLoading(true);
-      const response = await api.get("/incomes");
+      const response = await api.get(`/incomes?bank=${bank}`);
       setIncomes(response.data?.data || []);
     } catch (err) {
       console.error("Error fetching incomes:", err);
@@ -357,7 +360,7 @@ export default function ViewIncomes() {
                   </div>
                   <div>
                     <h1 className="text-3xl md:text-4xl font-black text-slate-900">
-                      הכנסות
+                      הכנסות - {bankLabel}
                     </h1>
                     <p className="text-sm text-slate-600 mt-1">
                       סה"כ {filteredIncomes.length} הכנסות
@@ -366,7 +369,7 @@ export default function ViewIncomes() {
                 </div>
                 {!isAccountant && (
                   <button
-                    onClick={() => navigate("/create-income")}
+                    onClick={() => navigate(`/create-income?bank=${bank}`)}
                     className="flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-orange-500 to-amber-600 text-white font-bold rounded-xl hover:from-orange-600 hover:to-amber-700 transition-all shadow-lg"
                   >
                     <Plus className="w-5 h-5" />

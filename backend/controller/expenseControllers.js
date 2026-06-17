@@ -19,7 +19,8 @@ const expenseController = {
   // קבלת כל ההוצאות
   async getAllExpenses(req, res) {
     try {
-      const expenses = await expenseService.getAllExpenses(req.user);
+      const bank = req.query.bank || null;
+      const expenses = await expenseService.getAllExpenses(req.user, bank);
       res.json({ success: true, data: expenses });
     } catch (e) {
       sendError(res, e, req);

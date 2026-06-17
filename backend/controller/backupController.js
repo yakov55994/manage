@@ -35,6 +35,7 @@ const prepareInvoicesData = (invoices) => {
     סטטוס: inv.status || "",
     שולם: inv.paid || "לא",
     "תאריך חשבונית": formatDate(inv.invoiceDate),
+    "תאריך תשלום": formatDate(inv.paymentDate),
     "שם ספק": inv.supplierId?.name || "",
     פרויקטים: inv.projects?.map((p) => p.projectName).join(", ") || "",
     פירוט: inv.detail || "",
@@ -930,6 +931,8 @@ export const restoreFromBackup = async (req, res) => {
           if (supplierId) invoiceData.supplierId = supplierId;
           const invoiceDate = parseHebrewDate(String(row["תאריך חשבונית"] || ""));
           if (invoiceDate) invoiceData.invoiceDate = invoiceDate;
+          const paymentDate = parseHebrewDate(String(row["תאריך תשלום"] || ""));
+          if (paymentDate) invoiceData.paymentDate = paymentDate;
 
           await Invoice.collection.insertOne(invoiceData);
           results.invoices.inserted++;

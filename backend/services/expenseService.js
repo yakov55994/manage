@@ -6,8 +6,9 @@ import Order from "../models/Order.js";
 
 export default {
   // קבלת כל ההוצאות
-  async getAllExpenses(user) {
+  async getAllExpenses(user, bank) {
     let query = {};
+    if (bank) query.bank = bank;
 
     const expenses = await Expense.find(query)
       .populate({

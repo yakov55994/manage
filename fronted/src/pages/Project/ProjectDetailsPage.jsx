@@ -1300,7 +1300,15 @@ const ProjectDetailsPage = () => {
                             )}
 
                             <td className="px-4 py-3 text-sm font-bold text-center">
-                              {invoice.paid === "כן" ? "שולם" : "לא שולם"}
+                              {invoice.paid === "כן" ? (
+                                <span className="px-2 py-1 rounded-full text-xs font-bold bg-emerald-100 text-emerald-700 border border-emerald-200">שולם</span>
+                              ) : invoice.paid === "יצא לתשלום" ? (
+                                <span className="px-2 py-1 rounded-full text-xs font-bold bg-blue-100 text-blue-700 border border-blue-200">יצא לתשלום</span>
+                              ) : invoice.paid === "לא לתשלום" ? (
+                                <span className="px-2 py-1 rounded-full text-xs font-bold bg-slate-100 text-slate-600 border border-slate-200">לא לתשלום</span>
+                              ) : (
+                                <span className="px-2 py-1 rounded-full text-xs font-bold bg-red-100 text-red-700 border border-red-200">לא שולם</span>
+                              )}
                             </td>
 
                             {/* חוסר מסמך וכו׳... */}

@@ -77,6 +77,13 @@ const expenseSchema = new mongoose.Schema({
     type: String,
     required: true,
   },
+
+  // בנק
+  bank: {
+    type: String,
+    enum: ["pagi", "mizrahi"],
+    default: "pagi",
+  },
 }, {
   timestamps: true  // Mongoose will automatically manage createdAt and updatedAt
 });

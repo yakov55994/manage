@@ -167,25 +167,49 @@ const Sidebar = () => {
       ],
     },
     {
-      id: "finance",
+      id: "finance-pagi",
       icon: DollarSign,
-      text: "תנועות בנק",
+      text: "בנק פאגי",
       show: isAdmin || isAccountant,
       type: "dropdown",
       items: [
         {
           text: "הכנסות",
-          path: "/incomes",
+          path: "/incomes?bank=pagi",
           show: isAdmin || isAccountant,
         },
         {
           text: "הוצאות",
-          path: "/expenses",
+          path: "/expenses?bank=pagi",
           show: isAdmin || isAccountant,
         },
         {
           text: "העלאת אקסל",
-          path: "/excel-upload",
+          path: "/excel-upload?bank=pagi",
+          show: isAdmin,
+        },
+      ],
+    },
+    {
+      id: "finance-mizrahi",
+      icon: DollarSign,
+      text: "בנק מזרחי",
+      show: isAdmin || isAccountant,
+      type: "dropdown",
+      items: [
+        {
+          text: "הכנסות",
+          path: "/incomes?bank=mizrahi",
+          show: isAdmin || isAccountant,
+        },
+        {
+          text: "הוצאות",
+          path: "/expenses?bank=mizrahi",
+          show: isAdmin || isAccountant,
+        },
+        {
+          text: "העלאת אקסל",
+          path: "/excel-upload?bank=mizrahi",
           show: isAdmin,
         },
       ],
@@ -287,7 +311,7 @@ const Sidebar = () => {
           </button>
 
           {/* תפריט ניווט - מוסתר במובייל */}
-          <nav className="hidden md:flex items-center gap-1">
+          <nav className="hidden md:flex items-center gap-0.5">
             {menuGroups
               .filter((group) => group.show)
               .map((group) => {
@@ -299,8 +323,8 @@ const Sidebar = () => {
                       to={group.path}
                       className="group relative"
                     >
-                      <div className="flex items-center gap-1.5 px-3 py-2.5 rounded-xl transition-all duration-300 hover:bg-gradient-to-b hover:from-orange-500 hover:to-orange-600 hover:shadow-xl hover:shadow-orange-500/40 hover:scale-105 transform whitespace-nowrap">
-                        <group.icon className="text-orange-400 group-hover:text-white transition-all" size={16} />
+                      <div className="flex items-center gap-1 px-2 py-2 rounded-xl transition-all duration-300 hover:bg-gradient-to-b hover:from-orange-500 hover:to-orange-600 hover:shadow-xl hover:shadow-orange-500/40 hover:scale-105 transform whitespace-nowrap">
+                        <group.icon className="text-orange-400 group-hover:text-white transition-all" size={14} />
                         <span className="text-xs font-medium text-gray-300 group-hover:text-white transition-all">
                           {group.text}
                         </span>
@@ -319,14 +343,14 @@ const Sidebar = () => {
                       onMouseEnter={() => handleMouseEnter(group.id)}
                       onMouseLeave={handleMouseLeave}
                     >
-                      <div className={`flex items-center gap-1.5 px-3 py-2.5 rounded-xl transition-all duration-300 cursor-pointer whitespace-nowrap ${activeDropdown === group.id
+                      <div className={`flex items-center gap-1 px-2 py-2 rounded-xl transition-all duration-300 cursor-pointer whitespace-nowrap ${activeDropdown === group.id
                         ? "bg-gradient-to-b from-orange-500 to-orange-600 shadow-xl shadow-orange-500/40 scale-105 transform"
                         : "hover:bg-gray-700/60"
                         }`}>
                         <group.icon
                           className={`transition-all ${activeDropdown === group.id ? "text-white" : "text-orange-400"
                             }`}
-                          size={16}
+                          size={14}
                         />
                         <span
                           className={`text-xs font-medium transition-all ${activeDropdown === group.id ? "text-white" : "text-gray-300"
@@ -345,7 +369,13 @@ const Sidebar = () => {
                       {activeDropdown === group.id && (
                         <div className="absolute top-full mt-2 right-0 bg-gray-800 border-2 border-orange-500/50 rounded-xl shadow-2xl shadow-orange-500/20 overflow-hidden w-max min-w-[200px] z-50 animate-fadeIn">
                           {visibleItems.map((item, index) =>
-                            item.onClick ? (
+                            item.type === "header" ? (
+                              <div key={index} className="px-5 py-2 text-sm font-extrabold text-orange-300 bg-gray-900/80 tracking-widest">
+                                {item.text}
+                              </div>
+                            ) : item.type === "divider" ? (
+                              <div key={index} className="border-t border-gray-600" />
+                            ) : item.onClick ? (
                               <button
                                 key={index}
                                 onClick={() => { item.onClick(); setActiveDropdown(null); }}
@@ -510,7 +540,13 @@ const Sidebar = () => {
                         {mobileActiveGroup === group.id && (
                           <div className="pr-4 space-y-1">
                             {visibleItems.map((item, index) =>
-                              item.onClick ? (
+                              item.type === "header" ? (
+                                <div key={index} className="px-4 pt-2 pb-0.5 text-sm font-extrabold text-orange-300 tracking-widest">
+                                  {item.text}
+                                </div>
+                              ) : item.type === "divider" ? (
+                                <div key={index} className="border-t border-gray-700 my-1" />
+                              ) : item.onClick ? (
                                 <button
                                   key={index}
                                   onClick={() => { item.onClick(); setMobileMenuOpen(false); }}

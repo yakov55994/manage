@@ -5,8 +5,9 @@ import Salary from "../models/Salary.js";
 
 export default {
   // קבלת כל ההכנסות
-  async getAllIncomes(user) {
+  async getAllIncomes(user, bank) {
     let query = {};
+    if (bank) query.bank = bank;
 
     // משתמש רגיל - לפי הרשאות פרויקטים (כרגע לא מגבילים לפי הזמנות)
     // אם נרצה בעתיד להגביל לפי הזמנות, נוסיף כאן לוגיקה דומה

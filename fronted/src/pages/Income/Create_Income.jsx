@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { toast } from "sonner";
 import { Upload, FileSpreadsheet, Plus, ArrowLeft, DollarSign } from "lucide-react";
 import api from "../../api/api";
@@ -8,6 +8,9 @@ import { logClientError } from "../../utils/validation.jsx";
 
 export default function CreateIncome() {
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const bank = searchParams.get("bank") || "pagi";
+  const bankLabel = bank === "mizrahi" ? "מזרחי" : "פאגי";
   const [loading, setLoading] = useState(false);
   const [uploadMethod, setUploadMethod] = useState("single"); // "single" or "excel"
 
@@ -97,7 +100,7 @@ export default function CreateIncome() {
 
     try {
       // צור הכנסה חדשה
-      await api.post("/incomes", singleIncome);
+      await api.post("/incomes", { ...singleIncome, bank });
 
       // אם יש שיוך להזמנה, עדכן את ההזמנה
       if (singleIncome.orderId) {
@@ -125,7 +128,7 @@ export default function CreateIncome() {
       }
 
       toast.success("ההכנסה נוצרה בהצלחה!");
-      navigate("/incomes");
+      navigate(`/incomes?bank=${bank}`);
     } catch (error) {
       console.error("Error creating income:", error);
       toast.error(error.response?.data?.message || "שגיאה ביצירת הכנסה");
@@ -148,6 +151,7 @@ export default function CreateIncome() {
       const formData = new FormData();
       formData.append("file", excelFile);
       formData.append("notes", excelNotes);
+      formData.append("bank", bank);
 
       const response = await api.post("/incomes/upload-excel", formData, {
         headers: {
@@ -156,7 +160,7 @@ export default function CreateIncome() {
       });
 
       toast.success(response.data.message || "הכנסות נוצרו בהצלחה!");
-      navigate("/incomes");
+      navigate(`/incomes?bank=${bank}`);
     } catch (error) {
       console.error("Error uploading Excel:", error);
       toast.error(error.response?.data?.message || "שגיאה בהעלאת קובץ Excel");
@@ -187,7 +191,7 @@ export default function CreateIncome() {
                   </div>
                   <div>
                     <h1 className="text-3xl md:text-4xl font-black text-slate-900">
-                      יצירת הכנסה
+                      יצירת הכנסה - {bankLabel}
                     </h1>
                     <p className="text-sm text-slate-600 mt-1">
                       הוסף הכנסה בודדת או העלה קובץ Excel
@@ -195,7 +199,7 @@ export default function CreateIncome() {
                   </div>
                 </div>
                 <button
-                  onClick={() => navigate("/incomes")}
+                  onClick={() => navigate(`/incomes?bank=${bank}`)}
                   className="flex items-center gap-2 px-4 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 transition-all"
                 >
                   <ArrowLeft className="w-5 h-5" />

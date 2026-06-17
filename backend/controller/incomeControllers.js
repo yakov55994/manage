@@ -21,7 +21,8 @@ const incomeController = {
   // קבלת כל ההכנסות
   async getAllIncomes(req, res) {
     try {
-      const incomes = await incomeService.getAllIncomes(req.user);
+      const bank = req.query.bank || null;
+      const incomes = await incomeService.getAllIncomes(req.user, bank);
       res.json({ success: true, data: incomes });
     } catch (e) {
       sendError(res, e, req);
@@ -218,6 +219,7 @@ const incomeController = {
           "";
 
         const notes = req.body.notes || ""; // הערות כלליות מהטופס
+      const bank = req.body.bank || "pagi";
 
         // דלג אם אין תאריך או תיאור
         if (!date || !description) return;
@@ -230,6 +232,7 @@ const incomeController = {
             description: description.toString(),
             notes: notes,
             reference: reference ? reference.toString() : "",
+            bank: bank,
           });
         }
         // לוגיקה: חובה -> הוצאה
@@ -242,6 +245,7 @@ const incomeController = {
             reference: reference ? reference.toString() : "",
             balance: balance ? balance.toString() : "",
             transactionType: transactionType ? transactionType.toString() : "",
+            bank: bank,
           });
         }
       });

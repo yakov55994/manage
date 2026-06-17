@@ -89,6 +89,13 @@ const incomeSchema = new mongoose.Schema({
     default: "לא",
   },
 
+  // בנק
+  bank: {
+    type: String,
+    enum: ["pagi", "mizrahi"],
+    default: "pagi",
+  },
+
   // מי יצר
   createdBy: {
     type: mongoose.Schema.Types.ObjectId,

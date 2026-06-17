@@ -1,11 +1,14 @@
 import { useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { toast } from "sonner";
 import { Upload, FileSpreadsheet, ArrowLeft, DollarSign, CreditCard, Check, AlertCircle } from "lucide-react";
 import api from "../../api/api";
 
 export default function ExcelUpload() {
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const bank = searchParams.get("bank") || "pagi";
+  const bankLabel = bank === "mizrahi" ? "מזרחי" : "פאגי";
   const [loading, setLoading] = useState(false);
   const [excelFile, setExcelFile] = useState(null);
   const [excelNotes, setExcelNotes] = useState("");
@@ -46,6 +49,7 @@ export default function ExcelUpload() {
       const formData = new FormData();
       formData.append("file", excelFile);
       formData.append("notes", excelNotes);
+      formData.append("bank", bank);
 
       const response = await api.post("/incomes/upload-excel", formData, {
         headers: {
@@ -111,7 +115,7 @@ export default function ExcelUpload() {
                   </div>
                   <div>
                     <h1 className="text-3xl md:text-4xl font-black text-slate-900">
-                      העלאת אקסל
+                      העלאת אקסל - {bankLabel}
                     </h1>
                     <p className="text-sm text-slate-600 mt-1">
                       העלה קובץ Excel עם הכנסות והוצאות
@@ -235,7 +239,7 @@ export default function ExcelUpload() {
                 <div className="flex gap-2">
                   <button
                     type="button"
-                    onClick={() => navigate("/incomes")}
+                    onClick={() => navigate(`/incomes?bank=${bank}`)}
                     className="px-6 py-3 bg-green-100 text-green-700 font-bold rounded-xl hover:bg-green-200 transition-all flex items-center gap-2"
                   >
                     <DollarSign className="w-5 h-5" />
@@ -243,7 +247,7 @@ export default function ExcelUpload() {
                   </button>
                   <button
                     type="button"
-                    onClick={() => navigate("/expenses")}
+                    onClick={() => navigate(`/expenses?bank=${bank}`)}
                     className="px-6 py-3 bg-red-100 text-red-700 font-bold rounded-xl hover:bg-red-200 transition-all flex items-center gap-2"
                   >
                     <CreditCard className="w-5 h-5" />
@@ -268,27 +272,27 @@ export default function ExcelUpload() {
           <h3 className="text-lg font-bold text-slate-800 mb-4">קיצורים</h3>
           <div className="flex flex-wrap gap-3">
             <button
-              onClick={() => navigate("/create-income")}
+              onClick={() => navigate(`/create-income?bank=${bank}`)}
               className="flex items-center gap-2 px-4 py-2 bg-green-100 text-green-700 rounded-xl hover:bg-green-200 transition-all"
             >
               <DollarSign className="w-4 h-4" />
               יצירת הכנסה ידנית
             </button>
             <button
-              onClick={() => navigate("/create-expense")}
+              onClick={() => navigate(`/create-expense?bank=${bank}`)}
               className="flex items-center gap-2 px-4 py-2 bg-red-100 text-red-700 rounded-xl hover:bg-red-200 transition-all"
             >
               <CreditCard className="w-4 h-4" />
               יצירת הוצאה ידנית
             </button>
             <button
-              onClick={() => navigate("/incomes")}
+              onClick={() => navigate(`/incomes?bank=${bank}`)}
               className="flex items-center gap-2 px-4 py-2 bg-slate-100 text-slate-700 rounded-xl hover:bg-slate-200 transition-all"
             >
               הצגת הכנסות
             </button>
             <button
-              onClick={() => navigate("/expenses")}
+              onClick={() => navigate(`/expenses?bank=${bank}`)}
               className="flex items-center gap-2 px-4 py-2 bg-slate-100 text-slate-700 rounded-xl hover:bg-slate-200 transition-all"
             >
               הצגת הוצאות

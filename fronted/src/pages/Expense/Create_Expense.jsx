@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import api from "../../api/api";
 import { TrendingDown, Save, ArrowRight, Calendar, FileText } from "lucide-react";
 import { toast } from "sonner";
@@ -7,6 +7,9 @@ import { logClientError } from "../../utils/validation.jsx";
 
 export default function CreateExpense() {
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const bank = searchParams.get("bank") || "pagi";
+  const bankLabel = bank === "mizrahi" ? "מזרחי" : "פאגי";
   const [loading, setLoading] = useState(false);
   const [formData, setFormData] = useState({
     date: new Date().toISOString().slice(0, 10),
@@ -50,9 +53,9 @@ export default function CreateExpense() {
 
     try {
       setLoading(true);
-      await api.post("/expenses", formData);
+      await api.post("/expenses", { ...formData, bank });
       toast.success("ההוצאה נוצרה בהצלחה!");
-      navigate("/expenses");
+      navigate(`/expenses?bank=${bank}`);
     } catch (err) {
       console.error("Create expense error:", err);
       const errorMessage = err.response?.data?.message || "שגיאה ביצירת הוצאה";
@@ -84,7 +87,7 @@ export default function CreateExpense() {
                   </div>
                   <div>
                     <h1 className="text-3xl md:text-4xl font-black text-slate-900">
-                      יצירת הוצאה חדשה
+                      יצירת הוצאה חדשה - {bankLabel}
                     </h1>
                     <p className="text-sm text-slate-600 mt-1">
                       הזן את פרטי ההוצאה
@@ -92,7 +95,7 @@ export default function CreateExpense() {
                   </div>
                 </div>
                 <button
-                  onClick={() => navigate("/expenses")}
+                  onClick={() => navigate(`/expenses?bank=${bank}`)}
                   className="flex items-center gap-2 px-4 py-2 bg-slate-100 text-slate-700 font-bold rounded-xl hover:bg-slate-200 transition-all"
                 >
                   <ArrowRight className="w-5 h-5" />
