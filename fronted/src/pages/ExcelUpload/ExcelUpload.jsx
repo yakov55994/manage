@@ -73,7 +73,7 @@ export default function ExcelUpload() {
       if (fileInput) fileInput.value = "";
     } catch (error) {
       console.error("Error uploading Excel:", error);
-      setUploadResult({
+setUploadResult({
         success: false,
         message: error.response?.data?.message || "שגיאה בהעלאת קובץ Excel",
       });

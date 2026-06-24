@@ -63,40 +63,54 @@ const incomeController = {
         });
       }
 
-      // קריאת הקובץ
+      // קריאת הקובץ — מחפש בכל הגיליונות
       const workbook = xlsx.read(req.file.buffer, { type: "buffer" });
-      const sheetName = workbook.SheetNames[0];
-      const worksheet = workbook.Sheets[sheetName];
 
-      // המרה למערך גולמי כדי למצוא את שורת הכותרת
-      const rawData = xlsx.utils.sheet_to_json(worksheet, { header: 1 });
-
-      // חיפוש שורת הכותרת - מחפשים שורה שמכילה גם 'זכות' וגם 'חובה' (שורת הכותרת האמיתית)
-      let headerRowIndex = rawData.findIndex(row =>
-        row && row.length > 3 && row.some(cell => cell && cell.toString().includes('זכות')) && row.some(cell => cell && cell.toString().includes('חובה'))
-      );
-
-      // אם לא נמצא, חפש לפי 'תאריך ערך'
-      if (headerRowIndex === -1) {
-        headerRowIndex = rawData.findIndex(row =>
+      const findHeaderInSheet = (ws) => {
+        const data = xlsx.utils.sheet_to_json(ws, { header: 1 });
+        let idx = data.findIndex(row =>
+          row && row.length > 3 &&
+          row.some(cell => cell && cell.toString().includes('זכות')) &&
+          row.some(cell => cell && cell.toString().includes('חובה'))
+        );
+        if (idx === -1) idx = data.findIndex(row =>
           row && row.some(cell => cell && cell.toString().includes('תאריך ערך'))
         );
-      }
-
-      // אם עדיין לא נמצא, חפש לפי 'תאריך' + 'חובה' (פורמט ייצוא בנק ישראלי)
-      if (headerRowIndex === -1) {
-        headerRowIndex = rawData.findIndex(row =>
+        if (idx === -1) idx = data.findIndex(row =>
           row && row.some(cell => cell && cell.toString().includes('תאריך')) &&
                 row.some(cell => cell && cell.toString().includes('חובה'))
         );
+        if (idx === -1) idx = data.findIndex(row =>
+          row && row.some(cell => cell && cell.toString().includes('תאריך')) &&
+                row.some(cell => cell && cell.toString().trim() === 'סכום')
+        );
+        if (idx === -1) idx = data.findIndex(row =>
+          row && row.some(cell => cell && cell.toString().includes('תאריך')) &&
+                row.some(cell => cell && cell.toString().includes('פרטים'))
+        );
+        if (idx === -1) idx = data.findIndex(row =>
+          row && row.filter(Boolean).length >= 3 &&
+                row.some(cell => cell && cell.toString().includes('תאריך'))
+        );
+        return { data, idx };
+      };
+
+      let rawData, headerRowIndex;
+      for (const sheetName of workbook.SheetNames) {
+        const result = findHeaderInSheet(workbook.Sheets[sheetName]);
+        if (result.idx !== -1) {
+          rawData = result.data;
+          headerRowIndex = result.idx;
+          break;
+        }
       }
 
-      // אם עדיין לא נמצא, נסה מהשורה הראשונה
-      // if (headerRowIndex === -1) {
-      //   console.log("⚠️  לא נמצאה שורת כותרת, משתמש בשורה 0");
-      //   headerRowIndex = 0;
-      // }
-
+      if (headerRowIndex === undefined || headerRowIndex === -1) {
+        return res.status(400).json({
+          success: false,
+          message: "לא ניתן לזהות את פורמט הקובץ. ודא שהקובץ הוא ייצוא עו\"ש תקני מהבנק."
+        });
+      }
 
       // המר את הגיליון למערך JSON - נתחיל משורת הכותרת ונגדיר אותה בעצמנו
       // נקרא את שורת הכותרת כערכים
