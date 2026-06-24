@@ -179,15 +179,28 @@ async getSupplierById(user, supplierId) {
 },
 
   async createSupplier(user, data) {
-    if (!canEdit(user, data.projectId))
+    let projectId = data.projectId;
+
+    if (!projectId && user.role !== 'admin') {
+      const eligible = user.permissions?.find(p => p.modules?.suppliers === 'edit');
+      if (eligible) projectId = String(eligible.project);
+    }
+
+    if (!canEdit(user, projectId))
       throw new Error("אין הרשאה ליצור ספק");
 
-    // ✅ supplierType יישמר אוטומטית אם הוא נשלח ב-data
     const supplierData = {
       ...data,
       createdBy: user._id,
       createdByName: user.username || user.name || 'משתמש'
     };
+
+    if (projectId) {
+      const existing = (supplierData.projects || []).map(String);
+      if (!existing.includes(String(projectId))) {
+        supplierData.projects = [...(supplierData.projects || []), projectId];
+      }
+    }
 
     const supplier = await Supplier.create(supplierData);
 
