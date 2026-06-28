@@ -22,6 +22,9 @@ router.post("/", protect, expenseController.createExpense);
 // עדכון הערות מרובה
 router.put("/bulk/notes", protect, expenseController.bulkUpdateNotes);
 
+// מחיקת הוצאות מרובה
+router.post("/bulk/delete", protect, expenseController.bulkDeleteExpenses);
+
 // שיוך הוצאה לחשבוניות ומשכורות
 router.put("/:expenseId/link", protect, expenseController.linkExpense);
 

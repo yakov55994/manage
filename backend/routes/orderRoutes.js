@@ -19,6 +19,9 @@ router.post("/", protect, checkAccess("orders", "edit"), orderController.createO
 // 📌 יצירת הרבה הזמנות — כן checkAccess
 router.post("/bulk", protect, orderController.createBulkOrders);
 
+// 📌 מחיקת הזמנות מרובה — אדמין בלבד
+router.post("/bulk/delete", protect, requireAdmin, orderController.bulkDeleteOrders);
+
 // 📌 עדכון הזמנה — כן checkAccess
 router.put("/:orderId", protect, checkAccess("orders", "edit"), orderController.updateOrder);
 

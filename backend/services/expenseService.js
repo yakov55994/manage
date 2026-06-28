@@ -90,6 +90,11 @@ export default {
     return expense;
   },
 
+  // מחיקת הוצאות מרובה
+  async bulkDeleteExpenses(expenseIds) {
+    await Expense.deleteMany({ _id: { $in: expenseIds } });
+  },
+
   // חיפוש הוצאות
   async searchExpenses(query) {
     const regex = new RegExp(query, "i");

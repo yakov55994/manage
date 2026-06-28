@@ -176,6 +176,20 @@ const orderController = {
     }
   },
 
+  async bulkDeleteOrders(req, res) {
+    try {
+      const { orderIds } = req.body;
+      if (!orderIds || !Array.isArray(orderIds) || orderIds.length === 0) {
+        return res.status(400).json({ success: false, message: "לא נבחרו הזמנות" });
+      }
+      await orderService.bulkDeleteOrders(orderIds);
+      saveLog({ type: 'info', message: `נמחקו ${orderIds.length} הזמנות`, username: req.user?.username || req.user?.name, userId: req.user?._id, ip: getIp(req), meta: { count: orderIds.length } });
+      res.json({ success: true, message: `נמחקו ${orderIds.length} הזמנות`, deleted: orderIds.length });
+    } catch (e) {
+      sendError(res, e, req);
+    }
+  },
+
   async linkOrder(req, res) {
     try {
       const { orderId } = req.params;

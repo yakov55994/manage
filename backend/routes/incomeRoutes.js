@@ -46,6 +46,9 @@ router.post(
 // עדכון הערות מרובה
 router.put("/bulk/notes", protect, incomeController.bulkUpdateNotes);
 
+// מחיקת הכנסות מרובה
+router.post("/bulk/delete", protect, incomeController.bulkDeleteIncomes);
+
 // שיוך הכנסה לחשבוניות, משכורות והזמנות
 router.put("/:incomeId/link", protect, incomeController.linkIncome);
 

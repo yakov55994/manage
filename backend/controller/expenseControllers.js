@@ -92,6 +92,24 @@ const expenseController = {
     }
   },
 
+  // מחיקת הוצאות מרובה
+  async bulkDeleteExpenses(req, res) {
+    try {
+      const { expenseIds } = req.body;
+      if (!expenseIds || !Array.isArray(expenseIds) || expenseIds.length === 0) {
+        return res.status(400).json({ success: false, message: "לא נבחרו הוצאות" });
+      }
+      if (req.user.role !== "admin") {
+        return res.status(403).json({ success: false, message: "רק מנהל יכול למחוק הוצאות" });
+      }
+      await expenseService.bulkDeleteExpenses(expenseIds);
+      saveLog({ type: 'info', message: `נמחקו ${expenseIds.length} תנועות חובה`, username: req.user?.username || req.user?.name, userId: req.user?._id, ip: getIp(req), meta: { count: expenseIds.length } });
+      res.json({ success: true, message: `נמחקו ${expenseIds.length} הוצאות`, deleted: expenseIds.length });
+    } catch (e) {
+      sendError(res, e, req);
+    }
+  },
+
   // כל ה-IDs שכבר שויכו לאיזשהי תנועה
   async getAllLinkedIds(req, res) {
     try {

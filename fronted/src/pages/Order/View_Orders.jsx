@@ -68,6 +68,7 @@ const OrdersPage = () => {
   // Multi-select states
   const [selectedOrders, setSelectedOrders] = useState([]);
   const [lastSelectedIndex, setLastSelectedIndex] = useState(null);
+  const [bulkDeleteOrdersModal, setBulkDeleteOrdersModal] = useState(false);
 
   const [exportColumns, setExportColumns] = useState({
     orderNumber: true,
@@ -1065,6 +1066,20 @@ const OrdersPage = () => {
     return () => window.removeEventListener("keydown", onKeyDown);
   }, [showReportModal]);
 
+  const handleBulkDeleteOrders = async () => {
+    try {
+      const orderIds = selectedOrders.map(o => o._id);
+      await api.post("/orders/bulk/delete", { orderIds });
+      setOrders(prev => prev.filter(o => !orderIds.includes(o._id)));
+      setAllOrders(prev => prev.filter(o => !orderIds.includes(o._id)));
+      toast.success(`נמחקו ${selectedOrders.length} הזמנות`, { className: "sonner-toast success rtl" });
+      setBulkDeleteOrdersModal(false);
+      setSelectedOrders([]);
+    } catch (err) {
+      toast.error("שגיאה במחיקת ההזמנות", { className: "sonner-toast error rtl" });
+    }
+  };
+
   const handleDelete = async () => {
     if (!orderToDelete) {
       toast.error("לא נבחרה הזמנה למחיקה", {
@@ -1490,9 +1505,20 @@ const OrdersPage = () => {
               בטל הכל
             </button>
             {selectedOrders.length > 0 && (
-              <span className="text-sm font-bold text-orange-600">
-                נבחרו {selectedOrders.length} הזמנות
-              </span>
+              <>
+                <span className="text-sm font-bold text-orange-600">
+                  נבחרו {selectedOrders.length} הזמנות
+                </span>
+                {isAdmin && (
+                  <button
+                    onClick={() => setBulkDeleteOrdersModal(true)}
+                    className="flex items-center gap-1 px-3 py-1.5 bg-red-100 text-red-700 rounded-lg hover:bg-red-200 transition-all text-sm font-bold"
+                  >
+                    <Trash2 className="w-4 h-4" />
+                    מחק {selectedOrders.length} נבחרות
+                  </button>
+                )}
+              </>
             )}
           </div>
 
@@ -2449,6 +2475,37 @@ const OrdersPage = () => {
                     ביטול
                   </button>
                 </div>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Bulk Delete Orders Modal */}
+        {bulkDeleteOrdersModal && (
+          <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+            <div className="bg-white rounded-2xl shadow-2xl p-8 max-w-md w-full">
+              <div className="text-center mb-6">
+                <div className="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                  <Trash2 className="w-8 h-8 text-red-600" />
+                </div>
+                <h3 className="text-2xl font-bold text-slate-900 mb-2">מחיקה מרובה</h3>
+                <p className="text-slate-600">
+                  פעולה זו תמחק <span className="font-bold text-red-600">{selectedOrders.length}</span> הזמנות לצמיתות.
+                </p>
+              </div>
+              <div className="flex gap-3">
+                <button
+                  onClick={handleBulkDeleteOrders}
+                  className="flex-1 px-6 py-3 rounded-xl font-bold text-white bg-gradient-to-r from-red-500 to-rose-500 hover:from-red-600 hover:to-rose-600 transition-all shadow-lg"
+                >
+                  מחק הכל
+                </button>
+                <button
+                  onClick={() => setBulkDeleteOrdersModal(false)}
+                  className="flex-1 px-6 py-3 rounded-xl font-bold text-slate-700 bg-slate-100 hover:bg-slate-200 transition-all"
+                >
+                  ביטול
+                </button>
               </div>
             </div>
           </div>

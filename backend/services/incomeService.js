@@ -129,6 +129,11 @@ export default {
     return income;
   },
 
+  // מחיקת הכנסות מרובה
+  async bulkDeleteIncomes(incomeIds) {
+    await Income.deleteMany({ _id: { $in: incomeIds } });
+  },
+
   // חיפוש הכנסות
   async searchIncomes(query) {
     const regex = new RegExp(query, "i");

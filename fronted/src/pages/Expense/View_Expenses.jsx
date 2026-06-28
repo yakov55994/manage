@@ -26,7 +26,7 @@ export default function ViewExpenses() {
   const [searchParams] = useSearchParams();
   const bank = searchParams.get("bank") || "pagi";
   const bankLabel = bank === "mizrahi" ? "מזרחי" : "פאגי";
-  const { user } = useAuth();
+  const { user, isAdmin } = useAuth();
   const isAccountant = user?.role === "accountant";
   const [expenses, setExpenses] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -38,6 +38,7 @@ export default function ViewExpenses() {
   const lastSelectedIdRef = useRef(null);
   const [bulkNoteModal, setBulkNoteModal] = useState(false);
   const [bulkNote, setBulkNote] = useState("");
+  const [bulkDeleteModal, setBulkDeleteModal] = useState(false);
   const [linkModal, setLinkModal] = useState({ open: false, expense: null });
   const [linkFilter, setLinkFilter] = useState("all"); // "all" | "linked" | "unlinked"
 
@@ -268,6 +269,21 @@ export default function ViewExpenses() {
     }
   }, [selectedExpenses, bulkNote]);
 
+  // מחיקת הוצאות מרובה
+  const handleBulkDelete = useCallback(async () => {
+    try {
+      const expenseIds = selectedExpenses.map(e => e._id);
+      await api.post("/expenses/bulk/delete", { expenseIds });
+      setExpenses(prev => prev.filter(e => !expenseIds.includes(e._id)));
+      toast.success(`נמחקו ${selectedExpenses.length} הוצאות`);
+      setBulkDeleteModal(false);
+      setSelectedExpenses([]);
+    } catch (err) {
+      console.error("Bulk delete error:", err);
+      toast.error("שגיאה במחיקת ההוצאות");
+    }
+  }, [selectedExpenses]);
+
   // חישוב סה"כ
   const totalAmount = useMemo(() => filteredExpenses.reduce(
     (sum, expense) => sum + parseFloat(expense.amount || 0),
@@ -436,13 +452,24 @@ export default function ViewExpenses() {
                 בטל הכל
               </button>
               {selectedExpenses.length > 0 && (
-                <button
-                  onClick={() => setBulkNoteModal(true)}
-                  className="flex items-center gap-1 px-3 py-1.5 bg-purple-500 text-white rounded-lg hover:bg-purple-600 transition-all text-xs font-bold"
-                >
-                  <MessageSquare className="w-4 h-4" />
-                  הוסף הערה ל-{selectedExpenses.length} נבחרים
-                </button>
+                <>
+                  <button
+                    onClick={() => setBulkNoteModal(true)}
+                    className="flex items-center gap-1 px-3 py-1.5 bg-purple-500 text-white rounded-lg hover:bg-purple-600 transition-all text-xs font-bold"
+                  >
+                    <MessageSquare className="w-4 h-4" />
+                    הוסף הערה ל-{selectedExpenses.length} נבחרים
+                  </button>
+                  {isAdmin && (
+                    <button
+                      onClick={() => setBulkDeleteModal(true)}
+                      className="flex items-center gap-1 px-3 py-1.5 bg-red-100 text-red-700 rounded-lg hover:bg-red-200 transition-all text-xs font-bold"
+                    >
+                      <Trash2 className="w-4 h-4" />
+                      מחק {selectedExpenses.length} נבחרים
+                    </button>
+                  )}
+                </>
               )}
             </div>
           </div>
@@ -848,6 +875,37 @@ export default function ViewExpenses() {
                   ביטול
                 </button>
               </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Bulk Delete Modal */}
+      {bulkDeleteModal && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-2xl shadow-2xl p-8 max-w-md w-full">
+            <div className="text-center mb-6">
+              <div className="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                <Trash2 className="w-8 h-8 text-red-600" />
+              </div>
+              <h3 className="text-2xl font-bold text-slate-900 mb-2">מחיקה מרובה</h3>
+              <p className="text-slate-600">
+                פעולה זו תמחק <span className="font-bold text-red-600">{selectedExpenses.length}</span> הוצאות לצמיתות ולא ניתן לשחזר אותן.
+              </p>
+            </div>
+            <div className="flex gap-3">
+              <button
+                onClick={handleBulkDelete}
+                className="flex-1 px-6 py-3 rounded-xl font-bold text-white bg-gradient-to-r from-red-500 to-rose-500 hover:from-red-600 hover:to-rose-600 transition-all shadow-lg"
+              >
+                מחק הכל
+              </button>
+              <button
+                onClick={() => setBulkDeleteModal(false)}
+                className="flex-1 px-6 py-3 rounded-xl font-bold text-slate-700 bg-slate-100 hover:bg-slate-200 transition-all"
+              >
+                ביטול
+              </button>
             </div>
           </div>
         </div>

@@ -229,6 +229,20 @@ export default {
   },
 
   // ======================================================
+  // מחיקת הזמנות מרובה
+  // ======================================================
+  async bulkDeleteOrders(orderIds) {
+    const orders = await Order.find({ _id: { $in: orderIds } }).select("projectId");
+    const projectIds = [...new Set(orders.map(o => o.projectId.toString()))];
+
+    await Order.deleteMany({ _id: { $in: orderIds } });
+
+    for (const projectId of projectIds) {
+      await recalcProjectBudget(projectId);
+    }
+  },
+
+  // ======================================================
   // שיוך הזמנה לחשבוניות, משכורות והזמנות
   // ======================================================
   async linkOrder(user, orderId, invoiceIds, salaryIds, orderIds) {

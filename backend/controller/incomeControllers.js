@@ -159,6 +159,7 @@ const incomeController = {
       // המרת הנתונים לפורמט שלנו
       const incomesData = [];
       const expensesData = [];
+      const uploadBank = req.body.bank || "pagi";
 
       jsonData.forEach((row, index) => {
         // נסה למצוא את השדות לפי שמות אפשריים (תומך בעברית ואנגלית)
@@ -177,11 +178,16 @@ const incomeController = {
           date = excelDateToJSDate(dateRaw);
         } else if (dateRaw) {
           const str = dateRaw.toString().trim();
-          // פורמט DD/MM/YY או DD/MM/YYYY (ייצוא בנק ישראלי)
-          const ddmmyy = str.match(/^(\d{1,2})\/(\d{1,2})\/(\d{2,4})$/);
-          if (ddmmyy) {
-            const [, d, m, y] = ddmmyy;
+          // מזרחי מייצא בפורמט MM/DD/YYYY, פאגי ובנקים ישראליים אחרים ב-DD/MM/YYYY
+          const slashDate = str.match(/^(\d{1,2})\/(\d{1,2})\/(\d{2,4})$/);
+          const dotDate = str.match(/^(\d{1,2})\.(\d{1,2})\.(\d{2,4})$/);
+          const parts = slashDate || dotDate;
+          if (parts) {
+            const [, a, b, y] = parts;
             const fullYear = y.length === 2 ? `20${y}` : y;
+            // מזרחי: MM/DD → a=חודש, b=יום; כל השאר: DD/MM → a=יום, b=חודש
+            const d = uploadBank === "mizrahi" ? b : a;
+            const m = uploadBank === "mizrahi" ? a : b;
             date = new Date(`${fullYear}-${m.padStart(2,"0")}-${d.padStart(2,"0")}`);
           } else {
             date = new Date(dateRaw);
@@ -232,8 +238,8 @@ const incomeController = {
           row["type"] ||
           "";
 
-        const notes = req.body.notes || ""; // הערות כלליות מהטופס
-      const bank = req.body.bank || "pagi";
+        const notes = req.body.notes || "";
+        const bank = uploadBank;
 
         // דלג אם אין תאריך או תיאור
         if (!date || !description) return;
@@ -333,6 +339,24 @@ const incomeController = {
       const result = await incomeService.bulkUpdateNotes(req.user, incomeIds, notes);
       saveLog({ type: 'info', message: `עודכנו הערות ל-${result.modifiedCount} תנועות זכות`, username: req.user?.username || req.user?.name, userId: req.user?._id, ip: getIp(req), meta: { count: result.modifiedCount } });
       res.json({ success: true, data: result, message: `עודכנו ${result.modifiedCount} הכנסות` });
+    } catch (e) {
+      sendError(res, e, req);
+    }
+  },
+
+  // מחיקת הכנסות מרובה
+  async bulkDeleteIncomes(req, res) {
+    try {
+      const { incomeIds } = req.body;
+      if (!incomeIds || !Array.isArray(incomeIds) || incomeIds.length === 0) {
+        return res.status(400).json({ success: false, message: "לא נבחרו הכנסות" });
+      }
+      if (req.user.role !== "admin") {
+        return res.status(403).json({ success: false, message: "רק מנהל יכול למחוק הכנסות" });
+      }
+      await incomeService.bulkDeleteIncomes(incomeIds);
+      saveLog({ type: 'info', message: `נמחקו ${incomeIds.length} תנועות זכות`, username: req.user?.username || req.user?.name, userId: req.user?._id, ip: getIp(req), meta: { count: incomeIds.length } });
+      res.json({ success: true, message: `נמחקו ${incomeIds.length} הכנסות`, deleted: incomeIds.length });
     } catch (e) {
       sendError(res, e, req);
     }

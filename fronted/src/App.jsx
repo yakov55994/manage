@@ -81,7 +81,7 @@ const AppContent = () => {
     <div className="min-h-screen flex flex-col">
       <div className="flex flex-1">
         <Sidebar />
-        <div className="flex-1 p-6 mt-20 ml-10">
+        <div className="flex-1 mt-20">
           <Suspense fallback={<PageLoader />}>
           <Routes>
             <Route path="*" element={<Home />} />
@@ -399,7 +399,7 @@ const AppContent = () => {
         </div>
       </div>
 
-      <footer className="border-gray-200 py-4">
+      <footer className="bg-gradient-to-r from-gray-900 via-slate-800 to-gray-900 border-t border-orange-500/30 py-4">
         <p className="text-center font-bold text-white">
           © כל הזכויות שמורות ל
           <a

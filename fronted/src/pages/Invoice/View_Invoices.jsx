@@ -174,6 +174,7 @@ const InvoicesPage = () => {
   const [documentStatusFilter, setDocumentStatusFilter] = useState([]);
 
   const { user, isAdmin, isLimited, canEditModule, canViewModule } = useAuth();
+  const isAccountant = user?.role === "accountant";
   const navigate = useNavigate();
 
   // קבל את הפרויקט הנוכחי
@@ -2733,21 +2734,25 @@ const InvoicesPage = () => {
 
           {/* Export Buttons Row */}
           <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3 pt-4 border-t border-slate-200">
-              <button
-                onClick={() => setMasavModal(true)}
-                className="flex items-center justify-center gap-2 px-4 py-3 bg-gradient-to-r from-orange-500 to-amber-500 text-white font-bold rounded-full hover:from-orange-600 hover:to-amber-600 transition-all shadow-lg"
-              >
-                <FileText className="w-5 h-5 flex-shrink-0" />
-                <span className="text-sm">ייצוא מס״ב</span>
-              </button>
+              {(isAdmin || isAccountant) && (
+                <button
+                  onClick={() => setMasavModal(true)}
+                  className="flex items-center justify-center gap-2 px-4 py-3 bg-gradient-to-r from-orange-500 to-amber-500 text-white font-bold rounded-full hover:from-orange-600 hover:to-amber-600 transition-all shadow-lg"
+                >
+                  <FileText className="w-5 h-5 flex-shrink-0" />
+                  <span className="text-sm">ייצוא מס״ב</span>
+                </button>
+              )}
 
-              <button
-                onClick={() => setMasavHistoryModal(true)}
-                className="flex items-center justify-center gap-2 px-4 py-3 bg-gradient-to-r from-slate-600 to-slate-700 text-white font-bold rounded-full hover:from-slate-700 hover:to-slate-800 transition-all shadow-lg"
-              >
-                <FileText className="w-5 h-5 flex-shrink-0" />
-                <span className="text-sm">היסטוריית מס״ב</span>
-              </button>
+              {(isAdmin || isAccountant) && (
+                <button
+                  onClick={() => setMasavHistoryModal(true)}
+                  className="flex items-center justify-center gap-2 px-4 py-3 bg-gradient-to-r from-slate-600 to-slate-700 text-white font-bold rounded-full hover:from-slate-700 hover:to-slate-800 transition-all shadow-lg"
+                >
+                  <FileText className="w-5 h-5 flex-shrink-0" />
+                  <span className="text-sm">היסטוריית מס״ב</span>
+                </button>
+              )}
 
               <button
                 onClick={() => setShowPrintModal(true)}
@@ -2773,16 +2778,17 @@ const InvoicesPage = () => {
                 <span className="text-sm">ייצוא מהיר</span>
               </button>
 
-              <button
-                onClick={exportSalaries}
-                className="flex items-center justify-center gap-2 px-4 py-3 bg-gradient-to-r from-orange-500 to-amber-500 text-white font-bold rounded-full hover:from-orange-600 hover:to-amber-600 transition-all shadow-lg"
-              >
-                <FileSpreadsheet className="w-5 h-5 flex-shrink-0" />
-                <span className="text-sm">ייצוא משכורות</span>
-              </button>
+              {isAdmin && (
+                <button
+                  onClick={exportSalaries}
+                  className="flex items-center justify-center gap-2 px-4 py-3 bg-gradient-to-r from-orange-500 to-amber-500 text-white font-bold rounded-full hover:from-orange-600 hover:to-amber-600 transition-all shadow-lg"
+                >
+                  <FileSpreadsheet className="w-5 h-5 flex-shrink-0" />
+                  <span className="text-sm">ייצוא משכורות</span>
+                </button>
+              )}
 
-              {/* כפתור העלאת אקסל מילגה - לא מוצג לרואת חשבון */}
-              {user?.role !== "accountant" && (
+              {isAdmin && (
                 <button
                   onClick={() => setShowMilgaExcelModal(true)}
                   className="flex items-center justify-center gap-2 px-4 py-3 bg-gradient-to-r from-green-500 to-emerald-500 text-white font-bold rounded-full hover:from-green-600 hover:to-emerald-600 transition-all shadow-lg"
