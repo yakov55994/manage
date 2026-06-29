@@ -30,6 +30,7 @@ import cron from 'node-cron';
 import { createScheduledBackup } from './controller/backupController.js';
 import kartesetRoutes from './routes/kartesetRoutes.js';
 import logRoutes from './routes/logRoutes.js';
+import pendingInvoiceRoutes from './routes/pendingInvoiceRoutes.js';
 
 dotenv.config();
 const app = express();
@@ -170,6 +171,7 @@ app.use('/api/export', exportRoutes);
 app.use('/api/backup', backupRoutes);
 app.use('/api/karteset', kartesetRoutes);
 app.use('/api/logs', logRoutes);
+app.use('/api/pending-invoices', pendingInvoiceRoutes);
 
 // Error handler
 app.use((err, req, res, next) => {

@@ -4,6 +4,7 @@ import {
   Route,
   Routes,
   useNavigate,
+  useLocation,
 } from "react-router-dom";
 import Sidebar from "./pages/NavBar";
 import ProtectedRoute from "./Components/ProtectedRoute.jsx";
@@ -54,6 +55,8 @@ const ResetPassword = lazy(() => import("./pages/ResetPassword.jsx"));
 const ExportDataPage = lazy(() => import("./pages/ExportDataPage.jsx"));
 const MasavBroadcast = lazy(() => import("./pages/MasavBroadcast/MasavBroadcast.jsx"));
 const SystemLogs = lazy(() => import("./pages/SystemLogs.jsx"));
+const PublicInvoiceForm = lazy(() => import("./pages/Invoice/PublicInvoiceForm.jsx"));
+const PendingInvoices = lazy(() => import("./pages/Invoice/PendingInvoices.jsx"));
 
 const PageLoader = () => (
   <div className="flex items-center justify-center h-64">
@@ -64,6 +67,8 @@ const PageLoader = () => (
 const AppContent = () => {
   const { inactivityLogout, clearInactivityFlag } = useAuth();
   const navigate = useNavigate();
+  const { pathname } = useLocation();
+  const isPublicPage = pathname === "/submit-invoice";
 
   // מצב שינה - התנתקות אוטומטית אחרי 7 שעות ללא פעילות
   useEffect(() => {
@@ -80,8 +85,8 @@ const AppContent = () => {
   return (
     <div className="min-h-screen flex flex-col">
       <div className="flex flex-1">
-        <Sidebar />
-        <div className="flex-1 mt-20">
+        {!isPublicPage && <Sidebar />}
+        <div className={`flex-1 ${!isPublicPage ? "mt-20" : ""}`}>
           <Suspense fallback={<PageLoader />}>
           <Routes>
             <Route path="*" element={<Home />} />
@@ -89,6 +94,7 @@ const AppContent = () => {
             <Route path="/search" element={<SearchResults />} />
             <Route path="/no-access" element={<NoAccess />} />
             <Route path="/reset-password/:token" element={<ResetPassword />} />
+            <Route path="/submit-invoice" element={<PublicInvoiceForm />} />
 
             <Route
               path="/create-project"
@@ -391,6 +397,14 @@ const AppContent = () => {
               element={
                 <ProtectedRoute adminOnly>
                   <SystemLogs />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/pending-invoices"
+              element={
+                <ProtectedRoute adminOnly>
+                  <PendingInvoices />
                 </ProtectedRoute>
               }
             />

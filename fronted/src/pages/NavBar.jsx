@@ -145,6 +145,11 @@ const Sidebar = () => {
           path: "/masav-broadcast",
           show: isAdmin || isAccountant,
         },
+        {
+          text: "חשבוניות ממתינות לאישור",
+          path: "/pending-invoices",
+          show: isAdmin,
+        },
       ],
     },
     {
