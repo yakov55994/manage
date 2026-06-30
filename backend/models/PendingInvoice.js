@@ -18,10 +18,14 @@ const pendingInvoiceSchema = new mongoose.Schema({
   supplierPhone: { type: String, default: "" },
   supplierEmail: { type: String, default: "" },
 
-  // פרטי בנק
-  bankName: { type: String, default: "" },
-  bankBranch: { type: String, default: "" },
-  bankAccount: { type: String, default: "" },
+  // פרטי בנק (חובה)
+  bankName: { type: String, required: true },
+  bankBranch: { type: String, required: true },
+  bankAccount: { type: String, required: true },
+
+  // פרויקט משויך (אופציונלי)
+  projectId: { type: String, default: null },
+  projectName: { type: String, default: "" },
 
   // פרטי חשבונית
   invoiceNumber: { type: String, required: true },

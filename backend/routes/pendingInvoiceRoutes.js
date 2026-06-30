@@ -20,6 +20,7 @@ const storage = multer.diskStorage({
 const upload = multer({ storage, limits: { fileSize: 10 * 1024 * 1024 } });
 
 // ציבורי — ללא אימות
+router.get("/projects", pendingInvoiceController.getPublicProjects);
 router.post("/submit", upload.single("file"), pendingInvoiceController.submitPublicInvoice);
 
 // Admin בלבד

@@ -1,6 +1,6 @@
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 import axios from "axios";
-import { CheckCircle, Upload, FileText, Building2, CreditCard, AlertCircle, X } from "lucide-react";
+import { CheckCircle, Upload, FileText, Building2, CreditCard, AlertCircle, X, Search, Briefcase } from "lucide-react";
 
 const BASE_URL =
   import.meta.env.MODE === "development"
@@ -38,6 +38,34 @@ export default function PublicInvoiceForm() {
   const [error, setError] = useState("");
   const fileRef = useRef(null);
 
+  // בחירת פרויקט
+  const [projects, setProjects] = useState([]);
+  const [projectSearch, setProjectSearch] = useState("");
+  const [selectedProject, setSelectedProject] = useState(null);
+  const [projectOpen, setProjectOpen] = useState(false);
+  const projectRef = useRef(null);
+
+  useEffect(() => {
+    axios.get(`${BASE_URL}/pending-invoices/projects`)
+      .then((r) => setProjects(r.data))
+      .catch(() => {});
+  }, []);
+
+  // סגירת dropdown פרויקט בלחיצה מחוץ
+  useEffect(() => {
+    const handler = (e) => {
+      if (projectRef.current && !projectRef.current.contains(e.target)) {
+        setProjectOpen(false);
+      }
+    };
+    document.addEventListener("mousedown", handler);
+    return () => document.removeEventListener("mousedown", handler);
+  }, []);
+
+  const filteredProjects = projects.filter((p) =>
+    p.name.toLowerCase().includes(projectSearch.toLowerCase())
+  );
+
   const handleChange = (e) => {
     setForm((prev) => ({ ...prev, [e.target.name]: e.target.value }));
   };
@@ -55,31 +83,20 @@ export default function PublicInvoiceForm() {
   const validate = () => {
     const required = ["supplierName", "supplierTaxId", "invoiceNumber", "invoiceDate", "totalAmount", "documentType"];
     for (const field of required) {
-      if (!form[field]?.trim()) {
-        return "נא למלא את כל שדות החובה המסומנים ב-*";
-      }
+      if (!form[field]?.trim()) return "נא למלא את כל שדות החובה המסומנים ב-*";
     }
-    // Bank details — either all or none
-    const bankFields = [form.bankName, form.bankBranch, form.bankAccount];
-    const filledBank = bankFields.filter((v) => v?.trim()).length;
-    if (filledBank > 0 && filledBank < 3) {
-      return "יש למלא את כל שלושת שדות הבנק או להשאירם ריקים";
+    if (!form.bankName?.trim() || !form.bankBranch?.trim() || !form.bankAccount?.trim()) {
+      return "פרטי חשבון בנק הם שדות חובה";
     }
-    if (!file) {
-      return "נא לצרף קובץ חשבונית";
-    }
+    if (!file) return "נא לצרף קובץ חשבונית";
     return null;
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError("");
-
     const validationError = validate();
-    if (validationError) {
-      setError(validationError);
-      return;
-    }
+    if (validationError) { setError(validationError); return; }
 
     setLoading(true);
     try {
@@ -87,6 +104,10 @@ export default function PublicInvoiceForm() {
       Object.entries(form).forEach(([key, value]) => {
         if (value) formData.append(key, value);
       });
+      if (selectedProject) {
+        formData.append("projectId", selectedProject._id);
+        formData.append("projectName", selectedProject.name);
+      }
       if (file) formData.append("file", file);
 
       await axios.post(`${BASE_URL}/pending-invoices/submit`, formData);
@@ -106,7 +127,7 @@ export default function PublicInvoiceForm() {
           <h2 className="text-2xl font-bold text-gray-800 mb-2">הוגש בהצלחה!</h2>
           <p className="text-gray-600 mb-6">החשבונית שלך התקבלה ותיבדק בקרוב על ידי הצוות.</p>
           <button
-            onClick={() => { setForm(initialForm); setFile(null); setSubmitted(false); }}
+            onClick={() => { setForm(initialForm); setFile(null); setSelectedProject(null); setProjectSearch(""); setSubmitted(false); }}
             className="px-6 py-3 bg-orange-500 hover:bg-orange-600 text-white font-bold rounded-xl transition-all"
           >
             הגשת חשבונית נוספת
@@ -197,16 +218,17 @@ export default function PublicInvoiceForm() {
             </div>
           </div>
 
-          {/* פרטי בנק */}
+          {/* פרטי בנק — חובה */}
           <div className="bg-gray-800/60 border border-gray-700 rounded-2xl p-6">
-            <div className="flex items-center gap-2 mb-1">
+            <div className="flex items-center gap-2 mb-4">
               <CreditCard className="w-5 h-5 text-orange-400" />
-              <h2 className="text-lg font-bold text-white">פרטי חשבון בנק</h2>
+              <h2 className="text-lg font-bold text-white">פרטי חשבון בנק <span className="text-red-400">*</span></h2>
             </div>
-            <p className="text-xs text-gray-400 mb-4">אופציונלי — אם ממלאים, יש למלא את כל שלושת השדות</p>
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
               <div>
-                <label className="block text-sm font-medium text-gray-300 mb-1">שם הבנק</label>
+                <label className="block text-sm font-medium text-gray-300 mb-1">
+                  שם הבנק <span className="text-red-400">*</span>
+                </label>
                 <input
                   name="bankName"
                   value={form.bankName}
@@ -216,7 +238,9 @@ export default function PublicInvoiceForm() {
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-300 mb-1">מספר סניף</label>
+                <label className="block text-sm font-medium text-gray-300 mb-1">
+                  מספר סניף <span className="text-red-400">*</span>
+                </label>
                 <input
                   name="bankBranch"
                   value={form.bankBranch}
@@ -226,7 +250,9 @@ export default function PublicInvoiceForm() {
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-300 mb-1">מספר חשבון</label>
+                <label className="block text-sm font-medium text-gray-300 mb-1">
+                  מספר חשבון <span className="text-red-400">*</span>
+                </label>
                 <input
                   name="bankAccount"
                   value={form.bankAccount}
@@ -300,6 +326,73 @@ export default function PublicInvoiceForm() {
                   ))}
                 </select>
               </div>
+
+              {/* בחירת פרויקט עם חיפוש */}
+              <div className="sm:col-span-2" ref={projectRef}>
+                <label className="block text-sm font-medium text-gray-300 mb-1">
+                  <Briefcase className="inline w-4 h-4 ml-1 text-orange-400" />
+                  פרויקט משויך (אופציונלי)
+                </label>
+                <div className="relative">
+                  <button
+                    type="button"
+                    onClick={() => setProjectOpen((v) => !v)}
+                    className="w-full px-4 py-2.5 bg-gray-700/60 border border-gray-600 rounded-xl text-right flex items-center justify-between transition-all hover:border-orange-500 focus:outline-none focus:border-orange-500"
+                  >
+                    <span className={selectedProject ? "text-white" : "text-gray-400"}>
+                      {selectedProject ? selectedProject.name : "בחר פרויקט..."}
+                    </span>
+                    {selectedProject && (
+                      <button
+                        type="button"
+                        onClick={(e) => { e.stopPropagation(); setSelectedProject(null); setProjectSearch(""); }}
+                        className="text-gray-400 hover:text-red-400 transition-all"
+                      >
+                        <X size={14} />
+                      </button>
+                    )}
+                  </button>
+
+                  {projectOpen && (
+                    <div className="absolute top-full mt-1 w-full bg-gray-800 border border-gray-600 rounded-xl shadow-2xl z-20 overflow-hidden">
+                      <div className="p-2 border-b border-gray-700">
+                        <div className="relative">
+                          <Search className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400" size={14} />
+                          <input
+                            type="text"
+                            value={projectSearch}
+                            onChange={(e) => setProjectSearch(e.target.value)}
+                            placeholder="חיפוש פרויקט..."
+                            autoFocus
+                            className="w-full pr-9 pl-3 py-2 bg-gray-700/60 border border-gray-600 rounded-lg text-white text-sm placeholder-gray-400 focus:outline-none focus:border-orange-500"
+                          />
+                        </div>
+                      </div>
+                      <div className="max-h-48 overflow-y-auto">
+                        {filteredProjects.length === 0 ? (
+                          <p className="text-gray-500 text-sm text-center py-4">לא נמצאו פרויקטים</p>
+                        ) : (
+                          filteredProjects.map((p) => (
+                            <button
+                              key={p._id}
+                              type="button"
+                              onClick={() => { setSelectedProject(p); setProjectOpen(false); setProjectSearch(""); }}
+                              className={`w-full text-right px-4 py-2.5 text-sm transition-all border-b border-gray-700 last:border-b-0 ${
+                                selectedProject?._id === p._id
+                                  ? "bg-orange-500/20 text-orange-300"
+                                  : "text-gray-300 hover:bg-gray-700"
+                              }`}
+                            >
+                              {p.name}
+                            </button>
+                          ))
+                        )}
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </div>
+
               <div className="sm:col-span-2">
                 <label className="block text-sm font-medium text-gray-300 mb-1">פירוט / הערות</label>
                 <textarea
@@ -322,7 +415,6 @@ export default function PublicInvoiceForm() {
                 צרף קובץ חשבונית <span className="text-red-400">*</span>
               </h2>
             </div>
-
             <div
               onClick={() => fileRef.current?.click()}
               className="border-2 border-dashed border-gray-600 hover:border-orange-500 rounded-xl p-8 text-center cursor-pointer transition-all group"
@@ -363,7 +455,6 @@ export default function PublicInvoiceForm() {
             </div>
           )}
 
-          {/* כפתור שליחה */}
           <button
             type="submit"
             disabled={loading}

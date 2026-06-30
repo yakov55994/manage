@@ -1,11 +1,22 @@
 import PendingInvoice from "../models/PendingInvoice.js";
 import Invoice from "../models/Invoice.js";
 import Supplier from "../models/Supplier.js";
+import Project from "../models/Project.js";
 import cloudinary from "../config/cloudinary.js";
 import fs from "fs/promises";
-import path from "path";
 
 const pendingInvoiceController = {
+
+  // GET /api/pending-invoices/projects — ציבורי, רשימת פרויקטים לטופס
+  getPublicProjects: async (req, res) => {
+    try {
+      const projects = await Project.find({}, "_id name").sort({ name: 1 });
+      res.json(projects);
+    } catch (error) {
+      console.error("❌ שגיאה בטעינת פרויקטים:", error);
+      res.status(500).json({ message: "שגיאה בטעינת פרויקטים" });
+    }
+  },
 
   // POST /api/pending-invoices/submit — ציבורי, ללא אימות
   submitPublicInvoice: async (req, res) => {
@@ -13,10 +24,11 @@ const pendingInvoiceController = {
       const {
         supplierName, supplierTaxId, supplierAddress, supplierPhone, supplierEmail,
         bankName, bankBranch, bankAccount,
+        projectId, projectName,
         invoiceNumber, invoiceDate, totalAmount, documentType, detail,
       } = req.body;
 
-      if (!supplierName || !supplierTaxId || !invoiceNumber || !invoiceDate || !totalAmount || !documentType) {
+      if (!supplierName || !supplierTaxId || !invoiceNumber || !invoiceDate || !totalAmount || !documentType || !bankName || !bankBranch || !bankAccount) {
         if (req.file?.path) await fs.unlink(req.file.path).catch(() => {});
         return res.status(400).json({ message: "נא למלא את כל השדות החובה" });
       }
@@ -50,9 +62,11 @@ const pendingInvoiceController = {
         supplierAddress: supplierAddress?.trim() || "",
         supplierPhone: supplierPhone?.trim() || "",
         supplierEmail: supplierEmail?.trim() || "",
-        bankName: bankName?.trim() || "",
-        bankBranch: bankBranch?.trim() || "",
-        bankAccount: bankAccount?.trim() || "",
+        bankName: bankName.trim(),
+        bankBranch: bankBranch.trim(),
+        bankAccount: bankAccount.trim(),
+        projectId: projectId || null,
+        projectName: projectName?.trim() || "",
         invoiceNumber: invoiceNumber.trim(),
         invoiceDate: new Date(invoiceDate),
         totalAmount: parseFloat(totalAmount),
@@ -95,58 +109,44 @@ const pendingInvoiceController = {
         return res.status(404).json({ message: "חשבונית ממתינה לא נמצאה" });
       }
 
-      const hasBank =
-        pendingInvoice.bankName &&
-        pendingInvoice.bankBranch &&
-        pendingInvoice.bankAccount;
-
-      // חיפוש ספק קיים לפי כל הפרטים
-      let supplier = null;
-      if (hasBank) {
-        supplier = await Supplier.findOne({
-          name: pendingInvoice.supplierName,
-          business_tax: pendingInvoice.supplierTaxId,
-          "bankDetails.bankName": pendingInvoice.bankName,
-          "bankDetails.branchNumber": pendingInvoice.bankBranch,
-          "bankDetails.accountNumber": pendingInvoice.bankAccount,
-        });
-      } else {
-        supplier = await Supplier.findOne({
-          name: pendingInvoice.supplierName,
-          business_tax: pendingInvoice.supplierTaxId,
-        });
-      }
+      // חיפוש ספק לפי מספר חשבון בנק בלבד
+      let supplier = await Supplier.findOne({
+        "bankDetails.accountNumber": pendingInvoice.bankAccount,
+      });
 
       // יצירת ספק חדש אם לא נמצא
       if (!supplier) {
-        const supplierData = {
+        supplier = new Supplier({
           name: pendingInvoice.supplierName,
           business_tax: pendingInvoice.supplierTaxId,
           supplierType: "invoices",
           createdByName: req.user?.username || "מערכת",
           createdBy: req.user?._id || undefined,
-        };
-        if (pendingInvoice.supplierAddress) supplierData.address = pendingInvoice.supplierAddress;
-        if (pendingInvoice.supplierPhone) supplierData.phone = pendingInvoice.supplierPhone;
-        if (pendingInvoice.supplierEmail) supplierData.email = pendingInvoice.supplierEmail;
-        if (hasBank) {
-          supplierData.bankDetails = {
+          ...(pendingInvoice.supplierAddress && { address: pendingInvoice.supplierAddress }),
+          ...(pendingInvoice.supplierPhone && { phone: pendingInvoice.supplierPhone }),
+          ...(pendingInvoice.supplierEmail && { email: pendingInvoice.supplierEmail }),
+          bankDetails: {
             bankName: pendingInvoice.bankName,
             branchNumber: pendingInvoice.bankBranch,
             accountNumber: pendingInvoice.bankAccount,
-          };
-        }
-        supplier = new Supplier(supplierData);
+          },
+        });
         await supplier.save();
       }
 
-      // יצירת חשבונית
+      // בניית מערך פרויקטים
+      const projects = pendingInvoice.projectId ? [{
+        projectId: pendingInvoice.projectId,
+        projectName: pendingInvoice.projectName,
+        sum: pendingInvoice.totalAmount,
+      }] : [];
+
       const files = pendingInvoice.file ? [pendingInvoice.file] : [];
 
       const invoice = new Invoice({
         invoiceNumber: pendingInvoice.invoiceNumber,
         type: "invoice",
-        projects: [],
+        projects,
         totalAmount: pendingInvoice.totalAmount,
         invoiceDate: pendingInvoice.invoiceDate,
         documentType: pendingInvoice.documentType,
@@ -169,6 +169,13 @@ const pendingInvoiceController = {
 
       supplier.invoices.push(invoice._id);
       await supplier.save();
+
+      // אם הפרויקט קיים — הוסף את החשבונית לפרויקט
+      if (pendingInvoice.projectId) {
+        await Project.findByIdAndUpdate(pendingInvoice.projectId, {
+          $push: { invoices: invoice._id },
+        });
+      }
 
       // מחיקה בלי להפעיל pre-hook (הקובץ עבר לחשבונית)
       await PendingInvoice.findByIdAndDelete(pendingInvoice._id);

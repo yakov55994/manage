@@ -245,6 +245,7 @@ function InvoiceRow({ invoice, onApprove, onReject, onSetPending, loading }) {
                 <Row label="סכום" value={formatAmount(invoice.totalAmount)} highlight />
                 <Row label="סוג מסמך" value={invoice.documentType} />
                 {invoice.detail && <Row label="פירוט" value={invoice.detail} />}
+                {invoice.projectName && <Row label="פרויקט" value={invoice.projectName} />}
               </div>
             </div>
           </div>
