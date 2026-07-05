@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect } from "react";
 import axios from "axios";
-import { CheckCircle, Upload, FileText, Building2, CreditCard, AlertCircle, X, Search, Briefcase } from "lucide-react";
+import { CheckCircle, Upload, FileText, Building2, CreditCard, AlertCircle, X, Search, Briefcase, User } from "lucide-react";
 
 const BASE_URL =
   import.meta.env.MODE === "development"
@@ -15,6 +15,7 @@ const DOCUMENT_TYPES = [
 ];
 
 const initialForm = {
+  submitterName: "",
   supplierName: "",
   supplierTaxId: "",
   supplierAddress: "",
@@ -81,7 +82,7 @@ export default function PublicInvoiceForm() {
   };
 
   const validate = () => {
-    const required = ["supplierName", "supplierTaxId", "invoiceNumber", "invoiceDate", "totalAmount", "documentType"];
+    const required = ["submitterName", "supplierName", "supplierTaxId", "invoiceNumber", "invoiceDate", "totalAmount", "documentType"];
     for (const field of required) {
       if (!form[field]?.trim()) return "נא למלא את כל שדות החובה המסומנים ב-*";
     }
@@ -152,6 +153,26 @@ export default function PublicInvoiceForm() {
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-6">
+
+          {/* פרטי ממלא הטופס */}
+          <div className="bg-gray-800/60 border border-gray-700 rounded-2xl p-6">
+            <div className="flex items-center gap-2 mb-5">
+              <User className="w-5 h-5 text-orange-400" />
+              <h2 className="text-lg font-bold text-white">פרטי ממלא הטופס</h2>
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-300 mb-1">
+                שם ממלא הטופס <span className="text-red-400">*</span>
+              </label>
+              <input
+                name="submitterName"
+                value={form.submitterName}
+                onChange={handleChange}
+                placeholder="שם מלא"
+                className="w-full px-4 py-2.5 bg-gray-700/60 border border-gray-600 rounded-xl text-white placeholder-gray-400 focus:outline-none focus:border-orange-500 transition-all"
+              />
+            </div>
+          </div>
 
           {/* פרטי ספק */}
           <div className="bg-gray-800/60 border border-gray-700 rounded-2xl p-6">

@@ -14,6 +14,7 @@ import {
   RefreshCw,
   Copy,
   ExternalLink,
+  Users,
 } from "lucide-react";
 
 const STATUS_CONFIG = {
@@ -111,6 +112,65 @@ function RejectModal({ onConfirm, onClose }) {
           </button>
           <button
             onClick={onClose}
+            className="flex-1 py-2.5 bg-gray-700 hover:bg-gray-600 text-gray-300 font-medium rounded-xl transition-all"
+          >
+            ביטול
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function SupplierSyncModal({ invoice, matches, onConfirm, onClose, loading }) {
+  return (
+    <div className="fixed inset-0 bg-black/70 z-50 flex items-center justify-center p-4" dir="rtl">
+      <div className="bg-gray-800 border border-gray-700 rounded-2xl shadow-2xl p-6 max-w-lg w-full">
+        <div className="flex items-center gap-3 mb-2">
+          <Users className="w-6 h-6 text-orange-400" />
+          <h3 className="text-lg font-bold text-white">נמצא ספק קיים במערכת</h3>
+        </div>
+        <p className="text-sm text-gray-400 mb-4">
+          נמצא ספק קיים עם אותו מספר חשבון בנק או מספר עוסק כמו "{invoice?.supplierName}". האם לסנכרן את החשבונית עם הספק הקיים, או ליצור ספק חדש?
+        </p>
+
+        <div className="space-y-2 mb-5 max-h-56 overflow-y-auto">
+          {matches.map((s) => (
+            <div
+              key={s._id}
+              className="bg-gray-700/50 border border-gray-600 rounded-xl px-4 py-3"
+            >
+              <div className="flex items-center justify-between gap-3">
+                <div className="min-w-0">
+                  <p className="font-bold text-white truncate">{s.name}</p>
+                  <p className="text-xs text-gray-400 mt-0.5">
+                    ח.פ./עוסק: {s.business_tax || "—"}
+                    {s.bankDetails?.accountNumber && ` • חשבון: ${s.bankDetails.accountNumber}`}
+                  </p>
+                </div>
+                <button
+                  onClick={() => onConfirm("existing", s._id)}
+                  disabled={loading}
+                  className="shrink-0 px-3 py-1.5 bg-green-500/20 hover:bg-green-500 border border-green-500/40 text-green-300 hover:text-white text-xs font-bold rounded-lg transition-all disabled:opacity-50"
+                >
+                  סנכרן עם ספק זה
+                </button>
+              </div>
+            </div>
+          ))}
+        </div>
+
+        <div className="flex gap-3">
+          <button
+            onClick={() => onConfirm("new")}
+            disabled={loading}
+            className="flex-1 py-2.5 bg-orange-500 hover:bg-orange-600 text-white font-bold rounded-xl transition-all disabled:opacity-50"
+          >
+            צור ספק חדש בכל זאת
+          </button>
+          <button
+            onClick={onClose}
+            disabled={loading}
             className="flex-1 py-2.5 bg-gray-700 hover:bg-gray-600 text-gray-300 font-medium rounded-xl transition-all"
           >
             ביטול
@@ -225,6 +285,7 @@ function InvoiceRow({ invoice, onApprove, onReject, onSetPending, loading }) {
                 <span className="text-sm font-bold text-gray-300">פרטי ספק</span>
               </div>
               <div className="space-y-1.5 text-sm">
+                <Row label="ממלא הטופס" value={invoice.submitterName} />
                 <Row label="שם" value={invoice.supplierName} />
                 <Row label="ח.פ." value={invoice.supplierTaxId} />
                 {invoice.supplierPhone && <Row label="טלפון" value={invoice.supplierPhone} />}
@@ -292,6 +353,7 @@ export default function PendingInvoices() {
   const [actionLoading, setActionLoading] = useState(null);
   const [rejectTarget, setRejectTarget] = useState(null);
   const [copied, setCopied] = useState(false);
+  const [supplierSync, setSupplierSync] = useState(null); // { invoiceId, invoice, matches }
 
   const fetchInvoices = useCallback(async () => {
     setLoading(true);
@@ -308,17 +370,31 @@ export default function PendingInvoices() {
 
   useEffect(() => { fetchInvoices(); }, [fetchInvoices]);
 
-  const handleApprove = async (id) => {
+  const handleApprove = async (id, decision) => {
     setActionLoading(id);
     try {
-      await api.post(`/pending-invoices/${id}/approve`);
+      const body = decision
+        ? { supplierDecision: decision.supplierDecision, supplierId: decision.supplierId }
+        : {};
+      await api.post(`/pending-invoices/${id}/approve`, body);
       toast.success("החשבונית אושרה ונוספה למערכת");
+      setSupplierSync(null);
       fetchInvoices();
     } catch (err) {
+      if (err.response?.status === 409 && err.response?.data?.requiresSupplierDecision) {
+        const invoice = invoices.find((i) => i._id === id);
+        setSupplierSync({ invoiceId: id, invoice, matches: err.response.data.matchedSuppliers || [] });
+        return;
+      }
       toast.error(err.response?.data?.message || "שגיאה באישור החשבונית");
     } finally {
       setActionLoading(null);
     }
+  };
+
+  const handleSupplierSyncConfirm = (supplierDecision, supplierId) => {
+    if (!supplierSync) return;
+    handleApprove(supplierSync.invoiceId, { supplierDecision, supplierId });
   };
 
   const handleRejectConfirm = async (notes) => {
@@ -452,6 +528,16 @@ export default function PendingInvoices() {
         <RejectModal
           onConfirm={handleRejectConfirm}
           onClose={() => setRejectTarget(null)}
+        />
+      )}
+
+      {supplierSync && (
+        <SupplierSyncModal
+          invoice={supplierSync.invoice}
+          matches={supplierSync.matches}
+          onConfirm={handleSupplierSyncConfirm}
+          onClose={() => setSupplierSync(null)}
+          loading={actionLoading === supplierSync.invoiceId}
         />
       )}
     </div>

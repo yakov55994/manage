@@ -22,13 +22,14 @@ const pendingInvoiceController = {
   submitPublicInvoice: async (req, res) => {
     try {
       const {
+        submitterName,
         supplierName, supplierTaxId, supplierAddress, supplierPhone, supplierEmail,
         bankName, bankBranch, bankAccount,
         projectId, projectName,
         invoiceNumber, invoiceDate, totalAmount, documentType, detail,
       } = req.body;
 
-      if (!supplierName || !supplierTaxId || !invoiceNumber || !invoiceDate || !totalAmount || !documentType || !bankName || !bankBranch || !bankAccount) {
+      if (!submitterName || !supplierName || !supplierTaxId || !invoiceNumber || !invoiceDate || !totalAmount || !documentType || !bankName || !bankBranch || !bankAccount) {
         if (req.file?.path) await fs.unlink(req.file.path).catch(() => {});
         return res.status(400).json({ message: "נא למלא את כל השדות החובה" });
       }
@@ -57,6 +58,7 @@ const pendingInvoiceController = {
       }
 
       const pendingInvoice = new PendingInvoice({
+        submitterName: submitterName.trim(),
         supplierName: supplierName.trim(),
         supplierTaxId: supplierTaxId.trim(),
         supplierAddress: supplierAddress?.trim() || "",
@@ -109,14 +111,10 @@ const pendingInvoiceController = {
         return res.status(404).json({ message: "חשבונית ממתינה לא נמצאה" });
       }
 
-      // חיפוש ספק לפי מספר חשבון בנק בלבד
-      let supplier = await Supplier.findOne({
-        "bankDetails.accountNumber": pendingInvoice.bankAccount,
-      });
+      const { supplierDecision, supplierId } = req.body || {};
 
-      // יצירת ספק חדש אם לא נמצא
-      if (!supplier) {
-        supplier = new Supplier({
+      const createNewSupplier = async () => {
+        const newSupplier = new Supplier({
           name: pendingInvoice.supplierName,
           business_tax: pendingInvoice.supplierTaxId,
           supplierType: "invoices",
@@ -131,7 +129,44 @@ const pendingInvoiceController = {
             accountNumber: pendingInvoice.bankAccount,
           },
         });
-        await supplier.save();
+        await newSupplier.save();
+        return newSupplier;
+      };
+
+      let supplier;
+
+      if (supplierDecision === "existing" && supplierId) {
+        // המשתמש בחר לסנכרן עם ספק קיים שאותר בבדיקת ההתאמה
+        supplier = await Supplier.findById(supplierId);
+        if (!supplier) {
+          return res.status(404).json({ message: "הספק הנבחר לא נמצא" });
+        }
+      } else if (supplierDecision === "new") {
+        // המשתמש בחר במפורש ליצור ספק חדש למרות ההתאמה שנמצאה
+        supplier = await createNewSupplier();
+      } else {
+        // בדיקה: האם קיים כבר ספק עם אותו מספר חשבון בנק או אותו מספר עוסק/ח.פ.
+        const matches = await Supplier.find({
+          $or: [
+            { "bankDetails.accountNumber": pendingInvoice.bankAccount },
+            { business_tax: pendingInvoice.supplierTaxId },
+          ],
+        });
+
+        if (matches.length > 0) {
+          return res.status(409).json({
+            requiresSupplierDecision: true,
+            message: "נמצא ספק קיים במערכת עם אותו מספר חשבון בנק או מספר עוסק. יש לבחור אם לסנכרן עם הספק הקיים או ליצור ספק חדש.",
+            matchedSuppliers: matches.map((s) => ({
+              _id: s._id,
+              name: s.name,
+              business_tax: s.business_tax,
+              bankDetails: s.bankDetails,
+            })),
+          });
+        }
+
+        supplier = await createNewSupplier();
       }
 
       // בניית מערך פרויקטים
@@ -151,6 +186,7 @@ const pendingInvoiceController = {
         invoiceDate: pendingInvoice.invoiceDate,
         documentType: pendingInvoice.documentType,
         detail: pendingInvoice.detail || "",
+        invitingName: pendingInvoice.submitterName || "",
         supplierId: supplier._id,
         paid: "לא",
         files,
