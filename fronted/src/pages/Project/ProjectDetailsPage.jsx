@@ -88,6 +88,18 @@ const ProjectDetailsPage = () => {
   const [editDeductionIndex, setEditDeductionIndex] = useState(null); // אינדקס הפחתה לעריכה
   const [deleteDeductionModal, setDeleteDeductionModal] = useState({ open: false, index: null });
 
+  // הוספת תקציב
+  const [budgetAdditionOpen, setBudgetAdditionOpen] = useState(false);
+  const [budgetAdditionData, setBudgetAdditionData] = useState({
+    reason: "",
+    amount: "",
+    date: new Date().toISOString().split("T")[0],
+    notes: "",
+  });
+  const [adding, setAdding] = useState(false);
+  const [editAdditionIndex, setEditAdditionIndex] = useState(null); // אינדקס הוספה לעריכה
+  const [deleteAdditionModal, setDeleteAdditionModal] = useState({ open: false, index: null });
+
   const [statusFilter, setStatusFilter] = useState("");
   const [orders, setOrders] = useState([]);
   const [invoices, setInvoices] = useState([]);
@@ -510,6 +522,133 @@ const ProjectDetailsPage = () => {
     }
   };
 
+  // הוספת תקציב (יצירה או עריכה)
+  const handleBudgetAddition = async () => {
+    const { reason, amount, date, notes } = budgetAdditionData;
+
+    if (!reason.trim()) {
+      toast.error("נא להזין סיבת הוספה");
+      return;
+    }
+    if (!amount || Number(amount) <= 0) {
+      toast.error("נא להזין סכום תקין");
+      return;
+    }
+
+    try {
+      setAdding(true);
+
+      let newAdditions = [...(project.budgetAdditions || [])];
+      let newRemainingBudget = project.remainingBudget || 0;
+
+      if (editAdditionIndex !== null) {
+        // עריכה - הורדת הסכום הישן ואז הוספת החדש
+        const oldAmount = newAdditions[editAdditionIndex].amount || 0;
+        newRemainingBudget = newRemainingBudget - oldAmount + Number(amount);
+
+        newAdditions[editAdditionIndex] = {
+          ...newAdditions[editAdditionIndex],
+          reason,
+          amount: Number(amount),
+          date,
+          notes,
+        };
+      } else {
+        // יצירה חדשה
+        newRemainingBudget = newRemainingBudget + Number(amount);
+        newAdditions.push({
+          reason,
+          amount: Number(amount),
+          date,
+          notes,
+          createdAt: new Date().toISOString(),
+          createdBy: user?.username || user?.name || "משתמש",
+        });
+      }
+
+      await api.put(`/projects/${project._id}`, {
+        ...project,
+        remainingBudget: newRemainingBudget,
+        budgetAdditions: newAdditions,
+      });
+
+      // עדכון הפרויקט המקומי
+      setProject((prev) => ({
+        ...prev,
+        remainingBudget: newRemainingBudget,
+        budgetAdditions: newAdditions,
+      }));
+
+      toast.success(editAdditionIndex !== null
+        ? "הוספת התקציב עודכנה בהצלחה"
+        : `נוספו ${Number(amount).toLocaleString()} ₪ לתקציב`
+      );
+      setBudgetAdditionOpen(false);
+      setEditAdditionIndex(null);
+      setBudgetAdditionData({
+        reason: "",
+        amount: "",
+        date: new Date().toISOString().split("T")[0],
+        notes: "",
+      });
+    } catch (error) {
+      console.error("Error adding budget:", error);
+      toast.error("שגיאה בהוספת תקציב");
+    } finally {
+      setAdding(false);
+    }
+  };
+
+  // פתיחת מודל עריכה להוספה
+  const openEditAddition = (index) => {
+    const addition = project.budgetAdditions[index];
+    setBudgetAdditionData({
+      reason: addition.reason || "",
+      amount: addition.amount?.toString() || "",
+      date: addition.date ? new Date(addition.date).toISOString().split("T")[0] : new Date().toISOString().split("T")[0],
+      notes: addition.notes || "",
+    });
+    setEditAdditionIndex(index);
+    setBudgetAdditionOpen(true);
+  };
+
+  // מחיקת הוספה
+  const handleDeleteAddition = async () => {
+    const index = deleteAdditionModal.index;
+    if (index === null) return;
+
+    try {
+      setAdding(true);
+
+      const additionToDelete = project.budgetAdditions[index];
+      const amountToRemove = additionToDelete.amount || 0;
+
+      // הורדת הסכום מהתקציב
+      const newRemainingBudget = (project.remainingBudget || 0) - amountToRemove;
+      const newAdditions = project.budgetAdditions.filter((_, i) => i !== index);
+
+      await api.put(`/projects/${project._id}`, {
+        ...project,
+        remainingBudget: newRemainingBudget,
+        budgetAdditions: newAdditions,
+      });
+
+      setProject((prev) => ({
+        ...prev,
+        remainingBudget: newRemainingBudget,
+        budgetAdditions: newAdditions,
+      }));
+
+      toast.success(`הוספת התקציב נמחקה והופחתו ${amountToRemove.toLocaleString()} ₪ מהתקציב`);
+      setDeleteAdditionModal({ open: false, index: null });
+    } catch (error) {
+      console.error("Error deleting addition:", error);
+      toast.error("שגיאה במחיקת הוספה");
+    } finally {
+      setAdding(false);
+    }
+  };
+
   const handleExportSalaries = async (retryCount = 0) => {
     const MAX_RETRIES = 2;
 
@@ -786,6 +925,17 @@ const ProjectDetailsPage = () => {
                   <span>{kartesetLoading ? "מוריד..." : "כרטסת"}</span>
                 </button>
 
+                {/* הוספת תקציב - לא למשתמש מוגבל */}
+                {!isSalaryProject && !isLimited && canEditInvoices() && (
+                  <button
+                    onClick={() => setBudgetAdditionOpen(true)}
+                    className="flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-emerald-500 to-green-600 text-white font-bold rounded-xl hover:from-emerald-600 hover:to-green-700 transition-all shadow-xl shadow-emerald-500/30"
+                  >
+                    <TrendingUp className="w-4 h-4" />
+                    <span>הוספת תקציב</span>
+                  </button>
+                )}
+
                 {/* הפחתת תקציב - לא למשתמש מוגבל */}
                 {!isSalaryProject && !isLimited && canEditInvoices() && (
                   <button
@@ -938,6 +1088,93 @@ const ProjectDetailsPage = () => {
         {canViewInvoices() && (
           <div className="mb-4 sm:mb-5 md:mb-6">
             <SubmittedInvoices projectId={id} projectName={project?.name} />
+          </div>
+        )}
+
+        {/* היסטוריית הוספות תקציב - לא מוצג למשתמש מוגבל */}
+        {!isSalaryProject && !isLimited && project?.budgetAdditions && project.budgetAdditions.length > 0 && (
+          <div className="relative mb-4 sm:mb-5 md:mb-6">
+            <div className="absolute -inset-2 bg-gradient-to-r from-emerald-500 via-green-500 to-teal-500 rounded-2xl sm:rounded-3xl opacity-10 blur-xl"></div>
+
+            <div className="relative bg-white/90 backdrop-blur-xl rounded-2xl sm:rounded-3xl shadow-xl shadow-emerald-500/10 border border-white/50 overflow-hidden">
+              {/* Section Header */}
+              <div className="bg-gradient-to-r from-emerald-500 via-green-500 to-teal-500 p-1">
+                <div className="bg-white/95 backdrop-blur-xl p-4">
+                  <div className="flex items-center gap-3">
+                    <div className="p-2 rounded-xl bg-gradient-to-br from-emerald-100 to-green-100">
+                      <TrendingUp className="w-5 h-5 text-emerald-600" />
+                    </div>
+                    <h2 className="text-xl font-bold text-slate-900">
+                      היסטוריית הוספות תקציב
+                    </h2>
+                    <span className="mr-auto px-3 py-1 rounded-full bg-emerald-100 text-emerald-700 text-sm font-bold">
+                      {project.budgetAdditions.length}
+                    </span>
+                  </div>
+                </div>
+              </div>
+
+              {/* Additions List */}
+              <div className="p-4 sm:p-5 md:p-6">
+                <div className="space-y-3">
+                  {project.budgetAdditions.map((addition, index) => (
+                    <div
+                      key={index}
+                      className="p-4 rounded-xl bg-gradient-to-br from-emerald-50 to-green-50 border-2 border-emerald-200"
+                    >
+                      <div className="flex items-start justify-between gap-4">
+                        <div className="flex-1">
+                          <div className="flex items-center gap-2 mb-2">
+                            <span className="font-bold text-slate-900">{addition.reason}</span>
+                            <span className="text-xs text-slate-500">
+                              ({formatDate(addition.date || addition.createdAt)})
+                            </span>
+                          </div>
+                          {addition.notes && (
+                            <p className="text-sm text-slate-600 mb-2">{addition.notes}</p>
+                          )}
+                          <p className="text-xs text-slate-500">
+                            נוסף על ידי: {addition.createdBy || "לא ידוע"}
+                          </p>
+                        </div>
+                        <div className="flex items-center gap-3">
+                          <span className="text-lg font-bold text-emerald-600">
+                            +{Number(addition.amount).toLocaleString()} ₪
+                          </span>
+                          {/* כפתורי עריכה ומחיקה */}
+                          <div className="flex gap-1">
+                            <button
+                              onClick={() => openEditAddition(index)}
+                              className="p-1.5 hover:bg-orange-100 rounded-lg transition-colors"
+                              title="עריכה"
+                            >
+                              <Edit2 className="w-4 h-4 text-orange-600" />
+                            </button>
+                            <button
+                              onClick={() => setDeleteAdditionModal({ open: true, index })}
+                              className="p-1.5 hover:bg-red-100 rounded-lg transition-colors"
+                              title="מחיקה"
+                            >
+                              <Trash2 className="w-4 h-4 text-red-600" />
+                            </button>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+
+                {/* סה"כ הוספות */}
+                <div className="mt-4 p-3 rounded-xl bg-emerald-100 border-2 border-emerald-300">
+                  <div className="flex items-center justify-between">
+                    <span className="font-bold text-emerald-800">סה"כ הוספות:</span>
+                    <span className="text-xl font-bold text-emerald-700">
+                      +{project.budgetAdditions.reduce((sum, a) => sum + Number(a.amount || 0), 0).toLocaleString()} ₪
+                    </span>
+                  </div>
+                </div>
+              </div>
+            </div>
           </div>
         )}
 
@@ -1643,6 +1880,198 @@ const ProjectDetailsPage = () => {
                     }}
                     disabled={deducting}
                     className="flex-1 px-4 py-2.5 bg-slate-100 text-slate-700 font-bold rounded-lg hover:bg-slate-200 transition-all text-sm"
+                  >
+                    ביטול
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Budget Addition Modal */}
+        {budgetAdditionOpen && (
+          <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4 overflow-y-auto" dir="rtl">
+            <div className="relative w-full max-w-md mx-auto my-8">
+              <div className="absolute -inset-4 bg-gradient-to-r from-emerald-500 to-green-500 rounded-3xl opacity-20 blur-2xl"></div>
+
+              <div className="relative bg-white rounded-2xl shadow-2xl overflow-hidden">
+                {/* Header */}
+                <div className="bg-gradient-to-r from-emerald-500 to-green-500 px-5 py-3 flex items-center justify-between">
+                  <h3 className="text-lg font-bold text-white flex items-center gap-2">
+                    <TrendingUp className="w-5 h-5" />
+                    {editAdditionIndex !== null ? "עריכת הוספת תקציב" : "הוספת תקציב"}
+                  </h3>
+                  <button
+                    onClick={() => {
+                      setBudgetAdditionOpen(false);
+                      setEditAdditionIndex(null);
+                      setBudgetAdditionData({
+                        reason: "",
+                        amount: "",
+                        date: new Date().toISOString().split("T")[0],
+                        notes: "",
+                      });
+                    }}
+                    className="p-1.5 hover:bg-white/20 rounded-full transition-colors"
+                  >
+                    <X className="w-5 h-5 text-white" />
+                  </button>
+                </div>
+
+                {/* Content */}
+                <div className="p-4 space-y-3">
+                  {/* סיבת ההוספה */}
+                  <div>
+                    <label className="block text-sm font-bold text-slate-700 mb-1">
+                      סיבת ההוספה *
+                    </label>
+                    <input
+                      type="text"
+                      value={budgetAdditionData.reason}
+                      onChange={(e) =>
+                        setBudgetAdditionData((prev) => ({
+                          ...prev,
+                          reason: e.target.value,
+                        }))
+                      }
+                      placeholder="למשל: שינוי תקציב..."
+                      className="w-full px-3 py-2 border-2 border-slate-200 rounded-lg focus:border-emerald-500 focus:outline-none transition-colors text-sm"
+                    />
+                  </div>
+
+                  {/* סכום */}
+                  <div>
+                    <label className="block text-sm font-bold text-slate-700 mb-1">
+                      סכום *
+                    </label>
+                    <div className="relative">
+                      <input
+                        type="number"
+                        value={budgetAdditionData.amount}
+                        onChange={(e) =>
+                          setBudgetAdditionData((prev) => ({
+                            ...prev,
+                            amount: e.target.value,
+                          }))
+                        }
+                        placeholder="0"
+                        className="w-full px-3 py-2 border-2 border-slate-200 rounded-lg focus:border-emerald-500 focus:outline-none transition-colors text-sm"
+                      />
+                      <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500 font-bold text-sm">
+                        ₪
+                      </span>
+                    </div>
+                    <p className="text-xs text-slate-500 mt-1">
+                      תקציב נותר: {formatCurrencyWithAlert(project?.remainingBudget)}
+                    </p>
+                  </div>
+
+                  {/* תאריך */}
+                  <div>
+                    <label className="block text-sm font-bold text-slate-700 mb-1">
+                      תאריך
+                    </label>
+                    <input
+                      type="date"
+                      value={budgetAdditionData.date}
+                      onChange={(e) =>
+                        setBudgetAdditionData((prev) => ({
+                          ...prev,
+                          date: e.target.value,
+                        }))
+                      }
+                      className="w-full px-3 py-2 border-2 border-slate-200 rounded-lg focus:border-emerald-500 focus:outline-none transition-colors text-sm"
+                    />
+                  </div>
+
+                  {/* הערות */}
+                  <div>
+                    <label className="block text-sm font-bold text-slate-700 mb-1">
+                      הערות
+                    </label>
+                    <textarea
+                      value={budgetAdditionData.notes}
+                      onChange={(e) =>
+                        setBudgetAdditionData((prev) => ({
+                          ...prev,
+                          notes: e.target.value,
+                        }))
+                      }
+                      placeholder="הערות נוספות (אופציונלי)..."
+                      rows={2}
+                      className="w-full px-3 py-2 border-2 border-slate-200 rounded-lg focus:border-emerald-500 focus:outline-none transition-colors resize-none text-sm"
+                    />
+                  </div>
+                </div>
+
+                {/* Footer */}
+                <div className="border-t bg-slate-50 px-4 py-3 flex gap-2">
+                  <button
+                    onClick={handleBudgetAddition}
+                    disabled={adding}
+                    className="flex-1 px-4 py-2.5 bg-gradient-to-r from-emerald-500 to-green-500 text-white font-bold rounded-lg hover:from-emerald-600 hover:to-green-600 transition-all shadow-lg disabled:opacity-50 text-sm"
+                  >
+                    {adding ? "מעדכן..." : editAdditionIndex !== null ? "שמור שינויים" : "הוסף תקציב"}
+                  </button>
+                  <button
+                    onClick={() => {
+                      setBudgetAdditionOpen(false);
+                      setEditAdditionIndex(null);
+                      setBudgetAdditionData({
+                        reason: "",
+                        amount: "",
+                        date: new Date().toISOString().split("T")[0],
+                        notes: "",
+                      });
+                    }}
+                    disabled={adding}
+                    className="flex-1 px-4 py-2.5 bg-slate-100 text-slate-700 font-bold rounded-lg hover:bg-slate-200 transition-all text-sm"
+                  >
+                    ביטול
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Delete Addition Confirmation Modal */}
+        {deleteAdditionModal.open && (
+          <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4" dir="rtl">
+            <div className="relative w-full max-w-sm mx-auto">
+              <div className="absolute -inset-4 bg-gradient-to-r from-emerald-500 to-green-500 rounded-3xl opacity-20 blur-2xl"></div>
+
+              <div className="relative bg-white rounded-2xl shadow-2xl p-6">
+                <div className="text-center mb-4">
+                  <div className="mx-auto w-14 h-14 rounded-full bg-gradient-to-br from-emerald-500 to-green-500 flex items-center justify-center mb-3">
+                    <Trash2 className="w-7 h-7 text-white" />
+                  </div>
+                  <h3 className="text-xl font-bold text-slate-900 mb-2">
+                    מחיקת הוספת תקציב
+                  </h3>
+                  <p className="text-slate-600 text-sm">
+                    האם למחוק את ההוספה? הסכום יופחת מתקציב הפרויקט.
+                  </p>
+                  {deleteAdditionModal.index !== null && project?.budgetAdditions?.[deleteAdditionModal.index] && (
+                    <p className="mt-2 text-lg font-bold text-emerald-600">
+                      {Number(project.budgetAdditions[deleteAdditionModal.index].amount).toLocaleString()} ₪
+                    </p>
+                  )}
+                </div>
+
+                <div className="flex gap-2">
+                  <button
+                    onClick={handleDeleteAddition}
+                    disabled={adding}
+                    className="flex-1 px-4 py-2.5 bg-gradient-to-r from-emerald-500 to-green-500 text-white font-bold rounded-lg hover:from-emerald-600 hover:to-green-600 transition-all shadow-lg disabled:opacity-50"
+                  >
+                    {adding ? "מוחק..." : "מחק"}
+                  </button>
+                  <button
+                    onClick={() => setDeleteAdditionModal({ open: false, index: null })}
+                    disabled={adding}
+                    className="flex-1 px-4 py-2.5 bg-slate-100 text-slate-700 font-bold rounded-lg hover:bg-slate-200 transition-all"
                   >
                     ביטול
                   </button>

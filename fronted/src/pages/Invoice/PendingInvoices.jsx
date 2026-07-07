@@ -286,6 +286,8 @@ function InvoiceRow({ invoice, onApprove, onReject, onSetPending, loading }) {
               </div>
               <div className="space-y-1.5 text-sm">
                 <Row label="ממלא הטופס" value={invoice.submitterName} />
+                {invoice.submitterPhone && <Row label="טלפון ממלא הטופס" value={invoice.submitterPhone} />}
+                {invoice.submitterEmail && <Row label="אימייל ממלא הטופס" value={invoice.submitterEmail} />}
                 <Row label="שם" value={invoice.supplierName} />
                 <Row label="ח.פ." value={invoice.supplierTaxId} />
                 {invoice.supplierPhone && <Row label="טלפון" value={invoice.supplierPhone} />}

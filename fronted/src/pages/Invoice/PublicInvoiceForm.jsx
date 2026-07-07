@@ -1,6 +1,9 @@
 import { useState, useRef, useEffect } from "react";
 import axios from "axios";
 import { CheckCircle, Upload, FileText, Building2, CreditCard, AlertCircle, X, Search, Briefcase, User } from "lucide-react";
+import Select from "react-select";
+import BankSelector from "../../Components/BankSelector";
+import banksData from "../../../public/data/banks_and_branches.json";
 
 const BASE_URL =
   import.meta.env.MODE === "development"
@@ -16,6 +19,8 @@ const DOCUMENT_TYPES = [
 
 const initialForm = {
   submitterName: "",
+  submitterPhone: "",
+  submitterEmail: "",
   supplierName: "",
   supplierTaxId: "",
   supplierAddress: "",
@@ -45,6 +50,14 @@ export default function PublicInvoiceForm() {
   const [selectedProject, setSelectedProject] = useState(null);
   const [projectOpen, setProjectOpen] = useState(false);
   const projectRef = useRef(null);
+
+  // בחירת בנק
+  const [banks, setBanks] = useState([]);
+  const [selectedBank, setSelectedBank] = useState(null);
+
+  useEffect(() => {
+    setBanks(banksData);
+  }, []);
 
   useEffect(() => {
     axios.get(`${BASE_URL}/pending-invoices/projects`)
@@ -128,7 +141,7 @@ export default function PublicInvoiceForm() {
           <h2 className="text-2xl font-bold text-gray-800 mb-2">הוגש בהצלחה!</h2>
           <p className="text-gray-600 mb-6">החשבונית שלך התקבלה ותיבדק בקרוב על ידי הצוות.</p>
           <button
-            onClick={() => { setForm(initialForm); setFile(null); setSelectedProject(null); setProjectSearch(""); setSubmitted(false); }}
+            onClick={() => { setForm(initialForm); setFile(null); setSelectedProject(null); setProjectSearch(""); setSelectedBank(null); setSubmitted(false); }}
             className="px-6 py-3 bg-orange-500 hover:bg-orange-600 text-white font-bold rounded-xl transition-all"
           >
             הגשת חשבונית נוספת
@@ -140,7 +153,7 @@ export default function PublicInvoiceForm() {
 
   return (
     <div dir="rtl" className="min-h-screen bg-gradient-to-br from-gray-900 via-slate-800 to-gray-900 py-10 px-4">
-      <div className="max-w-2xl mx-auto">
+      <div className="max-w-4xl mx-auto">
         {/* כותרת */}
         <div className="text-center mb-8">
           <div className="flex justify-center mb-3">
@@ -160,17 +173,40 @@ export default function PublicInvoiceForm() {
               <User className="w-5 h-5 text-orange-400" />
               <h2 className="text-lg font-bold text-white">פרטי ממלא הטופס</h2>
             </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-300 mb-1">
-                שם ממלא הטופס <span className="text-red-400">*</span>
-              </label>
-              <input
-                name="submitterName"
-                value={form.submitterName}
-                onChange={handleChange}
-                placeholder="שם מלא"
-                className="w-full px-4 py-2.5 bg-gray-700/60 border border-gray-600 rounded-xl text-white placeholder-gray-400 focus:outline-none focus:border-orange-500 transition-all"
-              />
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-300 mb-1">
+                  שם ממלא הטופס <span className="text-red-400">*</span>
+                </label>
+                <input
+                  name="submitterName"
+                  value={form.submitterName}
+                  onChange={handleChange}
+                  placeholder="שם מלא"
+                  className="w-full px-4 py-2.5 bg-gray-700/60 border border-gray-600 rounded-xl text-white placeholder-gray-400 focus:outline-none focus:border-orange-500 transition-all"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-300 mb-1">טלפון</label>
+                <input
+                  name="submitterPhone"
+                  value={form.submitterPhone}
+                  onChange={handleChange}
+                  placeholder="050-0000000"
+                  className="w-full px-4 py-2.5 bg-gray-700/60 border border-gray-600 rounded-xl text-white placeholder-gray-400 focus:outline-none focus:border-orange-500 transition-all"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-300 mb-1">אימייל</label>
+                <input
+                  name="submitterEmail"
+                  type="email"
+                  value={form.submitterEmail}
+                  onChange={handleChange}
+                  placeholder="email@example.com"
+                  className="w-full px-4 py-2.5 bg-gray-700/60 border border-gray-600 rounded-xl text-white placeholder-gray-400 focus:outline-none focus:border-orange-500 transition-all"
+                />
+              </div>
             </div>
           </div>
 
@@ -248,26 +284,77 @@ export default function PublicInvoiceForm() {
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
               <div>
                 <label className="block text-sm font-medium text-gray-300 mb-1">
-                  שם הבנק <span className="text-red-400">*</span>
+                  בנק <span className="text-red-400">*</span>
                 </label>
-                <input
-                  name="bankName"
-                  value={form.bankName}
-                  onChange={handleChange}
-                  placeholder="לדוגמה: הפועלים"
-                  className="w-full px-4 py-2.5 bg-gray-700/60 border border-gray-600 rounded-xl text-white placeholder-gray-400 focus:outline-none focus:border-orange-500 transition-all"
+                <BankSelector
+                  banks={banks}
+                  selectedBank={selectedBank}
+                  onChange={(bank) => {
+                    setSelectedBank(bank);
+                    setForm((prev) => ({ ...prev, bankName: bank?.bankName || "", bankBranch: "" }));
+                  }}
+                  placeholder="בחר בנק..."
                 />
               </div>
               <div>
                 <label className="block text-sm font-medium text-gray-300 mb-1">
-                  מספר סניף <span className="text-red-400">*</span>
+                  סניף <span className="text-red-400">*</span>
                 </label>
-                <input
-                  name="bankBranch"
-                  value={form.bankBranch}
-                  onChange={handleChange}
-                  placeholder="למשל: 123"
-                  className="w-full px-4 py-2.5 bg-gray-700/60 border border-gray-600 rounded-xl text-white placeholder-gray-400 focus:outline-none focus:border-orange-500 transition-all"
+                <Select
+                  options={(selectedBank?.branches || []).map((branch) => ({
+                    value: branch.branchCode,
+                    label: `${branch.branchCode} - ${branch.city} - ${branch.address}`,
+                    branchCode: branch.branchCode,
+                    city: branch.city,
+                    address: branch.address,
+                  }))}
+                  value={
+                    (selectedBank?.branches || [])
+                      .map((branch) => ({
+                        value: branch.branchCode,
+                        label: `${branch.branchCode} - ${branch.city} - ${branch.address}`,
+                      }))
+                      .find((opt) => opt.value === form.bankBranch) || null
+                  }
+                  onChange={(selected) =>
+                    setForm((prev) => ({ ...prev, bankBranch: selected?.value || "" }))
+                  }
+                  isDisabled={!selectedBank}
+                  isClearable
+                  isSearchable
+                  placeholder={selectedBank ? "בחר סניף..." : "בחר קודם בנק"}
+                  noOptionsMessage={() => "אין סניפים"}
+                  filterOption={(option, inputValue) => {
+                    if (!inputValue) return true;
+                    const search = inputValue.toLowerCase();
+                    return (
+                      option.data.branchCode.toLowerCase().includes(search) ||
+                      option.data.city.toLowerCase().includes(search) ||
+                      option.data.address.toLowerCase().includes(search)
+                    );
+                  }}
+                  menuPortalTarget={document.body}
+                  menuPosition="fixed"
+                  styles={{
+                    control: (provided) => ({
+                      ...provided,
+                      minHeight: 48,
+                      borderWidth: "2px",
+                      borderColor: "#e2e8f0",
+                      borderRadius: "12px",
+                      boxShadow: "none",
+                      "&:hover": { borderColor: "#f59e0b" },
+                    }),
+                    menuPortal: (base) => ({ ...base, zIndex: 999999 }),
+                    menu: (provided) => ({ ...provided, zIndex: 999999, borderRadius: 12, overflow: "hidden" }),
+                    option: (provided, state) => ({
+                      ...provided,
+                      fontSize: "14px",
+                      padding: "10px 14px",
+                      backgroundColor: state.isFocused ? "#fff7e6" : "white",
+                      color: "#334155",
+                    }),
+                  }}
                 />
               </div>
               <div>

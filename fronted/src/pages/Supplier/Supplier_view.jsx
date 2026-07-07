@@ -22,6 +22,8 @@ import {
   Square,
   Sparkles,
   ArrowUpDown,
+  Power,
+  PowerOff,
 } from "lucide-react";
 import api from "../../api/api.js";
 import { toast } from "sonner";
@@ -45,6 +47,7 @@ const SuppliersPage = () => {
     hasEmail: "all",
     businessTaxRange: { min: "", max: "" },
     supplierType: "all", // 🆕
+    status: "all", // 🆕 פעיל / לא פעיל
   });
 
   const [exportColumns, setExportColumns] = useState({
@@ -61,6 +64,7 @@ const SuppliersPage = () => {
     invoicesIds: false,
     createdAt: true,
     supplierType: true, // 🆕
+    isActive: true, // 🆕
   });
 
   const navigate = useNavigate();
@@ -90,6 +94,7 @@ const SuppliersPage = () => {
     { key: "invoicesCount", label: "מס׳ חשבוניות" },
     { key: "invoicesIds", label: "מזהי חשבוניות" },
     { key: "createdAt", label: "תאריך יצירה" },
+    { key: "isActive", label: "סטטוס" }, // 🆕
   ];
 
   const filteredSuppliers = React.useMemo(() => {
@@ -188,6 +193,14 @@ const SuppliersPage = () => {
       });
     }
 
+    // 🆕 פילטר סטטוס פעיל / לא פעיל
+    if (advancedFilters.status !== "all") {
+      filtered = filtered.filter((s) => {
+        const active = s.isActive !== false;
+        return advancedFilters.status === "active" ? active : !active;
+      });
+    }
+
     return filtered;
   }, [suppliers, searchTerm, advancedFilters]);
   const sortedSuppliers = React.useMemo(() => {
@@ -233,6 +246,7 @@ const SuppliersPage = () => {
       invoicesCount: "מס׳ חשבוניות",
       invoicesIds: "מזהי חשבוניות",
       createdAt: "תאריך יצירה",
+      isActive: "סטטוס", // 🆕
     };
 
     const selectedColumns = Object.keys(exportColumns).filter(
@@ -308,6 +322,9 @@ const SuppliersPage = () => {
           case "createdAt":
             row[columnMapping.createdAt] = formatSupplierDate(s);
             break;
+          case "isActive":
+            row[columnMapping.isActive] = s?.isActive === false ? "לא פעיל" : "פעיל";
+            break;
           default:
             break;
         }
@@ -339,6 +356,7 @@ const SuppliersPage = () => {
       hasEmail: "all",
       businessTaxRange: { min: "", max: "" },
       supplierType: "all", // 🆕
+      status: "all", // 🆕
     });
     setSearchTerm("");
   }, []);
@@ -425,6 +443,23 @@ const SuppliersPage = () => {
       toast.error("שגיאה במחיקת ספק", { className: "sonner-toast error rtl" });
     }
   }, [supplierToDelete]);
+
+  const handleToggleActive = useCallback(async (supplier) => {
+    const nextActive = supplier.isActive === false;
+    try {
+      await api.put(`/suppliers/${supplier._id}`, { isActive: nextActive });
+      const patch = (list) =>
+        list.map((s) => (s._id === supplier._id ? { ...s, isActive: nextActive } : s));
+      setSuppliers(patch);
+      setAllSuppliers(patch);
+      toast.success(nextActive ? "הספק סומן כפעיל" : "הספק סומן כלא פעיל", {
+        className: "sonner-toast success rtl",
+      });
+    } catch (error) {
+      console.error("Error toggling supplier status:", error);
+      toast.error("שגיאה בעדכון סטטוס הספק", { className: "sonner-toast error rtl" });
+    }
+  }, []);
 
   const handleEdit = useCallback((id) => navigate(`/update-supplier/${id}`), [navigate]);
   const handleView = useCallback((id) => navigate(`/suppliers/${id}`), [navigate]);
@@ -562,6 +597,7 @@ return (
             advancedFilters.hasBankDetails !== "all" ||
             advancedFilters.hasEmail !== "all" ||
             advancedFilters.supplierType !== "all" ||
+            advancedFilters.status !== "all" ||
             advancedFilters.businessTaxRange.min ||
             advancedFilters.businessTaxRange.max) && (
             <button
@@ -640,6 +676,27 @@ return (
               <option value="invoices">חשבוניות בלבד</option>
               <option value="orders">הזמנות בלבד</option>
               <option value="both">שניהם</option>
+            </select>
+          </div>
+
+          {/* סטטוס ספק */}
+          <div>
+            <label className="flex items-center gap-2 text-sm font-semibold text-gray-700 mb-2">
+              <Power className="w-4 h-4 text-teal-600" /> סטטוס:
+            </label>
+            <select
+              value={advancedFilters.status}
+              onChange={(e) =>
+                setAdvancedFilters((prev) => ({
+                  ...prev,
+                  status: e.target.value,
+                }))
+              }
+              className="w-full px-4 py-3 bg-white border-2 border-teal-200 rounded-xl focus:border-teal-500 focus:outline-none focus:ring-2 focus:ring-teal-200 transition-all font-medium cursor-pointer"
+            >
+              <option value="all">הכל</option>
+              <option value="active">פעיל</option>
+              <option value="inactive">לא פעיל</option>
             </select>
           </div>
 
@@ -743,8 +800,8 @@ return (
                   style={{
                     display: "grid",
                     gridTemplateColumns: isAdmin
-                      ? "1.5fr 1fr 1fr 1fr 1.5fr 1.5fr 1.2fr"
-                      : "1.5fr 1fr 1fr 1fr 1.5fr 1.5fr 0.8fr",
+                      ? "1.3fr 0.9fr 0.9fr 0.8fr 0.9fr 1.3fr 1.3fr 1.2fr"
+                      : "1.3fr 0.9fr 0.9fr 0.8fr 0.9fr 1.3fr 1.3fr 0.8fr",
                   }}
                 >
                   <th className="px-4 py-4 text-sm font-bold text-center text-white">
@@ -755,6 +812,9 @@ return (
                   </th>
                   <th className="px-4 py-4 text-sm font-bold text-center text-white">
                     סוג ספק
+                  </th>
+                  <th className="px-4 py-4 text-sm font-bold text-center text-white">
+                    סטטוס
                   </th>
                   <th className="px-4 py-4 text-sm font-bold text-center text-white">
                     טלפון
@@ -777,13 +837,15 @@ return (
                     key={supplier._id}
                     onClick={() => handleView(supplier._id)}
                     className={`cursor-pointer border-t border-orange-100 hover:bg-orange-50 transition-colors ${
-                      index % 2 === 0 ? 'bg-white' : 'bg-orange-50/30'
+                      supplier.isActive === false
+                        ? 'bg-gray-100/70 opacity-70'
+                        : index % 2 === 0 ? 'bg-white' : 'bg-orange-50/30'
                     }`}
                     style={{
                       display: "grid",
                       gridTemplateColumns: isAdmin
-                        ? "1.5fr 1fr 1fr 1fr 1.5fr 1.5fr 1.2fr"
-                        : "1.5fr 1fr 1fr 1fr 1.5fr 1.5fr 0.8fr",
+                        ? "1.3fr 0.9fr 0.9fr 0.8fr 0.9fr 1.3fr 1.3fr 1.2fr"
+                        : "1.3fr 0.9fr 0.9fr 0.8fr 0.9fr 1.3fr 1.3fr 0.8fr",
                     }}
                   >
                     <td className="px-4 py-4 text-sm font-bold text-center text-slate-900">
@@ -809,6 +871,18 @@ return (
                       ) : (
                         <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-bold bg-gray-100 text-gray-500 border border-gray-200">
                           ❓ לא הוגדר
+                        </span>
+                      )}
+                    </td>
+
+                    <td className="px-4 py-4 text-center">
+                      {supplier.isActive === false ? (
+                        <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-bold bg-red-100 text-red-700 border border-red-200">
+                          ⛔ לא פעיל
+                        </span>
+                      ) : (
+                        <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-bold bg-emerald-100 text-emerald-700 border border-emerald-200">
+                          ✅ פעיל
                         </span>
                       )}
                     </td>
@@ -854,6 +928,24 @@ return (
                         >
                           <Edit2 className="w-5 h-5" />
                         </button>
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleToggleActive(supplier);
+                          }}
+                          className={`p-2 rounded-lg transition-colors ${
+                            supplier.isActive === false
+                              ? "text-emerald-600 hover:bg-emerald-100"
+                              : "text-gray-600 hover:bg-gray-200"
+                          }`}
+                          title={supplier.isActive === false ? "הפעל ספק" : "השבת ספק"}
+                        >
+                          {supplier.isActive === false ? (
+                            <Power className="w-5 h-5" />
+                          ) : (
+                            <PowerOff className="w-5 h-5" />
+                          )}
+                        </button>
                         {isAdmin && (
                           <button
                             onClick={(e) => {
@@ -881,7 +973,11 @@ return (
               <div
                 key={supplier._id}
                 onClick={() => handleView(supplier._id)}
-                className="bg-white/90 backdrop-blur-xl rounded-xl shadow-lg hover:shadow-xl transition-all border border-orange-100 p-4 cursor-pointer active:scale-98"
+                className={`bg-white/90 backdrop-blur-xl rounded-xl shadow-lg hover:shadow-xl transition-all border p-4 cursor-pointer active:scale-98 ${
+                  supplier.isActive === false
+                    ? "border-gray-200 opacity-70"
+                    : "border-orange-100"
+                }`}
               >
                 {/* Header - Supplier Name */}
                 <div className="flex items-center justify-between mb-3 pb-3 border-b border-orange-100">
@@ -896,8 +992,17 @@ return (
                       </div>
                     </div>
                   </div>
-                  {/* Supplier Type Badge */}
-                  <div>
+                  {/* Badges */}
+                  <div className="flex flex-col items-end gap-1">
+                    {supplier.isActive === false ? (
+                      <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-bold bg-red-100 text-red-700 border border-red-200">
+                        ⛔ לא פעיל
+                      </span>
+                    ) : (
+                      <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-bold bg-emerald-100 text-emerald-700 border border-emerald-200">
+                        ✅ פעיל
+                      </span>
+                    )}
                     {supplier.supplierType === "invoices" ? (
                       <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-bold bg-blue-100 text-blue-700 border border-blue-200">
                         📄 חשבוניות
@@ -985,6 +1090,23 @@ return (
                   >
                     <Edit2 className="w-4 h-4" />
                     <span>עריכה</span>
+                  </button>
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      handleToggleActive(supplier);
+                    }}
+                    className={`px-4 py-2 rounded-lg transition-colors text-white ${
+                      supplier.isActive === false
+                        ? "bg-emerald-500 hover:bg-emerald-600"
+                        : "bg-gray-500 hover:bg-gray-600"
+                    }`}
+                  >
+                    {supplier.isActive === false ? (
+                      <Power className="w-4 h-4" />
+                    ) : (
+                      <PowerOff className="w-4 h-4" />
+                    )}
                   </button>
                   {isAdmin && (
                     <button

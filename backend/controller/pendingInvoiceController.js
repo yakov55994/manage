@@ -22,7 +22,7 @@ const pendingInvoiceController = {
   submitPublicInvoice: async (req, res) => {
     try {
       const {
-        submitterName,
+        submitterName, submitterPhone, submitterEmail,
         supplierName, supplierTaxId, supplierAddress, supplierPhone, supplierEmail,
         bankName, bankBranch, bankAccount,
         projectId, projectName,
@@ -59,6 +59,8 @@ const pendingInvoiceController = {
 
       const pendingInvoice = new PendingInvoice({
         submitterName: submitterName.trim(),
+        submitterPhone: submitterPhone?.trim() || "",
+        submitterEmail: submitterEmail?.trim() || "",
         supplierName: supplierName.trim(),
         supplierTaxId: supplierTaxId.trim(),
         supplierAddress: supplierAddress?.trim() || "",

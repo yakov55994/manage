@@ -43,6 +43,12 @@ const supplierSchema = new mongoose.Schema(
       type: String,
       enum: ["invoices", "orders", "both"],
       default: "both",
+    },
+
+    // 🆕 ספק פעיל / לא פעיל
+    isActive: {
+      type: Boolean,
+      default: true,
     }
   },
   { timestamps: true }  // ✅ כאן! מחוץ לאובייקט השדות

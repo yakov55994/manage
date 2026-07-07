@@ -46,7 +46,7 @@ export default {
     return suppliers;
   },
 
-  async getAllSuppliers(type = null) {
+  async getAllSuppliers(type = null, activeOnly = false) {
     const query = {};
 
     if (type && type !== "all" && type !== "both") {
@@ -54,6 +54,10 @@ export default {
         { supplierType: type },   // למשל "orders"
         { supplierType: "both" }, // ספקים שמשרתים את שני הסוגים
       ];
+    }
+
+    if (activeOnly) {
+      query.isActive = { $ne: false };
     }
 
     return Supplier.find(query);

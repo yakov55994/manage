@@ -21,6 +21,8 @@ import {
   AlertCircle,
   FileText,
   ExternalLink,
+  Power,
+  PowerOff,
 } from "lucide-react";
 import { toast } from "sonner";
 import CreatorInfo from '../../Components/CreatorInfo';
@@ -74,6 +76,23 @@ const SupplierDetailsPage = () => {
 
 
 
+
+  const handleToggleActive = async () => {
+    if (!supplier) return;
+    const nextActive = supplier.isActive === false;
+    try {
+      await api.put(`/suppliers/${id}`, { isActive: nextActive });
+      setSupplier((prev) => ({ ...prev, isActive: nextActive }));
+      toast.success(nextActive ? "הספק סומן כפעיל" : "הספק סומן כלא פעיל", {
+        className: "sonner-toast success rtl",
+      });
+    } catch (err) {
+      console.error("Error toggling supplier status:", err);
+      toast.error("שגיאה בעדכון סטטוס הספק", {
+        className: "sonner-toast error rtl",
+      });
+    }
+  };
 
   const handleExportKarteset = async () => {
     try {
@@ -243,6 +262,15 @@ const SupplierDetailsPage = () => {
                     <span className="text-sm font-medium text-slate-600">
                       {supplier.name}
                     </span>
+                    {supplier.isActive === false ? (
+                      <span className="inline-flex items-center gap-1 px-3 py-1 rounded-full text-xs font-bold bg-red-100 text-red-700 border border-red-200">
+                        ⛔ לא פעיל
+                      </span>
+                    ) : (
+                      <span className="inline-flex items-center gap-1 px-3 py-1 rounded-full text-xs font-bold bg-emerald-100 text-emerald-700 border border-emerald-200">
+                        ✅ פעיל
+                      </span>
+                    )}
                   </div>
                 </div>
               </div>
@@ -262,6 +290,21 @@ const SupplierDetailsPage = () => {
                 >
                   <Edit2 className="w-4 h-4" />
                   <span>עריכת ספק</span>
+                </button>
+                <button
+                  onClick={handleToggleActive}
+                  className={`flex items-center gap-2 px-6 py-3 font-bold rounded-xl transition-all shadow-xl ${
+                    supplier.isActive === false
+                      ? "bg-gradient-to-r from-emerald-600 to-green-600 text-white shadow-emerald-500/30"
+                      : "bg-gradient-to-r from-gray-500 to-gray-600 text-white shadow-gray-500/30"
+                  }`}
+                >
+                  {supplier.isActive === false ? (
+                    <Power className="w-4 h-4" />
+                  ) : (
+                    <PowerOff className="w-4 h-4" />
+                  )}
+                  <span>{supplier.isActive === false ? "הפעל ספק" : "השבת ספק"}</span>
                 </button>
                 <button
                   onClick={handleExportKarteset}

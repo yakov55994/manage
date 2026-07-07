@@ -13,6 +13,8 @@ const PendingInvoiceFileSchema = new mongoose.Schema({
 const pendingInvoiceSchema = new mongoose.Schema({
   // שם ממלא הטופס (יוכנס כ"שם המזמין" בחשבונית שתיווצר)
   submitterName: { type: String, required: true },
+  submitterPhone: { type: String, default: "" },
+  submitterEmail: { type: String, default: "" },
 
   // פרטי ספק
   supplierName: { type: String, required: true },

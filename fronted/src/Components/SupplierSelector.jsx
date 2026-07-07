@@ -96,8 +96,12 @@ useEffect(() => {
     }
   }
 }, [suppliers]);
-  // סינון ספקים לפי חיפוש
+  // סינון ספקים לפי חיפוש - מסתיר ספקים לא פעילים (מלבד הספק שכבר נבחר)
   const filteredSuppliers = (suppliers || []).filter((supplier) => {
+    const isSelected =
+      value && (supplier?._id === value || supplier?.name === value);
+    if (supplier?.isActive === false && !isSelected) return false;
+
     const name = String(supplier?.name ?? "").toLowerCase();
     const email = String(supplier?.email ?? "").toLowerCase();
     const tax = String(supplier?.business_tax ?? "");

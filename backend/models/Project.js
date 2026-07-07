@@ -39,6 +39,15 @@ const projectSchema = new mongoose.Schema({
     notes: { type: String },
     createdAt: { type: Date, default: Date.now },
     createdBy: { type: String }
+  }],
+  // היסטוריית הוספות תקציב
+  budgetAdditions: [{
+    reason: { type: String, required: true },
+    amount: { type: Number, required: true },
+    date: { type: Date, default: Date.now },
+    notes: { type: String },
+    createdAt: { type: Date, default: Date.now },
+    createdBy: { type: String }
   }]
 });
 

@@ -20,7 +20,8 @@ const supplierController = {
   async getAllSuppliers(req, res) {
     try {
       const type = req.query.type; // 🆕 'invoices' | 'orders' | 'both' | null
-      const suppliers = await supplierService.getAllSuppliers(type);
+      const activeOnly = req.query.activeOnly === "true";
+      const suppliers = await supplierService.getAllSuppliers(type, activeOnly);
       res.json({ success: true, data: suppliers });
     } catch (err) {
       saveLog({ type: 'error', message: `שגיאה בשליפת ספקים — ${err.message}`, username: req.user?.username || req.user?.name, userId: req.user?._id, ip: getIp(req) });
@@ -40,7 +41,8 @@ const supplierController = {
   async getSuppliers(req, res) {
   try {
     const type = req.query.type || null;  // ⬅ שלוף את type מה-URL
-    const suppliers = await supplierService.getAllSuppliers(type);
+    const activeOnly = req.query.activeOnly === "true";
+    const suppliers = await supplierService.getAllSuppliers(type, activeOnly);
     res.json({ success: true, data: suppliers });
   } catch (e) {
     sendError(res, e);

@@ -17,6 +17,8 @@ import {
   AlertCircle,
   CheckCircle,
   X,
+  Power,
+  PowerOff,
 } from "lucide-react";
 import banksData from "../../../public/data/banks_and_branches.json";
 import Select from "react-select";
@@ -30,6 +32,7 @@ const SupplierEditPage = () => {
     phone: "",
     email: "",
     supplierType: "", // 🆕 הוסף את זה!
+    isActive: true, // 🆕 סטטוס פעיל
 
     bankDetails: {
       bankName: "",
@@ -66,6 +69,7 @@ const SupplierEditPage = () => {
           phone: supplierData.phone || "",
           email: supplierData.email || "",
           supplierType: supplierData.supplierType || "", // 🆕 הוסף
+          isActive: supplierData.isActive !== false, // 🆕
 
           bankDetails: {
             bankName: supplierData.bankDetails?.bankName || "",
@@ -169,6 +173,7 @@ const SupplierEditPage = () => {
         address: supplier.address?.trim() || undefined,
         email: supplier.email?.trim() || undefined,
         supplierType: supplier.supplierType, // 🆕 הוסף
+        isActive: supplier.isActive, // 🆕
       };
 
       const { bankName, branchNumber, accountNumber } = supplier.bankDetails;
@@ -347,6 +352,42 @@ const SupplierEditPage = () => {
                   <option value="orders">הזמנות בלבד</option>
                   <option value="both">שניהם</option>
                 </select>
+              </div>
+
+              {/* 🆕 סטטוס ספק - פעיל / לא פעיל */}
+              <div className="space-y-2">
+                <label className="flex items-center gap-2 text-sm font-semibold text-gray-700">
+                  <div className={`p-1.5 rounded-lg ${supplier.isActive ? "bg-emerald-100" : "bg-red-100"}`}>
+                    {supplier.isActive ? (
+                      <Power className="w-4 h-4 text-emerald-600" />
+                    ) : (
+                      <PowerOff className="w-4 h-4 text-red-600" />
+                    )}
+                  </div>
+                  סטטוס ספק
+                </label>
+                <button
+                  type="button"
+                  onClick={() => handleInputChange("isActive", !supplier.isActive)}
+                  className={`w-full flex items-center justify-between px-4 py-3 rounded-xl border-2 font-bold transition-all ${
+                    supplier.isActive
+                      ? "bg-gradient-to-br from-emerald-50 to-green-50 border-emerald-300 text-emerald-700"
+                      : "bg-gradient-to-br from-red-50 to-rose-50 border-red-300 text-red-700"
+                  }`}
+                >
+                  <span>{supplier.isActive ? "ספק פעיל" : "ספק לא פעיל"}</span>
+                  <span
+                    className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
+                      supplier.isActive ? "bg-emerald-500" : "bg-gray-300"
+                    }`}
+                  >
+                    <span
+                      className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
+                        supplier.isActive ? "-translate-x-1" : "-translate-x-6"
+                      }`}
+                    />
+                  </span>
+                </button>
               </div>
 
               {/* כתובת */}

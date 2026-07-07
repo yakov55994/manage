@@ -1,0 +1,9 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(node --check models/Supplier.js)",
+      "Bash(node --check services/SupplierService.js)",
+      "Bash(node --check controller/SupplierController.js)"
+    ]
+  }
+}
