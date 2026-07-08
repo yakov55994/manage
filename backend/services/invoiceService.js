@@ -1074,6 +1074,57 @@ async function updatePaymentStatus(
 }
 
 // ===============================================
+// עדכון סטטוס הגשה (חשבונית בודדת) – ללא צורך לערוך את כל החשבונית
+// ===============================================
+async function updateSubmissionStatus(user, invoiceId, status, submittedToProjectId, submittedAt) {
+  if (!["הוגש", "לא הוגש", "בעיבוד"].includes(status)) {
+    throw new Error("סטטוס הגשה לא תקין");
+  }
+
+  const updateData = { status };
+  const unsetData = {};
+
+  if (status === "הוגש") {
+    if (!submittedToProjectId) {
+      throw new Error("חובה לבחור פרויקט להגשה");
+    }
+    updateData.submittedToProjectId = submittedToProjectId;
+    updateData.submittedAt = submittedAt || new Date();
+  } else {
+    unsetData.submittedToProjectId = "";
+    unsetData.submittedAt = "";
+  }
+
+  const statusText = status === "הוגש" ? "הוגש" : status === "בעיבוד" ? "בעיבוד" : "לא הוגש";
+  let changes = `סטטוס הגשה שונה ל: ${statusText}`;
+  if (status === "הוגש" && submittedAt) {
+    changes += `, תאריך הגשה: ${new Date(submittedAt).toLocaleDateString("he-IL")}`;
+  }
+
+  const updatedInvoice = await Invoice.findByIdAndUpdate(
+    invoiceId,
+    {
+      ...updateData,
+      ...(Object.keys(unsetData).length ? { $unset: unsetData } : {}),
+      $push: {
+        editHistory: {
+          userId: user._id,
+          userName: user.username || user.name,
+          action: "status_changed",
+          changes,
+          timestamp: new Date(),
+        },
+      },
+    },
+    { new: true }
+  ).populate("submittedToProjectId", "name");
+
+  if (!updatedInvoice) throw new Error("חשבונית לא נמצאה");
+
+  return updatedInvoice;
+}
+
+// ===============================================
 // DELETE
 // ===============================================
 async function deleteInvoice(user, invoiceId) {
@@ -1111,6 +1162,7 @@ export default {
   createInvoice,
   updateInvoice,
   updatePaymentStatus,
+  updateSubmissionStatus,
   deleteInvoice,
   moveInvoice,
 };

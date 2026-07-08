@@ -30,6 +30,8 @@ import {
   RefreshCw,
   ArrowLeftRight,
   Upload,
+  CheckSquare,
+  X,
 } from "lucide-react";
 
 import { useAuth } from "../../context/AuthContext.jsx";
@@ -44,6 +46,14 @@ const InvoiceDetailsPage = () => {
   const [deleting, setDeleting] = useState(false);
   const [linkedExpenses, setLinkedExpenses] = useState([]);
   const [linkedIncomes, setLinkedIncomes] = useState([]);
+
+  const [projects, setProjects] = useState([]);
+  const [showSubmissionModal, setShowSubmissionModal] = useState(false);
+  const [submissionProjectId, setSubmissionProjectId] = useState("");
+  const [submissionDate, setSubmissionDate] = useState(
+    new Date().toISOString().split("T")[0]
+  );
+  const [submittingStatus, setSubmittingStatus] = useState(false);
 
   const { user, isAdmin } = useAuth();
 
@@ -148,6 +158,62 @@ const InvoiceDetailsPage = () => {
     return new Date(date).toLocaleDateString("he-IL");
   };
 
+  const openSubmissionModal = async () => {
+    setSubmissionProjectId(invoice.submittedToProjectId?._id || "");
+    setSubmissionDate(new Date().toISOString().split("T")[0]);
+    setShowSubmissionModal(true);
+
+    if (projects.length === 0) {
+      try {
+        const res = await api.get("/projects");
+        setProjects(res.data?.data || []);
+      } catch (err) {
+        console.error(err);
+        toast.error("שגיאה בטעינת רשימת הפרויקטים");
+      }
+    }
+  };
+
+  const handleConfirmSubmission = async () => {
+    if (!submissionProjectId) {
+      toast.error("יש לבחור פרויקט");
+      return;
+    }
+
+    try {
+      setSubmittingStatus(true);
+      const res = await api.put(`/invoices/${invoice._id}/submission-status`, {
+        status: "הוגש",
+        submittedToProjectId: submissionProjectId,
+        submittedAt: submissionDate,
+      });
+      setInvoice(res.data?.data || res.data);
+      toast.success("החשבונית סומנה כהוגשה");
+      setShowSubmissionModal(false);
+    } catch (err) {
+      console.error(err);
+      toast.error(err?.response?.data?.error || "שגיאה בסימון החשבונית כהוגשה");
+    } finally {
+      setSubmittingStatus(false);
+    }
+  };
+
+  const handleCancelSubmission = async () => {
+    try {
+      setSubmittingStatus(true);
+      const res = await api.put(`/invoices/${invoice._id}/submission-status`, {
+        status: "לא הוגש",
+      });
+      setInvoice(res.data?.data || res.data);
+      toast.success("הגשת החשבונית בוטלה");
+    } catch (err) {
+      console.error(err);
+      toast.error(err?.response?.data?.error || "שגיאה בביטול ההגשה");
+    } finally {
+      setSubmittingStatus(false);
+    }
+  };
+
   const handleDelete = async () => {
     if (!invoice?._id) return;
 
@@ -217,6 +283,16 @@ const InvoiceDetailsPage = () => {
                       מילגה 🎓
                     </span>
                   )}
+                  {invoice.status === "הוגש" ? (
+                    <span className="inline-flex items-center gap-1 px-3 py-1.5 rounded-full text-base font-bold bg-gradient-to-r from-emerald-500 to-green-600 text-white shadow-lg">
+                      <CheckSquare className="w-4 h-4" />
+                      הוגש
+                    </span>
+                  ) : (
+                    <span className="inline-flex items-center gap-1 px-3 py-1.5 rounded-full text-base font-bold bg-slate-200 text-slate-600">
+                      לא הוגש
+                    </span>
+                  )}
                 </h1>
 
                 <div className="flex gap-3 sm:gap-4 mt-6">
@@ -248,6 +324,28 @@ const InvoiceDetailsPage = () => {
                       <Trash2 className="inline-block w-4 h-4 ml-1" />
                       מחיקה
                     </button>
+                  )}
+
+                  {/* כפתור סימון הגשה - לא מוצג לרואת חשבון */}
+                  {user?.role !== "accountant" && (
+                    invoice.status === "הוגש" ? (
+                      <button
+                        onClick={handleCancelSubmission}
+                        disabled={submittingStatus}
+                        className="px-6 py-3 rounded-xl bg-slate-600 text-white font-bold shadow disabled:opacity-50"
+                      >
+                        <CheckSquare className="inline-block w-4 h-4 ml-1" />
+                        ביטול הגשה
+                      </button>
+                    ) : (
+                      <button
+                        onClick={openSubmissionModal}
+                        className="px-6 py-3 rounded-xl bg-gradient-to-br from-orange-500 to-amber-600 text-white font-bold shadow"
+                      >
+                        <CheckSquare className="inline-block w-4 h-4 ml-1" />
+                        סמן כהוגש לפרויקט
+                      </button>
+                    )
                   )}
                 </div>
               </div>
@@ -630,6 +728,64 @@ const InvoiceDetailsPage = () => {
             </div>
           )
         }
+
+        {/* SUBMISSION MODAL */}
+        {showSubmissionModal && (
+          <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+            <div className="bg-white rounded-2xl shadow-2xl max-w-md w-full">
+              <div className="p-6 border-b border-slate-200 flex items-center justify-between">
+                <h2 className="text-xl font-bold text-slate-900">סמן חשבונית כהוגשה</h2>
+                <button onClick={() => setShowSubmissionModal(false)}>
+                  <X className="w-5 h-5 text-slate-400" />
+                </button>
+              </div>
+
+              <div className="p-6 space-y-4">
+                <div>
+                  <label className="font-bold mb-2 block text-slate-700">בחר פרויקט:</label>
+                  <select
+                    className="w-full p-3 border border-slate-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-orange-500"
+                    value={submissionProjectId}
+                    onChange={(e) => setSubmissionProjectId(e.target.value)}
+                  >
+                    <option value="">בחר פרויקט...</option>
+                    {projects.map((p) => (
+                      <option key={p._id} value={p._id}>
+                        {p.name}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                <div>
+                  <label className="font-bold mb-2 block text-slate-700">תאריך הגשה:</label>
+                  <input
+                    type="date"
+                    className="w-full p-3 border border-slate-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-orange-500"
+                    value={submissionDate}
+                    onChange={(e) => setSubmissionDate(e.target.value)}
+                  />
+                </div>
+              </div>
+
+              <div className="p-6 border-t border-slate-200 flex gap-3">
+                <button
+                  onClick={handleConfirmSubmission}
+                  disabled={submittingStatus}
+                  className="flex-1 py-3 bg-gradient-to-br from-orange-500 to-amber-600 text-white font-bold rounded-xl disabled:opacity-50"
+                >
+                  {submittingStatus ? "שומר..." : "אישור"}
+                </button>
+                <button
+                  onClick={() => setShowSubmissionModal(false)}
+                  className="flex-1 py-3 bg-slate-200 text-slate-700 font-bold rounded-xl"
+                >
+                  ביטול
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
       </div >
     </div >
   );

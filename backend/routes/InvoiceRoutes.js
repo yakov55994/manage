@@ -91,6 +91,9 @@ router.put("/:id/move", protect, checkAccess("invoices", "edit"), invoiceControl
 // 📌 עדכון סטטוס תשלום — משתמש ב־:id (מתוקן!)
 router.put("/:id/status", protect, checkAccess("invoices", "edit"), invoiceController.updatePaymentStatus);
 
+// 📌 עדכון סטטוס הגשה לחשבונית בודדת
+router.put("/:id/submission-status", protect, checkAccess("invoices", "edit"), invoiceController.updateSubmissionStatus);
+
 // 📎 הוספת קבצים לחשבונית
 router.put("/:id/files", protect, checkAccess("invoices", "edit"), invoiceController.addFilesToInvoice);
 

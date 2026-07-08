@@ -172,6 +172,9 @@ const InvoicesPage = () => {
   const [bulkCheckNumber, setBulkCheckNumber] = useState("");
   const [bulkCheckDate, setBulkCheckDate] = useState("");
   const [documentStatusFilter, setDocumentStatusFilter] = useState([]);
+  const [rowSubmissionModal, setRowSubmissionModal] = useState({ open: false, invoice: null });
+  const [rowSubmissionProjectId, setRowSubmissionProjectId] = useState("");
+  const [rowSubmissionDate, setRowSubmissionDate] = useState(new Date().toISOString().slice(0, 10));
 
   const { user, isAdmin, isLimited, canEditModule, canViewModule } = useAuth();
   const isAccountant = user?.role === "accountant";
@@ -1906,6 +1909,64 @@ const InvoicesPage = () => {
     }
   };
 
+  const openRowSubmissionModal = (invoice) => {
+    setRowSubmissionProjectId(invoice.submittedToProjectId?._id || invoice.submittedToProjectId || "");
+    setRowSubmissionDate(new Date().toISOString().slice(0, 10));
+    setRowSubmissionModal({ open: true, invoice });
+  };
+
+  const handleConfirmRowSubmission = async () => {
+    const invoice = rowSubmissionModal.invoice;
+    if (!invoice) return;
+
+    if (!rowSubmissionProjectId) {
+      toast.error("יש לבחור פרויקט", { className: "sonner-toast error rtl" });
+      return;
+    }
+
+    try {
+      const response = await api.put(`/invoices/${invoice._id}/submission-status`, {
+        status: "הוגש",
+        submittedToProjectId: rowSubmissionProjectId,
+        submittedAt: rowSubmissionDate,
+      });
+
+      const updatedInvoice = response.data?.data || response.data;
+
+      setInvoices(prev => prev.map(inv => (inv._id === invoice._id ? updatedInvoice : inv)));
+      setAllInvoices(prev => prev.map(inv => (inv._id === invoice._id ? updatedInvoice : inv)));
+
+      toast.success("החשבונית סומנה כהוגש", { className: "sonner-toast success rtl" });
+      setRowSubmissionModal({ open: false, invoice: null });
+    } catch (error) {
+      console.error(error);
+      toast.error(error?.response?.data?.error || "שגיאה בעדכון סטטוס הגשה", {
+        className: "sonner-toast error rtl",
+      });
+    }
+  };
+
+  const handleCancelRowSubmission = async (invoice, e) => {
+    e?.stopPropagation();
+    try {
+      const response = await api.put(`/invoices/${invoice._id}/submission-status`, {
+        status: "לא הוגש",
+      });
+
+      const updatedInvoice = response.data?.data || response.data;
+
+      setInvoices(prev => prev.map(inv => (inv._id === invoice._id ? updatedInvoice : inv)));
+      setAllInvoices(prev => prev.map(inv => (inv._id === invoice._id ? updatedInvoice : inv)));
+
+      toast.success("הגשת החשבונית בוטלה", { className: "sonner-toast success rtl" });
+    } catch (error) {
+      console.error(error);
+      toast.error(error?.response?.data?.error || "שגיאה בביטול ההגשה", {
+        className: "sonner-toast error rtl",
+      });
+    }
+  };
+
   const handleBulkSubmission = async () => {
     try {
       const invoiceIds = selectedInvoices.map(inv => inv._id);
@@ -3066,8 +3127,32 @@ const InvoicesPage = () => {
 
                           {/* עמודה 7/6: סטטוס הגשה */}
                           <td className="px-2 py-4 text-xs font-medium text-center text-slate-900">
-                            {invoice.status || (
-                              <span className="text-red-500 italic">חסר</span>
+                            {canEditInvoices && isAdmin ? (
+                              invoice.status === "הוגש" ? (
+                                <button
+                                  onClick={(e) => handleCancelRowSubmission(invoice, e)}
+                                  title="לחץ לביטול הגשה"
+                                  className="inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-bold bg-emerald-100 text-emerald-700 border border-emerald-200 whitespace-nowrap hover:bg-emerald-200 transition-colors"
+                                >
+                                  <CheckSquare className="w-3 h-3" />
+                                  הוגש
+                                </button>
+                              ) : (
+                                <button
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    openRowSubmissionModal(invoice);
+                                  }}
+                                  title="לחץ לסימון כהוגש"
+                                  className="inline-flex items-center px-2 py-1 rounded-full text-xs font-bold bg-slate-100 text-slate-600 border border-slate-200 whitespace-nowrap hover:bg-orange-100 hover:text-orange-700 transition-colors"
+                                >
+                                  {invoice.status || "לא הוגש"}
+                                </button>
+                              )
+                            ) : (
+                              invoice.status || (
+                                <span className="text-red-500 italic">חסר</span>
+                              )
                             )}
                           </td>
 
@@ -4161,6 +4246,64 @@ const InvoicesPage = () => {
                   ביטול
                 </button>
               </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {rowSubmissionModal.open && rowSubmissionModal.invoice && (
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-2xl shadow-2xl max-w-md w-full">
+            <div className="p-6 border-b border-slate-200 flex items-center justify-between">
+              <h2 className="text-xl font-bold text-slate-900">
+                סמן חשבונית #{rowSubmissionModal.invoice.invoiceNumber} כהוגשה
+              </h2>
+              <button onClick={() => setRowSubmissionModal({ open: false, invoice: null })}>
+                <X className="w-5 h-5 text-slate-400" />
+              </button>
+            </div>
+
+            <div className="p-6 space-y-4">
+              <div>
+                <label className="font-bold mb-2 block text-slate-700">בחר פרויקט:</label>
+                <select
+                  className="w-full p-3 border border-slate-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-orange-500"
+                  value={rowSubmissionProjectId}
+                  onChange={(e) => setRowSubmissionProjectId(e.target.value)}
+                >
+                  <option value="">בחר פרויקט...</option>
+                  {projectsForPrint.map((p) => (
+                    <option key={p._id} value={p._id}>
+                      {p.name}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              <div>
+                <label className="font-bold mb-2 block text-slate-700">תאריך הגשה:</label>
+                <input
+                  type="date"
+                  className="w-full p-3 border border-slate-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-orange-500"
+                  value={rowSubmissionDate}
+                  onChange={(e) => setRowSubmissionDate(e.target.value)}
+                />
+              </div>
+            </div>
+
+            <div className="p-6 border-t border-slate-200 flex gap-3">
+              <button
+                onClick={handleConfirmRowSubmission}
+                className="flex-1 py-3 bg-gradient-to-br from-orange-500 to-amber-600 text-white font-bold rounded-xl"
+              >
+                אישור
+              </button>
+              <button
+                onClick={() => setRowSubmissionModal({ open: false, invoice: null })}
+                className="flex-1 py-3 bg-slate-200 text-slate-700 font-bold rounded-xl"
+              >
+                ביטול
+              </button>
             </div>
           </div>
         </div>

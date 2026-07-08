@@ -166,6 +166,29 @@ const invoiceControllers = {
   },
 
   // ===============================================
+  // עדכון סטטוס הגשה לחשבונית בודדת (ללא עריכת כל החשבונית)
+  // ===============================================
+  async updateSubmissionStatus(req, res) {
+    try {
+      const { status, submittedToProjectId, submittedAt } = req.body;
+
+      const updated = await invoiceService.updateSubmissionStatus(
+        req.user,
+        req.params.id,
+        status,
+        submittedToProjectId,
+        submittedAt
+      );
+
+      res.json({ success: true, data: updated });
+    } catch (err) {
+      console.error("❌ SUBMISSION STATUS UPDATE ERROR:", err);
+      saveLog({ type: 'error', message: `שגיאה בעדכון סטטוס הגשה לחשבונית ${req.params.id} — ${err.message}`, username: req.user?.username || req.user?.name, userId: req.user?._id, ip: getIp(req), meta: { invoiceId: req.params.id, status: req.body.status } });
+      res.status(400).json({ success: false, error: err.message });
+    }
+  },
+
+  // ===============================================
   // העברת חשבונית בין פרויקטים (תמיכה במספר פרויקטים!)
   // ===============================================
   async moveInvoice(req, res) {

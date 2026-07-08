@@ -3,7 +3,11 @@
     "allow": [
       "Bash(node --check models/Supplier.js)",
       "Bash(node --check services/SupplierService.js)",
-      "Bash(node --check controller/SupplierController.js)"
+      "Bash(node --check controller/SupplierController.js)",
+      "Bash(node --check services/invoiceService.js)",
+      "Bash(node --check controller/invoiceControllers.js)",
+      "Bash(node --check routes/InvoiceRoutes.js)",
+      "Bash(git check-ignore *)"
     ]
   }
 }

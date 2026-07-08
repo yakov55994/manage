@@ -38,9 +38,6 @@ const InvoiceEditPage = () => {
   const [pendingMilgaProject, setPendingMilgaProject] = useState(null);
   const [fundingProjectsMap, setFundingProjectsMap] = useState({}); // { milgaProjectId: [fundingProjectId1, fundingProjectId2, ...] }
 
-  // ✅ מצב עבור מודל הגשת חשבונית
-  const [showSubmissionModal, setShowSubmissionModal] = useState(false);
-
   const [sendEmail, setSendEmail] = useState(false);
 
   const [globalFields, setGlobalFields] = useState({
@@ -61,7 +58,6 @@ const InvoiceEditPage = () => {
     submittedAt: null, // ✅ תאריך הגשה
     files: [],
   });
-  const [forceUnsubmit, setForceUnsubmit] = useState(false);
 
 
   const { id } = useParams();
@@ -439,17 +435,6 @@ const InvoiceEditPage = () => {
           });
         }
       }
-      let finalStatus = globalFields.status;
-      let finalSubmittedProject = globalFields.submittedToProjectId;
-      let finalSubmittedAt = globalFields.submittedAt;
-
-      if (forceUnsubmit && globalFields.status !== "הוגש") {
-        finalStatus = "לא הוגש";
-        finalSubmittedProject = null;
-        finalSubmittedAt = null;
-      }
-
-
       const {
         status,
         submittedToProjectId,
@@ -475,15 +460,13 @@ const InvoiceEditPage = () => {
         projects: finalProjects,
         fundingProjectsMap,
 
-        // ✅ הגשה – מקור אמת אחד בלבד
-        status: forceUnsubmit ? "לא הוגש" : status,
-        submittedToProjectId: forceUnsubmit ? null : submittedToProjectId,
-        submittedAt: forceUnsubmit ? null : submittedAt,
+        // ✅ הגשה נשמרת כפי שהיא – השינוי שלה מתבצע מחוץ לטופס העריכה
+        status,
+        submittedToProjectId,
+        submittedAt,
         sendEmail,
       };
 
-      setForceUnsubmit(false);
-      console.log(payload)
       await api.put(`/invoices/${id}`, payload);
 
       toast.success("החשבונית נשמרה בהצלחה!");
@@ -622,66 +605,38 @@ const InvoiceEditPage = () => {
             </select>
           </div>
 
-          {/* ✅ הגשת חשבונית */}
-          {/* ✅ הגשת חשבונית */}
+          {/* ✅ סטטוס הגשה - תצוגה בלבד, השינוי מתבצע מעמוד פרטי החשבונית */}
           <div className="md:col-span-2">
             <label className="font-bold mb-2 block">הגשת חשבונית</label>
 
-            {/* 🔔 הודעת ביניים – ביטול הגשה לפני שמירה */}
-            {forceUnsubmit && (
-              <div className="mb-3 p-3 bg-yellow-50 border border-yellow-300 rounded-xl text-sm text-yellow-800">
-                ⚠️ ביטול הגשה בוצע – יש לשמור שינויים כדי להחיל
-              </div>
-            )}
-
-            {globalFields.status === "הוגש" &&
-              globalFields.submittedToProjectId &&
-              !forceUnsubmit ? (
-              <div className="flex items-center gap-3 p-3 bg-green-50 border border-green-200 rounded-xl">
-                <div className="flex-1">
+            {globalFields.status === "הוגש" && globalFields.submittedToProjectId ? (
+              <div className="p-3 bg-green-50 border border-green-200 rounded-xl">
+                <p className="text-sm text-gray-600">
+                  סטטוס: <span className="font-bold text-green-700">הוגש</span>
+                </p>
+                <p className="text-sm text-gray-600">
+                  הוגש לפרויקט:{" "}
+                  <span className="font-bold">
+                    {projects.find(
+                      p => p._id === globalFields.submittedToProjectId
+                    )?.name || "טוען..."}
+                  </span>
+                </p>
+                {globalFields.submittedAt && (
                   <p className="text-sm text-gray-600">
-                    סטטוס: <span className="font-bold text-green-700">הוגש</span>
-                  </p>
-                  <p className="text-sm text-gray-600">
-                    הוגש לפרויקט:{" "}
+                    תאריך הגשה:{" "}
                     <span className="font-bold">
-                      {projects.find(
-                        p => p._id === globalFields.submittedToProjectId
-                      )?.name || "טוען..."}
+                      {new Date(globalFields.submittedAt).toLocaleDateString("he-IL")}
                     </span>
                   </p>
-                  {globalFields.submittedAt && (
-                    <p className="text-sm text-gray-600">
-                      תאריך הגשה:{" "}
-                      <span className="font-bold">
-                        {new Date(globalFields.submittedAt).toLocaleDateString("he-IL")}
-                      </span>
-                    </p>
-                  )}
-                </div>
-
-                <button
-                  type="button"
-                  onClick={() => {
-                    updateGlobal("status", "לא הוגש");
-                    updateGlobal("submittedToProjectId", null);
-                    updateGlobal("submittedAt", null);
-                    setForceUnsubmit(true);
-                  }}
-                  className="px-4 py-2 bg-red-500 text-white rounded-lg hover:bg-red-600 transition-colors text-sm font-medium"
-                >
-                  ביטול הגשה
-                </button>
+                )}
               </div>
             ) : (
-              <button
-                type="button"
-                onClick={() => setShowSubmissionModal(true)}
-                className="w-56 p-3 bg-gradient-to-br from-orange-500 to-amber-600 text-white font-bold rounded-xl"
-              >
-                סמן כהוגש לפרויקט
-              </button>
+              <p className="text-sm text-gray-500">לא הוגש</p>
             )}
+            <p className="text-xs text-gray-400 mt-1">
+              לסימון הגשה או ביטולה, יש להשתמש בכפתור בעמוד פרטי החשבונית
+            </p>
           </div>
 
 
@@ -951,81 +906,6 @@ const InvoiceEditPage = () => {
           </button>
         </div>
       </div>
-
-      {/* ✅ Submission Modal - מודל בחירת פרויקט להגשה */}
-      {showSubmissionModal && (
-        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-2xl shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
-            <div className="p-6 border-b border-gray-200">
-              <h2 className="text-2xl font-bold text-gray-800">סמן חשבונית כהוגשה</h2>
-              <p className="text-sm text-gray-600 mt-1">בחר את הפרויקט שאליו הוגשה החשבונית</p>
-            </div>
-
-            <div className="p-6">
-              <div className="mb-4">
-                <label className="font-bold mb-2 block">בחר פרויקט:</label>
-                <select
-                  className="w-full p-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  value={globalFields.submittedToProjectId || ""}
-                  onChange={(e) => updateGlobal("submittedToProjectId", e.target.value || null)}
-                >
-                  <option value="">בחר פרויקט...</option>
-                  {projects.map((p) => (
-                    <option key={p._id} value={p._id}>
-                      {p.name}
-                    </option>
-                  ))}
-                </select>
-              </div>
-
-              <div className="mb-4">
-                <label className="font-bold mb-2 block">תאריך הגשה:</label>
-                <input
-                  type="date"
-                  className="w-full p-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  value={globalFields.submittedAt || new Date().toISOString().split("T")[0]}
-                  onChange={(e) => updateGlobal("submittedAt", e.target.value)}
-                />
-              </div>
-            </div>
-
-            <div className="p-6 border-t border-gray-200 flex gap-3">
-              <button
-                onClick={() => {
-                  if (!globalFields.submittedToProjectId) {
-                    toast.error("יש לבחור פרויקט");
-                    return;
-                  }
-
-                  setGlobalFields(prev => ({
-                    ...prev,
-                    status: "הוגש",
-                    submittedToProjectId: prev.submittedToProjectId,
-                    submittedAt: prev.submittedAt || new Date().toISOString().split("T")[0],
-                  }));
-
-                  setForceUnsubmit(false);
-                  setShowSubmissionModal(false);
-                  toast.success("החשבונית סומנה כהוגשה");
-                }}
-
-
-                className="flex-1 py-3 bg-gradient-to-br from-orange-500 to-amber-600 text-white font-bold rounded-xl  transition-all"
-              >
-                אישור
-              </button>
-              <button
-                onClick={() => {
-                  setShowSubmissionModal(false);
-                }}
-                className="flex-1 py-3 bg-gray-300 text-gray-700 font-bold rounded-xl hover:bg-gray-400 transition-colors"
-              >
-                ביטול
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
     </div>
   );
 };
