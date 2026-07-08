@@ -6,12 +6,12 @@ import React, { useState, useEffect } from "react";
 import api from "../api/api.js";
 import { toast } from "sonner";
 import { ClipLoader } from "react-spinners";
-import { FileDown, FileSpreadsheet } from "lucide-react";
+import { FileDown, FileSpreadsheet, FileArchive } from "lucide-react";
 
 const SubmittedInvoices = ({ projectId, projectName }) => {
   const [invoices, setInvoices] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [downloading, setDownloading] = useState({ excel: false, pdf: false });
+  const [downloading, setDownloading] = useState({ excel: false, pdf: false, zip: false });
 
   // טעינת חשבוניות שהוגשו
   useEffect(() => {
@@ -61,6 +61,68 @@ const SubmittedInvoices = ({ projectId, projectName }) => {
       toast.error("שגיאה בהורדת Excel");
     } finally {
       setDownloading((prev) => ({ ...prev, excel: false }));
+    }
+  };
+
+  // הורדת ZIP של כל המסמכים המצורפים לחשבוניות שהוגשו
+  const handleDownloadZip = async () => {
+    if (invoices.length === 0) {
+      toast.error("אין חשבוניות להורדה");
+      return;
+    }
+
+    try {
+      setDownloading((prev) => ({ ...prev, zip: true }));
+
+      const allFiles = [];
+      invoices.forEach((invoice) => {
+        if (Array.isArray(invoice.files)) {
+          invoice.files.forEach((file) => {
+            if (file.url) {
+              allFiles.push({
+                url: file.url,
+                name: file.name || "file",
+                invoiceNumber: invoice.invoiceNumber || "ללא",
+                projectName: projectName || "ללא_פרויקט",
+                supplierName:
+                  invoice.supplierId?.name || invoice.invitingName || "ללא_ספק",
+              });
+            }
+          });
+        }
+      });
+
+      if (allFiles.length === 0) {
+        toast.error("לא נמצאו מסמכים מצורפים להורדה");
+        return;
+      }
+
+      const response = await api.post(
+        "/upload/download-zip",
+        { files: allFiles },
+        { responseType: "blob" }
+      );
+
+      const url = window.URL.createObjectURL(
+        new Blob([response.data], { type: "application/zip" })
+      );
+      const link = document.createElement("a");
+      link.href = url;
+      link.setAttribute(
+        "download",
+        `מסמכים_מצורפים_${projectName}_${new Date().toISOString().split("T")[0]}.zip`
+      );
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      window.URL.revokeObjectURL(url);
+
+      toast.success("קובץ ZIP הורד בהצלחה");
+    } catch (err) {
+      console.error("Error downloading ZIP:", err);
+      toast.error("שגיאה בהורדת קובץ ZIP");
+    } finally {
+      setDownloading((prev) => ({ ...prev, zip: false }));
     }
   };
 
@@ -312,6 +374,23 @@ const SubmittedInvoices = ({ projectId, projectName }) => {
               <FileDown size={18} />
             )}
             הורד PDF
+          </button>
+
+          <button
+            onClick={handleDownloadZip}
+            disabled={downloading.zip || invoices.length === 0}
+            className={`flex items-center gap-2 px-4 py-2 rounded-lg font-medium transition-colors ${
+              downloading.zip || invoices.length === 0
+                ? "bg-gray-300 text-gray-500 cursor-not-allowed"
+                : "bg-blue-600 text-white hover:bg-blue-700"
+            }`}
+          >
+            {downloading.zip ? (
+              <ClipLoader size={16} color="#fff" />
+            ) : (
+              <FileArchive size={18} />
+            )}
+            הורד ZIP מסמכים
           </button>
         </div>
       </div>
