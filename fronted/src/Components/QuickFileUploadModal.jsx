@@ -2,6 +2,7 @@ import { useState, useRef, useEffect } from "react";
 import { toast } from "sonner";
 import { Upload, X, FileText, Paperclip, Hash, FileDigit } from "lucide-react";
 import api from "../api/api.js";
+import useFileDrop from "../hooks/useFileDrop";
 
 const documentTypes = [
   "ח. עסקה",
@@ -57,6 +58,10 @@ export default function QuickFileUploadModal({
       setLoadingSerial(false);
     }
   };
+
+  const { isDragging, dropHandlers } = useFileDrop((files) => {
+    setSelectedFiles((prev) => [...prev, ...files]);
+  });
 
   if (!open || !invoice) return null;
 
@@ -267,11 +272,16 @@ export default function QuickFileUploadModal({
             </label>
             <div
               onClick={() => fileInputRef.current?.click()}
-              className="border-2 border-dashed border-orange-300 rounded-xl p-6 text-center cursor-pointer hover:border-orange-500 hover:bg-orange-50/50 transition-all"
+              {...dropHandlers}
+              className={`border-2 border-dashed rounded-xl p-6 text-center cursor-pointer transition-all ${
+                isDragging
+                  ? "border-orange-500 bg-orange-50"
+                  : "border-orange-300 hover:border-orange-500 hover:bg-orange-50/50"
+              }`}
             >
               <Upload className="w-8 h-8 text-orange-400 mx-auto mb-2" />
               <p className="text-sm font-medium text-slate-600">
-                לחץ לבחירת קבצים
+                {isDragging ? "שחרר כאן להעלאה" : "לחץ לבחירת קבצים או גרור לכאן"}
               </p>
               <p className="text-xs text-slate-400 mt-1">
                 ניתן לבחור מספר קבצים

@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html dir="rtl" lang="he">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>אישור תשלום - {{invoiceNumber}}</title>
+  {{css}}
+</head>
+<body>
+  <div class="container">
+    <!-- Header -->
+    <header class="header">
+      <div class="badge">✅ אישור תשלום</div>
+      <h1>עמותת חינוך עם חיוך</h1>
+      <p class="subtitle">אנו מאשרים כי בוצע תשלום עבור חשבונית מספר {{invoiceNumber}}</p>
+    </header>
+
+    <!-- Details -->
+    <table class="details-table">
+      <tbody>
+        <tr>
+          <td class="label">מספר חשבונית</td>
+          <td>{{invoiceNumber}}</td>
+        </tr>
+        <tr>
+          <td class="label">שם ספק</td>
+          <td>{{supplierName}}</td>
+        </tr>
+        <tr>
+          <td class="label">פירוט</td>
+          <td>{{detail}}</td>
+        </tr>
+        <tr>
+          <td class="label">סוג מסמך</td>
+          <td>{{documentType}}</td>
+        </tr>
+        <tr>
+          <td class="label">אופן תשלום</td>
+          <td>{{paymentMethodText}}</td>
+        </tr>
+        <tr class="highlight">
+          <td class="label">תאריך תשלום</td>
+          <td>{{paymentDate}}</td>
+        </tr>
+        <tr class="highlight">
+          <td class="label">סכום ששולם</td>
+          <td>₪{{amount}}</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <p class="statement">
+      מסמך זה מהווה אישור על ביצוע התשלום עבור החשבונית המצוינת לעיל, בתאריך התשלום הרשום.
+    </p>
+
+    <!-- Footer -->
+    <footer class="footer">
+      <p>מסמך זה הופק באופן אוטומטי על ידי מערכת ניהולון בתאריך {{generatedAt}}</p>
+      <p>&copy; {{year}} כל הזכויות שמורות</p>
+    </footer>
+  </div>
+</body>
+</html>

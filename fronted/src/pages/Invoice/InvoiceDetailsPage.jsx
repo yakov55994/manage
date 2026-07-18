@@ -54,6 +54,7 @@ const InvoiceDetailsPage = () => {
     new Date().toISOString().split("T")[0]
   );
   const [submittingStatus, setSubmittingStatus] = useState(false);
+  const [downloadingConfirmation, setDownloadingConfirmation] = useState(false);
 
   const { user, isAdmin } = useAuth();
 
@@ -214,6 +215,40 @@ const InvoiceDetailsPage = () => {
     }
   };
 
+  const handleDownloadPaymentConfirmation = async () => {
+    if (!invoice?.paymentDate) {
+      toast.error("לא ניתן להפיק אישור תשלום — לא הוגדר תאריך תשלום לחשבונית זו");
+      return;
+    }
+
+    try {
+      setDownloadingConfirmation(true);
+
+      const response = await api.get(
+        `/invoices/${invoice._id}/payment-confirmation-pdf`,
+        { responseType: "blob" }
+      );
+
+      const url = window.URL.createObjectURL(
+        new Blob([response.data], { type: "application/pdf" })
+      );
+      const link = document.createElement("a");
+      link.href = url;
+      link.setAttribute("download", `אישור-תשלום-${invoice.invoiceNumber}.pdf`);
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      window.URL.revokeObjectURL(url);
+
+      toast.success("אישור התשלום הופק בהצלחה");
+    } catch (err) {
+      console.error("Payment confirmation PDF error:", err);
+      toast.error("שגיאה בהפקת אישור תשלום");
+    } finally {
+      setDownloadingConfirmation(false);
+    }
+  };
+
   const handleDelete = async () => {
     if (!invoice?._id) return;
 
@@ -314,6 +349,21 @@ const InvoiceDetailsPage = () => {
                       עריכה
                     </button>
                   )}
+
+                  {/* כפתור אישור תשלום PDF */}
+                  <button
+                    onClick={handleDownloadPaymentConfirmation}
+                    disabled={downloadingConfirmation}
+                    className="px-6 py-3 rounded-xl bg-emerald-600 text-white font-bold shadow disabled:opacity-50"
+                    title={invoice.paymentDate ? "הפק אישור תשלום PDF" : "יש להזין תאריך תשלום כדי להפיק אישור"}
+                  >
+                    {downloadingConfirmation ? (
+                      <ClipLoader size={16} color="#fff" className="inline-block ml-1" />
+                    ) : (
+                      <Download className="inline-block w-4 h-4 ml-1" />
+                    )}
+                    אישור תשלום
+                  </button>
 
                   {/* כפתור מחיקה - רק מנהל */}
                   {isAdmin && (

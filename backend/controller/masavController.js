@@ -57,11 +57,10 @@ async generateMasav(req, res) {
         const existing = supplierMap.get(key);
         // צבירת סכומים - חיבור מספרי מפורש למניעת שרשור מחרוזות
         existing.amount = Number(existing.amount) + Number(payment.amount);
-        // איחוד מספרי חשבוניות
-        if (payment.invoiceNumbers) {
-          existing.invoiceNumbers = existing.invoiceNumbers
-            ? `${existing.invoiceNumbers}, ${payment.invoiceNumbers}`
-            : payment.invoiceNumbers;
+        // ✅ שמירת מספר חשבונית אחד בלבד (שדה האסמכתא בקובץ המסב מוגבל ל-20 תווים,
+        // שרשור כל מספרי החשבוניות של הספק הופך את השורה ארוכה מדי ופוסל את הקובץ)
+        if (!existing.invoiceNumbers && payment.invoiceNumbers) {
+          existing.invoiceNumbers = payment.invoiceNumbers;
         }
         // איחוד שמות פרויקטים
         if (payment.projectNames) {

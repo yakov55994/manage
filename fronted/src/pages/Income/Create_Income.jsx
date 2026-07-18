@@ -5,6 +5,7 @@ import { Upload, FileSpreadsheet, Plus, ArrowLeft, DollarSign } from "lucide-rea
 import api from "../../api/api";
 import OrderSelector from "../../Components/OrderSelector";
 import { logClientError } from "../../utils/validation.jsx";
+import useFileDrop from "../../hooks/useFileDrop";
 
 export default function CreateIncome() {
   const navigate = useNavigate();
@@ -54,24 +55,28 @@ export default function CreateIncome() {
     }
   };
 
-  const handleFileChange = (e) => {
-    const file = e.target.files[0];
-    if (file) {
-      // בדוק שזה קובץ Excel
-      const validTypes = [
-        "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-        "application/vnd.ms-excel"
-      ];
+  const validateAndSetFile = (file) => {
+    if (!file) return;
+    // בדוק שזה קובץ Excel
+    const validTypes = [
+      "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+      "application/vnd.ms-excel"
+    ];
 
-      if (!validTypes.includes(file.type)) {
-        toast.error("נא להעלות קובץ Excel בלבד (.xlsx או .xls)");
-        e.target.value = "";
-        return;
-      }
-
-      setExcelFile(file);
+    if (!validTypes.includes(file.type)) {
+      toast.error("נא להעלות קובץ Excel בלבד (.xlsx או .xls)");
+      return;
     }
+
+    setExcelFile(file);
   };
+
+  const handleFileChange = (e) => {
+    validateAndSetFile(e.target.files[0]);
+    e.target.value = "";
+  };
+
+  const { isDragging, dropHandlers } = useFileDrop((files) => validateAndSetFile(files[0]));
 
   const handleSubmitSingle = async (e) => {
     e.preventDefault();
@@ -402,11 +407,16 @@ export default function CreateIncome() {
                     />
                     <label
                       htmlFor="excel-file"
-                      className="flex items-center justify-center gap-3 px-6 py-4 border-2 border-dashed border-orange-300 rounded-xl hover:border-orange-500 hover:bg-orange-50 transition-all cursor-pointer"
+                      {...dropHandlers}
+                      className={`flex items-center justify-center gap-3 px-6 py-4 border-2 border-dashed rounded-xl transition-all cursor-pointer ${
+                        isDragging
+                          ? "border-orange-500 bg-orange-50"
+                          : "border-orange-300 hover:border-orange-500 hover:bg-orange-50"
+                      }`}
                     >
                       <Upload className="w-6 h-6 text-orange-500" />
                       <span className="font-medium text-slate-700">
-                        {excelFile ? excelFile.name : "לחץ להעלאת קובץ Excel"}
+                        {excelFile ? excelFile.name : isDragging ? "שחרר כאן להעלאה" : "לחץ להעלאת קובץ Excel או גרור לכאן"}
                       </span>
                     </label>
                   </div>

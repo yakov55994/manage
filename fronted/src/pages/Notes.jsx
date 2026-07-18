@@ -3,6 +3,7 @@ import api from '../api/api.js';
 import { ClipLoader } from "react-spinners";
 import { toast } from "sonner";
 import { useAuth } from "../context/AuthContext.jsx";
+import useFileDrop from "../hooks/useFileDrop";
 import {
   Plus, Edit3, Trash2, Check, X, CheckCircle2, Circle,
   Target, FileText, User, Paperclip, Send, MessageCircle,
@@ -19,6 +20,13 @@ const Notes = () => {
   // קבצים מצורפים ליצירת משימה
   const [noteFile, setNoteFile] = useState(null);
   const noteFileRef = useRef();
+  const { isDragging: isNoteFileDragging, dropHandlers: noteFileDropHandlers } = useFileDrop(
+    (files) => setNoteFile(files[0] || null)
+  );
+
+  // גרירת קובץ ישירות לצירוף למשימה קיימת / לתגובה
+  const [dragOverNoteId, setDragOverNoteId] = useState(null);
+  const [dragOverCommentId, setDragOverCommentId] = useState(null);
 
   // מצב פתיחת צ'אט לכל משימה
   const [expandedNotes, setExpandedNotes] = useState({});
@@ -316,9 +324,16 @@ const Notes = () => {
 
                 {/* העלאת קובץ */}
                 <div className="flex items-center gap-3">
-                  <label className="flex items-center gap-2 cursor-pointer px-3 py-2 bg-slate-700 hover:bg-slate-600 text-slate-300 rounded-lg border border-slate-600 transition-colors text-sm">
+                  <label
+                    {...noteFileDropHandlers}
+                    className={`flex items-center gap-2 cursor-pointer px-3 py-2 rounded-lg border transition-colors text-sm ${
+                      isNoteFileDragging
+                        ? "bg-orange-600/30 border-orange-500 text-orange-200"
+                        : "bg-slate-700 hover:bg-slate-600 text-slate-300 border-slate-600"
+                    }`}
+                  >
                     <Paperclip className="w-4 h-4" />
-                    {noteFile ? noteFile.name : "צרף קובץ (אופציונלי)"}
+                    {noteFile ? noteFile.name : isNoteFileDragging ? "שחרר כאן" : "צרף קובץ (אופציונלי) או גרור לכאן"}
                     <input
                       ref={noteFileRef}
                       type="file"
@@ -425,13 +440,29 @@ const Notes = () => {
                           />
                         ))}
                         {isAdmin && (
-                          <label className={`flex items-center gap-1.5 px-3 py-2 bg-slate-600 hover:bg-slate-500 text-slate-300 rounded-lg border border-dashed border-slate-500 cursor-pointer transition-colors text-sm ${uploadingAttachment === note._id ? 'opacity-50 pointer-events-none' : ''}`}>
+                          <label
+                            onDragEnter={e => { e.preventDefault(); e.stopPropagation(); setDragOverNoteId(note._id); }}
+                            onDragOver={e => { e.preventDefault(); e.stopPropagation(); setDragOverNoteId(note._id); }}
+                            onDragLeave={e => { e.preventDefault(); e.stopPropagation(); if (!e.currentTarget.contains(e.relatedTarget)) setDragOverNoteId(null); }}
+                            onDrop={e => {
+                              e.preventDefault();
+                              e.stopPropagation();
+                              setDragOverNoteId(null);
+                              const f = e.dataTransfer.files?.[0];
+                              if (f) handleAddAttachment(note._id, f);
+                            }}
+                            className={`flex items-center gap-1.5 px-3 py-2 rounded-lg border border-dashed cursor-pointer transition-colors text-sm ${
+                              dragOverNoteId === note._id
+                                ? "bg-orange-600/30 border-orange-500 text-orange-200"
+                                : "bg-slate-600 hover:bg-slate-500 text-slate-300 border-slate-500"
+                            } ${uploadingAttachment === note._id ? 'opacity-50 pointer-events-none' : ''}`}
+                          >
                             {uploadingAttachment === note._id ? (
                               <ClipLoader size={14} color="#f97316" />
                             ) : (
                               <Paperclip className="w-3.5 h-3.5" />
                             )}
-                            <span>הוסף קובץ</span>
+                            <span>{dragOverNoteId === note._id ? "שחרר כאן" : "הוסף קובץ (או גרור)"}</span>
                             <input
                               type="file"
                               accept="image/*,video/*,.pdf,.doc,.docx"
@@ -535,7 +566,24 @@ const Notes = () => {
                           className="flex-1 bg-slate-700 text-white placeholder-slate-500 border border-slate-600 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-orange-500"
                         />
                         {/* צרף קובץ לתגובה */}
-                        <label className="p-2 bg-slate-700 hover:bg-slate-600 text-slate-400 hover:text-orange-400 rounded-lg cursor-pointer transition-colors border border-slate-600" title="צרף קובץ">
+                        <label
+                          onDragEnter={e => { e.preventDefault(); e.stopPropagation(); setDragOverCommentId(note._id); }}
+                          onDragOver={e => { e.preventDefault(); e.stopPropagation(); setDragOverCommentId(note._id); }}
+                          onDragLeave={e => { e.preventDefault(); e.stopPropagation(); if (!e.currentTarget.contains(e.relatedTarget)) setDragOverCommentId(null); }}
+                          onDrop={e => {
+                            e.preventDefault();
+                            e.stopPropagation();
+                            setDragOverCommentId(null);
+                            const f = e.dataTransfer.files?.[0];
+                            if (f) setCommentFiles(prev => ({ ...prev, [note._id]: f }));
+                          }}
+                          className={`p-2 rounded-lg cursor-pointer transition-colors border ${
+                            dragOverCommentId === note._id
+                              ? "bg-orange-600/30 border-orange-500 text-orange-300"
+                              : "bg-slate-700 hover:bg-slate-600 text-slate-400 hover:text-orange-400 border-slate-600"
+                          }`}
+                          title="צרף קובץ (או גרור לכאן)"
+                        >
                           <Paperclip className="w-4 h-4" />
                           <input
                             ref={el => commentFileRefs.current[note._id] = el}

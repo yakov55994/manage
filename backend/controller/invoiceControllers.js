@@ -11,6 +11,7 @@ import invoiceService, {
 } from "../services/invoiceService.js";
 import { sendPaymentConfirmationEmail } from "../services/emailService.js";
 import { generateInvoiceExportPDF } from "../services/invoicePdfService.js";
+import { generatePaymentConfirmationPDF } from "../services/paymentConfirmationPdfService.js";
 import fs from "fs";
 import xlsx from "xlsx";
 import { saveLog, getIp } from "../utils/logger.js";
@@ -643,6 +644,54 @@ const invoiceControllers = {
     } catch (err) {
       console.error("EXPORT INVOICES ERROR:", err);
       saveLog({ type: 'error', message: `שגיאה בייצוא חשבוניות PDF — ${err.message}`, username: req.user?.username || req.user?.name, userId: req.user?._id, ip: getIp(req), meta: { projectId: req.body.projectId || req.query.projectId } });
+      res.status(500).json({ success: false, error: err.message });
+    }
+  },
+
+  // ===============================================
+  // הפקת אישור תשלום ל-PDF לחשבונית בודדת
+  // ===============================================
+  async getPaymentConfirmationPdf(req, res) {
+    try {
+      const { id } = req.params;
+
+      const invoice = await Invoice.findById(id).populate("supplierId", "name");
+      if (!invoice) {
+        return res.status(404).json({ success: false, error: "Invoice not found" });
+      }
+
+      if (!invoice.paymentDate) {
+        return res.status(400).json({
+          success: false,
+          error: "לא ניתן להפיק אישור תשלום — לא הוגדר תאריך תשלום לחשבונית זו",
+        });
+      }
+
+      const paymentMethodText =
+        invoice.paymentMethod === "check" ? "צ'ק"
+          : invoice.paymentMethod === "bank_transfer" ? "העברה בנקאית"
+            : invoice.paymentMethod === "credit_card" ? "כרטיס אשראי"
+              : "לא צויין";
+
+      const pdfPath = await generatePaymentConfirmationPDF({
+        invoiceNumber: invoice.invoiceNumber,
+        supplierName: invoice.supplierId?.name || invoice.invitingName || "-",
+        detail: invoice.detail || "-",
+        documentType: invoice.documentType || "-",
+        paymentMethodText,
+        paymentDate: invoice.paymentDate,
+        amount: invoice.totalAmount,
+      });
+
+      const fileName = `אישור-תשלום-${invoice.invoiceNumber}.pdf`;
+
+      res.download(pdfPath, fileName, (err) => {
+        if (err) console.error("PAYMENT CONFIRMATION PDF DOWNLOAD ERROR:", err);
+        if (fs.existsSync(pdfPath)) fs.unlinkSync(pdfPath);
+      });
+    } catch (err) {
+      console.error("GENERATE PAYMENT CONFIRMATION PDF ERROR:", err);
+      saveLog({ type: 'error', message: `שגיאה בהפקת אישור תשלום PDF — ${err.message}`, username: req.user?.username || req.user?.name, userId: req.user?._id, ip: getIp(req), meta: { invoiceId: req.params.id } });
       res.status(500).json({ success: false, error: err.message });
     }
   },

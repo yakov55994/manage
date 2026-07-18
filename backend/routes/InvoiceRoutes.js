@@ -97,6 +97,9 @@ router.put("/:id/submission-status", protect, checkAccess("invoices", "edit"), i
 // 📎 הוספת קבצים לחשבונית
 router.put("/:id/files", protect, checkAccess("invoices", "edit"), invoiceController.addFilesToInvoice);
 
+// 📄 הפקת אישור תשלום PDF לחשבונית בודדת
+router.get("/:id/payment-confirmation-pdf", protect, checkAccess("invoices", "view"), invoiceController.getPaymentConfirmationPdf);
+
 // 📌 עדכון סטטוס מרובה (bulk update)
 router.put("/bulk/update-status", protect, checkAccess("invoices", "edit"), invoiceController.bulkUpdatePaymentStatus);
 

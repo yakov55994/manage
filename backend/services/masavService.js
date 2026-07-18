@@ -159,7 +159,7 @@ export function generateMasavFile(companyInfo, payments, executionDate) {
 
     // אסמכתא - מספר חשבונית או מזהה
     const asmachtaRaw = p.invoiceNumbers || p.internalId || '';
-    const asmachta = String(asmachtaRaw).replace(/[^0-9]/g, '');
+    const asmachta = String(asmachtaRaw).replace(/[^0-9]/g, '').slice(-20); // הגנה מפני חריגה מ-20 תווים
     row1 += padLeft(asmachta, 20, '0');                   // 75-94: אסמכתא (20)
 
     row1 += '00000000';                                    // 95-102: תקופת תשלום (8)

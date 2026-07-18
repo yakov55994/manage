@@ -29,32 +29,34 @@ const pendingInvoiceController = {
         invoiceNumber, invoiceDate, totalAmount, documentType, detail,
       } = req.body;
 
+      const uploadedFiles = req.files || [];
+
       if (!submitterName || !supplierName || !supplierTaxId || !invoiceNumber || !invoiceDate || !totalAmount || !documentType || !bankName || !bankBranch || !bankAccount) {
-        if (req.file?.path) await fs.unlink(req.file.path).catch(() => {});
+        await Promise.all(uploadedFiles.map((f) => fs.unlink(f.path).catch(() => {})));
         return res.status(400).json({ message: "נא למלא את כל השדות החובה" });
       }
 
-      let fileData = null;
-      if (req.file) {
+      const filesData = [];
+      for (const [index, uploadedFile] of uploadedFiles.entries()) {
         const timestamp = Date.now();
-        const safePublicId = `pending_invoice_${timestamp}`;
+        const safePublicId = `pending_invoice_${timestamp}_${index}`;
 
-        const result = await cloudinary.uploader.upload(req.file.path, {
+        const result = await cloudinary.uploader.upload(uploadedFile.path, {
           folder: "pending_invoices",
           public_id: safePublicId,
           resource_type: "auto",
         });
 
-        fileData = {
-          name: req.file.originalname,
+        filesData.push({
+          name: uploadedFile.originalname,
           url: result.secure_url,
           publicId: result.public_id,
           resourceType: result.resource_type,
-          type: req.file.mimetype,
-          size: req.file.size,
-        };
+          type: uploadedFile.mimetype,
+          size: uploadedFile.size,
+        });
 
-        await fs.unlink(req.file.path).catch(() => {});
+        await fs.unlink(uploadedFile.path).catch(() => {});
       }
 
       const pendingInvoice = new PendingInvoice({
@@ -76,7 +78,7 @@ const pendingInvoiceController = {
         totalAmount: parseFloat(totalAmount),
         documentType,
         detail: detail?.trim() || "",
-        file: fileData,
+        files: filesData,
         status: "ממתין לאישור",
       });
 
@@ -85,7 +87,7 @@ const pendingInvoiceController = {
       res.status(201).json({ message: "החשבונית הוגשה בהצלחה ותיבדק בקרוב" });
     } catch (error) {
       console.error("❌ שגיאה בהגשת חשבונית:", error);
-      if (req.file?.path) await fs.unlink(req.file.path).catch(() => {});
+      if (req.files?.length) await Promise.all(req.files.map((f) => fs.unlink(f.path).catch(() => {})));
       res.status(500).json({ message: "שגיאה בהגשת החשבונית", error: error.message });
     }
   },
@@ -102,6 +104,57 @@ const pendingInvoiceController = {
     } catch (error) {
       console.error("❌ שגיאה בטעינת חשבוניות ממתינות:", error);
       res.status(500).json({ message: "שגיאה בטעינת חשבוניות ממתינות" });
+    }
+  },
+
+  // PUT /api/pending-invoices/:id — admin בלבד, עריכת פרטי חשבונית ממתינה
+  updateInvoice: async (req, res) => {
+    try {
+      const {
+        submitterName, submitterPhone, submitterEmail,
+        supplierName, supplierTaxId, supplierAddress, supplierPhone, supplierEmail,
+        bankName, bankBranch, bankAccount,
+        projectId, projectName,
+        invoiceNumber, invoiceDate, totalAmount, documentType, detail,
+      } = req.body;
+
+      if (!submitterName || !supplierName || !supplierTaxId || !invoiceNumber || !invoiceDate || !totalAmount || !documentType || !bankName || !bankBranch || !bankAccount) {
+        return res.status(400).json({ message: "נא למלא את כל השדות החובה" });
+      }
+
+      const pendingInvoice = await PendingInvoice.findByIdAndUpdate(
+        req.params.id,
+        {
+          submitterName: submitterName.trim(),
+          submitterPhone: submitterPhone?.trim() || "",
+          submitterEmail: submitterEmail?.trim() || "",
+          supplierName: supplierName.trim(),
+          supplierTaxId: supplierTaxId.trim(),
+          supplierAddress: supplierAddress?.trim() || "",
+          supplierPhone: supplierPhone?.trim() || "",
+          supplierEmail: supplierEmail?.trim() || "",
+          bankName: bankName.trim(),
+          bankBranch: bankBranch.trim(),
+          bankAccount: bankAccount.trim(),
+          projectId: projectId || null,
+          projectName: projectName?.trim() || "",
+          invoiceNumber: invoiceNumber.trim(),
+          invoiceDate: new Date(invoiceDate),
+          totalAmount: parseFloat(totalAmount),
+          documentType,
+          detail: detail?.trim() || "",
+        },
+        { new: true, runValidators: true }
+      );
+
+      if (!pendingInvoice) {
+        return res.status(404).json({ message: "חשבונית ממתינה לא נמצאה" });
+      }
+
+      res.json({ message: "פרטי החשבונית עודכנו", pendingInvoice });
+    } catch (error) {
+      console.error("❌ שגיאה בעדכון חשבונית ממתינה:", error);
+      res.status(500).json({ message: "שגיאה בעדכון החשבונית", error: error.message });
     }
   },
 
@@ -178,7 +231,7 @@ const pendingInvoiceController = {
         sum: pendingInvoice.totalAmount,
       }] : [];
 
-      const files = pendingInvoice.file ? [pendingInvoice.file] : [];
+      const files = pendingInvoice.files || [];
 
       const invoice = new Invoice({
         invoiceNumber: pendingInvoice.invoiceNumber,

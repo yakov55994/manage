@@ -4,6 +4,7 @@ import { CheckCircle, Upload, FileText, Building2, CreditCard, AlertCircle, X, S
 import Select from "react-select";
 import BankSelector from "../../Components/BankSelector";
 import banksData from "../../../public/data/banks_and_branches.json";
+import useFileDrop from "../../hooks/useFileDrop";
 
 const BASE_URL =
   import.meta.env.MODE === "development"
@@ -38,11 +39,17 @@ const initialForm = {
 
 export default function PublicInvoiceForm() {
   const [form, setForm] = useState(initialForm);
-  const [file, setFile] = useState(null);
+  const [files, setFiles] = useState([]);
   const [loading, setLoading] = useState(false);
   const [submitted, setSubmitted] = useState(false);
   const [error, setError] = useState("");
   const fileRef = useRef(null);
+  const supplierNameRef = useRef(null);
+
+  // אישור שם ספק = שם בעל החשבון
+  const [supplierNameConfirmed, setSupplierNameConfirmed] = useState(false);
+  const [showSupplierModal, setShowSupplierModal] = useState(false);
+  const [supplierModalChecked, setSupplierModalChecked] = useState(false);
 
   // בחירת פרויקט
   const [projects, setProjects] = useState([]);
@@ -84,14 +91,42 @@ export default function PublicInvoiceForm() {
     setForm((prev) => ({ ...prev, [e.target.name]: e.target.value }));
   };
 
-  const handleFileChange = (e) => {
-    const selected = e.target.files[0];
-    if (selected && selected.size > 10 * 1024 * 1024) {
-      setError("גודל הקובץ חייב להיות עד 10MB");
+  const handleSupplierNameFocus = (e) => {
+    if (!supplierNameConfirmed) {
+      e.target.blur();
+      setShowSupplierModal(true);
+    }
+  };
+
+  const confirmSupplierName = () => {
+    setSupplierNameConfirmed(true);
+    setShowSupplierModal(false);
+    setSupplierModalChecked(false);
+    supplierNameRef.current?.focus();
+  };
+
+  const addFiles = (selected) => {
+    if (selected.length === 0) return;
+
+    const oversized = selected.find((f) => f.size > 10 * 1024 * 1024);
+    if (oversized) {
+      setError("גודל כל קובץ חייב להיות עד 10MB");
       return;
     }
-    setFile(selected || null);
+
+    setFiles((prev) => [...prev, ...selected]);
     setError("");
+  };
+
+  const handleFileChange = (e) => {
+    addFiles(Array.from(e.target.files || []));
+    if (fileRef.current) fileRef.current.value = "";
+  };
+
+  const { isDragging, dropHandlers } = useFileDrop(addFiles);
+
+  const removeFile = (index) => {
+    setFiles((prev) => prev.filter((_, i) => i !== index));
   };
 
   const validate = () => {
@@ -102,7 +137,7 @@ export default function PublicInvoiceForm() {
     if (!form.bankName?.trim() || !form.bankBranch?.trim() || !form.bankAccount?.trim()) {
       return "פרטי חשבון בנק הם שדות חובה";
     }
-    if (!file) return "נא לצרף קובץ חשבונית";
+    if (files.length === 0) return "נא לצרף קובץ חשבונית";
     return null;
   };
 
@@ -122,7 +157,7 @@ export default function PublicInvoiceForm() {
         formData.append("projectId", selectedProject._id);
         formData.append("projectName", selectedProject.name);
       }
-      if (file) formData.append("file", file);
+      files.forEach((f) => formData.append("files", f));
 
       await axios.post(`${BASE_URL}/pending-invoices/submit`, formData);
       setSubmitted(true);
@@ -141,7 +176,7 @@ export default function PublicInvoiceForm() {
           <h2 className="text-2xl font-bold text-gray-800 mb-2">הוגש בהצלחה!</h2>
           <p className="text-gray-600 mb-6">החשבונית שלך התקבלה ותיבדק בקרוב על ידי הצוות.</p>
           <button
-            onClick={() => { setForm(initialForm); setFile(null); setSelectedProject(null); setProjectSearch(""); setSelectedBank(null); setSubmitted(false); }}
+            onClick={() => { setForm(initialForm); setFiles([]); setSelectedProject(null); setProjectSearch(""); setSelectedBank(null); setSubmitted(false); setSupplierNameConfirmed(false); }}
             className="px-6 py-3 bg-orange-500 hover:bg-orange-600 text-white font-bold rounded-xl transition-all"
           >
             הגשת חשבונית נוספת
@@ -222,9 +257,11 @@ export default function PublicInvoiceForm() {
                   שם הספק / עסק <span className="text-red-400">*</span>
                 </label>
                 <input
+                  ref={supplierNameRef}
                   name="supplierName"
                   value={form.supplierName}
                   onChange={handleChange}
+                  onFocus={handleSupplierNameFocus}
                   placeholder="שם מלא"
                   className="w-full px-4 py-2.5 bg-gray-700/60 border border-gray-600 rounded-xl text-white placeholder-gray-400 focus:outline-none focus:border-orange-500 transition-all"
                 />
@@ -515,44 +552,52 @@ export default function PublicInvoiceForm() {
             </div>
           </div>
 
-          {/* העלאת קובץ */}
+          {/* העלאת קבצים */}
           <div className="bg-gray-800/60 border border-gray-700 rounded-2xl p-6">
             <div className="flex items-center gap-2 mb-4">
               <Upload className="w-5 h-5 text-orange-400" />
               <h2 className="text-lg font-bold text-white">
-                צרף קובץ חשבונית <span className="text-red-400">*</span>
+                צרף קבצי חשבונית <span className="text-red-400">*</span>
               </h2>
             </div>
             <div
               onClick={() => fileRef.current?.click()}
-              className="border-2 border-dashed border-gray-600 hover:border-orange-500 rounded-xl p-8 text-center cursor-pointer transition-all group"
+              {...dropHandlers}
+              className={`border-2 border-dashed rounded-xl p-8 text-center cursor-pointer transition-all group ${
+                isDragging ? "border-orange-500 bg-orange-500/10" : "border-gray-600 hover:border-orange-500"
+              }`}
             >
               <Upload className="w-10 h-10 text-gray-500 group-hover:text-orange-400 mx-auto mb-3 transition-all" />
-              {file ? (
-                <div className="flex items-center justify-center gap-2">
-                  <span className="text-green-400 font-medium text-sm">{file.name}</span>
-                  <button
-                    type="button"
-                    onClick={(e) => { e.stopPropagation(); setFile(null); if (fileRef.current) fileRef.current.value = ""; }}
-                    className="text-red-400 hover:text-red-300"
-                  >
-                    <X size={16} />
-                  </button>
-                </div>
-              ) : (
-                <>
-                  <p className="text-gray-400 text-sm mb-1">לחץ לבחירת קובץ</p>
-                  <p className="text-gray-500 text-xs">PDF, JPG, PNG עד 10MB</p>
-                </>
-              )}
+              <p className="text-gray-400 text-sm mb-1">{isDragging ? "שחרר כאן להעלאה" : "לחץ לבחירת קובץ אחד או יותר או גרור לכאן"}</p>
+              <p className="text-gray-500 text-xs">PDF, JPG, PNG עד 10MB לקובץ</p>
             </div>
             <input
               ref={fileRef}
               type="file"
+              multiple
               accept=".pdf,.jpg,.jpeg,.png,.gif,.webp"
               onChange={handleFileChange}
               className="hidden"
             />
+            {files.length > 0 && (
+              <div className="mt-4 space-y-2">
+                {files.map((f, i) => (
+                  <div
+                    key={`${f.name}-${i}`}
+                    className="flex items-center justify-between gap-2 bg-gray-700/60 border border-gray-600 rounded-xl px-4 py-2.5"
+                  >
+                    <span className="text-green-400 font-medium text-sm truncate">{f.name}</span>
+                    <button
+                      type="button"
+                      onClick={() => removeFile(i)}
+                      className="text-red-400 hover:text-red-300 shrink-0"
+                    >
+                      <X size={16} />
+                    </button>
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
 
           {/* שגיאה */}
@@ -572,6 +617,39 @@ export default function PublicInvoiceForm() {
           </button>
         </form>
       </div>
+
+      {showSupplierModal && (
+        <div className="fixed inset-0 bg-black/70 z-50 flex items-center justify-center p-4" dir="rtl">
+          <div className="bg-gray-800 border border-gray-700 rounded-2xl shadow-2xl p-6 max-w-md w-full">
+            <div className="flex items-center gap-3 mb-3">
+              <AlertCircle className="w-6 h-6 text-orange-400 shrink-0" />
+              <h3 className="text-lg font-bold text-white">שימו לב</h3>
+            </div>
+            <p className="text-gray-300 text-sm mb-5 leading-relaxed">
+              שם הספק / העסק המוזן כאן חייב להיות{" "}
+              <span className="font-bold text-white">שם בעל חשבון הבנק</span>{" "}
+              שאליו יועבר התשלום. יש לוודא שהשם תואם בדיוק לשם המוטב בפרטי הבנק שיוזנו בהמשך הטופס.
+            </p>
+            <label className="flex items-center gap-2 mb-5 cursor-pointer select-none">
+              <input
+                type="checkbox"
+                checked={supplierModalChecked}
+                onChange={(e) => setSupplierModalChecked(e.target.checked)}
+                className="w-4 h-4 accent-orange-500"
+              />
+              <span className="text-gray-200 text-sm">קראתי ואני מאשר/ת שהשם שיוזן הוא שם בעל החשבון</span>
+            </label>
+            <button
+              type="button"
+              disabled={!supplierModalChecked}
+              onClick={confirmSupplierName}
+              className="w-full py-2.5 bg-gradient-to-r from-orange-500 to-orange-600 hover:from-orange-600 hover:to-orange-700 text-white font-bold rounded-xl transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              המשך למילוי הטופס
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

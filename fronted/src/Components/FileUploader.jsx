@@ -1,7 +1,8 @@
 import React, { useState } from 'react';
 import { toast } from 'sonner';
-import { Lock } from 'lucide-react';
+import { Lock, UploadCloud } from 'lucide-react';
 import DocumentTypeModal from './DocumentTypeModal';
+import useFileDrop from '../hooks/useFileDrop';
 
 function FileUploader({
     onUploadSuccess,
@@ -31,6 +32,23 @@ function FileUploader({
         }
 
         const selectedFiles = Array.from(e.target.files);
+        await processFiles(selectedFiles);
+        e.target.value = null;
+    };
+
+    const handleDrop = (droppedFiles) => {
+        if (disabled) {
+            toast.error(disabledMessage, {
+                className: "sonner-toast error rtl"
+            });
+            return;
+        }
+        processFiles(droppedFiles);
+    };
+
+    const { isDragging, dropHandlers } = useFileDrop(handleDrop, { disabled: disabled || loading });
+
+    const processFiles = async (selectedFiles) => {
         if (selectedFiles.length === 0) return;
 
         setLoading(true);
@@ -86,8 +104,6 @@ function FileUploader({
 
             setLoading(false);
         }
-
-        e.target.value = null;
     };
 
     const handleDocumentTypeSelect = (documentType, documentNumber) => {
@@ -131,17 +147,27 @@ function FileUploader({
                     </div>
                 )}
 
-                <input
-                    type="file"
-                    multiple
-                    accept="*"
-                    onChange={handleUpload}
-                    disabled={disabled || loading}
-                    className={`block w-full text-sm file:mr-4 file:py-2 file:px-4
-                        file:rounded-md file:border-0 file:text-sm file:font-semibold
-                        file:bg-slate-50 file:text-slate-700 hover:file:bg-slate-100
-                        ${disabled ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}`}
-                />
+                <div
+                    {...dropHandlers}
+                    className={`rounded-lg border-2 border-dashed p-3 transition-colors
+                        ${isDragging ? 'border-blue-500 bg-blue-50' : 'border-transparent'}`}
+                >
+                    <input
+                        type="file"
+                        multiple
+                        accept="*"
+                        onChange={handleUpload}
+                        disabled={disabled || loading}
+                        className={`block w-full text-sm file:mr-4 file:py-2 file:px-4
+                            file:rounded-md file:border-0 file:text-sm file:font-semibold
+                            file:bg-slate-50 file:text-slate-700 hover:file:bg-slate-100
+                            ${disabled ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}`}
+                    />
+                    <p className="mt-1 text-xs text-gray-400 flex items-center gap-1">
+                        <UploadCloud className="w-3.5 h-3.5" />
+                        ניתן גם לגרור קבצים לכאן
+                    </p>
+                </div>
 
                 {loading && (
                     <div className="mt-2 flex justify-center">

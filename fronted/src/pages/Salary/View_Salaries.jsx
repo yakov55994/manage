@@ -26,6 +26,7 @@ import {
 } from "lucide-react";
 import { toast } from "sonner";
 import ProjectSelector from "../../Components/ProjectSelector";
+import useFileDrop from "../../hooks/useFileDrop";
 
 const MONTHS_HE = ["ינואר", "פברואר", "מרץ", "אפריל", "מאי", "יוני", "יולי", "אוגוסט", "ספטמבר", "אוקטובר", "נובמבר", "דצמבר"];
 
@@ -74,6 +75,22 @@ export default function View_Salaries() {
   const [uploadDepartment, setUploadDepartment] = useState("");
   const [uploadLoading, setUploadLoading] = useState(false);
   const [uploadResult, setUploadResult] = useState(null);
+
+  const validateAndSetUploadFile = (file) => {
+    if (!file) return;
+    const validTypes = [
+      "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+      "application/vnd.ms-excel",
+    ];
+    if (!validTypes.includes(file.type)) {
+      toast.error("נא להעלות קובץ Excel בלבד (.xlsx או .xls)");
+      return;
+    }
+    setUploadFile(file);
+  };
+  const { isDragging: isUploadDragging, dropHandlers: uploadDropHandlers } = useFileDrop(
+    (files) => validateAndSetUploadFile(files[0])
+  );
 
   // ========== Monthly grouping state ==========
   const [expandedMonths, setExpandedMonths] = useState({});
@@ -534,29 +551,23 @@ export default function View_Salaries() {
                     type="file"
                     accept=".xlsx,.xls"
                     onChange={(e) => {
-                      const file = e.target.files[0];
-                      if (file) {
-                        const validTypes = [
-                          "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-                          "application/vnd.ms-excel",
-                        ];
-                        if (!validTypes.includes(file.type)) {
-                          toast.error("נא להעלות קובץ Excel בלבד (.xlsx או .xls)");
-                          e.target.value = "";
-                          return;
-                        }
-                        setUploadFile(file);
-                      }
+                      validateAndSetUploadFile(e.target.files[0]);
+                      e.target.value = "";
                     }}
                     className="hidden"
                   />
                   <label
                     htmlFor="salary-excel-file"
-                    className="flex items-center justify-center gap-3 px-6 py-4 border-2 border-dashed border-orange-300 rounded-xl hover:border-orange-500 hover:bg-orange-50 transition-all cursor-pointer"
+                    {...uploadDropHandlers}
+                    className={`flex items-center justify-center gap-3 px-6 py-4 border-2 border-dashed rounded-xl transition-all cursor-pointer ${
+                      isUploadDragging
+                        ? "border-orange-500 bg-orange-50"
+                        : "border-orange-300 hover:border-orange-500 hover:bg-orange-50"
+                    }`}
                   >
                     <Upload className="w-6 h-6 text-orange-500" />
                     <span className="font-medium text-slate-700">
-                      {uploadFile ? uploadFile.name : "לחץ לבחירת קובץ Excel"}
+                      {uploadFile ? uploadFile.name : isUploadDragging ? "שחרר כאן להעלאה" : "לחץ לבחירת קובץ Excel או גרור לכאן"}
                     </span>
                   </label>
                   <p className="text-xs text-slate-500 mt-1">

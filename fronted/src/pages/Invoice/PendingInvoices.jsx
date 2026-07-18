@@ -15,7 +15,15 @@ import {
   Copy,
   ExternalLink,
   Users,
+  Pencil,
 } from "lucide-react";
+
+const DOCUMENT_TYPES = [
+  "ח. עסקה",
+  "ה. עבודה",
+  "ד. תשלום",
+  "חשבונית מס / קבלה",
+];
 
 const STATUS_CONFIG = {
   "ממתין לאישור": {
@@ -181,7 +189,187 @@ function SupplierSyncModal({ invoice, matches, onConfirm, onClose, loading }) {
   );
 }
 
-function InvoiceRow({ invoice, onApprove, onReject, onSetPending, loading }) {
+function EditModal({ invoice, onSave, onClose, saving }) {
+  const toDateInput = (d) => (d ? new Date(d).toISOString().slice(0, 10) : "");
+
+  const [form, setForm] = useState({
+    submitterName: invoice.submitterName || "",
+    submitterPhone: invoice.submitterPhone || "",
+    submitterEmail: invoice.submitterEmail || "",
+    supplierName: invoice.supplierName || "",
+    supplierTaxId: invoice.supplierTaxId || "",
+    supplierAddress: invoice.supplierAddress || "",
+    supplierPhone: invoice.supplierPhone || "",
+    supplierEmail: invoice.supplierEmail || "",
+    bankName: invoice.bankName || "",
+    bankBranch: invoice.bankBranch || "",
+    bankAccount: invoice.bankAccount || "",
+    projectName: invoice.projectName || "",
+    invoiceNumber: invoice.invoiceNumber || "",
+    invoiceDate: toDateInput(invoice.invoiceDate),
+    totalAmount: invoice.totalAmount ?? "",
+    documentType: invoice.documentType || "",
+    detail: invoice.detail || "",
+  });
+  const [error, setError] = useState("");
+
+  const handleChange = (e) => {
+    setForm((prev) => ({ ...prev, [e.target.name]: e.target.value }));
+  };
+
+  const inputClass =
+    "w-full px-3 py-2 bg-gray-700/60 border border-gray-600 rounded-lg text-white placeholder-gray-400 text-sm focus:outline-none focus:border-orange-500 transition-all";
+
+  const handleSubmit = (e) => {
+    e.preventDefault();
+    const required = ["submitterName", "supplierName", "supplierTaxId", "bankName", "bankBranch", "bankAccount", "invoiceNumber", "invoiceDate", "totalAmount", "documentType"];
+    for (const field of required) {
+      if (!String(form[field] ?? "").trim()) {
+        setError("נא למלא את כל השדות המסומנים כחובה");
+        return;
+      }
+    }
+    setError("");
+    onSave({ ...form, totalAmount: parseFloat(form.totalAmount), projectId: invoice.projectId || null });
+  };
+
+  return (
+    <div className="fixed inset-0 bg-black/70 z-50 flex items-center justify-center p-4" dir="rtl">
+      <div className="bg-gray-800 border border-gray-700 rounded-2xl shadow-2xl p-6 max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+        <div className="flex items-center gap-3 mb-5">
+          <Pencil className="w-6 h-6 text-orange-400" />
+          <h3 className="text-lg font-bold text-white">עריכת פרטי חשבונית</h3>
+        </div>
+
+        <form onSubmit={handleSubmit} className="space-y-5">
+          <div>
+            <p className="text-xs font-bold text-gray-400 mb-2">ממלא הטופס</p>
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+              <div>
+                <label className="block text-xs text-gray-400 mb-1">שם *</label>
+                <input name="submitterName" value={form.submitterName} onChange={handleChange} className={inputClass} />
+              </div>
+              <div>
+                <label className="block text-xs text-gray-400 mb-1">טלפון</label>
+                <input name="submitterPhone" value={form.submitterPhone} onChange={handleChange} className={inputClass} />
+              </div>
+              <div>
+                <label className="block text-xs text-gray-400 mb-1">אימייל</label>
+                <input name="submitterEmail" type="email" value={form.submitterEmail} onChange={handleChange} className={inputClass} />
+              </div>
+            </div>
+          </div>
+
+          <div>
+            <p className="text-xs font-bold text-gray-400 mb-2">פרטי ספק</p>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <div>
+                <label className="block text-xs text-gray-400 mb-1">שם *</label>
+                <input name="supplierName" value={form.supplierName} onChange={handleChange} className={inputClass} />
+              </div>
+              <div>
+                <label className="block text-xs text-gray-400 mb-1">ח.פ. / ת.ז. *</label>
+                <input name="supplierTaxId" value={form.supplierTaxId} onChange={handleChange} className={inputClass} />
+              </div>
+              <div>
+                <label className="block text-xs text-gray-400 mb-1">טלפון</label>
+                <input name="supplierPhone" value={form.supplierPhone} onChange={handleChange} className={inputClass} />
+              </div>
+              <div>
+                <label className="block text-xs text-gray-400 mb-1">אימייל</label>
+                <input name="supplierEmail" type="email" value={form.supplierEmail} onChange={handleChange} className={inputClass} />
+              </div>
+              <div className="sm:col-span-2">
+                <label className="block text-xs text-gray-400 mb-1">כתובת</label>
+                <input name="supplierAddress" value={form.supplierAddress} onChange={handleChange} className={inputClass} />
+              </div>
+            </div>
+          </div>
+
+          <div>
+            <p className="text-xs font-bold text-gray-400 mb-2">פרטי בנק</p>
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+              <div>
+                <label className="block text-xs text-gray-400 mb-1">בנק *</label>
+                <input name="bankName" value={form.bankName} onChange={handleChange} className={inputClass} />
+              </div>
+              <div>
+                <label className="block text-xs text-gray-400 mb-1">סניף *</label>
+                <input name="bankBranch" value={form.bankBranch} onChange={handleChange} className={inputClass} />
+              </div>
+              <div>
+                <label className="block text-xs text-gray-400 mb-1">מספר חשבון *</label>
+                <input name="bankAccount" value={form.bankAccount} onChange={handleChange} className={inputClass} />
+              </div>
+            </div>
+          </div>
+
+          <div>
+            <p className="text-xs font-bold text-gray-400 mb-2">פרטי חשבונית</p>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <div>
+                <label className="block text-xs text-gray-400 mb-1">מספר חשבונית *</label>
+                <input name="invoiceNumber" value={form.invoiceNumber} onChange={handleChange} className={inputClass} />
+              </div>
+              <div>
+                <label className="block text-xs text-gray-400 mb-1">תאריך *</label>
+                <input name="invoiceDate" type="date" value={form.invoiceDate} onChange={handleChange} className={inputClass} />
+              </div>
+              <div>
+                <label className="block text-xs text-gray-400 mb-1">סכום (₪) *</label>
+                <input name="totalAmount" type="number" min="0" step="0.01" value={form.totalAmount} onChange={handleChange} className={inputClass} />
+              </div>
+              <div>
+                <label className="block text-xs text-gray-400 mb-1">סוג מסמך *</label>
+                <select name="documentType" value={form.documentType} onChange={handleChange} className={inputClass}>
+                  <option value="">בחר סוג מסמך</option>
+                  {DOCUMENT_TYPES.map((t) => (
+                    <option key={t} value={t}>{t}</option>
+                  ))}
+                </select>
+              </div>
+              <div>
+                <label className="block text-xs text-gray-400 mb-1">פרויקט משויך</label>
+                <input name="projectName" value={form.projectName} onChange={handleChange} className={inputClass} />
+              </div>
+              <div className="sm:col-span-2">
+                <label className="block text-xs text-gray-400 mb-1">פירוט / הערות</label>
+                <textarea name="detail" value={form.detail} onChange={handleChange} rows={2} className={`${inputClass} resize-none`} />
+              </div>
+            </div>
+          </div>
+
+          {error && (
+            <div className="flex items-center gap-2 bg-red-500/10 border border-red-500/40 rounded-xl px-4 py-2.5">
+              <AlertCircle className="w-4 h-4 text-red-400 shrink-0" />
+              <p className="text-red-300 text-sm">{error}</p>
+            </div>
+          )}
+
+          <div className="flex gap-3 pt-1">
+            <button
+              type="submit"
+              disabled={saving}
+              className="flex-1 py-2.5 bg-orange-500 hover:bg-orange-600 text-white font-bold rounded-xl transition-all disabled:opacity-50"
+            >
+              {saving ? "שומר..." : "שמור שינויים"}
+            </button>
+            <button
+              type="button"
+              onClick={onClose}
+              disabled={saving}
+              className="flex-1 py-2.5 bg-gray-700 hover:bg-gray-600 text-gray-300 font-medium rounded-xl transition-all"
+            >
+              ביטול
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  );
+}
+
+function InvoiceRow({ invoice, onApprove, onReject, onSetPending, onEdit, loading }) {
   const [expanded, setExpanded] = useState(false);
   const config = STATUS_CONFIG[invoice.status] || STATUS_CONFIG["ממתין לאישור"];
   const StatusIcon = config.icon;
@@ -218,6 +406,14 @@ function InvoiceRow({ invoice, onApprove, onReject, onSetPending, loading }) {
           {invoice.status === "ממתין לאישור" && (
             <>
               <button
+                onClick={(e) => { e.stopPropagation(); onEdit(invoice); }}
+                disabled={isActionLoading}
+                className="flex items-center gap-1 px-3 py-1.5 bg-gray-500/20 hover:bg-gray-500 border border-gray-500/40 text-gray-300 hover:text-white text-xs font-bold rounded-lg transition-all disabled:opacity-50"
+              >
+                <Pencil size={14} />
+                עריכה
+              </button>
+              <button
                 onClick={(e) => { e.stopPropagation(); onApprove(invoice._id); }}
                 disabled={isActionLoading}
                 className="flex items-center gap-1 px-3 py-1.5 bg-green-500/20 hover:bg-green-500 border border-green-500/40 text-green-300 hover:text-white text-xs font-bold rounded-lg transition-all disabled:opacity-50"
@@ -237,6 +433,14 @@ function InvoiceRow({ invoice, onApprove, onReject, onSetPending, loading }) {
           )}
           {invoice.status === "לא מאושר" && (
             <>
+              <button
+                onClick={(e) => { e.stopPropagation(); onEdit(invoice); }}
+                disabled={isActionLoading}
+                className="flex items-center gap-1 px-3 py-1.5 bg-gray-500/20 hover:bg-gray-500 border border-gray-500/40 text-gray-300 hover:text-white text-xs font-bold rounded-lg transition-all disabled:opacity-50"
+              >
+                <Pencil size={14} />
+                עריכה
+              </button>
               <button
                 onClick={(e) => { e.stopPropagation(); onApprove(invoice._id); }}
                 disabled={isActionLoading}
@@ -328,10 +532,18 @@ function InvoiceRow({ invoice, onApprove, onReject, onSetPending, loading }) {
             </div>
           )}
 
-          {/* קובץ */}
+          {/* קבצים */}
           <div>
-            <p className="text-sm font-bold text-gray-300 mb-2">קובץ מצורף</p>
-            <FilePreview file={invoice.file} />
+            <p className="text-sm font-bold text-gray-300 mb-2">קבצים מצורפים</p>
+            {invoice.files?.length ? (
+              <div className="space-y-3">
+                {invoice.files.map((f, i) => (
+                  <FilePreview key={f.publicId || i} file={f} />
+                ))}
+              </div>
+            ) : (
+              <FilePreview file={null} />
+            )}
           </div>
         </div>
       )}
@@ -356,6 +568,8 @@ export default function PendingInvoices() {
   const [rejectTarget, setRejectTarget] = useState(null);
   const [copied, setCopied] = useState(false);
   const [supplierSync, setSupplierSync] = useState(null); // { invoiceId, invoice, matches }
+  const [editTarget, setEditTarget] = useState(null);
+  const [savingEdit, setSavingEdit] = useState(false);
 
   const fetchInvoices = useCallback(async () => {
     setLoading(true);
@@ -411,6 +625,21 @@ export default function PendingInvoices() {
       toast.error("שגיאה בדחיית החשבונית");
     } finally {
       setActionLoading(null);
+    }
+  };
+
+  const handleSaveEdit = async (form) => {
+    if (!editTarget) return;
+    setSavingEdit(true);
+    try {
+      await api.put(`/pending-invoices/${editTarget._id}`, form);
+      toast.success("פרטי החשבונית עודכנו");
+      setEditTarget(null);
+      fetchInvoices();
+    } catch (err) {
+      toast.error(err.response?.data?.message || "שגיאה בעדכון החשבונית");
+    } finally {
+      setSavingEdit(false);
     }
   };
 
@@ -519,6 +748,7 @@ export default function PendingInvoices() {
                 onApprove={handleApprove}
                 onReject={(id) => setRejectTarget(id)}
                 onSetPending={handleSetPending}
+                onEdit={(inv) => setEditTarget(inv)}
                 loading={actionLoading}
               />
             ))}
@@ -530,6 +760,15 @@ export default function PendingInvoices() {
         <RejectModal
           onConfirm={handleRejectConfirm}
           onClose={() => setRejectTarget(null)}
+        />
+      )}
+
+      {editTarget && (
+        <EditModal
+          invoice={editTarget}
+          onSave={handleSaveEdit}
+          onClose={() => setEditTarget(null)}
+          saving={savingEdit}
         />
       )}
 

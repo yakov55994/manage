@@ -2,6 +2,7 @@ import { useState, useEffect, useRef } from "react";
 import { DownloadCloud, FileSpreadsheet, FileText, Loader2, Calendar, Database, Clock, CheckCircle2, AlertCircle, Upload, ShieldAlert, Settings, Mail, ToggleLeft, ToggleRight } from "lucide-react";
 import { toast } from "sonner";
 import api from "../api/api";
+import useFileDrop from "../hooks/useFileDrop";
 
 const ExportDataPage = () => {
   const [loadingExcel, setLoadingExcel] = useState(false);
@@ -14,6 +15,10 @@ const ExportDataPage = () => {
   const [confirmRestore, setConfirmRestore] = useState(false);
   const [backupStatus, setBackupStatus] = useState(null);
   const restoreInputRef = useRef(null);
+  const { isDragging: isRestoreDragging, dropHandlers: restoreDropHandlers } = useFileDrop((files) => {
+    setRestoreFile(files[0]);
+    setRestoreResults(null);
+  });
   const currentYear = new Date().getFullYear();
   const [selectedYear, setSelectedYear] = useState(currentYear);
 
@@ -558,17 +563,21 @@ const ExportDataPage = () => {
 
             {/* בחירת קובץ */}
             <div className="mb-4">
-              <label className="block text-sm font-bold text-slate-700 mb-2">בחר קובץ גיבוי (ZIP)</label>
-              <input
-                ref={restoreInputRef}
-                type="file"
-                accept=".zip"
-                onChange={(e) => {
-                  setRestoreFile(e.target.files[0] || null);
-                  setRestoreResults(null);
-                }}
-                className="block w-full text-sm text-slate-600 file:ml-4 file:py-2 file:px-4 file:rounded-xl file:border-0 file:font-bold file:bg-red-100 file:text-red-700 hover:file:bg-red-200 cursor-pointer border-2 border-dashed border-red-200 rounded-xl p-3"
-              />
+              <label className="block text-sm font-bold text-slate-700 mb-2">בחר קובץ גיבוי (ZIP) - או גרור לכאן</label>
+              <div {...restoreDropHandlers}>
+                <input
+                  ref={restoreInputRef}
+                  type="file"
+                  accept=".zip"
+                  onChange={(e) => {
+                    setRestoreFile(e.target.files[0] || null);
+                    setRestoreResults(null);
+                  }}
+                  className={`block w-full text-sm text-slate-600 file:ml-4 file:py-2 file:px-4 file:rounded-xl file:border-0 file:font-bold file:bg-red-100 file:text-red-700 hover:file:bg-red-200 cursor-pointer border-2 border-dashed rounded-xl p-3 transition-colors ${
+                    isRestoreDragging ? "border-red-500 bg-red-50" : "border-red-200"
+                  }`}
+                />
+              </div>
               {restoreFile && (
                 <p className="text-xs text-slate-500 mt-1">
                   קובץ נבחר: <strong>{restoreFile.name}</strong> ({(restoreFile.size / 1024 / 1024).toFixed(1)} MB)

@@ -20,6 +20,7 @@ import {
   CheckSquare,
   Square,
   Upload,
+  FileCheck,
 } from "lucide-react";
 import { toast } from "sonner";
 import MoveInvoiceModal from "../../Components/MoveInvoiceModal.jsx";
@@ -30,6 +31,7 @@ import MasavModal from "../../Components/MasavModal.jsx";
 import MasavHistoryModal from "../../Components/MasavHistoryModal.jsx";
 import MultiSelectDropdown from "../../Components/MultiSelectDropdown.jsx";
 import QuickFileUploadModal from "../../Components/QuickFileUploadModal.jsx";
+import useFileDrop from "../../hooks/useFileDrop";
 
 
 // פונקציית עזר לסידור עברי נכון (א'-ב')
@@ -107,6 +109,7 @@ const InvoicesPage = () => {
   const [paymentFilter, setPaymentFilter] = useState([]);
   const [statusFilter, setStatusFilter] = useState([]);
   const [uploadModal, setUploadModal] = useState({ open: false, invoice: null });
+  const [downloadingConfirmationId, setDownloadingConfirmationId] = useState(null);
 
   const [selectedProjectForPrint, setSelectedProjectForPrint] = useState([]);
   const [selectedSupplierForPrint, setSelectedSupplierForPrint] = useState([]);
@@ -1808,6 +1811,34 @@ const InvoicesPage = () => {
     navigate(`/update-invoice/${id}`);
   };
 
+  const handleDownloadPaymentConfirmation = async (invoice) => {
+    if (!invoice.paymentDate) {
+      toast.error("לא ניתן להפיק אישור תשלום — לא הוגדר תאריך תשלום לחשבונית זו");
+      return;
+    }
+
+    try {
+      setDownloadingConfirmationId(invoice._id);
+
+      const response = await api.get(
+        `/invoices/${invoice._id}/payment-confirmation-pdf`,
+        { responseType: "blob" }
+      );
+
+      saveAs(
+        new Blob([response.data], { type: "application/pdf" }),
+        `אישור-תשלום-${invoice.invoiceNumber}.pdf`
+      );
+
+      toast.success("אישור התשלום הופק בהצלחה");
+    } catch (error) {
+      console.error("Payment confirmation PDF error:", error);
+      toast.error("שגיאה בהפקת אישור תשלום");
+    } finally {
+      setDownloadingConfirmationId(null);
+    }
+  };
+
   const handleView = (id) => {
     // הסינונים כבר נשמרים אוטומטית ב-useEffect, לא צריך לשמור שוב
     navigate(`/invoices/${id}`);
@@ -3304,6 +3335,21 @@ const InvoicesPage = () => {
                                 >
                                   <Edit2 className="w-4 h-4" />
                                 </button>
+                                <button
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    handleDownloadPaymentConfirmation(invoice);
+                                  }}
+                                  disabled={downloadingConfirmationId === invoice._id}
+                                  className="p-1.5 text-emerald-600 hover:bg-emerald-100 rounded-lg transition-colors disabled:opacity-50"
+                                  title={invoice.paymentDate ? "הפק אישור תשלום PDF" : "יש להזין תאריך תשלום כדי להפיק אישור"}
+                                >
+                                  {downloadingConfirmationId === invoice._id ? (
+                                    <ClipLoader size={16} color="#059669" />
+                                  ) : (
+                                    <FileCheck className="w-4 h-4" />
+                                  )}
+                                </button>
                                 {isAdmin && invoice.type != "salary" ? (
                                   <>
                                     <button
@@ -4476,6 +4522,7 @@ function MilgaExcelModal({ projects, onClose, onSuccess }) {
   const [globalAmount, setGlobalAmount] = useState("");
   const [invoiceDate, setInvoiceDate] = useState(new Date().toISOString().split("T")[0]);
   const [loading, setLoading] = useState(false);
+  const { isDragging, dropHandlers } = useFileDrop((files) => setExcelFile(files[0]));
   const [result, setResult] = useState(null);
 
   const nonMilgaProjects = projects.filter(
@@ -4609,11 +4656,16 @@ function MilgaExcelModal({ projects, onClose, onSuccess }) {
             </label>
             <label
               htmlFor="milga-excel-file"
-              className="flex items-center justify-center gap-3 p-4 border-2 border-dashed border-green-300 rounded-xl hover:border-green-500 hover:bg-green-50 transition-all cursor-pointer"
+              {...dropHandlers}
+              className={`flex items-center justify-center gap-3 p-4 border-2 border-dashed rounded-xl transition-all cursor-pointer ${
+                isDragging
+                  ? "border-green-500 bg-green-50"
+                  : "border-green-300 hover:border-green-500 hover:bg-green-50"
+              }`}
             >
               <FileSpreadsheet className="w-6 h-6 text-green-500" />
               <span className="font-medium text-gray-700">
-                {excelFile ? excelFile.name : "לחץ להעלאת קובץ Excel"}
+                {excelFile ? excelFile.name : isDragging ? "שחרר כאן להעלאה" : "לחץ להעלאת קובץ Excel או גרור לכאן"}
               </span>
             </label>
             <input

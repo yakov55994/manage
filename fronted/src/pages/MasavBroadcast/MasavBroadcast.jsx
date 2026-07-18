@@ -2,6 +2,7 @@ import { useState, useEffect, useRef } from "react";
 import { Upload, Download, Trash2, ChevronDown, ChevronUp, FileText, Plus, X } from "lucide-react";
 import { toast } from "sonner";
 import api from "../../api/api";
+import useFileDrop from "../../hooks/useFileDrop";
 
 const MONTHS_HE = [
   "ינואר", "פברואר", "מרץ", "אפריל", "מאי", "יוני",
@@ -71,6 +72,10 @@ export default function MasavBroadcast() {
   const removeFile = (index) => {
     setForm((f) => ({ ...f, files: f.files.filter((_, i) => i !== index) }));
   };
+
+  const { isDragging, dropHandlers } = useFileDrop((droppedFiles) => {
+    setForm((f) => ({ ...f, files: [...f.files, ...droppedFiles] }));
+  });
 
   const resetForm = () => {
     setForm({ month: new Date().toISOString().slice(0, 7), notes: "", files: [] });
@@ -284,10 +289,15 @@ export default function MasavBroadcast() {
                 </label>
                 <div
                   onClick={() => fileInputRef.current?.click()}
-                  className="w-full px-4 py-5 bg-slate-50 border-2 border-dashed border-slate-300 rounded-xl text-center cursor-pointer hover:border-orange-500 hover:bg-orange-50/30 transition-all"
+                  {...dropHandlers}
+                  className={`w-full px-4 py-5 border-2 border-dashed rounded-xl text-center cursor-pointer transition-all ${
+                    isDragging
+                      ? "border-orange-500 bg-orange-50"
+                      : "bg-slate-50 border-slate-300 hover:border-orange-500 hover:bg-orange-50/30"
+                  }`}
                 >
                   <Upload size={22} className="mx-auto text-slate-400 mb-1" />
-                  <p className="text-sm text-slate-500">לחץ להוספת קבצים</p>
+                  <p className="text-sm text-slate-500">{isDragging ? "שחרר כאן להוספה" : "לחץ להוספת קבצים או גרור לכאן"}</p>
                 </div>
                 <input ref={fileInputRef} type="file" multiple onChange={handleFileChange} className="hidden" />
                 {form.files.length > 0 && (
