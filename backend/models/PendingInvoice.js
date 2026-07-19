@@ -45,6 +45,8 @@ const pendingInvoiceSchema = new mongoose.Schema({
 
   // קבצים מצורפים
   files: { type: [PendingInvoiceFileSchema], default: [] },
+  // שדה ישן (לפני מעבר לריבוי קבצים) - נשמר לקריאה בלבד, למניעת אובדן נתונים במסמכים קיימים
+  file: { type: PendingInvoiceFileSchema, default: null },
 
   // סטטוס אישור
   status: {
@@ -60,7 +62,8 @@ const pendingInvoiceSchema = new mongoose.Schema({
 // מחיקת קובץ מ-Cloudinary כשמוחקים חשבונית ממתינה דרך document.deleteOne()
 pendingInvoiceSchema.pre('deleteOne', { document: true, query: false }, async function (next) {
   try {
-    for (const file of this.files || []) {
+    const allFiles = [...(this.files || []), ...(this.file ? [this.file] : [])];
+    for (const file of allFiles) {
       if (file?.publicId) {
         await cloudinary.uploader.destroy(file.publicId, {
           resource_type: file.resourceType || 'raw'

@@ -300,23 +300,26 @@ export default function ViewIncomes() {
 
     // שיוכים מרובים חדשים
     if (income.linkedInvoices?.length > 0) {
+      const label = income.linkedInvoices.map((inv) => `#${inv.invoiceNumber ?? "—"}${inv.supplierId?.name ? ` (${inv.supplierId.name})` : ""}`).join(", ");
       links.push(
-        <span key="invoices" className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-700 mr-1">
-          {income.linkedInvoices.length} חשבוניות
+        <span key="invoices" className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-700 mr-1 max-w-[180px] truncate" title={label}>
+          {label}
         </span>
       );
     }
     if (income.linkedSalaries?.length > 0) {
+      const label = income.linkedSalaries.map((sal) => sal.employeeName || "—").join(", ");
       links.push(
-        <span key="salaries" className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-purple-100 text-purple-700 mr-1">
-          {income.linkedSalaries.length} משכורות
+        <span key="salaries" className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-purple-100 text-purple-700 mr-1 max-w-[180px] truncate" title={label}>
+          {label}
         </span>
       );
     }
     if (income.linkedOrders?.length > 0) {
+      const label = income.linkedOrders.map((ord) => `#${ord.orderNumber ?? "—"}`).join(", ");
       links.push(
-        <span key="orders" className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-orange-100 text-orange-700 mr-1">
-          {income.linkedOrders.length} הזמנות
+        <span key="orders" className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-orange-100 text-orange-700 mr-1 max-w-[180px] truncate" title={label}>
+          {label}
         </span>
       );
     }

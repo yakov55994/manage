@@ -4,6 +4,7 @@ import Supplier from "../models/Supplier.js";
 import Project from "../models/Project.js";
 import cloudinary from "../config/cloudinary.js";
 import fs from "fs/promises";
+import { recalculateRemainingBudget } from "../services/invoiceService.js";
 
 const pendingInvoiceController = {
 
@@ -100,7 +101,16 @@ const pendingInvoiceController = {
       if (status && status !== "הכל") filter.status = status;
 
       const pendingInvoices = await PendingInvoice.find(filter).sort({ createdAt: -1 });
-      res.json(pendingInvoices);
+      // fallback לשדה הישן `file` (יחיד) עבור מסמכים שנוצרו לפני המעבר לריבוי קבצים
+      const normalized = pendingInvoices.map((doc) => {
+        if (!doc.files?.length && doc.file) {
+          const obj = doc.toObject();
+          obj.files = [obj.file];
+          return obj;
+        }
+        return doc;
+      });
+      res.json(normalized);
     } catch (error) {
       console.error("❌ שגיאה בטעינת חשבוניות ממתינות:", error);
       res.status(500).json({ message: "שגיאה בטעינת חשבוניות ממתינות" });
@@ -109,6 +119,7 @@ const pendingInvoiceController = {
 
   // PUT /api/pending-invoices/:id — admin בלבד, עריכת פרטי חשבונית ממתינה
   updateInvoice: async (req, res) => {
+    const uploadedFiles = req.files || [];
     try {
       const {
         submitterName, submitterPhone, submitterEmail,
@@ -116,10 +127,44 @@ const pendingInvoiceController = {
         bankName, bankBranch, bankAccount,
         projectId, projectName,
         invoiceNumber, invoiceDate, totalAmount, documentType, detail,
+        existingFiles,
       } = req.body;
 
       if (!submitterName || !supplierName || !supplierTaxId || !invoiceNumber || !invoiceDate || !totalAmount || !documentType || !bankName || !bankBranch || !bankAccount) {
+        await Promise.all(uploadedFiles.map((f) => fs.unlink(f.path).catch(() => {})));
         return res.status(400).json({ message: "נא למלא את כל השדות החובה" });
+      }
+
+      let keptFiles = [];
+      if (existingFiles) {
+        try {
+          keptFiles = JSON.parse(existingFiles);
+        } catch {
+          keptFiles = [];
+        }
+      }
+
+      const newFilesData = [];
+      for (const [index, uploadedFile] of uploadedFiles.entries()) {
+        const timestamp = Date.now();
+        const safePublicId = `pending_invoice_${timestamp}_${index}`;
+
+        const result = await cloudinary.uploader.upload(uploadedFile.path, {
+          folder: "pending_invoices",
+          public_id: safePublicId,
+          resource_type: "auto",
+        });
+
+        newFilesData.push({
+          name: uploadedFile.originalname,
+          url: result.secure_url,
+          publicId: result.public_id,
+          resourceType: result.resource_type,
+          type: uploadedFile.mimetype,
+          size: uploadedFile.size,
+        });
+
+        await fs.unlink(uploadedFile.path).catch(() => {});
       }
 
       const pendingInvoice = await PendingInvoice.findByIdAndUpdate(
@@ -143,6 +188,7 @@ const pendingInvoiceController = {
           totalAmount: parseFloat(totalAmount),
           documentType,
           detail: detail?.trim() || "",
+          files: [...keptFiles, ...newFilesData],
         },
         { new: true, runValidators: true }
       );
@@ -154,6 +200,7 @@ const pendingInvoiceController = {
       res.json({ message: "פרטי החשבונית עודכנו", pendingInvoice });
     } catch (error) {
       console.error("❌ שגיאה בעדכון חשבונית ממתינה:", error);
+      await Promise.all(uploadedFiles.map((f) => fs.unlink(f.path).catch(() => {})));
       res.status(500).json({ message: "שגיאה בעדכון החשבונית", error: error.message });
     }
   },
@@ -166,7 +213,14 @@ const pendingInvoiceController = {
         return res.status(404).json({ message: "חשבונית ממתינה לא נמצאה" });
       }
 
-      const { supplierDecision, supplierId } = req.body || {};
+      const { supplierDecision, supplierId, fundedFromProjectId } = req.body || {};
+
+      if (fundedFromProjectId) {
+        const fundingProject = await Project.findById(fundedFromProjectId);
+        if (!fundingProject) {
+          return res.status(404).json({ message: "פרויקט המימון שנבחר לא נמצא" });
+        }
+      }
 
       const createNewSupplier = async () => {
         const newSupplier = new Supplier({
@@ -225,13 +279,16 @@ const pendingInvoiceController = {
       }
 
       // בניית מערך פרויקטים
+      // אם נבחר פרויקט מימון (לרוב עבור פרויקט מילגה) — הסכום יורד מפרויקט המימון,
+      // ופרויקט המילגה עצמו נשאר עם sum: 0 (רק לצורך קישור/תצוגה)
       const projects = pendingInvoice.projectId ? [{
         projectId: pendingInvoice.projectId,
         projectName: pendingInvoice.projectName,
-        sum: pendingInvoice.totalAmount,
+        sum: fundedFromProjectId ? 0 : pendingInvoice.totalAmount,
       }] : [];
 
-      const files = pendingInvoice.files || [];
+      // fallback לשדה הישן `file` (יחיד) עבור מסמכים שנוצרו לפני המעבר לריבוי קבצים
+      const files = pendingInvoice.files?.length ? pendingInvoice.files : (pendingInvoice.file ? [pendingInvoice.file] : []);
 
       const invoice = new Invoice({
         invoiceNumber: pendingInvoice.invoiceNumber,
@@ -246,6 +303,7 @@ const pendingInvoiceController = {
         paid: "לא",
         files,
         status: "לא הוגש",
+        fundedFromProjectId: fundedFromProjectId || null,
         createdByName: req.user?.username || "מערכת",
         createdBy: req.user?._id || undefined,
         editHistory: [{
@@ -266,6 +324,11 @@ const pendingInvoiceController = {
         await Project.findByIdAndUpdate(pendingInvoice.projectId, {
           $push: { invoices: invoice._id },
         });
+        await recalculateRemainingBudget(pendingInvoice.projectId);
+      }
+
+      if (fundedFromProjectId) {
+        await recalculateRemainingBudget(fundedFromProjectId);
       }
 
       // מחיקה בלי להפעיל pre-hook (הקובץ עבר לחשבונית)

@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import api from "../../api/api.js";
 import { toast } from "sonner";
 import {
@@ -16,7 +16,11 @@ import {
   ExternalLink,
   Users,
   Pencil,
+  Upload,
+  X,
 } from "lucide-react";
+import useFileDrop from "../../hooks/useFileDrop.js";
+import FundingProjectModal from "../../Components/FundingProjectModal.jsx";
 
 const DOCUMENT_TYPES = [
   "ח. עסקה",
@@ -189,7 +193,7 @@ function SupplierSyncModal({ invoice, matches, onConfirm, onClose, loading }) {
   );
 }
 
-function EditModal({ invoice, onSave, onClose, saving }) {
+function EditModal({ invoice, projects, onSave, onClose, saving }) {
   const toDateInput = (d) => (d ? new Date(d).toISOString().slice(0, 10) : "");
 
   const [form, setForm] = useState({
@@ -213,17 +217,33 @@ function EditModal({ invoice, onSave, onClose, saving }) {
     detail: invoice.detail || "",
   });
   const [error, setError] = useState("");
-  const [projects, setProjects] = useState([]);
-
-  useEffect(() => {
-    api
-      .get("/projects")
-      .then((res) => setProjects(res.data?.data || []))
-      .catch((err) => console.error("Error fetching projects:", err));
-  }, []);
+  const [existingFiles, setExistingFiles] = useState(invoice.files || []);
+  const [newFiles, setNewFiles] = useState([]);
+  const fileRef = useRef(null);
 
   const handleChange = (e) => {
     setForm((prev) => ({ ...prev, [e.target.name]: e.target.value }));
+  };
+
+  const addFiles = (selected) => {
+    if (!selected.length) return;
+    const oversized = selected.find((f) => f.size > 10 * 1024 * 1024);
+    if (oversized) {
+      setError("גודל כל קובץ חייב להיות עד 10MB");
+      return;
+    }
+    setNewFiles((prev) => [...prev, ...selected]);
+    setError("");
+  };
+
+  const { isDragging, dropHandlers } = useFileDrop(addFiles);
+
+  const removeExistingFile = (publicId) => {
+    setExistingFiles((prev) => prev.filter((f) => f.publicId !== publicId));
+  };
+
+  const removeNewFile = (index) => {
+    setNewFiles((prev) => prev.filter((_, i) => i !== index));
   };
 
   const handleProjectChange = (e) => {
@@ -245,7 +265,13 @@ function EditModal({ invoice, onSave, onClose, saving }) {
       }
     }
     setError("");
-    onSave({ ...form, totalAmount: parseFloat(form.totalAmount), projectId: form.projectId || null });
+    onSave({
+      ...form,
+      totalAmount: parseFloat(form.totalAmount),
+      projectId: form.projectId || null,
+      existingFiles,
+      newFiles,
+    });
   };
 
   return (
@@ -361,6 +387,72 @@ function EditModal({ invoice, onSave, onClose, saving }) {
             </div>
           </div>
 
+          <div>
+            <p className="text-xs font-bold text-gray-400 mb-2">קבצים מצורפים</p>
+
+            {existingFiles.length > 0 && (
+              <div className="space-y-2 mb-3">
+                {existingFiles.map((f) => (
+                  <div
+                    key={f.publicId}
+                    className="flex items-center justify-between gap-2 bg-gray-700/60 border border-gray-600 rounded-xl px-4 py-2.5"
+                  >
+                    <span className="text-gray-200 text-sm truncate">{f.name}</span>
+                    <button
+                      type="button"
+                      onClick={() => removeExistingFile(f.publicId)}
+                      className="text-red-400 hover:text-red-300 shrink-0"
+                    >
+                      <X size={16} />
+                    </button>
+                  </div>
+                ))}
+              </div>
+            )}
+
+            <div
+              onClick={() => fileRef.current?.click()}
+              {...dropHandlers}
+              className={`border-2 border-dashed rounded-xl p-5 text-center cursor-pointer transition-all group ${
+                isDragging ? "border-orange-500 bg-orange-500/10" : "border-gray-600 hover:border-orange-500"
+              }`}
+            >
+              <Upload className="w-7 h-7 text-gray-500 group-hover:text-orange-400 mx-auto mb-2 transition-all" />
+              <p className="text-gray-400 text-xs">{isDragging ? "שחרר כאן להעלאה" : "לחץ לבחירת קובץ או גרור לכאן"}</p>
+            </div>
+            <input
+              ref={fileRef}
+              type="file"
+              multiple
+              accept=".pdf,.jpg,.jpeg,.png,.gif,.webp"
+              onChange={(e) => {
+                addFiles(Array.from(e.target.files || []));
+                if (fileRef.current) fileRef.current.value = "";
+              }}
+              className="hidden"
+            />
+
+            {newFiles.length > 0 && (
+              <div className="space-y-2 mt-3">
+                {newFiles.map((f, i) => (
+                  <div
+                    key={`${f.name}-${i}`}
+                    className="flex items-center justify-between gap-2 bg-gray-700/60 border border-gray-600 rounded-xl px-4 py-2.5"
+                  >
+                    <span className="text-green-400 font-medium text-sm truncate">{f.name}</span>
+                    <button
+                      type="button"
+                      onClick={() => removeNewFile(i)}
+                      className="text-red-400 hover:text-red-300 shrink-0"
+                    >
+                      <X size={16} />
+                    </button>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+
           {error && (
             <div className="flex items-center gap-2 bg-red-500/10 border border-red-500/40 rounded-xl px-4 py-2.5">
               <AlertCircle className="w-4 h-4 text-red-400 shrink-0" />
@@ -436,7 +528,7 @@ function InvoiceRow({ invoice, onApprove, onReject, onSetPending, onEdit, loadin
                 עריכה
               </button>
               <button
-                onClick={(e) => { e.stopPropagation(); onApprove(invoice._id); }}
+                onClick={(e) => { e.stopPropagation(); onApprove(invoice); }}
                 disabled={isActionLoading}
                 className="flex items-center gap-1 px-3 py-1.5 bg-green-500/20 hover:bg-green-500 border border-green-500/40 text-green-300 hover:text-white text-xs font-bold rounded-lg transition-all disabled:opacity-50"
               >
@@ -464,7 +556,7 @@ function InvoiceRow({ invoice, onApprove, onReject, onSetPending, onEdit, loadin
                 עריכה
               </button>
               <button
-                onClick={(e) => { e.stopPropagation(); onApprove(invoice._id); }}
+                onClick={(e) => { e.stopPropagation(); onApprove(invoice); }}
                 disabled={isActionLoading}
                 className="flex items-center gap-1 px-3 py-1.5 bg-green-500/20 hover:bg-green-500 border border-green-500/40 text-green-300 hover:text-white text-xs font-bold rounded-lg transition-all disabled:opacity-50"
               >
@@ -584,12 +676,14 @@ function Row({ label, value, highlight }) {
 
 export default function PendingInvoices() {
   const [invoices, setInvoices] = useState([]);
+  const [projects, setProjects] = useState([]);
   const [filter, setFilter] = useState("הכל");
   const [loading, setLoading] = useState(false);
   const [actionLoading, setActionLoading] = useState(null);
   const [rejectTarget, setRejectTarget] = useState(null);
   const [copied, setCopied] = useState(false);
-  const [supplierSync, setSupplierSync] = useState(null); // { invoiceId, invoice, matches }
+  const [supplierSync, setSupplierSync] = useState(null); // { invoiceId, invoice, matches, fundedFromProjectId }
+  const [fundingTarget, setFundingTarget] = useState(null); // חשבונית שממתינה לבחירת פרויקט מימון (מילגה)
   const [editTarget, setEditTarget] = useState(null);
   const [savingEdit, setSavingEdit] = useState(false);
 
@@ -608,12 +702,30 @@ export default function PendingInvoices() {
 
   useEffect(() => { fetchInvoices(); }, [fetchInvoices]);
 
-  const handleApprove = async (id, decision) => {
+  useEffect(() => {
+    api
+      .get("/projects")
+      .then((res) => setProjects(res.data?.data || []))
+      .catch((err) => console.error("Error fetching projects:", err));
+  }, []);
+
+  const isMilgaProject = (projectId) => {
+    if (!projectId) return false;
+    const project = projects.find((p) => p._id === projectId);
+    return !!project && (project.isMilga || project.type === "milga");
+  };
+
+  const handleApprove = async (id, extra = {}) => {
     setActionLoading(id);
     try {
-      const body = decision
-        ? { supplierDecision: decision.supplierDecision, supplierId: decision.supplierId }
-        : {};
+      const body = {};
+      if (extra.supplierDecision) {
+        body.supplierDecision = extra.supplierDecision;
+        body.supplierId = extra.supplierId;
+      }
+      if (extra.fundedFromProjectId) {
+        body.fundedFromProjectId = extra.fundedFromProjectId;
+      }
       await api.post(`/pending-invoices/${id}/approve`, body);
       toast.success("החשבונית אושרה ונוספה למערכת");
       setSupplierSync(null);
@@ -621,7 +733,12 @@ export default function PendingInvoices() {
     } catch (err) {
       if (err.response?.status === 409 && err.response?.data?.requiresSupplierDecision) {
         const invoice = invoices.find((i) => i._id === id);
-        setSupplierSync({ invoiceId: id, invoice, matches: err.response.data.matchedSuppliers || [] });
+        setSupplierSync({
+          invoiceId: id,
+          invoice,
+          matches: err.response.data.matchedSuppliers || [],
+          fundedFromProjectId: extra.fundedFromProjectId || null,
+        });
         return;
       }
       toast.error(err.response?.data?.message || "שגיאה באישור החשבונית");
@@ -630,9 +747,27 @@ export default function PendingInvoices() {
     }
   };
 
+  const handleApproveClick = (invoice) => {
+    if (isMilgaProject(invoice.projectId)) {
+      setFundingTarget(invoice);
+      return;
+    }
+    handleApprove(invoice._id);
+  };
+
+  const handleFundingSelect = (selectedProject) => {
+    if (!fundingTarget) return;
+    handleApprove(fundingTarget._id, { fundedFromProjectId: selectedProject._id });
+    setFundingTarget(null);
+  };
+
   const handleSupplierSyncConfirm = (supplierDecision, supplierId) => {
     if (!supplierSync) return;
-    handleApprove(supplierSync.invoiceId, { supplierDecision, supplierId });
+    handleApprove(supplierSync.invoiceId, {
+      supplierDecision,
+      supplierId,
+      fundedFromProjectId: supplierSync.fundedFromProjectId,
+    });
   };
 
   const handleRejectConfirm = async (notes) => {
@@ -654,7 +789,17 @@ export default function PendingInvoices() {
     if (!editTarget) return;
     setSavingEdit(true);
     try {
-      await api.put(`/pending-invoices/${editTarget._id}`, form);
+      const { existingFiles, newFiles, ...fields } = form;
+      const formData = new FormData();
+      Object.entries(fields).forEach(([key, value]) => {
+        if (value !== null && value !== undefined) formData.append(key, value);
+      });
+      formData.append("existingFiles", JSON.stringify(existingFiles || []));
+      (newFiles || []).forEach((f) => formData.append("files", f));
+
+      await api.put(`/pending-invoices/${editTarget._id}`, formData, {
+        headers: { "Content-Type": "multipart/form-data" },
+      });
       toast.success("פרטי החשבונית עודכנו");
       setEditTarget(null);
       fetchInvoices();
@@ -767,7 +912,7 @@ export default function PendingInvoices() {
               <InvoiceRow
                 key={inv._id}
                 invoice={inv}
-                onApprove={handleApprove}
+                onApprove={handleApproveClick}
                 onReject={(id) => setRejectTarget(id)}
                 onSetPending={handleSetPending}
                 onEdit={(inv) => setEditTarget(inv)}
@@ -788,6 +933,7 @@ export default function PendingInvoices() {
       {editTarget && (
         <EditModal
           invoice={editTarget}
+          projects={projects}
           onSave={handleSaveEdit}
           onClose={() => setEditTarget(null)}
           saving={savingEdit}
@@ -803,6 +949,15 @@ export default function PendingInvoices() {
           loading={actionLoading === supplierSync.invoiceId}
         />
       )}
+
+      <FundingProjectModal
+        open={!!fundingTarget}
+        onClose={() => setFundingTarget(null)}
+        projects={projects}
+        onSelect={handleFundingSelect}
+        milgaProjectName={fundingTarget?.projectName || ""}
+        multiSelect={false}
+      />
     </div>
   );
 }

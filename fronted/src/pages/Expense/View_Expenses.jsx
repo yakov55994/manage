@@ -548,30 +548,33 @@ export default function ViewExpenses() {
                           <td className="px-6 py-4 text-sm">
                             {(expense.linkedInvoices?.length > 0 || expense.linkedSalaries?.length > 0 || expense.linkedOrders?.length > 0) ? (
                               <div className="space-y-1">
-                                {expense.linkedInvoices?.length > 0 && (
-                                  <div className="flex items-center gap-1 text-blue-600">
-                                    <Link className="w-3 h-3" />
-                                    <span className="text-xs">
-                                      {expense.linkedInvoices.length} חשבוניות
-                                    </span>
-                                  </div>
-                                )}
-                                {expense.linkedSalaries?.length > 0 && (
-                                  <div className="flex items-center gap-1 text-purple-600">
-                                    <Link className="w-3 h-3" />
-                                    <span className="text-xs">
-                                      {expense.linkedSalaries.length} משכורות
-                                    </span>
-                                  </div>
-                                )}
-                                {expense.linkedOrders?.length > 0 && (
-                                  <div className="flex items-center gap-1 text-orange-600">
-                                    <Link className="w-3 h-3" />
-                                    <span className="text-xs">
-                                      {expense.linkedOrders.length} הזמנות
-                                    </span>
-                                  </div>
-                                )}
+                                {expense.linkedInvoices?.length > 0 && (() => {
+                                  const label = expense.linkedInvoices.map((inv) => `#${inv.invoiceNumber ?? "—"}${inv.supplierId?.name ? ` (${inv.supplierId.name})` : ""}`).join(", ");
+                                  return (
+                                    <div className="flex items-center gap-1 text-blue-600">
+                                      <Link className="w-3 h-3 shrink-0" />
+                                      <span className="text-xs truncate max-w-[160px]" title={label}>{label}</span>
+                                    </div>
+                                  );
+                                })()}
+                                {expense.linkedSalaries?.length > 0 && (() => {
+                                  const label = expense.linkedSalaries.map((sal) => sal.employeeName || "—").join(", ");
+                                  return (
+                                    <div className="flex items-center gap-1 text-purple-600">
+                                      <Link className="w-3 h-3 shrink-0" />
+                                      <span className="text-xs truncate max-w-[160px]" title={label}>{label}</span>
+                                    </div>
+                                  );
+                                })()}
+                                {expense.linkedOrders?.length > 0 && (() => {
+                                  const label = expense.linkedOrders.map((ord) => `#${ord.orderNumber ?? "—"}`).join(", ");
+                                  return (
+                                    <div className="flex items-center gap-1 text-orange-600">
+                                      <Link className="w-3 h-3 shrink-0" />
+                                      <span className="text-xs truncate max-w-[160px]" title={label}>{label}</span>
+                                    </div>
+                                  );
+                                })()}
                               </div>
                             ) : (
                               <span className="text-slate-400 text-xs">לא שויך</span>

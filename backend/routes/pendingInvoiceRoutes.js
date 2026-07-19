@@ -25,7 +25,7 @@ router.post("/submit", upload.array("files", 10), pendingInvoiceController.submi
 
 // Admin בלבד
 router.get("/", protect, requireAdmin, pendingInvoiceController.getPendingInvoices);
-router.put("/:id", protect, requireAdmin, pendingInvoiceController.updateInvoice);
+router.put("/:id", protect, requireAdmin, upload.array("files", 10), pendingInvoiceController.updateInvoice);
 router.post("/:id/approve", protect, requireAdmin, pendingInvoiceController.approveInvoice);
 router.post("/:id/reject", protect, requireAdmin, pendingInvoiceController.rejectInvoice);
 router.post("/:id/set-pending", protect, requireAdmin, pendingInvoiceController.setPendingStatus);
