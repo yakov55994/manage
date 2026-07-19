@@ -655,7 +655,7 @@ const invoiceControllers = {
     try {
       const { id } = req.params;
 
-      const invoice = await Invoice.findById(id).populate("supplierId", "name");
+      const invoice = await Invoice.findById(id).populate("supplierId", "name bankDetails");
       if (!invoice) {
         return res.status(404).json({ success: false, error: "Invoice not found" });
       }
@@ -681,6 +681,9 @@ const invoiceControllers = {
         paymentMethodText,
         paymentDate: invoice.paymentDate,
         amount: invoice.totalAmount,
+        bankName: invoice.supplierId?.bankDetails?.bankName || "-",
+        branchNumber: invoice.supplierId?.bankDetails?.branchNumber || "-",
+        accountNumber: invoice.supplierId?.bankDetails?.accountNumber || "-",
       });
 
       const fileName = `אישור-תשלום-${invoice.invoiceNumber}.pdf`;

@@ -10,6 +10,9 @@ export async function generatePaymentConfirmationPDF({
   paymentMethodText,
   paymentDate,
   amount,
+  bankName,
+  branchNumber,
+  accountNumber,
 }) {
   try {
     const templatePath = path.join(
@@ -40,6 +43,9 @@ export async function generatePaymentConfirmationPDF({
         paymentDate ? new Date(paymentDate).toLocaleDateString("he-IL") : "-"
       )
       .replace(/\{\{amount\}\}/g, Number(amount || 0).toLocaleString("he-IL"))
+      .replace(/\{\{bankName\}\}/g, bankName || "-")
+      .replace(/\{\{branchNumber\}\}/g, branchNumber || "-")
+      .replace(/\{\{accountNumber\}\}/g, accountNumber || "-")
       .replace(/\{\{generatedAt\}\}/g, new Date().toLocaleString("he-IL"))
       .replace(/\{\{year\}\}/g, new Date().getFullYear())
       .replace(/\{\{css\}\}/g, "");

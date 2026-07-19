@@ -75,6 +75,14 @@ body {
   font-size: 15px;
 }
 
+/* ========== SECTION TITLE ========== */
+.section-title {
+  font-size: 15px;
+  font-weight: 700;
+  color: #1f2937;
+  margin: 25px 0 5px;
+}
+
 /* ========== STATEMENT ========== */
 .statement {
   font-size: 13px;

@@ -204,6 +204,7 @@ function EditModal({ invoice, onSave, onClose, saving }) {
     bankName: invoice.bankName || "",
     bankBranch: invoice.bankBranch || "",
     bankAccount: invoice.bankAccount || "",
+    projectId: invoice.projectId || "",
     projectName: invoice.projectName || "",
     invoiceNumber: invoice.invoiceNumber || "",
     invoiceDate: toDateInput(invoice.invoiceDate),
@@ -212,9 +213,23 @@ function EditModal({ invoice, onSave, onClose, saving }) {
     detail: invoice.detail || "",
   });
   const [error, setError] = useState("");
+  const [projects, setProjects] = useState([]);
+
+  useEffect(() => {
+    api
+      .get("/projects")
+      .then((res) => setProjects(res.data?.data || []))
+      .catch((err) => console.error("Error fetching projects:", err));
+  }, []);
 
   const handleChange = (e) => {
     setForm((prev) => ({ ...prev, [e.target.name]: e.target.value }));
+  };
+
+  const handleProjectChange = (e) => {
+    const id = e.target.value;
+    const project = projects.find((p) => p._id === id);
+    setForm((prev) => ({ ...prev, projectId: id, projectName: project?.name || "" }));
   };
 
   const inputClass =
@@ -230,7 +245,7 @@ function EditModal({ invoice, onSave, onClose, saving }) {
       }
     }
     setError("");
-    onSave({ ...form, totalAmount: parseFloat(form.totalAmount), projectId: invoice.projectId || null });
+    onSave({ ...form, totalAmount: parseFloat(form.totalAmount), projectId: form.projectId || null });
   };
 
   return (
@@ -330,7 +345,14 @@ function EditModal({ invoice, onSave, onClose, saving }) {
               </div>
               <div>
                 <label className="block text-xs text-gray-400 mb-1">פרויקט משויך</label>
-                <input name="projectName" value={form.projectName} onChange={handleChange} className={inputClass} />
+                <select name="projectId" value={form.projectId} onChange={handleProjectChange} className={inputClass}>
+                  <option value="">ללא פרויקט</option>
+                  {projects.map((p) => (
+                    <option key={p._id} value={p._id}>
+                      {p.name}{p.type === "milga" ? " (מילגה)" : ""}
+                    </option>
+                  ))}
+                </select>
               </div>
               <div className="sm:col-span-2">
                 <label className="block text-xs text-gray-400 mb-1">פירוט / הערות</label>
